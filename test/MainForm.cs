@@ -553,10 +553,10 @@ namespace ChessDroid
             // Apply theme from config
             ApplyTheme(config.Theme == "Dark");
 
-            CargarPlantillasYMascaras();
+            LoadTemplatesAndMasks();
         }
 
-        private void CargarPlantillasYMascaras()
+        private void LoadTemplatesAndMasks()
         {
             try
             {
@@ -649,44 +649,44 @@ namespace ChessDroid
                 CvInvoke.CvtColor(boardMat, grayBoard, ColorConversion.Bgr2Gray);
 
                 int boardSize = grayBoard.Width;
-                int celdaSize = boardSize / BOARD_SIZE;
+                int cellSize = boardSize / BOARD_SIZE;
                 char[,] board = new char[BOARD_SIZE, BOARD_SIZE];
 
                 // Dynamic board sizing - accept any board size
-                Debug.WriteLine($"Board detected at native size: {boardSize}x{boardSize} pixels (cell size: {celdaSize}px)");
+                Debug.WriteLine($"Board detected at native size: {boardSize}x{boardSize} pixels (cell size: {cellSize}px)");
 
                 System.Threading.Tasks.Parallel.For(0, BOARD_SIZE * BOARD_SIZE, idx =>
                 {
-                    int fila = idx / BOARD_SIZE;
+                    int row = idx / BOARD_SIZE;
                     int col = idx % BOARD_SIZE;
                     var swCell = System.Diagnostics.Stopwatch.StartNew();
-                    Rectangle roi = new Rectangle(col * celdaSize, fila * celdaSize, celdaSize, celdaSize);
-                    using (Mat celda = new Mat(grayBoard, roi))
+                    Rectangle roi = new Rectangle(col * cellSize, row * cellSize, cellSize, cellSize);
+                    using (Mat cell = new Mat(grayBoard, roi))
                     {
                         if (blackAtBottom)
                         {
-                            CvInvoke.Flip(celda, celda, FlipType.Vertical);
-                            CvInvoke.Flip(celda, celda, FlipType.Horizontal);
+                            CvInvoke.Flip(cell, cell, FlipType.Vertical);
+                            CvInvoke.Flip(cell, cell, FlipType.Horizontal);
                         }
 
-                        (string piezaDetectada, double confianza) = DetectPieceAndConfidence_Optimized(celda);
+                        (string detectedPiece, double confidence) = DetectPieceAndConfidence_Optimized(cell);
 
                         // Debug logging for each cell
-                        string square = $"{(char)('a' + col)}{8 - fila}";
-                        if (!string.IsNullOrEmpty(piezaDetectada))
+                        string square = $"{(char)('a' + col)}{8 - row}";
+                        if (!string.IsNullOrEmpty(detectedPiece))
                         {
-                            Debug.WriteLine($"[{square}] Detected: {piezaDetectada} (confidence: {confianza:F3})");
+                            Debug.WriteLine($"[{square}] Detected: {detectedPiece} (confidence: {confidence:F3})");
                         }
-                        else if (confianza > 0.3) // Log close misses
+                        else if (confidence > 0.3) // Log close misses
                         {
-                            Debug.WriteLine($"[{square}] Empty but had match with confidence: {confianza:F3}");
+                            Debug.WriteLine($"[{square}] Empty but had match with confidence: {confidence:F3}");
                         }
 
-                        board[fila, col] = string.IsNullOrEmpty(piezaDetectada) || piezaDetectada.Length == 0 ? '.' : piezaDetectada[0];
+                        board[row, col] = string.IsNullOrEmpty(detectedPiece) || detectedPiece.Length == 0 ? '.' : detectedPiece[0];
                     }
                     swCell.Stop();
                     if (swCell.ElapsedMilliseconds > 10)
-                        Debug.WriteLine($"[PERF] Cell ({fila},{col}) extraction+match: {swCell.ElapsedMilliseconds}ms");
+                        Debug.WriteLine($"[PERF] Cell ({row},{col}) extraction+match: {swCell.ElapsedMilliseconds}ms");
                 });
                 swTotal.Stop();
                 Debug.WriteLine($"[PERF] ExtractBoardFromMat TOTAL: {swTotal.ElapsedMilliseconds}ms");
@@ -1045,9 +1045,9 @@ namespace ChessDroid
                 return null;
 
             // Return board at native size - no forced resizing
-            using (Mat tablero = new Mat(fullMat, rect))
+            using (Mat boardMat = new Mat(fullMat, rect))
             {
-                return tablero.Clone();
+                return boardMat.Clone();
             }
         }
 
@@ -1105,7 +1105,7 @@ namespace ChessDroid
         {
             TopMost = true;
 
-            await IniciarEngineAsync();
+            await InitializeEngineAsync();
             bool registered = RegisterHotKey(this.Handle, 1, MOD_ALT, (uint)Keys.X);
             if (!registered)
             {
@@ -1134,7 +1134,7 @@ namespace ChessDroid
             };
         }
 
-        private async Task IniciarEngineAsync()
+        private async Task InitializeEngineAsync()
         {
             try
             {
@@ -1268,7 +1268,7 @@ namespace ChessDroid
 
         private async void button1_Click_1(object sender, EventArgs e)
         {
-            // Si ya hay una jugada en curso, ignoramos esta invocación
+            // If a move is already in progress, ignore this invocation
             if (moveInProgress)
             {
                 MessageBox.Show("A move is already being processed. Please wait.");
@@ -1278,7 +1278,7 @@ namespace ChessDroid
             // Show immediate feedback
             labelStatus.Text = "Analyzing...";
 
-            // Marcamos que estamos procesando una jugada
+            // Mark that we are processing a move
             moveInProgress = true;
             moveTimeoutTimer?.Stop();
             moveTimeoutTimer?.Start();
