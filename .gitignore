@@ -1,0 +1,120 @@
+# ============================================
+# ChessDroid Project - Git Ignore Rules
+# ============================================
+
+# Visual Studio
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.userprefs
+
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# Visual Studio profiler
+*.psess
+*.vsp
+*.vspx
+*.sap
+
+# ReSharper
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+
+# License files (contains activated licenses)
+*.lic
+.lic
+
+# Node modules and dependencies
+node_modules/
+package-lock.json
+
+# Environment variables - CRITICAL: Contains secrets!
+.env
+.env.local
+.env.production
+.env.development
+*.env.backup
+
+# Database files
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS specific files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# IDE specific
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.cache
+
+# Generated license keys (if batch generated)
+licenses_*.txt
+
+# NuGet packages
+*.nupkg
+*.snupkg
+.nuget/
+
+# Test results
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+
+# Security audit reports (optional - uncomment if you don't want to commit)
+# SECURITY_*.md
+
+# Backup files
+*.backup
+*_backup.*
+
+# Application user-specific files
+config.json
+
+# User should provide their own chess engines and piece templates
+Templates/
+Engines/
+
+# Website folder (separate deployment)
+chessdroid-website/
+
+# Claude agent files
+.claude/

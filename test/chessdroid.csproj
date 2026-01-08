@@ -1,0 +1,64 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <ApplicationIcon>chessdroid.ico</ApplicationIcon>
+    <Copyright>ARWAN</Copyright>
+    <Description>CHESSDROID V1.0.0 BY ARWAN</Description>
+    <NoWarn>NU1701</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="chessdroid.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ChessDotNet" Version="0.12.3" />
+    <PackageReference Include="ChessDotNetCore" Version="1.6.0" />
+    <PackageReference Include="Emgu.CV" Version="4.10.0.5680" />
+    <PackageReference Include="Emgu.CV.runtime.windows" Version="4.10.0.5680" />
+    <PackageReference Include="OpenCvSharp4" Version="4.10.0.20241108" />
+    <PackageReference Include="OpenCvSharp4.runtime.win" Version="4.10.0.20241108" />
+    <PackageReference Include="pgn.NET" Version="1.2.1" />
+    <PackageReference Include="Polyglot" Version="1.2.0" />
+    <PackageReference Include="RestSharp" Version="112.1.0" />
+    <PackageReference Include="System.Management" Version="10.0.1" />
+  </ItemGroup>
+
+  <!-- Ensure native libraries are copied to output -->
+  <Target Name="CopyNativeLibraries" AfterTargets="Build">
+    <ItemGroup>
+      <NativeLibs Include="$(OutDir)runtimes\**\*.*" />
+    </ItemGroup>
+  </Target>
+
+  <ItemGroup>
+    <Compile Update="Properties\Resources.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Update="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="Backup_*\**" />
+    <EmbeddedResource Remove="Backup_*\**" />
+    <None Remove="Backup_*\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="nul" />
+  </ItemGroup>
+
+</Project>
