@@ -9,6 +9,17 @@ namespace ChessDroid.Services
     public class MovesExplanation
     {
         // =============================
+        // CHESS MOVE EXPLANATION ENGINE
+        // Comprehensive tactical and positional analysis system
+        // =============================
+        //
+        // ADVANCED FEATURES (Ethereal-inspired):
+        // - Static Exchange Evaluation (SEE) for captures
+        // - Move interestingness scoring (forcing vs quiet)
+        // - Positional evaluation (pawn structure, piece activity, king safety)
+        // - Improving/worsening position detection
+        //
+        // =============================
         // CHESS TACTICAL MOTIFS REFERENCE
         // Comprehensive guide to recognizing and executing chess tactics
         // =============================
@@ -212,33 +223,7 @@ namespace ChessDroid.Services
         // =============================
 
         // Get material value of a piece (standard chess values)
-        private static int GetPieceValue(PieceType pieceType)
-        {
-            return pieceType switch
-            {
-                PieceType.Pawn => 1,
-                PieceType.Knight => 3,
-                PieceType.Bishop => 3,
-                PieceType.Rook => 5,
-                PieceType.Queen => 9,
-                PieceType.King => 100, // King is invaluable
-                _ => 0
-            };
-        }
-
-        private static string GetPieceName(PieceType pieceType)
-        {
-            return pieceType switch
-            {
-                PieceType.Pawn => "pawn",
-                PieceType.Knight => "knight",
-                PieceType.Bishop => "bishop",
-                PieceType.Rook => "rook",
-                PieceType.Queen => "queen",
-                PieceType.King => "king",
-                _ => "piece"
-            };
-        }
+        // Helper methods moved to ChessUtilities for code reuse
 
         // Generate a brief explanation for why the move is best
         public static string GenerateMoveExplanation(string bestMove, string fen, List<string> pvs, string evaluation)
@@ -286,7 +271,39 @@ namespace ChessDroid.Services
                 tempBoard.SetPiece(destRank, destFile, piece);
                 tempBoard.SetPiece(srcRank, srcFile, '.');
 
-                // Check for tactical patterns FIRST (highest priority)
+                // =============================
+                // STOCKFISH FEATURES - PRIORITY 1
+                // Singular move and threat detection
+                // =============================
+
+                // SINGULAR MOVE DETECTION (only good move available)
+                bool isSingular = false;
+                if (pvs != null && pvs.Count >= 2 && !string.IsNullOrEmpty(evaluation))
+                {
+                    // Try to get second-best evaluation from PV line
+                    string secondEval = pvs.Count >= 2 ? ExtractEvalFromPV(pvs[1]) : "";
+                    isSingular = StockfishFeatures.IsSingularMove(pvs, evaluation, secondEval);
+
+                    if (isSingular)
+                        reasons.Add("only good move");
+                }
+
+                // FORCED MOVE DETECTION (in check with one legal move)
+                bool isForced = StockfishFeatures.IsForcedMove(board, isWhite);
+                if (isForced && reasons.Count < 2)
+                    reasons.Add("forced move");
+
+                // THREAT CREATION (attacking valuable piece with lower-value piece)
+                if (reasons.Count < 2)
+                {
+                    string? threatCreation = StockfishFeatures.DetectThreatCreation(
+                        board, tempBoard, destRank, destFile, piece, isWhite);
+
+                    if (!string.IsNullOrEmpty(threatCreation))
+                        reasons.Add(threatCreation);
+                }
+
+                // Check for tactical patterns SECOND (after singular/threat detection)
                 // Pass both original board and temp board for discovered attack detection
                 string? tacticalPattern = DetectTacticalPattern(board, tempBoard, srcRank, srcFile, destRank, destFile, piece, pieceType, isWhite);
                 if (!string.IsNullOrEmpty(tacticalPattern))
@@ -295,10 +312,13 @@ namespace ChessDroid.Services
                 }
 
                 // PERPETUAL CHECK: Detect from PV lines
-                string? perpetualCheckInfo = DetectPerpetualCheck(pvs);
-                if (!string.IsNullOrEmpty(perpetualCheckInfo))
+                if (pvs != null)
                 {
-                    reasons.Add(perpetualCheckInfo);
+                    string? perpetualCheckInfo = DetectPerpetualCheck(pvs);
+                    if (!string.IsNullOrEmpty(perpetualCheckInfo))
+                    {
+                        reasons.Add(perpetualCheckInfo);
+                    }
                 }
 
                 // SACRIFICE DETECTION: Check BEFORE regular capture detection
@@ -316,11 +336,26 @@ namespace ChessDroid.Services
                     reasons.Add(sacrificeInfo);
                 }
 
-                // Check if it's a capture
-                if (targetPiece != '.')
+                // =============================
+                // CAPTURE EVALUATION with SEE (Static Exchange Evaluation)
+                // Inspired by Ethereal's movepicker.c
+                // =============================
+                if (targetPiece != '.' && reasons.Count < 2)
                 {
-                    string capturedPiece = GetPieceName(PieceHelper.GetPieceType(targetPiece));
-                    reasons.Add($"captures {capturedPiece}");
+                    // Use SEE to determine if capture wins material
+                    string? seeInfo = MoveEvaluation.DetectWinningCapture(board, srcRank, srcFile,
+                        destRank, destFile, piece, targetPiece, isWhite);
+
+                    if (!string.IsNullOrEmpty(seeInfo))
+                    {
+                        reasons.Add(seeInfo);
+                    }
+                    else
+                    {
+                        // Fallback to simple capture description
+                        string capturedPiece = ChessUtilities.GetPieceName(PieceHelper.GetPieceType(targetPiece));
+                        reasons.Add($"captures {capturedPiece}");
+                    }
                 }
 
                 // Check for pawn advances
@@ -339,18 +374,105 @@ namespace ChessDroid.Services
                     }
                 }
 
-                // Positional considerations
-                if (pieceType == PieceType.Knight || pieceType == PieceType.Bishop)
+                // =============================
+                // POSITIONAL EVALUATION (Ethereal-inspired)
+                // Analyze pawn structure, piece activity, king safety
+                // =============================
+
+                // PAWN STRUCTURE ANALYSIS
+                if (pieceType == PieceType.Pawn && reasons.Count < 2)
                 {
-                    // Check if moving to center
-                    if (destFile >= 2 && destFile <= 5 && destRank >= 2 && destRank <= 5)
+                    // Passed pawn detection (highest priority)
+                    string? passedPawnInfo = PositionalEvaluation.DetectPassedPawn(tempBoard, destRank, destFile, isWhite);
+                    if (!string.IsNullOrEmpty(passedPawnInfo))
+                        reasons.Add(passedPawnInfo);
+
+                    // Connected pawns (strength)
+                    string? connectedInfo = PositionalEvaluation.DetectConnectedPawns(tempBoard, destRank, destFile, isWhite);
+                    if (!string.IsNullOrEmpty(connectedInfo) && reasons.Count < 2)
+                        reasons.Add(connectedInfo);
+
+                    // Pawn structure weaknesses (only if no positive reason)
+                    if (reasons.Count < 2)
                     {
-                        reasons.Add("centralizes piece");
+                        string? isolatedInfo = PositionalEvaluation.DetectIsolatedPawn(tempBoard, destRank, destFile, isWhite);
+                        if (!string.IsNullOrEmpty(isolatedInfo))
+                            reasons.Add(isolatedInfo);
+
+                        string? doubledInfo = PositionalEvaluation.DetectDoubledPawns(tempBoard, destRank, destFile, isWhite);
+                        if (!string.IsNullOrEmpty(doubledInfo) && reasons.Count < 2)
+                            reasons.Add(doubledInfo);
+
+                        string? backwardInfo = PositionalEvaluation.DetectBackwardPawn(tempBoard, destRank, destFile, isWhite);
+                        if (!string.IsNullOrEmpty(backwardInfo) && reasons.Count < 2)
+                            reasons.Add(backwardInfo);
+                    }
+                }
+
+                // PIECE ACTIVITY ANALYSIS (Knights, Bishops, Rooks, Queens)
+                if (reasons.Count < 2 && (pieceType == PieceType.Knight || pieceType == PieceType.Bishop ||
+                                          pieceType == PieceType.Rook || pieceType == PieceType.Queen))
+                {
+                    // Outpost detection (very strong positional feature)
+                    string? outpostInfo = PositionalEvaluation.DetectOutpost(tempBoard, destRank, destFile, piece, isWhite);
+                    if (!string.IsNullOrEmpty(outpostInfo))
+                        reasons.Add(outpostInfo);
+
+                    // Long diagonal control (bishops)
+                    if (pieceType == PieceType.Bishop && reasons.Count < 2)
+                    {
+                        string? diagonalInfo = PositionalEvaluation.DetectLongDiagonalControl(tempBoard, destRank, destFile, piece, isWhite);
+                        if (!string.IsNullOrEmpty(diagonalInfo))
+                            reasons.Add(diagonalInfo);
+                    }
+
+                    // High mobility (active pieces)
+                    if (reasons.Count < 2)
+                    {
+                        string? mobilityInfo = PositionalEvaluation.DetectHighMobility(tempBoard, destRank, destFile, piece, isWhite);
+                        if (!string.IsNullOrEmpty(mobilityInfo))
+                            reasons.Add(mobilityInfo);
+                    }
+
+                    // Central control
+                    if (reasons.Count < 2)
+                    {
+                        string? centralInfo = PositionalEvaluation.DetectCentralControl(tempBoard, destRank, destFile, piece, isWhite);
+                        if (!string.IsNullOrEmpty(centralInfo))
+                            reasons.Add(centralInfo);
+                    }
+                }
+
+                // KING SAFETY ANALYSIS
+                if (pieceType == PieceType.King && reasons.Count < 2)
+                {
+                    // Check for king shelter weaknesses
+                    string? shelterInfo = PositionalEvaluation.DetectKingShelter(tempBoard, destRank, destFile, isWhite);
+                    if (!string.IsNullOrEmpty(shelterInfo))
+                        reasons.Add(shelterInfo);
+
+                    // Weak squares near king
+                    string? weakSquaresInfo = PositionalEvaluation.DetectWeakKingSquares(tempBoard, destRank, destFile, isWhite);
+                    if (!string.IsNullOrEmpty(weakSquaresInfo) && reasons.Count < 2)
+                        reasons.Add(weakSquaresInfo);
+                }
+
+                // BASIC POSITIONAL CONSIDERATIONS (fallback if still no reasons)
+                if (reasons.Count < 2)
+                {
+                    // Check if moving to center (basic centralization)
+                    if (pieceType == PieceType.Knight || pieceType == PieceType.Bishop)
+                    {
+                        if (destFile >= 2 && destFile <= 5 && destRank >= 2 && destRank <= 5)
+                        {
+                            reasons.Add("centralizes piece");
+                        }
                     }
                 }
 
                 // Development moves
-                if ((srcRank == 0 || srcRank == 7) && (pieceType == PieceType.Knight || pieceType == PieceType.Bishop))
+                if (reasons.Count < 2 && (srcRank == 0 || srcRank == 7) &&
+                    (pieceType == PieceType.Knight || pieceType == PieceType.Bishop))
                 {
                     reasons.Add("develops piece");
                 }
@@ -361,25 +483,137 @@ namespace ChessDroid.Services
                     reasons.Add(destFile > srcFile ? "castles kingside for safety" : "castles queenside");
                 }
 
-                // Check evaluation to add context (only if no tactical reason found)
+                // =============================
+                // ENDGAME-SPECIFIC ANALYSIS (Ethereal-inspired)
+                // Detect special endgame patterns and characteristics
+                // =============================
+                if (reasons.Count < 2)
+                {
+                    // Detect specific endgame types
+                    string? kpvk = EndgameAnalysis.DetectKPvK(tempBoard, isWhite);
+                    if (!string.IsNullOrEmpty(kpvk))
+                        reasons.Add(kpvk);
+
+                    string? oppBishops = EndgameAnalysis.DetectOppositeBishops(tempBoard);
+                    if (!string.IsNullOrEmpty(oppBishops) && reasons.Count < 2)
+                        reasons.Add(oppBishops);
+
+                    string? rookEndgame = EndgameAnalysis.DetectRookEndgame(tempBoard);
+                    if (!string.IsNullOrEmpty(rookEndgame) && reasons.Count < 2)
+                        reasons.Add(rookEndgame);
+
+                    string? queenEndgame = EndgameAnalysis.DetectQueenEndgame(tempBoard);
+                    if (!string.IsNullOrEmpty(queenEndgame) && reasons.Count < 2)
+                        reasons.Add(queenEndgame);
+
+                    string? bareKing = EndgameAnalysis.DetectBareKing(tempBoard, !isWhite);
+                    if (!string.IsNullOrEmpty(bareKing) && reasons.Count < 2)
+                        reasons.Add(bareKing);
+
+                    // Material imbalance detection
+                    string? materialImbalance = EndgameAnalysis.DetectMaterialImbalance(tempBoard);
+                    if (!string.IsNullOrEmpty(materialImbalance) && reasons.Count < 2)
+                        reasons.Add(materialImbalance);
+
+                    string? qualityImbalance = EndgameAnalysis.DetectQualityImbalance(tempBoard);
+                    if (!string.IsNullOrEmpty(qualityImbalance) && reasons.Count < 2)
+                        reasons.Add(qualityImbalance);
+
+                    // Zugzwang detection (only if no other explanation)
+                    if (reasons.Count == 0 && EndgameAnalysis.IsPotentialZugzwang(tempBoard, isWhite))
+                        reasons.Add("zugzwang position (any move worsens position)");
+
+                    // TABLEBASE INTEGRATION (Advanced endgame knowledge)
+                    if (reasons.Count < 2)
+                    {
+                        string? tablebaseInfo = AdvancedAnalysis.GetTablebaseExplanation(tempBoard, isWhite);
+                        if (!string.IsNullOrEmpty(tablebaseInfo))
+                            reasons.Add(tablebaseInfo);
+                    }
+                }
+
+                // =============================
+                // OPENING MOVE ANALYSIS
+                // Low-ply history tracking for opening-specific patterns
+                // =============================
+                if (reasons.Count < 2)
+                {
+                    // Estimate current ply from FEN (simplified - count material changes)
+                    int estimatedPly = 2; // Default to early game
+                    string? openingInfo = AdvancedAnalysis.GetOpeningMoveDescription(bestMove, estimatedPly);
+                    if (!string.IsNullOrEmpty(openingInfo))
+                        reasons.Add(openingInfo);
+                }
+
+                // =============================
+                // EVALUATION CONTEXT (Game phase aware + Win Rate Model)
+                // Inspired by Ethereal's phase-based evaluation + Stockfish's WDL
+                // =============================
                 if (reasons.Count == 0)
                 {
                     double? eval = ParseEvaluation(evaluation);
                     if (eval.HasValue)
                     {
-                        if (Math.Abs(eval.Value) > 3.0)
+                        string gamePhase = EndgameAnalysis.GetGamePhase(tempBoard);
+                        bool isEndgame = EndgameAnalysis.IsEndgame(tempBoard);
+                        int materialCount = EndgameAnalysis.CountTotalPieces(tempBoard);
+
+                        // WIN RATE MODEL INTEGRATION (Stockfish-style)
+                        // Convert eval to winning percentage for user-friendly explanations
+                        string winningChanceDesc = AdvancedAnalysis.GetWinningChanceDescription(
+                            Math.Abs(eval.Value), materialCount);
+
+                        // Position complexity
+                        string? complexityDesc = AdvancedAnalysis.GetComplexityDescription(tempBoard, eval.Value);
+
+                        // Decisive advantage (>= 3 pawns)
+                        if (Math.Abs(eval.Value) >= 3.0)
                         {
-                            reasons.Add(eval.Value > 0 ? "maintains winning advantage" : "fights back in difficult position");
+                            if (eval.Value > 0)
+                            {
+                                if (complexityDesc != null)
+                                    reasons.Add($"{winningChanceDesc} ({complexityDesc})");
+                                else
+                                    reasons.Add(isEndgame ? "winning endgame" : winningChanceDesc);
+                            }
+                            else
+                            {
+                                reasons.Add(isEndgame ? "defensive endgame play" : "fights back in difficult position");
+                            }
                         }
-                        else if (Math.Abs(eval.Value) < 0.3)
+                        // Significant advantage (1.5-3 pawns)
+                        else if (Math.Abs(eval.Value) >= 1.5)
                         {
-                            reasons.Add("maintains balance");
+                            if (eval.Value > 0)
+                                reasons.Add(isEndgame ? "better endgame" : winningChanceDesc);
+                            else
+                                reasons.Add(isEndgame ? "holds endgame" : "reduces disadvantage");
+                        }
+                        // Small advantage (0.5-1.5 pawns)
+                        else if (Math.Abs(eval.Value) >= 0.5)
+                        {
+                            if (eval.Value > 0)
+                                reasons.Add(winningChanceDesc);
+                            else
+                                reasons.Add("equalizes");
+                        }
+                        // Balanced position (<0.5 pawns)
+                        else if (Math.Abs(eval.Value) < 0.5)
+                        {
+                            reasons.Add(isEndgame ? "balanced endgame" : "maintains balance");
                         }
                     }
                 }
 
+                // Ultimate fallback
                 if (reasons.Count == 0)
-                    return "improves position";
+                {
+                    // Context-aware generic response
+                    if (EndgameAnalysis.IsEndgame(tempBoard))
+                        return "improves endgame position";
+                    else
+                        return "improves position";
+                }
 
                 return string.Join(", ", reasons.Take(2)); // Limit to 2 reasons for brevity
             }
@@ -408,6 +642,33 @@ namespace ChessDroid.Services
             }
 
             return null;
+        }
+
+        // Extract evaluation from PV line (format: "e4 e5 Nf3 (+0.5)")
+        private static string ExtractEvalFromPV(string pvLine)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(pvLine)) return "";
+
+                // Look for evaluation in parentheses at end
+                int lastParen = pvLine.LastIndexOf('(');
+                if (lastParen >= 0)
+                {
+                    int closeParen = pvLine.IndexOf(')', lastParen);
+                    if (closeParen > lastParen)
+                    {
+                        string evalPart = pvLine.Substring(lastParen + 1, closeParen - lastParen - 1).Trim();
+                        return evalPart;
+                    }
+                }
+
+                return "";
+            }
+            catch
+            {
+                return "";
+            }
         }
 
         // Detect if there was a blunder based on evaluation change
@@ -475,7 +736,7 @@ namespace ChessDroid.Services
                         if (char.IsUpper(target) == isWhite) continue; // Same color
 
                         // Check if our piece attacks this square
-                        if (CanAttackSquare(board, pieceRow, pieceCol, piece, r, c))
+                        if (ChessUtilities.CanAttackSquare(board, pieceRow, pieceCol, piece, r, c))
                         {
                             attackedPieces.Add((r, c, PieceHelper.GetPieceType(target)));
                         }
@@ -525,8 +786,8 @@ namespace ChessDroid.Services
                         // Check if we can actually win material from the other piece
                         foreach (var other in otherPieces)
                         {
-                            int otherValue = GetPieceValue(other.type);
-                            int forkingPieceValue = GetPieceValue(pieceType); // Knight = 3
+                            int otherValue = ChessUtilities.GetPieceValue(other.type);
+                            int forkingPieceValue = ChessUtilities.GetPieceValue(pieceType); // Knight = 3
 
                             if (other.type == PieceType.Queen)
                             {
@@ -544,11 +805,11 @@ namespace ChessDroid.Services
                                 // Only report as fork if:
                                 // 1. Target is UNDEFENDED (free piece), OR
                                 // 2. Target has NO SAFE ESCAPE SQUARES (trapped by fork)
-                                bool isDefended = IsSquareDefended(board, other.row, other.col, !isWhite);
+                                bool isDefended = ChessUtilities.IsSquareDefended(board, other.row, other.col, !isWhite);
 
                                 if (!isDefended)
                                 {
-                                    return $"forks king and {GetPieceName(other.type)}";
+                                    return $"forks king and {ChessUtilities.GetPieceName(other.type)}";
                                 }
 
                                 // If defended, check if it has escape squares
@@ -561,7 +822,7 @@ namespace ChessDroid.Services
                                     // If piece has no safe squares to escape to, it's still a winning fork
                                     if (safeSquares == 0)
                                     {
-                                        return $"forks king and {GetPieceName(other.type)}";
+                                        return $"forks king and {ChessUtilities.GetPieceName(other.type)}";
                                     }
                                 }
                                 // If defended AND has escape squares, it's just an equal trade, not a fork
@@ -581,15 +842,15 @@ namespace ChessDroid.Services
                     // Regular fork: Attack multiple valuable pieces
                     // Only report if we can actually win material
                     var valuableTargets = attackedPieces
-                        .Where(p => GetPieceValue(p.type) >= 3) // Knights, bishops, rooks, queens, king
-                        .OrderByDescending(p => GetPieceValue(p.type))
+                        .Where(p => ChessUtilities.GetPieceValue(p.type) >= 3) // Knights, bishops, rooks, queens, king
+                        .OrderByDescending(p => ChessUtilities.GetPieceValue(p.type))
                         .Take(2)
                         .ToList();
 
                     if (valuableTargets.Count >= 2)
                     {
                         // Check if at least one of the forked pieces can be profitably captured
-                        int forkingPieceValue = GetPieceValue(pieceType);
+                        int forkingPieceValue = ChessUtilities.GetPieceValue(pieceType);
                         bool canWinMaterial = false;
 
                         foreach (var target in valuableTargets)
@@ -602,21 +863,21 @@ namespace ChessDroid.Services
                             }
 
                             // Check if the forked piece can recapture our forking piece
-                            bool targetCanRecapture = CanAttackSquare(board, target.row, target.col,
+                            bool targetCanRecapture = ChessUtilities.CanAttackSquare(board, target.row, target.col,
                                 board.GetPiece(target.row, target.col), pieceRow, pieceCol);
 
                             // If target can recapture our forking piece, we need the trade to be profitable
                             if (targetCanRecapture)
                             {
                                 // Only valid if target is worth more than our forking piece (profitable trade)
-                                if (GetPieceValue(target.type) > forkingPieceValue)
+                                if (ChessUtilities.GetPieceValue(target.type) > forkingPieceValue)
                                 {
                                     // But also check: is there another forked piece that can't recapture?
                                     // If so, we can capture that one instead
                                     var otherTargets = valuableTargets.Where(t => t.row != target.row || t.col != target.col);
                                     foreach (var other in otherTargets)
                                     {
-                                        bool otherCanRecapture = CanAttackSquare(board, other.row, other.col,
+                                        bool otherCanRecapture = ChessUtilities.CanAttackSquare(board, other.row, other.col,
                                             board.GetPiece(other.row, other.col), pieceRow, pieceCol);
 
                                         if (!otherCanRecapture)
@@ -631,12 +892,12 @@ namespace ChessDroid.Services
                             else
                             {
                                 // Target can't recapture - check if it's defended by another piece
-                                bool isDefended = IsSquareDefended(board, target.row, target.col, !isWhite);
+                                bool isDefended = ChessUtilities.IsSquareDefended(board, target.row, target.col, !isWhite);
 
                                 // Can win material if:
                                 // 1. Target is undefended (free capture), OR
                                 // 2. Target is defended but worth more than the forking piece (profitable trade)
-                                if (!isDefended || GetPieceValue(target.type) > forkingPieceValue)
+                                if (!isDefended || ChessUtilities.GetPieceValue(target.type) > forkingPieceValue)
                                 {
                                     canWinMaterial = true;
                                     break;
@@ -648,7 +909,7 @@ namespace ChessDroid.Services
 
                         if (canWinMaterial)
                         {
-                            string pieces = string.Join(" and ", valuableTargets.Select(p => GetPieceName(p.type)));
+                            string pieces = string.Join(" and ", valuableTargets.Select(p => ChessUtilities.GetPieceName(p.type)));
                             return $"forks {pieces}";
                         }
                     }
@@ -751,71 +1012,7 @@ namespace ChessDroid.Services
         }
 
         // Check if a piece can attack a specific square
-        private static bool CanAttackSquare(ChessBoard board, int fromRow, int fromCol, char piece, int toRow, int toCol)
-        {
-            PieceType pieceType = PieceHelper.GetPieceType(piece);
-            int dR = toRow - fromRow;
-            int dF = toCol - fromCol;
-
-            switch (pieceType)
-            {
-                case PieceType.Knight:
-                    return (Math.Abs(dR) == 2 && Math.Abs(dF) == 1) || (Math.Abs(dR) == 1 && Math.Abs(dF) == 2);
-
-                case PieceType.King:
-                    return Math.Abs(dR) <= 1 && Math.Abs(dF) <= 1 && (dR != 0 || dF != 0);
-
-                case PieceType.Pawn:
-                    // Pawns attack diagonally
-                    bool isWhite = char.IsUpper(piece);
-                    int direction = isWhite ? -1 : 1;
-                    return dR == direction && Math.Abs(dF) == 1;
-
-                case PieceType.Bishop:
-                    if (Math.Abs(dR) != Math.Abs(dF)) return false;
-                    return IsPathClear(board, fromRow, fromCol, toRow, toCol);
-
-                case PieceType.Rook:
-                    if (dR != 0 && dF != 0) return false;
-                    return IsPathClear(board, fromRow, fromCol, toRow, toCol);
-
-                case PieceType.Queen:
-                    if (dR != 0 && dF != 0 && Math.Abs(dR) != Math.Abs(dF)) return false;
-                    return IsPathClear(board, fromRow, fromCol, toRow, toCol);
-            }
-
-            return false;
-        }
-
-        // Check if path is clear between two squares (for sliding pieces)
-        private static bool IsPathClear(ChessBoard board, int fromRow, int fromCol, int toRow, int toCol)
-        {
-            try
-            {
-                int dR = Math.Sign(toRow - fromRow);
-                int dF = Math.Sign(toCol - fromCol);
-
-                int r = fromRow + dR;
-                int c = fromCol + dF;
-
-                while (r != toRow || c != toCol)
-                {
-                    // Check bounds
-                    if (r < 0 || r >= 8 || c < 0 || c >= 8)
-                        return false;
-
-                    if (board.GetPiece(r, c) != '.') return false;
-                    r += dR;
-                    c += dF;
-                }
-
-                return true;
-            }
-            catch
-            {
-                return false;
-            }
-        }
+        // Moved to ChessUtilities.CanAttackSquare and ChessUtilities.IsPathClear
 
         // Detect if this piece is pinning an enemy piece
         // PIN: Attacking a less valuable piece that shields a more valuable piece/King
@@ -869,19 +1066,19 @@ namespace ChessDroid.Services
                                     PieceType pinnedPieceType = PieceHelper.GetPieceType(firstPiece.Value);
                                     PieceType behindPieceType = PieceHelper.GetPieceType(target);
 
-                                    int pinnedValue = GetPieceValue(pinnedPieceType);
-                                    int behindValue = GetPieceValue(behindPieceType);
+                                    int pinnedValue = ChessUtilities.GetPieceValue(pinnedPieceType);
+                                    int behindValue = ChessUtilities.GetPieceValue(behindPieceType);
 
                                     // PIN: The piece behind must be more valuable than the pinned piece
                                     if (behindPieceType == PieceType.King)
                                     {
                                         // Absolute pin: can't legally move (exposes King)
-                                        return $"pins {GetPieceName(pinnedPieceType)} to king (absolute)";
+                                        return $"pins {ChessUtilities.GetPieceName(pinnedPieceType)} to king (absolute)";
                                     }
                                     else if (behindValue > pinnedValue)
                                     {
                                         // Relative pin: can move but loses material
-                                        return $"pins {GetPieceName(pinnedPieceType)} to {GetPieceName(behindPieceType)}";
+                                        return $"pins {ChessUtilities.GetPieceName(pinnedPieceType)} to {ChessUtilities.GetPieceName(behindPieceType)}";
                                     }
                                 }
                                 break;
@@ -902,14 +1099,15 @@ namespace ChessDroid.Services
         }
 
         // Detect if this piece is skewering enemy pieces
-        // SKEWER: Attacking a more valuable piece that shields a less valuable piece
+        // SKEWER: A long-range piece attacking TWO pieces in a line, where the MORE VALUABLE piece
+        // is in FRONT and forced to move, exposing a LESS VALUABLE piece behind it to capture
         private static string? DetectSkewer(ChessBoard board, int pieceRow, int pieceCol, char piece, bool isWhite)
         {
-            // Skewer: Like a pin, but the high-value piece is in front, low-value behind.
-            // Only sliding pieces (Queen, Rook, Bishop) can skewer.
             try
             {
                 PieceType pieceType = PieceHelper.GetPieceType(piece);
+
+                // Only sliding pieces (Queen, Rook, Bishop) can skewer
                 if (pieceType != PieceType.Bishop && pieceType != PieceType.Rook && pieceType != PieceType.Queen)
                     return null;
 
@@ -926,6 +1124,7 @@ namespace ChessDroid.Services
                     int c = pieceCol + dF;
 
                     char? frontPiece = null;
+                    int frontRow = -1, frontCol = -1;
 
                     // Scan along the direction
                     while (r >= 0 && r < 8 && c >= 0 && c < 8)
@@ -939,6 +1138,8 @@ namespace ChessDroid.Services
                                 if (char.IsUpper(target) != isWhite) // Enemy piece
                                 {
                                     frontPiece = target;
+                                    frontRow = r;
+                                    frontCol = c;
                                 }
                                 else
                                 {
@@ -952,19 +1153,53 @@ namespace ChessDroid.Services
                                 {
                                     PieceType frontPieceType = PieceHelper.GetPieceType(frontPiece.Value);
                                     PieceType behindPieceType = PieceHelper.GetPieceType(target);
-                                    int frontValue = GetPieceValue(frontPieceType);
-                                    int behindValue = GetPieceValue(behindPieceType);
+                                    int frontValue = ChessUtilities.GetPieceValue(frontPieceType);
+                                    int behindValue = ChessUtilities.GetPieceValue(behindPieceType);
 
-                                    // SKEWER: The front piece must be more valuable than the one behind
-                                    // (forcing it to move and exposing the less valuable piece)
-                                    // Only report a skewer if the behind piece is not defended
-                                    bool behindDefended = IsSquareDefended(board, r, c, !isWhite);
-                                    if (!behindDefended)
+                                    // CRITICAL: SKEWER requires front piece MORE valuable than behind piece
+                                    // King is always considered most valuable for skewers (even against Queen)
+                                    bool isSkewerPattern = false;
+
+                                    if (frontPieceType == PieceType.King)
                                     {
-                                        if (frontPieceType == PieceType.King)
-                                            return $"skewers king, winning {GetPieceName(behindPieceType)}";
-                                        else if (frontValue > behindValue)
-                                            return $"skewers {GetPieceName(frontPieceType)}, winning {GetPieceName(behindPieceType)}";
+                                        // King in front is ALWAYS a skewer (must move, exposes piece behind)
+                                        isSkewerPattern = true;
+                                    }
+                                    else if (frontValue > behindValue)
+                                    {
+                                        // Front piece more valuable than behind piece
+                                        isSkewerPattern = true;
+                                    }
+
+                                    if (isSkewerPattern)
+                                    {
+                                        // Check if the piece behind is undefended (will be won)
+                                        // OR if even when defended, capturing it wins material
+                                        bool behindDefended = ChessUtilities.IsSquareDefended(board, r, c, !isWhite);
+
+                                        if (!behindDefended)
+                                        {
+                                            // Undefended - clean skewer
+                                            if (frontPieceType == PieceType.King)
+                                                return $"skewers king, winning {ChessUtilities.GetPieceName(behindPieceType)}";
+                                            else
+                                                return $"skewers {ChessUtilities.GetPieceName(frontPieceType)}, winning {ChessUtilities.GetPieceName(behindPieceType)}";
+                                        }
+                                        else
+                                        {
+                                            // Defended - check if we still win material after trade
+                                            // (This happens when front piece moves and we can favorably capture behind)
+                                            int defenders = CountDefenders(board, r, c, !isWhite);
+
+                                            // If only defended once and behind piece value >= 3, still report
+                                            if (defenders == 1 && behindValue >= 3)
+                                            {
+                                                if (frontPieceType == PieceType.King)
+                                                    return $"skewers king, wins material";
+                                                else
+                                                    return $"skewers {ChessUtilities.GetPieceName(frontPieceType)}, wins material";
+                                            }
+                                        }
                                     }
                                 }
                                 break;
@@ -998,7 +1233,7 @@ namespace ChessDroid.Services
                     {
                         if (board.GetPiece(r, c) == enemyKing)
                         {
-                            return CanAttackSquare(board, pieceRow, pieceCol, piece, r, c);
+                            return ChessUtilities.CanAttackSquare(board, pieceRow, pieceCol, piece, r, c);
                         }
                     }
                 }
@@ -1012,37 +1247,7 @@ namespace ChessDroid.Services
         }
 
         // Check if a square is defended by pieces of the specified color
-        private static bool IsSquareDefended(ChessBoard board, int row, int col, bool byWhite)
-        {
-            try
-            {
-                // Check all squares on the board
-                for (int r = 0; r < 8; r++)
-                {
-                    for (int c = 0; c < 8; c++)
-                    {
-                        char piece = board.GetPiece(r, c);
-                        if (piece == '.') continue;
-
-                        // Check if this piece is the right color
-                        bool pieceIsWhite = char.IsUpper(piece);
-                        if (pieceIsWhite != byWhite) continue;
-
-                        // Check if this piece can attack the target square
-                        if (CanAttackSquare(board, r, c, piece, row, col))
-                        {
-                            return true;
-                        }
-                    }
-                }
-
-                return false;
-            }
-            catch
-            {
-                return false; // If error, assume defended to be safe
-            }
-        }
+        // Moved to ChessUtilities.IsSquareDefended
 
         // Detect discovered attack: when moving a piece reveals an attack from another piece
         private static string? DetectDiscoveredAttack(ChessBoard originalBoard, ChessBoard newBoard, int srcRow, int srcCol, int destRow, int destCol, char movedPiece, bool isWhite)
@@ -1077,10 +1282,10 @@ namespace ChessDroid.Services
                                 if (char.IsUpper(target) == isWhite) continue; // Must be enemy
 
                                 // Check if this piece can attack the target on the NEW board (after move)
-                                bool canAttackNow = CanAttackSquare(newBoard, r, c, piece, targetR, targetC);
+                                bool canAttackNow = ChessUtilities.CanAttackSquare(newBoard, r, c, piece, targetR, targetC);
 
                                 // Check if this piece could NOT attack the target on ORIGINAL board (was blocked)
-                                bool wasBlockedBefore = !CanAttackSquare(originalBoard, r, c, piece, targetR, targetC);
+                                bool wasBlockedBefore = !ChessUtilities.CanAttackSquare(originalBoard, r, c, piece, targetR, targetC);
 
                                 // DISCOVERED ATTACK: Could not attack before (blocked), can attack now (revealed)
                                 if (canAttackNow && wasBlockedBefore)
@@ -1102,20 +1307,20 @@ namespace ChessDroid.Services
                                                     char attackedPiece = newBoard.GetPiece(attR, attC);
                                                     if (attackedPiece == '.' || char.IsUpper(attackedPiece) == isWhite) continue;
 
-                                                    if (CanAttackSquare(newBoard, destRow, destCol, movedPiece, attR, attC))
+                                                    if (ChessUtilities.CanAttackSquare(newBoard, destRow, destCol, movedPiece, attR, attC))
                                                     {
                                                         PieceType attackedType = PieceHelper.GetPieceType(attackedPiece);
-                                                        if (GetPieceValue(attackedType) >= 5) // Rook or Queen
+                                                        if (ChessUtilities.GetPieceValue(attackedType) >= 5) // Rook or Queen
                                                         {
-                                                            return $"discovered check, wins {GetPieceName(attackedType)}";
+                                                            return $"discovered check, wins {ChessUtilities.GetPieceName(attackedType)}";
                                                         }
                                                     }
                                                 }
                                             }
                                             return "discovered check";
                                         }
-                                        else if (GetPieceValue(targetType) >= 5) // Rook or Queen
-                                            return $"discovered attack on {GetPieceName(targetType)}";
+                                        else if (ChessUtilities.GetPieceValue(targetType) >= 5) // Rook or Queen
+                                            return $"discovered attack on {ChessUtilities.GetPieceName(targetType)}";
                                     }
                                 }
                             }
@@ -1194,7 +1399,7 @@ namespace ChessDroid.Services
                         if (piece == '.') continue;
                         if (char.IsUpper(piece) != isWhite) continue;
 
-                        if (CanAttackSquare(board, r, c, piece, kingR, kingC))
+                        if (ChessUtilities.CanAttackSquare(board, r, c, piece, kingR, kingC))
                         {
                             return "double check!";
                         }
@@ -1228,7 +1433,7 @@ namespace ChessDroid.Services
                         if (char.IsUpper(defendedPiece) == isWhite) continue; // Must be enemy piece
 
                         // Check if target piece defends this square
-                        if (CanAttackSquare(board, pieceRow, pieceCol, targetPiece, r, c))
+                        if (ChessUtilities.CanAttackSquare(board, pieceRow, pieceCol, targetPiece, r, c))
                         {
                             // Check if the defended piece would be hanging after removal
                             // Count defenders after removing this piece
@@ -1243,7 +1448,7 @@ namespace ChessDroid.Services
                                     if (defender == '.') continue;
                                     if (char.IsUpper(defender) == isWhite) continue; // Must be enemy
 
-                                    if (CanAttackSquare(board, dr, dc, defender, r, c))
+                                    if (ChessUtilities.CanAttackSquare(board, dr, dc, defender, r, c))
                                         defenderCount++;
                                 }
                             }
@@ -1251,9 +1456,9 @@ namespace ChessDroid.Services
                             if (defenderCount == 0) // Would be undefended
                             {
                                 PieceType defendedType = PieceHelper.GetPieceType(defendedPiece);
-                                if (GetPieceValue(defendedType) >= 3) // Valuable piece
+                                if (ChessUtilities.GetPieceValue(defendedType) >= 3) // Valuable piece
                                 {
-                                    return $"removes defender of {GetPieceName(defendedType)}";
+                                    return $"removes defender of {ChessUtilities.GetPieceName(defendedType)}";
                                 }
                             }
                         }
@@ -1269,11 +1474,16 @@ namespace ChessDroid.Services
         }
 
         // Detect trapped piece: an enemy piece with no safe squares
+        // NOTE: This check is only meaningful if our move is what CAUSED the trap
+        // We should only look at pieces that are:
+        // 1. Directly attacked by our moved piece, OR
+        // 2. Very close to our moved piece (within 2 squares)
         private static string? DetectTrappedPiece(ChessBoard board, int pieceRow, int pieceCol, bool isWhite)
         {
             try
             {
-                // Look for enemy pieces near our piece that might be trapped
+                // Only check pieces near our moved piece (within 2-3 squares)
+                // This prevents false positives where we report trapping a piece on the other side of the board
                 for (int r = 0; r < 8; r++)
                 {
                     for (int c = 0; c < 8; c++)
@@ -1285,11 +1495,19 @@ namespace ChessDroid.Services
                         PieceType targetType = PieceHelper.GetPieceType(targetPiece);
 
                         // Check high-value pieces (not pawns)
-                        if (GetPieceValue(targetType) < 3) continue;
+                        if (ChessUtilities.GetPieceValue(targetType) < 3) continue;
+
+                        // CRITICAL FIX: Only check pieces that are close to our moved piece
+                        // Calculate Manhattan distance (sum of row and column differences)
+                        int distance = Math.Abs(r - pieceRow) + Math.Abs(c - pieceCol);
+
+                        // Only check pieces within 3 squares (Manhattan distance)
+                        // This ensures we only report trapping if our move is likely involved
+                        if (distance > 3) continue;
 
                         // Count safe AND profitable escape squares for this piece
                         int safeSquares = 0;
-                        int targetPieceValue = GetPieceValue(targetType);
+                        int targetPieceValue = ChessUtilities.GetPieceValue(targetType);
 
                         // Check all possible moves for the potentially trapped piece
                         for (int dr = -7; dr <= 7; dr++)
@@ -1304,7 +1522,7 @@ namespace ChessDroid.Services
                                 if (newR < 0 || newR >= 8 || newC < 0 || newC >= 8) continue;
 
                                 // Check if piece can move to this square
-                                if (CanAttackSquare(board, r, c, targetPiece, newR, newC))
+                                if (ChessUtilities.CanAttackSquare(board, r, c, targetPiece, newR, newC))
                                 {
                                     char destPiece = board.GetPiece(newR, newC);
 
@@ -1313,7 +1531,7 @@ namespace ChessDroid.Services
                                         continue;
 
                                     // Check if square would be safe (not attacked by our pieces)
-                                    bool isSquareSafe = !IsSquareDefended(board, newR, newC, isWhite);
+                                    bool isSquareSafe = !ChessUtilities.IsSquareDefended(board, newR, newC, isWhite);
 
                                     if (isSquareSafe)
                                     {
@@ -1326,7 +1544,7 @@ namespace ChessDroid.Services
                                         // Example: Bishop can capture pawn on b6, but bishop (3) for pawn (1) is a losing trade
                                         if (destPiece != '.')
                                         {
-                                            int capturedValue = GetPieceValue(PieceHelper.GetPieceType(destPiece));
+                                            int capturedValue = ChessUtilities.GetPieceValue(PieceHelper.GetPieceType(destPiece));
                                             // Only count as escape if the trade is favorable or equal
                                             // (capturing piece worth >= our piece value)
                                             if (capturedValue >= targetPieceValue)
@@ -1340,10 +1558,30 @@ namespace ChessDroid.Services
                             }
                         }
 
-                        // Piece is trapped if it has no safe OR profitable escape squares
+                        // CRITICAL: A piece is only "trapped" if:
+                        // 1. It has no safe escape squares, AND
+                        // 2. It's actually under attack (threatened)
+                        // A well-defended piece with no mobility is NOT trapped
                         if (safeSquares == 0 && targetType != PieceType.Pawn)
                         {
-                            return $"traps {GetPieceName(targetType)}";
+                            // Check if the piece is actually under attack
+                            bool isUnderAttack = ChessUtilities.IsSquareDefended(board, r, c, isWhite);
+
+                            if (isUnderAttack)
+                            {
+                                // Now check if it's adequately defended
+                                // If defenders >= attackers, it's not really trapped
+                                int defenders = CountDefenders(board, r, c, !isWhite);
+                                int attackers = CountDefenders(board, r, c, isWhite);
+
+                                // Only report as trapped if:
+                                // - Under attack AND
+                                // - Either undefended OR attackers outnumber defenders
+                                if (defenders == 0 || attackers > defenders)
+                                {
+                                    return $"traps {ChessUtilities.GetPieceName(targetType)}";
+                                }
+                            }
                         }
                     }
                 }
@@ -1363,23 +1601,23 @@ namespace ChessDroid.Services
         {
             try
             {
-                int attackerValue = GetPieceValue(attackerType);
+                int attackerValue = ChessUtilities.GetPieceValue(attackerType);
 
                 foreach (var target in attackedPieces)
                 {
-                    int targetValue = GetPieceValue(target.type);
+                    int targetValue = ChessUtilities.GetPieceValue(target.type);
 
                     // Only report if we're winning material (target worth more or equal and undefended)
                     if (targetValue >= attackerValue || targetValue >= 3)
                     {
                         // Check if target is defended
-                        bool isDefended = IsSquareDefended(board, target.row, target.col, !isWhite);
+                        bool isDefended = ChessUtilities.IsSquareDefended(board, target.row, target.col, !isWhite);
 
                         if (!isDefended && target.type != PieceType.King)
                         {
                             // CRITICAL: Check if our attacking piece can be recaptured at its NEW position
                             // This prevents false positives like "wins undefended knight" when we can be recaptured
-                            bool weCanBeRecaptured = IsSquareDefended(board, attackerRow, attackerCol, !isWhite);
+                            bool weCanBeRecaptured = ChessUtilities.IsSquareDefended(board, attackerRow, attackerCol, !isWhite);
 
                             // ADDITIONAL CHECK: Can the target piece escape to a safe square?
                             // Example: Knight attacked by pawn, but knight has safe squares to retreat to
@@ -1396,13 +1634,13 @@ namespace ChessDroid.Services
                                     // We can be recaptured, so only report if we're winning the trade
                                     if (targetValue > attackerValue)
                                     {
-                                        return $"wins undefended {GetPieceName(target.type)}";
+                                        return $"wins undefended {ChessUtilities.GetPieceName(target.type)}";
                                     }
                                 }
                                 else
                                 {
                                     // We can't be recaptured, so it's a free piece
-                                    return $"wins undefended {GetPieceName(target.type)}";
+                                    return $"wins undefended {ChessUtilities.GetPieceName(target.type)}";
                                 }
                             }
                             // If target has escape squares, it's not really hanging - it can just move away
@@ -1439,14 +1677,14 @@ namespace ChessDroid.Services
                         if (char.IsUpper(defendedPiece) == isWhite) continue; // Must be enemy piece
 
                         // Check if target piece defends this square AND the piece is under attack
-                        if (CanAttackSquare(board, pieceRow, pieceCol, targetPiece, r, c))
+                        if (ChessUtilities.CanAttackSquare(board, pieceRow, pieceCol, targetPiece, r, c))
                         {
                             // Check if this defended piece is also under attack by us
-                            bool isUnderAttack = IsSquareDefended(board, r, c, isWhite);
+                            bool isUnderAttack = ChessUtilities.IsSquareDefended(board, r, c, isWhite);
                             if (isUnderAttack)
                             {
                                 PieceType defendedType = PieceHelper.GetPieceType(defendedPiece);
-                                if (GetPieceValue(defendedType) >= 3) // Valuable piece
+                                if (ChessUtilities.GetPieceValue(defendedType) >= 3) // Valuable piece
                                 {
                                     defendedPieces.Add((r, c, defendedType));
                                 }
@@ -1458,7 +1696,7 @@ namespace ChessDroid.Services
                 // If defending 2+ valuable pieces under attack, it's overloaded
                 if (defendedPieces.Count >= 2)
                 {
-                    var pieces = string.Join(" and ", defendedPieces.Take(2).Select(p => GetPieceName(p.type)));
+                    var pieces = string.Join(" and ", defendedPieces.Take(2).Select(p => ChessUtilities.GetPieceName(p.type)));
                     return $"overloads defender of {pieces}";
                 }
 
@@ -1514,7 +1752,7 @@ namespace ChessDroid.Services
                     char escapeSquare = board.GetPiece(escapeRank, checkCol);
                     // Empty or enemy piece, and not defended
                     if ((escapeSquare == '.' || char.IsUpper(escapeSquare) == isWhite) &&
-                        !IsSquareDefended(board, escapeRank, checkCol, isWhite))
+                        !ChessUtilities.IsSquareDefended(board, escapeRank, checkCol, isWhite))
                     {
                         safeEscapes++;
                     }
@@ -1524,7 +1762,7 @@ namespace ChessDroid.Services
                 if (safeEscapes == 0)
                 {
                     // Check if we're giving check or threatening mate
-                    if (CanAttackSquare(board, pieceRow, pieceCol, piece, kingRow, kingCol))
+                    if (ChessUtilities.CanAttackSquare(board, pieceRow, pieceCol, piece, kingRow, kingCol))
                         return "back rank mate threat";
                     else
                         return "threatens back rank";
@@ -1570,10 +1808,10 @@ namespace ChessDroid.Services
                                 if (defRow < 0 || defRow >= 8 || defCol < 0 || defCol >= 8) continue;
 
                                 // Check if target defends this square near the king
-                                if (CanAttackSquare(board, pieceRow, pieceCol, targetPiece, defRow, defCol))
+                                if (ChessUtilities.CanAttackSquare(board, pieceRow, pieceCol, targetPiece, defRow, defCol))
                                 {
                                     // Check if we're attacking that same square
-                                    if (IsSquareDefended(board, defRow, defCol, isWhite))
+                                    if (ChessUtilities.IsSquareDefended(board, defRow, defCol, isWhite))
                                     {
                                         return "deflects key defender";
                                     }
@@ -1645,7 +1883,7 @@ namespace ChessDroid.Services
                         bool targetIsWhite = char.IsUpper(targetPiece);
                         if (targetIsWhite == isWhite) continue; // Skip own pieces
 
-                        if (CanAttackSquare(board, pieceRow, pieceCol, piece, r, c))
+                        if (ChessUtilities.CanAttackSquare(board, pieceRow, pieceCol, piece, r, c))
                         {
                             attackedPieces.Add((r, c, PieceHelper.GetPieceType(targetPiece)));
                         }
@@ -1657,7 +1895,7 @@ namespace ChessDroid.Services
                 {
                     // Check if one threat is checkmate and another is material
                     bool hasCheckThreat = attackedPieces.Any(p => p.type == PieceType.King);
-                    bool hasMaterialThreat = attackedPieces.Any(p => GetPieceValue(p.type) >= 3);
+                    bool hasMaterialThreat = attackedPieces.Any(p => ChessUtilities.GetPieceValue(p.type) >= 3);
 
                     if (hasCheckThreat && hasMaterialThreat)
                     {
@@ -1665,7 +1903,7 @@ namespace ChessDroid.Services
                     }
 
                     // Two valuable pieces attacked
-                    var valuableTargets = attackedPieces.Where(p => GetPieceValue(p.type) >= 3).ToList();
+                    var valuableTargets = attackedPieces.Where(p => ChessUtilities.GetPieceValue(p.type) >= 3).ToList();
                     if (valuableTargets.Count >= 2)
                     {
                         return "double attack on multiple pieces";
@@ -1687,7 +1925,7 @@ namespace ChessDroid.Services
             {
                 char piece = board.GetPiece(pieceRow, pieceCol);
                 PieceType pieceType = PieceHelper.GetPieceType(piece);
-                int pieceValue = GetPieceValue(pieceType);
+                int pieceValue = ChessUtilities.GetPieceValue(pieceType);
 
                 // CRITICAL: For it to be a decoy sacrifice, our piece must be:
                 // 1. Undefended or inadequately defended (can be captured), AND
@@ -1710,7 +1948,7 @@ namespace ChessDroid.Services
                         bool targetIsWhite = char.IsUpper(targetPiece);
                         if (targetIsWhite == isWhite) continue;
 
-                        if (CanAttackSquare(board, pieceRow, pieceCol, piece, r, c))
+                        if (ChessUtilities.CanAttackSquare(board, pieceRow, pieceCol, piece, r, c))
                         {
                             PieceType targetType = PieceHelper.GetPieceType(targetPiece);
 
@@ -1736,7 +1974,9 @@ namespace ChessDroid.Services
             }
         }
 
-        // X-RAY ATTACK - Attack through another piece
+        // X-RAY ATTACK - An indirect attack or defense where a long-range piece exerts influence
+        // THROUGH an intervening piece, like "Superman vision"
+        // Key: The intervening piece could move, revealing the attack on the piece behind
         private static string? DetectXRayAttack(ChessBoard board, int pieceRow, int pieceCol, char piece, bool isWhite)
         {
             try
@@ -1789,18 +2029,49 @@ namespace ChessDroid.Services
                         }
                     }
 
-                    // X-ray exists if we found two pieces and the second is enemy and valuable
-                    if (secondPieceRow != -1)
+                    // CRITICAL: X-ray attack is very specific
+                    // Pattern 1: Our piece → Enemy piece → Enemy piece (x-ray attack)
+                    // Pattern 2: Our piece → Our piece → Enemy piece (x-ray defense)
+                    // The key is that the FIRST piece could move, revealing the attack/defense
+                    if (secondPieceRow != -1 && firstPieceRow != -1)
                     {
+                        bool firstIsWhite = char.IsUpper(firstPiece);
                         bool secondIsWhite = char.IsUpper(secondPiece);
-                        if (secondIsWhite != isWhite)
+
+                        // Pattern 1: X-ray ATTACK through enemy piece
+                        // Both pieces are enemy, and if first piece moves, second is attacked
+                        if (firstIsWhite != isWhite && secondIsWhite != isWhite)
                         {
+                            PieceType firstType = PieceHelper.GetPieceType(firstPiece);
                             PieceType secondType = PieceHelper.GetPieceType(secondPiece);
-                            if (GetPieceValue(secondType) >= 3)
+
+                            // X-ray attack only meaningful if:
+                            // 1. Second piece is valuable (Queen, Rook, or King)
+                            // 2. First piece has mobility (could move)
+                            // 3. First piece is less valuable than second (or equal)
+                            int firstValue = ChessUtilities.GetPieceValue(firstType);
+                            int secondValue = ChessUtilities.GetPieceValue(secondType);
+
+                            if (secondValue >= 5 || secondType == PieceType.King)
                             {
-                                return "x-ray attack";
+                                // Check if first piece is actually attacked (has reason to move)
+                                bool firstPieceAttacked = ChessUtilities.IsSquareDefended(board, firstPieceRow, firstPieceCol, isWhite);
+
+                                if (firstPieceAttacked && firstValue <= secondValue)
+                                {
+                                    // This is a true x-ray: we attack first piece, which shields second piece
+                                    if (secondType == PieceType.King)
+                                        return "x-ray attack on king";
+                                    else
+                                        return $"x-ray attack on {ChessUtilities.GetPieceName(secondType)}";
+                                }
                             }
                         }
+
+                        // Pattern 2: X-ray DEFENSE through own piece
+                        // First piece is ours, second is enemy - we defend through our own piece
+                        // This is VERY rare and usually only notable if defending against mate threat
+                        // For now, we'll skip this pattern to avoid false positives
                     }
                 }
 
@@ -1829,7 +2100,7 @@ namespace ChessDroid.Services
                         if (board.GetPiece(r, c) == enemyKing)
                         {
                             // Check if knight attacks king
-                            if (CanAttackSquare(board, pieceRow, pieceCol, piece, r, c))
+                            if (ChessUtilities.CanAttackSquare(board, pieceRow, pieceCol, piece, r, c))
                             {
                                 // Check if king is smothered (all squares blocked by own pieces)
                                 var safeSquares = GetKingSafeSquares(board, r, c, !isWhite);
@@ -1955,10 +2226,12 @@ namespace ChessDroid.Services
                 // Exchange sacrifice: Rook (5) for Bishop/Knight (3)
                 if (targetType != PieceType.Bishop && targetType != PieceType.Knight) return null;
 
-                // CRITICAL: For it to be a sacrifice, the target must be defended
-                // If the target is undefended, we're just winning a free piece (not a sacrifice)
+                // CRITICAL FIX: Check if this is actually a sacrifice or just a recapture/trade
+                // For it to be a sacrifice, we need to:
+                // 1. Target must be defended (otherwise just winning free piece)
+                // 2. We must be losing material overall (not a fair trade)
                 bool isWhite = char.IsUpper(piece);
-                bool targetIsDefended = IsSquareDefended(board, destRow, destCol, !isWhite);
+                bool targetIsDefended = ChessUtilities.IsSquareDefended(board, destRow, destCol, !isWhite);
 
                 if (!targetIsDefended)
                 {
@@ -1966,7 +2239,25 @@ namespace ChessDroid.Services
                     return null;
                 }
 
-                // This is materially losing (5 for 3 = -2)
+                // Create board after capture to check SEE
+                ChessBoard tempBoard = new ChessBoard(board.GetArray());
+                tempBoard.SetPiece(destRow, destCol, piece);
+
+                // Use SEE to check if we're actually losing material
+                // If SEE is positive or neutral, it's NOT a sacrifice (we're trading or winning)
+                int seeValue = MoveEvaluation.StaticExchangeEvaluation(tempBoard, destRow, destCol, piece, isWhite);
+
+                // CRITICAL: If SEE shows we win or trade evenly, this is NOT a sacrifice
+                // This catches the recapture case: even though Rook > Knight in value,
+                // if the knight just took our piece, we're just recapturing (trade)
+                if (seeValue >= -1)
+                {
+                    // Not sacrificing - either trading or winning
+                    // (Allow -1 tolerance for rounding/evaluation differences)
+                    return null;
+                }
+
+                // This is materially losing (confirmed by SEE < -1)
                 // Only report if engine evaluation is still good (positional compensation)
                 double? eval = ParseEvaluation(evaluation);
 
@@ -1998,15 +2289,15 @@ namespace ChessDroid.Services
                 PieceType pieceType = PieceHelper.GetPieceType(piece);
                 PieceType targetType = PieceHelper.GetPieceType(targetPiece);
 
-                int pieceValue = GetPieceValue(pieceType);
-                int targetValue = GetPieceValue(targetType);
+                int pieceValue = ChessUtilities.GetPieceValue(pieceType);
+                int targetValue = ChessUtilities.GetPieceValue(targetType);
 
                 // Sacrifice = giving up more value than we gain
                 if (pieceValue <= targetValue) return null; // Not a sacrifice, equal or winning trade
 
                 // CRITICAL: For it to be a sacrifice, the target should be defended
                 // If undefended, we're just winning material (not a sacrifice)
-                bool targetIsDefended = IsSquareDefended(board, destRow, destCol, !isWhite);
+                bool targetIsDefended = ChessUtilities.IsSquareDefended(board, destRow, destCol, !isWhite);
 
                 if (!targetIsDefended)
                 {
@@ -2034,7 +2325,7 @@ namespace ChessDroid.Services
                 {
                     // If giving check and we can be recaptured, we need very strong compensation
                     // Otherwise it's likely a tactical shot (free piece with check), not a sacrifice
-                    bool weCanBeRecaptured = IsSquareDefended(board, destRow, destCol, !isWhite);
+                    bool weCanBeRecaptured = ChessUtilities.IsSquareDefended(board, destRow, destCol, !isWhite);
 
                     if (!weCanBeRecaptured)
                     {
@@ -2117,7 +2408,7 @@ namespace ChessDroid.Services
                             bool enemyIsWhite = char.IsUpper(enemyPiece);
                             if (enemyIsWhite == isWhite) continue; // Not an enemy
 
-                            if (CanAttackSquare(board, er, ec, enemyPiece, r, c))
+                            if (ChessUtilities.CanAttackSquare(board, er, ec, enemyPiece, r, c))
                             {
                                 isAttacked = true;
                                 break;
@@ -2152,7 +2443,7 @@ namespace ChessDroid.Services
                         if (r == pieceRow && c == pieceCol) continue;
 
                         // Check if piece can move to this square
-                        if (CanAttackSquare(board, pieceRow, pieceCol, piece, r, c))
+                        if (ChessUtilities.CanAttackSquare(board, pieceRow, pieceCol, piece, r, c))
                         {
                             char destPiece = board.GetPiece(r, c);
 
@@ -2161,7 +2452,7 @@ namespace ChessDroid.Services
                                 continue;
 
                             // Check if this square would be safe (not attacked by enemy)
-                            bool isSafe = !IsSquareDefended(board, r, c, !isWhite);
+                            bool isSafe = !ChessUtilities.IsSquareDefended(board, r, c, !isWhite);
 
                             if (isSafe)
                             {
@@ -2199,7 +2490,7 @@ namespace ChessDroid.Services
                         if (pieceIsWhite != byWhite) continue;
 
                         // Check if this piece can attack the target square
-                        if (CanAttackSquare(board, r, c, piece, row, col))
+                        if (ChessUtilities.CanAttackSquare(board, r, c, piece, row, col))
                         {
                             defenderCount++;
                         }

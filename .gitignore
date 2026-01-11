@@ -118,3 +118,15 @@ chessdroid-website/
 
 # Claude agent files
 .claude/
+
+# Temporary development files
+nul
+temp.html
+*.html.tmp
+
+# Publishing/Release artifacts (use GitHub Releases instead)
+publish/
+*.zip
+
+# Outdated documentation (to be rewritten)
+USER_GUIDE.md

@@ -26,6 +26,17 @@ namespace ChessDroid
         public bool ShowSecondLine { get; set; } = false; // Show 2nd best line
         public bool ShowThirdLine { get; set; } = false; // Show 3rd best line
 
+        // Explanation settings
+        public string ExplanationComplexity { get; set; } = "Intermediate"; // Beginner, Intermediate, Advanced, Master
+        public bool ShowTacticalAnalysis { get; set; } = true; // Show tactical patterns
+        public bool ShowPositionalAnalysis { get; set; } = true; // Show positional evaluation
+        public bool ShowEndgameAnalysis { get; set; } = true; // Show endgame patterns
+        public bool ShowOpeningPrinciples { get; set; } = true; // Show opening principles
+        public bool ShowWinPercentage { get; set; } = true; // Show win percentage
+        public bool ShowTablebaseInfo { get; set; } = true; // Show tablebase information
+        public bool ShowMoveQualityColor { get; set; } = true; // Color-coded moves
+        public bool ShowSEEValues { get; set; } = true; // Static Exchange Evaluation
+
         private static readonly string ConfigFilePath = Path.Combine(
             Application.StartupPath, "config.json");
 

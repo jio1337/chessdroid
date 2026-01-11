@@ -29,6 +29,15 @@ namespace ChessDroid
             }
         }
 
+        private void PopulateComplexityComboBox()
+        {
+            cmbComplexity.Items.Clear();
+            cmbComplexity.Items.Add("Beginner");
+            cmbComplexity.Items.Add("Intermediate");
+            cmbComplexity.Items.Add("Advanced");
+            cmbComplexity.Items.Add("Master");
+        }
+
         private void PopulateEnginesComboBox()
         {
             try
@@ -98,6 +107,18 @@ namespace ChessDroid
             chkShowSecond.Checked = config.ShowSecondLine;
             chkShowThird.Checked = config.ShowThirdLine;
 
+            // Explanation settings
+            PopulateComplexityComboBox();
+            cmbComplexity.SelectedItem = config.ExplanationComplexity ?? "Intermediate";
+            chkTactical.Checked = config.ShowTacticalAnalysis;
+            chkPositional.Checked = config.ShowPositionalAnalysis;
+            chkEndgame.Checked = config.ShowEndgameAnalysis;
+            chkOpening.Checked = config.ShowOpeningPrinciples;
+            chkWinRate.Checked = config.ShowWinPercentage;
+            chkTablebase.Checked = config.ShowTablebaseInfo;
+            chkColorCoding.Checked = config.ShowMoveQualityColor;
+            chkSEE.Checked = config.ShowSEEValues;
+
             // Load theme preference
             chkDarkMode.Checked = config.Theme == "Dark";
             ApplyTheme(config.Theme == "Dark");
@@ -139,6 +160,17 @@ namespace ChessDroid
             config.ShowBestLine = chkShowBest.Checked;
             config.ShowSecondLine = chkShowSecond.Checked;
             config.ShowThirdLine = chkShowThird.Checked;
+
+            // Save explanation settings
+            config.ExplanationComplexity = cmbComplexity.SelectedItem?.ToString() ?? "Intermediate";
+            config.ShowTacticalAnalysis = chkTactical.Checked;
+            config.ShowPositionalAnalysis = chkPositional.Checked;
+            config.ShowEndgameAnalysis = chkEndgame.Checked;
+            config.ShowOpeningPrinciples = chkOpening.Checked;
+            config.ShowWinPercentage = chkWinRate.Checked;
+            config.ShowTablebaseInfo = chkTablebase.Checked;
+            config.ShowMoveQualityColor = chkColorCoding.Checked;
+            config.ShowSEEValues = chkSEE.Checked;
 
             config.Save();
 
@@ -258,6 +290,29 @@ namespace ChessDroid
                     }
                 }
 
+                // Explanation Settings GroupBox
+                grpExplanations.ForeColor = Color.White;
+                grpExplanations.BackColor = Color.FromArgb(45, 45, 48);
+
+                foreach (Control ctrl in grpExplanations.Controls)
+                {
+                    if (ctrl is Label lbl)
+                    {
+                        lbl.ForeColor = Color.White;
+                        lbl.BackColor = Color.FromArgb(45, 45, 48);
+                    }
+                    else if (ctrl is ComboBox cmb)
+                    {
+                        cmb.BackColor = Color.FromArgb(60, 60, 65);
+                        cmb.ForeColor = Color.White;
+                    }
+                    else if (ctrl is CheckBox chk)
+                    {
+                        chk.ForeColor = Color.White;
+                        chk.BackColor = Color.FromArgb(45, 45, 48);
+                    }
+                }
+
                 // Buttons
                 btnSave.ForeColor = Color.LightGreen;
                 btnSave.BackColor = Color.FromArgb(45, 45, 48);
@@ -322,6 +377,29 @@ namespace ChessDroid
                 grpDisplay.BackColor = Color.WhiteSmoke;
 
                 foreach (Control ctrl in grpDisplay.Controls)
+                {
+                    if (ctrl is Label lbl)
+                    {
+                        lbl.ForeColor = Color.Black;
+                        lbl.BackColor = Color.WhiteSmoke;
+                    }
+                    else if (ctrl is ComboBox cmb)
+                    {
+                        cmb.BackColor = Color.White;
+                        cmb.ForeColor = Color.Black;
+                    }
+                    else if (ctrl is CheckBox chk)
+                    {
+                        chk.ForeColor = Color.Black;
+                        chk.BackColor = Color.WhiteSmoke;
+                    }
+                }
+
+                // Explanation Settings GroupBox
+                grpExplanations.ForeColor = Color.Black;
+                grpExplanations.BackColor = Color.WhiteSmoke;
+
+                foreach (Control ctrl in grpExplanations.Controls)
                 {
                     if (ctrl is Label lbl)
                     {

@@ -435,9 +435,25 @@ namespace ChessDroid
             if (!string.IsNullOrEmpty(explanation))
             {
                 richTextBoxConsole.SelectionBackColor = richTextBoxConsole.BackColor;
-                richTextBoxConsole.SelectionColor = Color.PaleGreen;
+
+                // Use move quality color if enabled, otherwise use default line color
+                Color explanationColor = Color.PaleGreen; // Default for best line
+                string qualitySymbol = "";
+
+                if (config?.ShowMoveQualityColor == true)
+                {
+                    var quality = ExplanationFormatter.DetermineQualityFromEvaluation(explanation, evaluation);
+                    explanationColor = ExplanationFormatter.GetQualityColor(quality);
+                    qualitySymbol = ExplanationFormatter.GetQualitySymbol(quality);
+
+                    // Add space after symbol if present
+                    if (!string.IsNullOrEmpty(qualitySymbol))
+                        qualitySymbol = qualitySymbol + " ";
+                }
+
+                richTextBoxConsole.SelectionColor = explanationColor;
                 richTextBoxConsole.SelectionFont = new Font(richTextBoxConsole.Font, FontStyle.Italic);
-                richTextBoxConsole.AppendText($"  → {explanation}{Environment.NewLine}");
+                richTextBoxConsole.AppendText($"  → {qualitySymbol}{explanation}{Environment.NewLine}");
                 richTextBoxConsole.SelectionFont = new Font(richTextBoxConsole.Font, FontStyle.Regular);
             }
 
@@ -461,9 +477,25 @@ namespace ChessDroid
                 if (!string.IsNullOrEmpty(secondExplanation))
                 {
                     richTextBoxConsole.SelectionBackColor = richTextBoxConsole.BackColor;
-                    richTextBoxConsole.SelectionColor = Color.DarkGoldenrod;
+
+                    // Use move quality color if enabled, otherwise use default line color
+                    Color explanationColor = Color.DarkGoldenrod; // Default for second line
+                    string qualitySymbol = "";
+
+                    if (config?.ShowMoveQualityColor == true)
+                    {
+                        var quality = ExplanationFormatter.DetermineQualityFromEvaluation(secondExplanation, secondEval);
+                        explanationColor = ExplanationFormatter.GetQualityColor(quality);
+                        qualitySymbol = ExplanationFormatter.GetQualitySymbol(quality);
+
+                        // Add space after symbol if present
+                        if (!string.IsNullOrEmpty(qualitySymbol))
+                            qualitySymbol = qualitySymbol + " ";
+                    }
+
+                    richTextBoxConsole.SelectionColor = explanationColor;
                     richTextBoxConsole.SelectionFont = new Font(richTextBoxConsole.Font, FontStyle.Italic);
-                    richTextBoxConsole.AppendText($"  → {secondExplanation}{Environment.NewLine}");
+                    richTextBoxConsole.AppendText($"  → {qualitySymbol}{secondExplanation}{Environment.NewLine}");
                     richTextBoxConsole.SelectionFont = new Font(richTextBoxConsole.Font, FontStyle.Regular);
                 }
 
@@ -487,9 +519,25 @@ namespace ChessDroid
                 if (!string.IsNullOrEmpty(thirdExplanation))
                 {
                     richTextBoxConsole.SelectionBackColor = richTextBoxConsole.BackColor;
-                    richTextBoxConsole.SelectionColor = Color.DarkRed;
+
+                    // Use move quality color if enabled, otherwise use default line color
+                    Color explanationColor = Color.DarkRed; // Default for third line
+                    string qualitySymbol = "";
+
+                    if (config?.ShowMoveQualityColor == true)
+                    {
+                        var quality = ExplanationFormatter.DetermineQualityFromEvaluation(thirdExplanation, thirdEval);
+                        explanationColor = ExplanationFormatter.GetQualityColor(quality);
+                        qualitySymbol = ExplanationFormatter.GetQualitySymbol(quality);
+
+                        // Add space after symbol if present
+                        if (!string.IsNullOrEmpty(qualitySymbol))
+                            qualitySymbol = qualitySymbol + " ";
+                    }
+
+                    richTextBoxConsole.SelectionColor = explanationColor;
                     richTextBoxConsole.SelectionFont = new Font(richTextBoxConsole.Font, FontStyle.Italic);
-                    richTextBoxConsole.AppendText($"  → {thirdExplanation}{Environment.NewLine}");
+                    richTextBoxConsole.AppendText($"  → {qualitySymbol}{thirdExplanation}{Environment.NewLine}");
                     richTextBoxConsole.SelectionFont = new Font(richTextBoxConsole.Font, FontStyle.Regular);
                 }
 
@@ -552,6 +600,9 @@ namespace ChessDroid
 
             // Apply theme from config
             ApplyTheme(config.Theme == "Dark");
+
+            // Load explanation settings from config
+            ExplanationFormatter.LoadFromConfig(config);
 
             LoadTemplatesAndMasks();
         }
@@ -1244,6 +1295,9 @@ namespace ChessDroid
             {
                 // Reload config and apply changes
                 config = AppConfig.Load();
+
+                // Apply explanation settings
+                ExplanationFormatter.LoadFromConfig(config);
 
                 // Apply theme changes
                 this.Invoke((MethodInvoker)(() =>

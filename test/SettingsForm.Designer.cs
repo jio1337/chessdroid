@@ -59,6 +59,17 @@ namespace ChessDroid
             lblSecond = new Label();
             chkShowBest = new CheckBox();
             lblBest = new Label();
+            grpExplanations = new GroupBox();
+            cmbComplexity = new ComboBox();
+            lblComplexity = new Label();
+            chkTactical = new CheckBox();
+            chkPositional = new CheckBox();
+            chkEndgame = new CheckBox();
+            chkOpening = new CheckBox();
+            chkWinRate = new CheckBox();
+            chkTablebase = new CheckBox();
+            chkColorCoding = new CheckBox();
+            chkSEE = new CheckBox();
             btnSave = new Button();
             btnReset = new Button();
             btnHelp = new Button();
@@ -75,6 +86,7 @@ namespace ChessDroid
             ((System.ComponentModel.ISupportInitialize)numMaxRetries).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numEngineTimeout).BeginInit();
             grpDisplay.SuspendLayout();
+            grpExplanations.SuspendLayout();
             SuspendLayout();
             // 
             // grpDetection
@@ -397,13 +409,164 @@ namespace ChessDroid
             chkShowBest.UseVisualStyleBackColor = true;
             // 
             // lblBest
-            // 
+            //
             lblBest.Location = new Point(10, 82);
             lblBest.Name = "lblBest";
             lblBest.Size = new Size(150, 19);
             lblBest.TabIndex = 0;
             lblBest.Text = "Show Best Line:";
-            // 
+            //
+            // grpExplanations
+            //
+            grpExplanations.Controls.Add(cmbComplexity);
+            grpExplanations.Controls.Add(lblComplexity);
+            grpExplanations.Controls.Add(chkTactical);
+            grpExplanations.Controls.Add(chkPositional);
+            grpExplanations.Controls.Add(chkEndgame);
+            grpExplanations.Controls.Add(chkOpening);
+            grpExplanations.Controls.Add(chkWinRate);
+            grpExplanations.Controls.Add(chkTablebase);
+            grpExplanations.Controls.Add(chkColorCoding);
+            grpExplanations.Controls.Add(chkSEE);
+            grpExplanations.ForeColor = Color.White;
+            grpExplanations.Location = new Point(316, 12);
+            grpExplanations.Name = "grpExplanations";
+            grpExplanations.Size = new Size(270, 270);
+            grpExplanations.TabIndex = 3;
+            grpExplanations.TabStop = false;
+            grpExplanations.Text = "Explanation Settings";
+            //
+            // cmbComplexity
+            //
+            cmbComplexity.DropDownStyle = ComboBoxStyle.DropDownList;
+            cmbComplexity.FormattingEnabled = true;
+            cmbComplexity.Location = new Point(120, 20);
+            cmbComplexity.Name = "cmbComplexity";
+            cmbComplexity.Size = new Size(135, 22);
+            cmbComplexity.TabIndex = 0;
+            toolTip1.SetToolTip(cmbComplexity, "Explanation detail level: Beginner (simple) to Master (technical)");
+            //
+            // lblComplexity
+            //
+            lblComplexity.Location = new Point(10, 23);
+            lblComplexity.Name = "lblComplexity";
+            lblComplexity.Size = new Size(110, 19);
+            lblComplexity.TabIndex = 0;
+            lblComplexity.Text = "Complexity:";
+            toolTip1.SetToolTip(lblComplexity, "Explanation detail level: Beginner (simple) to Master (technical)");
+            //
+            // chkTactical
+            //
+            chkTactical.AutoSize = true;
+            chkTactical.Checked = true;
+            chkTactical.CheckState = CheckState.Checked;
+            chkTactical.ForeColor = Color.White;
+            chkTactical.Location = new Point(10, 55);
+            chkTactical.Name = "chkTactical";
+            chkTactical.Size = new Size(160, 18);
+            chkTactical.TabIndex = 1;
+            chkTactical.Text = "Tactical Analysis";
+            toolTip1.SetToolTip(chkTactical, "Show pins, forks, skewers, discovered attacks");
+            chkTactical.UseVisualStyleBackColor = true;
+            //
+            // chkPositional
+            //
+            chkPositional.AutoSize = true;
+            chkPositional.Checked = true;
+            chkPositional.CheckState = CheckState.Checked;
+            chkPositional.ForeColor = Color.White;
+            chkPositional.Location = new Point(10, 80);
+            chkPositional.Name = "chkPositional";
+            chkPositional.Size = new Size(180, 18);
+            chkPositional.TabIndex = 2;
+            chkPositional.Text = "Positional Analysis";
+            toolTip1.SetToolTip(chkPositional, "Show pawn structure, outposts, mobility");
+            chkPositional.UseVisualStyleBackColor = true;
+            //
+            // chkEndgame
+            //
+            chkEndgame.AutoSize = true;
+            chkEndgame.Checked = true;
+            chkEndgame.CheckState = CheckState.Checked;
+            chkEndgame.ForeColor = Color.White;
+            chkEndgame.Location = new Point(10, 105);
+            chkEndgame.Name = "chkEndgame";
+            chkEndgame.Size = new Size(160, 18);
+            chkEndgame.TabIndex = 3;
+            chkEndgame.Text = "Endgame Analysis";
+            toolTip1.SetToolTip(chkEndgame, "Show endgame patterns, zugzwang");
+            chkEndgame.UseVisualStyleBackColor = true;
+            //
+            // chkOpening
+            //
+            chkOpening.AutoSize = true;
+            chkOpening.Checked = true;
+            chkOpening.CheckState = CheckState.Checked;
+            chkOpening.ForeColor = Color.White;
+            chkOpening.Location = new Point(10, 130);
+            chkOpening.Name = "chkOpening";
+            chkOpening.Size = new Size(180, 18);
+            chkOpening.TabIndex = 4;
+            chkOpening.Text = "Opening Principles";
+            toolTip1.SetToolTip(chkOpening, "Show center control, development");
+            chkOpening.UseVisualStyleBackColor = true;
+            //
+            // chkWinRate
+            //
+            chkWinRate.AutoSize = true;
+            chkWinRate.Checked = true;
+            chkWinRate.CheckState = CheckState.Checked;
+            chkWinRate.ForeColor = Color.White;
+            chkWinRate.Location = new Point(10, 155);
+            chkWinRate.Name = "chkWinRate";
+            chkWinRate.Size = new Size(160, 18);
+            chkWinRate.TabIndex = 5;
+            chkWinRate.Text = "Win Percentage";
+            toolTip1.SetToolTip(chkWinRate, "Show winning chances as %");
+            chkWinRate.UseVisualStyleBackColor = true;
+            //
+            // chkTablebase
+            //
+            chkTablebase.AutoSize = true;
+            chkTablebase.Checked = true;
+            chkTablebase.CheckState = CheckState.Checked;
+            chkTablebase.ForeColor = Color.White;
+            chkTablebase.Location = new Point(10, 180);
+            chkTablebase.Name = "chkTablebase";
+            chkTablebase.Size = new Size(160, 18);
+            chkTablebase.TabIndex = 6;
+            chkTablebase.Text = "Tablebase Info";
+            toolTip1.SetToolTip(chkTablebase, "Show perfect endgame moves");
+            chkTablebase.UseVisualStyleBackColor = true;
+            //
+            // chkColorCoding
+            //
+            chkColorCoding.AutoSize = true;
+            chkColorCoding.Checked = true;
+            chkColorCoding.CheckState = CheckState.Checked;
+            chkColorCoding.ForeColor = Color.White;
+            chkColorCoding.Location = new Point(10, 205);
+            chkColorCoding.Name = "chkColorCoding";
+            chkColorCoding.Size = new Size(180, 18);
+            chkColorCoding.TabIndex = 7;
+            chkColorCoding.Text = "Color-Coded Moves";
+            toolTip1.SetToolTip(chkColorCoding, "Visual quality indicators (green=good, red=bad)");
+            chkColorCoding.UseVisualStyleBackColor = true;
+            //
+            // chkSEE
+            //
+            chkSEE.AutoSize = true;
+            chkSEE.Checked = true;
+            chkSEE.CheckState = CheckState.Checked;
+            chkSEE.ForeColor = Color.White;
+            chkSEE.Location = new Point(10, 230);
+            chkSEE.Name = "chkSEE";
+            chkSEE.Size = new Size(160, 18);
+            chkSEE.TabIndex = 8;
+            chkSEE.Text = "SEE Values";
+            toolTip1.SetToolTip(chkSEE, "Static Exchange Evaluation for captures");
+            chkSEE.UseVisualStyleBackColor = true;
+            //
             // btnSave
             //
             btnSave.FlatStyle = FlatStyle.Popup;
@@ -475,12 +638,13 @@ namespace ChessDroid
             AutoSizeMode = AutoSizeMode.GrowAndShrink;
             BackColor = Color.FromArgb(45, 45, 48);
             CancelButton = btnCancel;
-            ClientSize = new Size(322, 597);
+            ClientSize = new Size(598, 597);
             Controls.Add(chkDarkMode);
             Controls.Add(btnCancel);
             Controls.Add(btnHelp);
             Controls.Add(btnReset);
             Controls.Add(btnSave);
+            Controls.Add(grpExplanations);
             Controls.Add(grpDisplay);
             Controls.Add(grpEngine);
             Controls.Add(grpDetection);
@@ -502,6 +666,8 @@ namespace ChessDroid
             ((System.ComponentModel.ISupportInitialize)numEngineTimeout).EndInit();
             grpDisplay.ResumeLayout(false);
             grpDisplay.PerformLayout();
+            grpExplanations.ResumeLayout(false);
+            grpExplanations.PerformLayout();
             ResumeLayout(false);
             PerformLayout();
 
@@ -545,5 +711,16 @@ namespace ChessDroid
         private System.Windows.Forms.CheckBox chkDarkMode;
         private System.Windows.Forms.CheckBox chkDebugCells;
         private System.Windows.Forms.ToolTip toolTip1;
+        private System.Windows.Forms.GroupBox grpExplanations;
+        private System.Windows.Forms.ComboBox cmbComplexity;
+        private System.Windows.Forms.Label lblComplexity;
+        private System.Windows.Forms.CheckBox chkTactical;
+        private System.Windows.Forms.CheckBox chkPositional;
+        private System.Windows.Forms.CheckBox chkEndgame;
+        private System.Windows.Forms.CheckBox chkOpening;
+        private System.Windows.Forms.CheckBox chkWinRate;
+        private System.Windows.Forms.CheckBox chkTablebase;
+        private System.Windows.Forms.CheckBox chkColorCoding;
+        private System.Windows.Forms.CheckBox chkSEE;
     }
 }
