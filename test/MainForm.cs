@@ -15,17 +15,11 @@ namespace ChessDroid
     public partial class MainForm : Form
     {
         private const int TEMPLATE_SIZE = 64;
-        private Rectangle? lastBoardRectCached = null;
-        private DateTime lastBoardRectCachedAt = DateTime.MinValue;
         private System.Windows.Forms.Timer? manualTimer;
 
         private bool moveInProgress = false;
 
         private System.Windows.Forms.Timer? moveTimeoutTimer;
-
-        private ChessDroid.Models.GameState? currentGameState;
-        private ChessDroid.Models.ChessBoard? lastDetectedBoard;
-        private DateTime lastMoveTime = DateTime.Now;
 
         // Track consecutive failures for better error handling
         private int consecutiveAnalysisFailures = 0;
@@ -58,19 +52,6 @@ namespace ChessDroid
         // Board state tracking for blunder detection
         private string lastAnalyzedFEN = "";
 
-        // Cache for template matching results
-        private class CellMatchCache
-        {
-            public string CellHash { get; set; } = "";
-            public string DetectedPiece { get; set; } = "";
-            public double Confidence { get; set; }
-            public DateTime CachedAt { get; set; }
-        }
-
-        private ConcurrentDictionary<string, CellMatchCache> cellMatchCache = new ConcurrentDictionary<string, CellMatchCache>();
-        private int cacheHits = 0;
-        private int cacheMisses = 0;
-
         public const int WM_HOTKEY = 0x0312;
         public const uint MOD_ALT = 0x0001;
 
@@ -81,10 +62,10 @@ namespace ChessDroid
         public static extern bool UnregisterHotKey(IntPtr hWnd, int id);
 
         private ChessDroid.Services.ChessEngineService? engineService;
-
-        private Dictionary<string, Mat> templates = new Dictionary<string, Mat>();
-
-        private Dictionary<string, Mat> templateMasks = new Dictionary<string, Mat>();
+        private ScreenCaptureService screenCaptureService = new ScreenCaptureService();
+        private BoardDetectionService boardDetectionService = new BoardDetectionService();
+        private PieceRecognitionService pieceRecognitionService = new PieceRecognitionService();
+        private PositionStateManager positionStateManager = new PositionStateManager();
 
         private AppConfig? config;
 
@@ -99,12 +80,12 @@ namespace ChessDroid
             var swTotal = System.Diagnostics.Stopwatch.StartNew();
             // 1) Update castling and en passant rights
             var swUpdatePos = System.Diagnostics.Stopwatch.StartNew();
-            UpdatePositionState(currentBoard);
+            positionStateManager.UpdatePositionState(currentBoard);
             swUpdatePos.Stop();
 
             // 2) Generate complete FEN
             var swFen = System.Diagnostics.Stopwatch.StartNew();
-            string completeFen = GenerateCompleteFEN(currentBoard);
+            string completeFen = positionStateManager.GenerateCompleteFEN(currentBoard);
             swFen.Stop();
 
             // 3) Check cache first
@@ -209,7 +190,7 @@ namespace ChessDroid
                 }
 
                 // Save state and continue instead of stopping completely
-                SaveMoveState(currentBoard);
+                positionStateManager.SaveMoveState(currentBoard);
                 return;
             }
 
@@ -235,7 +216,7 @@ namespace ChessDroid
 
             // 6) Save state for next move
             var swSave = System.Diagnostics.Stopwatch.StartNew();
-            SaveMoveState(currentBoard);
+            positionStateManager.SaveMoveState(currentBoard);
             swSave.Stop();
 
             swTotal.Stop();
@@ -345,42 +326,6 @@ namespace ChessDroid
             }
         }
 
-        private void UpdatePositionState(ChessBoard currentBoard)
-        {
-            if (currentGameState == null)
-            {
-                Debug.WriteLine("currentGameState is null in UpdatePositionState");
-                return;
-            }
-
-            if (lastDetectedBoard != null)
-            {
-                (string uciMovePrev, string updatedCastlingPrev, string newEpPrev) =
-                    ChessRulesService.DetectMoveAndUpdateCastling(lastDetectedBoard, currentBoard, currentGameState.CastlingRights);
-                currentGameState.CastlingRights = updatedCastlingPrev;
-                currentGameState.EnPassantTarget = newEpPrev;
-            }
-            else
-            {
-                // First position - infer castling rights from current board state
-                currentGameState.CastlingRights = ChessRulesService.InferCastlingRights(currentBoard);
-                currentGameState.EnPassantTarget = "-";
-            }
-        }
-
-        private string GenerateCompleteFEN(ChessBoard currentBoard)
-        {
-            if (currentGameState == null)
-            {
-                Debug.WriteLine("currentGameState is null in GenerateCompleteFEN");
-                return ChessNotationService.GenerateFENFromBoard(currentBoard) + " w KQkq - 0 1";
-            }
-
-            string fenPosition = ChessNotationService.GenerateFENFromBoard(currentBoard);
-            string turn = currentGameState.WhiteToMove ? "w" : "b";
-            string castling = string.IsNullOrEmpty(currentGameState.CastlingRights) ? "-" : currentGameState.CastlingRights;
-            return $"{fenPosition} {turn} {castling} {currentGameState.EnPassantTarget} 0 1";
-        }
 
         private void UpdateUIWithMoveResults(string bestMove, string evaluation, List<string> pvs, List<string> evaluations, string completeFen)
         {
@@ -580,16 +525,6 @@ namespace ChessDroid
             return ChessNotationService.ConvertFullPvToSan(fallbackMove, completeFen, ChessRulesService.ApplyUciMove, ChessRulesService.CanReachSquare, ChessRulesService.FindAllPiecesOfSameType);
         }
 
-        private void SaveMoveState(ChessBoard currentBoard)
-        {
-            lastMoveTime = DateTime.Now;
-            if (currentGameState != null)
-            {
-                currentGameState.LastMoveTime = lastMoveTime;
-                lastDetectedBoard = new ChessBoard(currentBoard.GetArray());
-                currentGameState.Board = lastDetectedBoard;
-            }
-        }
 
         protected override void WndProc(ref Message m)
         {
@@ -613,10 +548,9 @@ namespace ChessDroid
             InitializeComponent();
             config = AppConfig.Load();
             engineService = new ChessDroid.Services.ChessEngineService(config);
-            currentGameState = new ChessDroid.Models.GameState();
 
-            // Initialize game state from checkbox
-            currentGameState.WhiteToMove = chkWhiteTurn.Checked;
+            // Initialize game state via PositionStateManager
+            positionStateManager.InitializeGameState(chkWhiteTurn.Checked);
 
             // Apply theme from config
             ApplyTheme(config.Theme == "Dark");
@@ -629,90 +563,15 @@ namespace ChessDroid
 
         private void LoadTemplatesAndMasks()
         {
-            try
-            {
-                templates.Clear();
-                templateMasks.Clear();
-
-                // Use selected site from config
-                string selectedSite = config?.SelectedSite ?? "Lichess";
-
-                string templatesPath = Path.Combine(Config.GetTemplatesPath(), selectedSite);
-
-                // Verify templates directory exists
-                if (!Directory.Exists(templatesPath))
-                {
-                    throw new Exception($"Templates folder not found at: {templatesPath}\nPlease ensure the Templates/{selectedSite} folder is in the application directory.");
-                }
-
-                string[] pieces = { "wK", "wQ", "wR", "wB", "wN", "wP",
-                                    "bK", "bQ", "bR", "bB", "bN", "bP" };
-
-                foreach (string piece in pieces)
-                {
-                    string filePath = Path.Combine(templatesPath, piece + ".png");
-
-                    if (!File.Exists(filePath))
-                    {
-                        throw new Exception($"Template file not found: {filePath}");
-                    }
-
-                    using (Mat templateColor = CvInvoke.Imread(filePath, ImreadModes.Unchanged))
-                    {
-                        if (templateColor.IsEmpty)
-                            throw new Exception($"Failed to load template image: {filePath}");
-
-                        Mat templateGray = new Mat();
-                        // If template has alpha channel, use it for mask
-                        if (templateColor.NumberOfChannels == 4)
-                        {
-                            // Extract alpha channel as mask
-                            Mat[] channels = templateColor.Split();
-                            Mat alphaMask = channels[3]; // Alpha channel
-                            // Convert BGR to grayscale (ignoring alpha)
-                            CvInvoke.CvtColor(templateColor, templateGray, ColorConversion.Bgra2Gray);
-                            // Resize both template and mask to TEMPLATE_SIZE
-                            Mat templateGrayResized = new Mat();
-                            CvInvoke.Resize(templateGray, templateGrayResized, new Size(TEMPLATE_SIZE, TEMPLATE_SIZE));
-                            Mat alphaMaskResized = new Mat();
-                            CvInvoke.Resize(alphaMask, alphaMaskResized, new Size(TEMPLATE_SIZE, TEMPLATE_SIZE));
-                            templates[piece] = templateGrayResized;
-                            templateMasks[piece] = alphaMaskResized;
-                            // Dispose other channels
-                            channels[0].Dispose();
-                            channels[1].Dispose();
-                            channels[2].Dispose();
-                            templateGray.Dispose();
-                            alphaMask.Dispose();
-                        }
-                        else
-                        {
-                            // No alpha channel, convert to grayscale and create simple mask
-                            CvInvoke.CvtColor(templateColor, templateGray, ColorConversion.Bgr2Gray);
-                            Mat templateGrayResized = new Mat();
-                            CvInvoke.Resize(templateGray, templateGrayResized, new Size(TEMPLATE_SIZE, TEMPLATE_SIZE));
-                            Mat mask = new Mat();
-                            CvInvoke.Threshold(templateGrayResized, mask, 10, 255, ThresholdType.Binary);
-                            templates[piece] = templateGrayResized;
-                            templateMasks[piece] = mask;
-                            templateGray.Dispose();
-                        }
-                    }
-                }
-
-                Debug.WriteLine($"Loaded {templates.Count} templates from {templatesPath}");
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error loading templates and masks:\n\n{ex.Message}\n\nApplication Path: {Application.StartupPath}",
-                    "Template Loading Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+            // Use selected site from config
+            string selectedSite = config?.SelectedSite ?? "Lichess";
+            pieceRecognitionService.LoadTemplatesAndMasks(selectedSite, Config);
         }
 
         private ChessBoard ExtractBoardFromMat(Mat boardMat, bool blackAtBottom)
         {
             // Cleanup old cache entries periodically
-            ClearOldCacheEntries();
+            pieceRecognitionService.ClearOldCacheEntries();
 
             var swTotal = System.Diagnostics.Stopwatch.StartNew();
             using (Mat grayBoard = new Mat())
@@ -740,7 +599,7 @@ namespace ChessDroid
                             CvInvoke.Flip(cell, cell, FlipType.Horizontal);
                         }
 
-                        (string detectedPiece, double confidence) = DetectPieceAndConfidence_Optimized(cell);
+                        (string detectedPiece, double confidence) = pieceRecognitionService.DetectPieceAndConfidence(cell, Config.MatchThreshold);
 
                         // Debug logging for each cell
                         string square = $"{(char)('a' + col)}{8 - row}";
@@ -765,404 +624,9 @@ namespace ChessDroid
             }
         }
 
-        // Optimized: resize cell once, not per template
-        private (string, double) DetectPieceAndConfidence_Optimized(Mat celda)
-        {
-            string cellHash = ComputeCellHash(celda);
-            string cacheKey = cellHash;
-            if (cellMatchCache.TryGetValue(cacheKey, out var cached))
-            {
-                if ((DateTime.Now - cached.CachedAt).TotalSeconds < 5)
-                {
-                    cacheHits++;
-                    return (cached.DetectedPiece, cached.Confidence);
-                }
-            }
-            cacheMisses++;
-            string mejorCoincidencia = "";
-            double mejorValor = 0.0;
 
-            // Assume all templates are the same size
-            Mat celdaResized = new Mat();
-            CvInvoke.Resize(celda, celdaResized, new Size(TEMPLATE_SIZE, TEMPLATE_SIZE));
 
-            foreach (var kvp in templates)
-            {
-                string key = kvp.Key;
-                Mat templ = kvp.Value;
-                Mat mask = templateMasks[key];
 
-                // Try matching without mask first for better black piece detection
-                double valorSinMask = 0.0;
-                using (Mat resultado = new Mat())
-                {
-                    CvInvoke.MatchTemplate(celdaResized, templ, resultado, TemplateMatchingType.CcoeffNormed);
-                    double[] minVals, maxVals;
-                    Point[] minLoc, maxLoc;
-                    resultado.MinMax(out minVals, out maxVals, out minLoc, out maxLoc);
-                    valorSinMask = maxVals[0];
-                }
-
-                // Also try with mask if available
-                double valorConMask = 0.0;
-                if (mask != null && !mask.IsEmpty)
-                {
-                    using (Mat resultado = new Mat())
-                    {
-                        CvInvoke.MatchTemplate(celdaResized, templ, resultado, TemplateMatchingType.CcoeffNormed, mask);
-                        double[] minVals, maxVals;
-                        Point[] minLoc, maxLoc;
-                        resultado.MinMax(out minVals, out maxVals, out minLoc, out maxLoc);
-                        valorConMask = maxVals[0];
-                    }
-                }
-
-                double valor = Math.Max(valorSinMask, valorConMask);
-
-                if (valor > mejorValor && valor >= Config.MatchThreshold)
-                {
-                    mejorValor = valor;
-                    if (!string.IsNullOrEmpty(key) && key.Length > 1)
-                    {
-                        char pieceChar = key[1];
-                        if (key[0] == 'b')
-                            pieceChar = char.ToLower(pieceChar);
-                        mejorCoincidencia = pieceChar.ToString();
-                    }
-                    else
-                    {
-                        mejorCoincidencia = key;
-                    }
-                }
-            }
-            celdaResized.Dispose();
-
-            cellMatchCache[cacheKey] = new CellMatchCache
-            {
-                CellHash = cellHash,
-                DetectedPiece = mejorCoincidencia,
-                Confidence = mejorValor,
-                CachedAt = DateTime.Now
-            };
-            return (mejorCoincidencia, mejorValor);
-        }
-
-        private Bitmap? CaptureFullScreen()
-        {
-            try
-            {
-                Rectangle screenBounds = Screen.PrimaryScreen!.Bounds;
-                Bitmap bmp = new Bitmap(screenBounds.Width, screenBounds.Height);
-                using (Graphics g = Graphics.FromImage(bmp))
-                {
-                    g.CopyFromScreen(screenBounds.Location, Point.Empty, screenBounds.Size);
-                }
-                return bmp;
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Error capturing screen: " + ex.Message, "Screen Capture Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return null;
-            }
-        }
-
-        private Mat BitmapToMat(Bitmap bmp)
-        {
-            // Fast path: if already 24bpp, avoid copy
-            if (bmp.PixelFormat == PixelFormat.Format24bppRgb)
-            {
-                Rectangle rect = new Rectangle(0, 0, bmp.Width, bmp.Height);
-                BitmapData data = bmp.LockBits(rect, ImageLockMode.ReadOnly, PixelFormat.Format24bppRgb);
-                try
-                {
-                    Mat matView = new Mat(bmp.Height, bmp.Width, DepthType.Cv8U, 3, data.Scan0, data.Stride);
-                    return matView.Clone(); // clone to release lock
-                }
-                finally
-                {
-                    bmp.UnlockBits(data);
-                }
-            }
-            else
-            {
-                // Only convert if necessary
-                using (Bitmap work = new Bitmap(bmp.Width, bmp.Height, PixelFormat.Format24bppRgb))
-                {
-                    using (Graphics g = Graphics.FromImage(work))
-                        g.DrawImage(bmp, 0, 0, bmp.Width, bmp.Height);
-                    Rectangle rect = new Rectangle(0, 0, work.Width, work.Height);
-                    BitmapData data = work.LockBits(rect, ImageLockMode.ReadOnly, PixelFormat.Format24bppRgb);
-                    try
-                    {
-                        Mat matView = new Mat(work.Height, work.Width, DepthType.Cv8U, 3, data.Scan0, data.Stride);
-                        return matView.Clone();
-                    }
-                    finally
-                    {
-                        work.UnlockBits(data);
-                    }
-                }
-            }
-        }
-
-        private static Mat? DetectBoard(Mat fullMat)
-        {
-            // Try detection with multiple parameter sets (tight -> loose -> very loose)
-            for (int pass = 0; pass < 3; pass++)
-            {
-                Mat gray = new Mat();
-                CvInvoke.CvtColor(fullMat, gray, ColorConversion.Bgr2Gray);
-                CvInvoke.GaussianBlur(gray, gray, new Size(5, 5), 0);
-                Mat canny = new Mat();
-                CvInvoke.Canny(gray, canny, 50, 150);
-                using (VectorOfVectorOfPoint contours = new VectorOfVectorOfPoint())
-                {
-                    CvInvoke.FindContours(canny, contours, null, RetrType.List, ChainApproxMethod.ChainApproxSimple);
-                    double maxArea = 0;
-                    Point[]? boardContour = null;
-
-                    // Parameter tuning per pass: tight -> loose -> very loose
-                    double minAreaThreshold;
-                    double approxEpsFactor;
-                    double aspectMin;
-                    double aspectMax;
-
-                    if (pass == 0)
-                    {
-                        minAreaThreshold = 5000;
-                        approxEpsFactor = 0.02;
-                        aspectMin = 0.8;
-                        aspectMax = 1.2;
-                    }
-                    else if (pass == 1)
-                    {
-                        minAreaThreshold = 1500;
-                        approxEpsFactor = 0.04;
-                        aspectMin = 0.7;
-                        aspectMax = 1.3;
-                    }
-                    else
-                    {
-                        // Very loose: allow relatively large contours and sloppier approximation
-                        // Use image-relative min area so very large boards are included
-                        minAreaThreshold = Math.Max(1000, (fullMat.Width * fullMat.Height) * 0.001); // ~0.1% of image area
-                        approxEpsFactor = 0.06;
-                        aspectMin = 0.6;
-                        aspectMax = 1.5;
-                    }
-
-                    for (int i = 0; i < contours.Size; i++)
-                    {
-                        using (VectorOfPoint contour = contours[i])
-                        {
-                            double area = CvInvoke.ContourArea(contour);
-                            if (area < minAreaThreshold)
-                                continue;
-                            VectorOfPoint approx = new VectorOfPoint();
-                            CvInvoke.ApproxPolyDP(contour, approx, approxEpsFactor * CvInvoke.ArcLength(contour, true), true);
-                            // Accept contours that approximate to 4+ points; for very loose pass allow larger variance
-                            if (approx.Size >= 4)
-                            {
-                                Rectangle rect = CvInvoke.BoundingRectangle(approx);
-                                double aspectRatio = (double)rect.Width / rect.Height;
-                                if (aspectRatio > aspectMin && aspectRatio < aspectMax && area > maxArea)
-                                {
-                                    maxArea = area;
-                                    // Use rectangle corners as a robust fallback for warped boards
-                                    boardContour = new Point[] {
-                                        new Point(rect.X, rect.Y),
-                                        new Point(rect.X + rect.Width, rect.Y),
-                                        new Point(rect.X + rect.Width, rect.Y + rect.Height),
-                                        new Point(rect.X, rect.Y + rect.Height)
-                                    };
-                                }
-                            }
-                        }
-                    }
-
-                    if (boardContour != null)
-                    {
-                        PointF[] srcPoints = ReorderPoints(boardContour);
-
-                        // Calculate detected board size dynamically
-                        Rectangle boundingRect = CvInvoke.BoundingRectangle(new VectorOfPoint(boardContour));
-                        int detectedSize = Math.Max(boundingRect.Width, boundingRect.Height);
-
-                        // Keep board at detected size for better quality
-                        PointF[] dstPoints = new PointF[]
-                        {
-                            new PointF(0,0),
-                            new PointF(detectedSize,0),
-                            new PointF(detectedSize,detectedSize),
-                            new PointF(0,detectedSize)
-                        };
-                        Mat transform = CvInvoke.GetPerspectiveTransform(srcPoints, dstPoints);
-                        Mat boardRectificado = new Mat();
-                        CvInvoke.WarpPerspective(fullMat, boardRectificado, transform, new Size(detectedSize, detectedSize));
-                        return boardRectificado;
-                    }
-                }
-            }
-
-            return null;
-        }
-
-        private (Mat? boardMat, Rectangle boardRect) DetectBoardWithRectangle(Mat fullMat)
-        {
-            // 1) Fast path: if we had a recent boardRect, crop directly (without contours)
-            if (lastBoardRectCached.HasValue && (DateTime.Now - lastBoardRectCachedAt).TotalSeconds < 3)
-            {
-                var quick = CaptureFixedRectangle(fullMat, lastBoardRectCached.Value);
-                if (quick != null)
-                {
-                    // Refresh timestamp to keep it alive
-                    lastBoardRectCachedAt = DateTime.Now;
-                    return (quick, lastBoardRectCached.Value);
-                }
-                // If crop failed for some reason, continue to normal detection
-            }
-
-            // 2) Try to detect board automatically
-            Mat? detectedBoard = DetectBoard(fullMat);
-            if (detectedBoard != null)
-            {
-                using Mat gray = new Mat();
-                using Mat canny = new Mat();
-
-                CvInvoke.CvtColor(fullMat, gray, ColorConversion.Bgr2Gray);
-                CvInvoke.GaussianBlur(gray, gray, new Size(5, 5), 0);
-                CvInvoke.Canny(gray, canny, 50, 150);
-
-                using (VectorOfVectorOfPoint contours = new VectorOfVectorOfPoint())
-                {
-                    CvInvoke.FindContours(canny, contours, null, RetrType.List, ChainApproxMethod.ChainApproxSimple);
-
-                    double maxArea = 0;
-                    Rectangle boardRect = Rectangle.Empty;
-                    Point[]? bestContour = null;
-
-                    for (int i = 0; i < contours.Size; i++)
-                    {
-                        using (VectorOfPoint contour = contours[i])
-                        {
-                            double area = CvInvoke.ContourArea(contour);
-                            if (area < 5000) continue;
-
-                            using (VectorOfPoint approx = new VectorOfPoint())
-                            {
-                                CvInvoke.ApproxPolyDP(contour, approx, 0.02 * CvInvoke.ArcLength(contour, true), true);
-                                if (approx.Size == 4)
-                                {
-                                    Rectangle rect = CvInvoke.BoundingRectangle(approx);
-                                    double aspectRatio = (double)rect.Width / rect.Height;
-
-                                    if (aspectRatio > 0.8 && aspectRatio < 1.2 && area > maxArea)
-                                    {
-                                        maxArea = area;
-                                        boardRect = rect;
-                                        bestContour = approx.ToArray();
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // 2.1) If we found valid rectangle: padding + cache + return
-                    if (maxArea > 0 && boardRect != Rectangle.Empty)
-                    {
-                        int padding = Math.Min(100, Math.Min(fullMat.Width, fullMat.Height) / 10);
-                        int nx = Math.Max(0, boardRect.X - padding);
-                        int ny = Math.Max(0, boardRect.Y - padding);
-                        int nW = Math.Min(fullMat.Width - nx, boardRect.Width + padding * 2);
-                        int nH = Math.Min(fullMat.Height - ny, boardRect.Height + padding * 2);
-                        boardRect = new Rectangle(nx, ny, nW, nH);
-
-                        // Save cache
-                        lastBoardRectCached = boardRect;
-                        lastBoardRectCachedAt = DateTime.Now;
-
-                        return (detectedBoard, boardRect);
-                    }
-
-                    // 2.2) If DetectBoard gave something but no rectangle found: fall back to default
-                }
-            }
-
-            // 3) Fallback: centered proportional square + cache
-            int side = Math.Min(fullMat.Width, fullMat.Height) * 8 / 10;
-            side = Math.Clamp(side, 600, Math.Min(fullMat.Width, fullMat.Height));
-
-            int x = (fullMat.Width - side) / 2;
-            int y = (fullMat.Height - side) / 2;
-
-            Rectangle fallbackRect = new Rectangle(x, y, side, side);
-            Mat? fallbackBoard = CaptureFixedRectangle(fullMat, fallbackRect);
-
-            // Cache the fallback so next click is instant
-            if (fallbackBoard != null)
-            {
-                lastBoardRectCached = fallbackRect;
-                lastBoardRectCachedAt = DateTime.Now;
-            }
-
-            return (fallbackBoard, fallbackRect);
-        }
-
-        private Mat? CaptureFixedRectangle(Mat fullMat, Rectangle rect)
-        {
-            if (rect.X < 0 || rect.Y < 0 ||
-                rect.X + rect.Width > fullMat.Width ||
-                rect.Y + rect.Height > fullMat.Height)
-                return null;
-
-            // Return board at native size - no forced resizing
-            using (Mat boardMat = new Mat(fullMat, rect))
-            {
-                return boardMat.Clone();
-            }
-        }
-
-        private static PointF[] ReorderPoints(Point[] pts)
-        {
-            PointF[] ordered = new PointF[4];
-            var sum = pts.Select(p => p.X + p.Y).ToArray();
-            var diff = pts.Select(p => p.Y - p.X).ToArray();
-            ordered[0] = pts[Array.IndexOf(sum, sum.Min())];
-            ordered[2] = pts[Array.IndexOf(sum, sum.Max())];
-            ordered[1] = pts[Array.IndexOf(diff, diff.Min())];
-            ordered[3] = pts[Array.IndexOf(diff, diff.Max())];
-            return ordered;
-        }
-
-        private static string ComputeCellHash(Mat celda)
-        {
-            // Compute simple hash based on mean and stddev for quick comparison
-            MCvScalar mean = new MCvScalar();
-            MCvScalar stdDev = new MCvScalar();
-            CvInvoke.MeanStdDev(celda, ref mean, ref stdDev);
-            return $"{mean.V0:F2}_{stdDev.V0:F2}";
-        }
-
-        private void ClearOldCacheEntries()
-        {
-            var now = DateTime.Now;
-            var oldEntries = cellMatchCache
-                .Where(kvp => kvp.Value != null && (now - kvp.Value.CachedAt).TotalSeconds > 10)
-                .Select(kvp => kvp.Key)
-                .ToList();
-
-            foreach (var key in oldEntries)
-            {
-                cellMatchCache.TryRemove(key, out _);
-            }
-
-            // Periodically log cache statistics
-            if ((cacheHits + cacheMisses) % 100 == 0 && (cacheHits + cacheMisses) > 0)
-            {
-                double hitRate = (double)cacheHits / (cacheHits + cacheMisses) * 100;
-                Debug.WriteLine($"Template matching cache: {hitRate:F1}% hit rate ({cacheHits} hits, {cacheMisses} misses)");
-            }
-        }
 
         private void Form1_KeyDown(object sender, KeyEventArgs e)
         {
@@ -1284,8 +748,7 @@ namespace ChessDroid
                 consecutiveAnalysisFailures = 0;
                 engineRestartCount = 0;
                 engineService = new ChessDroid.Services.ChessEngineService(Config);
-                currentGameState = new ChessDroid.Models.GameState();
-                lastDetectedBoard = null;
+                positionStateManager.Reset();
                 lastEngineResult = null;
                 previousEvaluation = null; // Reset blunder detection
             }
@@ -1300,10 +763,7 @@ namespace ChessDroid
         private void chkWhiteTurn_CheckedChanged(object? sender, EventArgs e)
         {
             // Update game state based on checkbox
-            if (currentGameState != null)
-            {
-                currentGameState.WhiteToMove = chkWhiteTurn.Checked;
-            }
+            positionStateManager.SetWhiteToMove(chkWhiteTurn.Checked);
 
             // Update checkbox text based on state
             chkWhiteTurn.Text = chkWhiteTurn.Checked ? "White to move" : "Black to move";
@@ -1360,17 +820,15 @@ namespace ChessDroid
             try
             {
                 // 1) Capture and extract the board
-                using Bitmap? fullScreenBitmap = CaptureFullScreen();
-                if (fullScreenBitmap == null)
+                Mat? fullScreenMat = screenCaptureService.CaptureScreenAsMat();
+                if (fullScreenMat == null)
                 {
                     labelStatus.Text = "Screen capture failed";
                     return;
                 }
 
-                Mat fullScreenMat = BitmapToMat(fullScreenBitmap);
-
                 // Try to detect the board automatically
-                var detectedResult = DetectBoardWithRectangle(fullScreenMat);
+                var detectedResult = boardDetectionService.DetectBoardWithRectangle(fullScreenMat);
                 Mat? boardMat = detectedResult.boardMat;
                 Rectangle boardRect = detectedResult.boardRect;
 
@@ -1380,7 +838,7 @@ namespace ChessDroid
                     return;
                 }
 
-                bool blackAtBottom = currentGameState?.WhiteToMove == false;
+                bool blackAtBottom = !positionStateManager.IsWhiteToMove();
                 if (blackAtBottom)
                 {
                     CvInvoke.Flip(boardMat, boardMat, FlipType.Vertical);
@@ -1405,7 +863,7 @@ namespace ChessDroid
                 }
 
                 // Validate FEN
-                string completeFen = GenerateCompleteFEN(currentBoard);
+                string completeFen = positionStateManager.GenerateCompleteFEN(currentBoard);
                 if (string.IsNullOrWhiteSpace(completeFen) || completeFen.Contains("..") || completeFen.StartsWith("/"))
                 {
                     labelStatus.Text = "Invalid FEN detected. Please try again.";
@@ -1445,25 +903,24 @@ namespace ChessDroid
 
         private void ManualTimer_Tick(object? sender, EventArgs e)
         {
-            Bitmap? bmp = CaptureFullScreen();
-            if (bmp == null) return;
+            Mat? fullMat = screenCaptureService.CaptureScreenAsMat();
+            if (fullMat == null) return;
 
-            Mat fullMat = BitmapToMat(bmp);
-            var detectedResult = DetectBoardWithRectangle(fullMat);
+            var detectedResult = boardDetectionService.DetectBoardWithRectangle(fullMat);
             Mat? boardMat = detectedResult.boardMat;
 
             if (boardMat == null) return;
 
-            bool blackAtBottom = currentGameState?.WhiteToMove == false;
+            bool blackAtBottom = !positionStateManager.IsWhiteToMove();
             if (blackAtBottom)
                 CvInvoke.Flip(boardMat, boardMat, FlipType.Vertical | FlipType.Horizontal);
 
             ChessBoard currentBoard = ExtractBoardFromMat(boardMat, blackAtBottom);
 
-            if (lastDetectedBoard != null && ChessRulesService.CountBoardDifferences(lastDetectedBoard, currentBoard) >= 2)
+            if (positionStateManager.LastDetectedBoard != null && ChessRulesService.CountBoardDifferences(positionStateManager.LastDetectedBoard, currentBoard) >= 2)
             {
                 manualTimer?.Stop();
-                lastDetectedBoard = currentBoard;
+                positionStateManager.SaveMoveState(currentBoard);
             }
         }
 
