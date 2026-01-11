@@ -6,45 +6,61 @@ ChessDroid is an advanced chess analysis tool that combines tactical pattern rec
 
 ---
 
-## System Architecture
+## System Architecture (v2.0.0)
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                    ChessDroid Core                      │
-│                     (MainForm.cs)                       │
-└────────────────────┬────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                    ChessDroid Core (MainForm.cs)                │
+│           Refactored: 1,577 → 420 lines (73.4% reduction)      │
+└────────────────────┬────────────────────────────────────────────┘
                      │
-         ┌───────────┴───────────┐
-         │                       │
-         ▼                       ▼
-┌─────────────────┐     ┌─────────────────┐
-│  UCI Engine     │     │  Analysis       │
-│  Integration    │     │  Engine         │
-└─────────────────┘     └────────┬────────┘
-                                 │
-                 ┌───────────────┼───────────────┐
-                 │               │               │
-                 ▼               ▼               ▼
-        ┌────────────────┐ ┌────────────┐ ┌──────────────┐
-        │ MovesExplanation│ │MoveEvaluation│PositionalEval│
-        │  (Orchestrator) │ │   (SEE)     │ (Structure)  │
-        └────────┬────────┘ └──────┬─────┘ └──────┬───────┘
-                 │                 │              │
-    ┌────────────┼─────────────────┼──────────────┼───────────┐
-    │            │                 │              │           │
-    ▼            ▼                 ▼              ▼           ▼
-┌─────────┐ ┌─────────┐ ┌─────────────┐ ┌──────────┐ ┌──────────┐
-│Stockfish│ │Advanced │ │  Endgame    │ │Explanation│ │   UI     │
-│Features │ │Analysis │ │  Analysis   │ │ Formatter │ │ Helpers  │
-└────┬────┘ └─────────┘ └─────────────┘ └──────────┘ └──────────┘
+         ┌───────────┴────────────┬──────────────────────────┐
+         │                        │                          │
+         ▼                        ▼                          ▼
+┌─────────────────┐     ┌──────────────────┐     ┌──────────────────┐
+│  Service Layer  │     │  UCI Engine      │     │   UI Services    │
+│  (Orchestration)│     │  Integration     │     │   (Display)      │
+└────────┬────────┘     └──────────────────┘     └─────────┬────────┘
+         │                                                   │
+         ├──────────────────────┬────────────────────────────┤
+         │                      │                            │
+         ▼                      ▼                            ▼
+┌─────────────────┐  ┌──────────────────┐      ┌──────────────────┐
+│MoveOrchestrator │  │EngineAnalysis    │      │ConsoleOutput     │
+│                 │  │Strategy          │      │Formatter         │
+└────────┬────────┘  └──────────────────┘      └──────────────────┘
+         │
+         ├─────────────────┬─────────────────┬──────────────────┐
+         │                 │                 │                  │
+         ▼                 ▼                 ▼                  ▼
+┌─────────────┐  ┌─────────────┐  ┌─────────────┐   ┌──────────────┐
+│MovesExplan- │  │MoveEvaluation│  │Positional   │   │  Endgame     │
+│ation        │  │   (SEE)      │  │Evaluation   │   │  Analysis    │
+└──────┬──────┘  └──────────────┘  └─────────────┘   └──────────────┘
+       │
+       ├──────────────────┬─────────────────┬────────────────┐
+       │                  │                 │                │
+       ▼                  ▼                 ▼                ▼
+┌──────────┐    ┌──────────────┐  ┌──────────────┐  ┌────────────┐
+│Stockfish │    │  Advanced    │  │  Explanation │  │ UI Helpers │
+│Features  │    │  Analysis    │  │  Formatter   │  │            │
+└────┬─────┘    └──────────────┘  └──────────────┘  └────────────┘
      │
-     │      ┌──────────────────────────────────────────┐
-     └─────→│         Performance Layer                │
-            │  ┌────────────────┐  ┌────────────────┐  │
-            │  │ ChessUtilities │  │   BoardCache   │  │
-            │  │ (Shared Logic) │  │ (Performance)  │  │
-            │  └────────────────┘  └────────────────┘  │
-            └──────────────────────────────────────────┘
+     │      ┌────────────────────────────────────────────────────────┐
+     │      │              Performance & Utility Layer               │
+     │      │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐ │
+     └─────→│  │ChessUtilities│  │  BoardCache  │  │BlunderTracker│ │
+            │  │(Shared Logic)│  │(Performance) │  │   (State)    │ │
+            │  └──────────────┘  └──────────────┘  └──────────────┘ │
+            └────────────────────────────────────────────────────────┘
+
+                 ┌────────────────────────────────────────┐
+                 │         Supporting Services            │
+                 │  ┌─────────────┐  ┌─────────────────┐ │
+                 │  │ThemeService │  │EnginePathResolver│ │
+                 │  │(UI Theming) │  │  (Discovery)    │ │
+                 │  └─────────────┘  └─────────────────┘ │
+                 └────────────────────────────────────────┘
 ```
 
 ---
@@ -457,6 +473,214 @@ var pieces = cache.GetPiecesByType(PieceType.Rook, true);
 
 ---
 
+### 10. **ThemeService.cs** (UI Theme Management) 🎨 NEW v2.0
+**Purpose:** Centralized theme management for dark and light modes
+
+**Architecture:**
+```csharp
+public class ColorScheme
+{
+    public Color BackgroundColor { get; set; }
+    public Color LabelBackColor { get; set; }
+    public Color ForeColor { get; set; }
+    // ... 8 color properties
+}
+
+public class ThemeService
+{
+    private static readonly ColorScheme DarkScheme = new ColorScheme { ... };
+    private static readonly ColorScheme LightScheme = new ColorScheme { ... };
+
+    public static void ApplyTheme(Form form, ..., bool isDarkMode)
+}
+```
+
+**Key Features:**
+- Dark mode color scheme (RGB 45, 45, 48 base)
+- Light mode color scheme (WhiteSmoke base)
+- Applies to all UI controls consistently
+- Suspends/Resumes layout for performance
+
+**Impact:**
+- Reduced MainForm `ApplyTheme()` from 59 lines to 3 lines
+- Reusable across multiple forms
+- Single source of truth for theming
+
+---
+
+### 11. **BlunderTracker.cs** (Blunder Detection State) ⚡ NEW v2.0
+**Purpose:** Track board state changes and evaluation history for blunder detection
+
+**Architecture:**
+```csharp
+public class BlunderTracker
+{
+    private string lastAnalyzedFEN = "";
+    private double? previousEvaluation = null;
+
+    public double? UpdateBoardChangeTracking(string currentFEN, string currentEvaluation);
+    public double? GetPreviousEvaluation();
+    public void SetPreviousEvaluation(double? evaluation);
+    public void Reset();
+}
+```
+
+**Key Responsibilities:**
+- Compare current FEN vs last analyzed FEN (position changes only)
+- Track previous evaluation for blunder detection
+- Provide clean API for evaluation history
+- Reset state when starting new game
+
+**Blunder Detection Algorithm:**
+```
+1. Extract position from FEN (ignore turn/castling metadata)
+2. Compare with last analyzed position
+3. If position changed:
+   - Parse current evaluation
+   - Store as previousEvaluation
+   - Update lastAnalyzedFEN
+4. Return previousEvaluation for comparison
+```
+
+**Impact:**
+- Removed state management from MainForm (2 fields eliminated)
+- Enables automatic blunder warnings in console output
+- Clean separation of concerns
+
+---
+
+### 12. **EnginePathResolver.cs** (Engine Discovery) 🔍 NEW v2.0
+**Purpose:** Automatic discovery and resolution of chess engine paths
+
+**Architecture:**
+```csharp
+public class EnginePathResolver
+{
+    private readonly AppConfig config;
+
+    public (string enginePath, bool wasAutoDiscovered) ResolveEnginePath();
+    private string DiscoverFirstAvailableEngine();
+    public bool ValidateEnginePath(string enginePath);
+    public string[] GetAvailableEngines();
+}
+```
+
+**Key Features:**
+
+**Auto-Discovery Algorithm:**
+```
+1. Check if config has SelectedEngine
+2. If not:
+   a. Scan Engines folder for .exe files
+   b. Return first found engine
+   c. Save to config for next time
+   d. Fallback to "stockfish.exe" if none found
+3. Combine with engines path
+4. Return (enginePath, wasAutoDiscovered)
+```
+
+**Path Resolution:**
+- Handles config-based engine selection
+- Scans Engines folder automatically
+- Saves discovered engines to config
+- Validates engine file existence
+
+**Impact:**
+- Reduced `InitializeEngineAsync()` from 61 lines to 28 lines (53% reduction)
+- Reusable engine discovery logic
+- Better error handling and validation
+
+---
+
+### 13. **ConsoleOutputFormatter.cs** (Enhanced v2.0) 📊 ENHANCED
+**Purpose:** Rich text console output with color coding, blunder warnings, and multi-line analysis
+
+**New Features in v2.0:**
+
+**DisplayAnalysisResults():**
+```csharp
+public void DisplayAnalysisResults(
+    string bestMove, string evaluation,
+    List<string> pvs, List<string> evaluations,
+    string completeFen, double? previousEvaluation,
+    bool showSecondLine, bool showThirdLine)
+```
+
+**Capabilities:**
+- Automatic blunder detection and visual warnings
+- Side-aware win percentage display
+- Display up to 3 analysis lines (best, 2nd, 3rd)
+- Color-coded move quality (6 levels)
+- Rich text formatting with custom fonts
+- Explanation integration with MovesExplanation
+
+**Blunder Warning System:**
+```csharp
+if (isBlunder)
+{
+    DisplayBlunderWarning(blunderType, evalDrop, whiteBlundered);
+    // Shows: "⚠️ BLUNDER! White lost 5.2 pawns"
+}
+```
+
+**Move Quality Colors:**
+- Excellent (!!) - Forest Green (34, 139, 34)
+- Good (!) - Medium Sea Green (60, 179, 113)
+- Neutral - Steel Blue (70, 130, 180)
+- Questionable (?!) - Orange (255, 165, 0)
+- Bad (?) - Orange Red (255, 69, 0)
+- Blunder (??) - Firebrick (178, 34, 34)
+
+**Impact:**
+- Replaced 82-line `UpdateUIWithMoveResults()` method in MainForm
+- Centralized all console display logic
+- Enhanced user experience with visual feedback
+
+---
+
+### 14. **ExplanationFormatter.cs** (Enhanced v1.6+) 🎛️ ENHANCED
+**Purpose:** Customize explanation complexity and feature toggles
+
+**Complexity Levels:**
+```csharp
+public enum ComplexityLevel
+{
+    Beginner,       // Simple language, no jargon
+    Intermediate,   // Moderate detail (default)
+    Advanced,       // Full technical details
+    Master          // Maximum detail with annotations
+}
+```
+
+**Feature Toggles (11 total):**
+- ShowTacticalAnalysis
+- ShowPositionalAnalysis
+- ShowEndgameAnalysis
+- ShowOpeningPrinciples
+- ShowWinPercentage
+- ShowTablebaseInfo
+- ShowMoveQualityColor
+- ShowSEEValues
+- ShowBestLine (always enabled)
+- ShowSecondLine
+- ShowThirdLine
+
+**Simplification for Beginners:**
+```csharp
+"knight on strong outpost (SEE +6)"
+→ "knight in good position (wins 6)"
+
+"creates threat on undefended queen"
+→ "attacks queen"
+```
+
+**Impact:**
+- Customizable user experience for all skill levels
+- Reduces information overload for beginners
+- Enables power users with full technical details
+
+---
+
 ## Data Flow
 
 ### Typical Analysis Flow:
@@ -705,7 +929,7 @@ public static string GetMyEvaluation(double eval, ...)
 - Opening history tracking
 - Tablebase integration
 
-**v1.6.0** - Optimization & Polish (Current) ⚡
+**v1.6.0** - Optimization & Polish ⚡
 - **ChessUtilities:** Eliminated 410+ lines of duplicate code
 - **BoardCache:** 4-10x performance improvement for tactical analysis
 - **StockfishFeatures:** Fixed O(n³) bottleneck → O(n²) (~100x faster)
@@ -713,6 +937,21 @@ public static string GetMyEvaluation(double eval, ...)
 - **Tactical Fixes:** Skewer, X-ray attack, exchange sacrifice validation
 - **ExplanationFormatter:** Complexity levels, feature toggles, color-coding
 - Comprehensive documentation
+
+**v2.0.0** - Major UX Update & Refactoring (Current) 🎨
+- **Architecture Overhaul:** MainForm reduced from 1,577 to 420 lines (73.4% reduction)
+- **ThemeService (104 lines):** Centralized dark/light mode theme management
+- **BlunderTracker (82 lines):** Automatic blunder detection and tracking
+- **EnginePathResolver (100 lines):** Automatic engine discovery and validation
+- **ConsoleOutputFormatter Enhanced:** DisplayAnalysisResults with blunder warnings
+- **Color-Coded Move Quality:** 6 levels with thematic colors (!!, !, neutral, ?!, ?, ??)
+- **Win Percentage Display:** Side-aware probability (White: 82% / Black: 18%)
+- **Complexity Levels:** 4 levels (Beginner → Master)
+- **Feature Toggles:** 11 customization options
+- **Dark Mode:** Fully integrated theme system
+- **Global Hotkeys:** Alt+X (analyze), Alt+K (reset)
+- **Service-Oriented Design:** Clean separation of concerns, better testability
+- Build: 0 warnings, 0 errors
 
 ---
 
@@ -727,5 +966,5 @@ https://github.com/jio1337/chessdroid/issues
 
 ---
 
-**Last Updated:** 2026-01-10
-**Document Version:** 1.0
+**Last Updated:** 2026-01-11
+**Document Version:** 2.0
