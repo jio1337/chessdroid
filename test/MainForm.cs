@@ -36,6 +36,7 @@ namespace ChessDroid
         private EngineAnalysisStrategy? analysisStrategy;
         private MoveAnalysisOrchestrator? moveOrchestrator;
         private BlunderTracker blunderTracker = new BlunderTracker();
+        private EnginePathResolver? enginePathResolver;
 
         private AppConfig? config;
 
@@ -107,6 +108,7 @@ namespace ChessDroid
             InitializeComponent();
             config = AppConfig.Load();
             engineService = new ChessDroid.Services.ChessEngineService(config);
+            enginePathResolver = new EnginePathResolver(config);
 
             // Initialize game state via PositionStateManager
             positionStateManager.InitializeGameState(chkWhiteTurn.Checked);
@@ -193,63 +195,31 @@ namespace ChessDroid
         {
             try
             {
-                if (engineService == null)
+                if (engineService == null || enginePathResolver == null)
                 {
                     Debug.WriteLine("Cannot initialize engine - service is null");
                     return;
                 }
 
-                // Get selected engine from config or find first available engine
-                string selectedEngine = "";
+                // Resolve engine path using the service
+                var (enginePath, wasAutoDiscovered) = enginePathResolver.ResolveEnginePath();
 
-                if (!string.IsNullOrEmpty(config?.SelectedEngine))
-                {
-                    selectedEngine = config.SelectedEngine;
-                }
-                else
-                {
-                    // Find first available engine in Engines folder
-                    string enginesFolder = Config.GetEnginesPath();
-                    if (Directory.Exists(enginesFolder))
-                    {
-                        string[] engineFiles = Directory.GetFiles(enginesFolder, "*.exe");
-                        if (engineFiles.Length > 0)
-                        {
-                            selectedEngine = Path.GetFileName(engineFiles[0]);
-                            // Save the found engine to config
-                            if (config != null)
-                            {
-                                config.SelectedEngine = selectedEngine;
-                                config.Save();
-                            }
-                        }
-                        else
-                        {
-                            selectedEngine = "stockfish.exe"; // Fallback
-                        }
-                    }
-                    else
-                    {
-                        selectedEngine = "stockfish.exe"; // Fallback
-                    }
-                }
-
-                string enginePath = Path.Combine(Config.GetEnginesPath(), selectedEngine);
-
-                if (!File.Exists(enginePath))
+                // Validate that the engine exists
+                if (!enginePathResolver.ValidateEnginePath(enginePath))
                 {
                     Debug.WriteLine($"Engine not found at: {enginePath}");
-                    this.Invoke((MethodInvoker)(() => labelStatus.Text = "Engine not found"));
+                    Invoke((MethodInvoker)(() => labelStatus.Text = "Engine not found"));
                     return;
                 }
 
+                // Initialize the engine
                 await engineService.InitializeAsync(enginePath);
-                this.Invoke((MethodInvoker)(() => labelStatus.Text = "Ready"));
+                Invoke((MethodInvoker)(() => labelStatus.Text = "Ready"));
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"Error starting engine: {ex.Message}");
-                this.Invoke((MethodInvoker)(() => labelStatus.Text = "Engine unavailable"));
+                Invoke((MethodInvoker)(() => labelStatus.Text = "Engine unavailable"));
             }
         }
 
