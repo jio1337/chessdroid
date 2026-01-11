@@ -161,6 +161,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - [EmguCV](http://www.emgu.com/) - OpenCV wrapper for .NET
 - [ChessDotNet](https://github.com/ProgramFOX/Chess.NET) - Chess library for .NET
+- [Stockfish](https://stockfishchess.org/) - World's strongest chess engine, inspiration for move evaluation features
+- [Ethereal](https://github.com/AndyGrant/Ethereal) - High-performance chess engine, inspiration for positional evaluation
 
 ## Disclaimer
 
