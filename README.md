@@ -12,13 +12,25 @@ chessdroid is a desktop application built for focused chess study. Analyze posit
 
 ## Features
 
+### Core Analysis
 - **🧠 UCI Engine Support** - Works with any UCI-compatible engine (Stockfish, Komodo, Ethereal, Leela, etc.)
 - **👁️ Computer Vision** - Automatic board recognition from screenshots using OpenCV
 - **📊 Multi-PV Analysis** - Display up to 3 best lines simultaneously with evaluations
-- **💡 Move Explanations** - AI-generated explanations for tactical patterns
-- **🎨 Dark/Light Themes** - Choose between modern dark mode and clean light mode
-- **⌨️ Hotkeys** - Trigger analysis instantly with `Alt+X`
+- **💡 Smart Explanations** - Human-readable explanations for 30+ tactical patterns
+- **🎯 Move Quality Colors** - 6 levels from Brilliant (!!) to Blunder (??) with color coding
+- **📈 Win Percentage** - Side-aware win probability using Stockfish evaluation model
+- **⚡ Blunder Detection** - Automatic detection and warning for critical mistakes
+
+### Customization
+- **🎨 Dark/Light Themes** - Fully-featured dark mode with automatic theme persistence
+- **⚙️ Complexity Levels** - Choose from Beginner, Intermediate, Advanced, or Master explanations
+- **🎛️ Feature Toggles** - 11 toggles to customize analysis (Tactical, Positional, Endgame, Opening, Win%, Tablebase, SEE, etc.)
+- **🔧 Flexible Settings** - Customize engine depth, match threshold, and display preferences
+
+### User Experience
+- **⌨️ Global Hotkeys** - `Alt+X` to analyze, `Alt+K` to reset (works even when minimized)
 - **🔍 Debug Mode** - Optional cell visualization for troubleshooting piece recognition
+- **♟️ Tablebase-Aware** - Endgame-specific analysis for positions with ≤7 pieces
 
 ## Supported Chess Websites
 
@@ -81,11 +93,21 @@ dotnet run --configuration Release
 
 chessdroid stores settings in `config.json`. You can customize:
 
-- **Match Threshold**: Piece recognition sensitivity (0.1-1.0)
-- **Engine Depth**: Analysis depth (1-20)
+### Engine & Analysis
+- **Selected Engine**: Choose from available UCI engines
+- **Engine Depth**: Analysis depth (1-30, default: 20)
+- **Multi-PV Lines**: Show 2nd and 3rd best lines (optional)
+
+### Visual Recognition
+- **Match Threshold**: Piece recognition sensitivity (0.1-1.0, default: 0.75)
 - **Canny Thresholds**: Edge detection for board recognition
-- **Multi-PV Lines**: Number of best lines to display (1-3)
-- **Theme**: Dark or Light mode
+- **Selected Site**: Chess.com, Lichess, or ChessPuzzle templates
+
+### Display & UI
+- **Theme**: Dark or Light mode (fully integrated)
+- **Complexity Level**: Beginner, Intermediate, Advanced, or Master
+- **Feature Toggles**: Enable/disable specific analysis features (11 options)
+- **Show Debug Cells**: Visual debugging for piece recognition
 
 ## Technology Stack
 
@@ -93,7 +115,7 @@ chessdroid stores settings in `config.json`. You can customize:
 - **WinForms** - User interface
 - **EmguCV/OpenCV** - Computer vision for board detection
 - **UCI Protocol** - Chess engine communication
-- **ChessDotNet** - Chess logic and move validation
+- **Service-Oriented Architecture** - Clean separation of concerns (73% code reduction through refactoring)
 
 ## Important Notice
 
