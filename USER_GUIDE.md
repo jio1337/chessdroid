@@ -102,6 +102,16 @@ Customize which analysis features you want to see:
 
 **Available Toggles:**
 
+✅ **Show Best Line** - Display the engine's top recommendation (always enabled)
+
+✅ **Show Second Line** - Display the 2nd best move option
+- Turn OFF if: You only want the top move
+- Best for: Comparing alternatives
+
+✅ **Show Third Line** - Display the 3rd best move option
+- Turn OFF if: Too much information
+- Best for: Exploring multiple strategies
+
 ✅ **Tactical Analysis** - Pins, forks, skewers, discovered attacks
 - Turn OFF if: You only want positional analysis
 - Best for: Tactical puzzle solving
@@ -110,7 +120,7 @@ Customize which analysis features you want to see:
 - Turn OFF if: You only care about tactics
 - Best for: Strategic understanding
 
-✅ **Endgame Analysis** - Tablebase moves, zugzwang, patterns
+✅ **Endgame Analysis** - Zugzwang, patterns, endgame techniques
 - Turn OFF if: Only analyzing opening/middlegame
 - Best for: Endgame study
 
@@ -122,9 +132,10 @@ Customize which analysis features you want to see:
 - Turn OFF if: You prefer raw evaluations
 - Best for: Understanding position assessment
 
-✅ **Tablebase Info** - Perfect endgame moves
+✅ **Tablebase Info** - Endgame position analysis
 - Turn OFF if: Not studying endgames
 - Best for: Positions with ≤7 pieces
+- Note: Uses tablebase-aware pattern matching (not actual Syzygy files)
 
 ✅ **Color-Coded Moves** - Visual quality indicators
 - Turn OFF if: You prefer plain text
@@ -192,7 +203,7 @@ ChessDroid detects 30+ tactical patterns:
 - **Middlegame** - 12+ pieces (excluding kings)
 - **Transition** - 8-11 pieces
 - **Endgame** - 6-7 pieces
-- **Late Endgame** - 5 or fewer pieces (tablebase territory)
+- **Late Endgame** - 5 or fewer pieces
 
 **Endgame Patterns:**
 - **K+P vs K** - King and pawn vs king (technical win)
@@ -203,7 +214,7 @@ ChessDroid detects 30+ tactical patterns:
 
 **Example:**
 ```
-"tablebase win in ~15 moves" - Perfect play guarantees victory!
+"endgame technique: activate king and push passed pawn"
 ```
 
 ---
@@ -212,8 +223,7 @@ ChessDroid detects 30+ tactical patterns:
 
 ### **Accessing Settings**
 
-1. Click "Settings" button in main window
-2. Or use menu: Options → Explanation Settings
+Click the "Settings" button in the main window to customize ChessDroid's behavior.
 
 ### **Recommended Settings by Skill Level**
 
@@ -255,8 +265,8 @@ Blue = acceptable alternative
 ### **Tip 3: Compare Multiple Lines**
 ChessDroid shows explanations for 1st, 2nd, and 3rd best moves. Compare to understand why one is better.
 
-### **Tip 4: Study Endgames with Tablebase**
-In positions with ≤7 pieces, ChessDroid shows perfect moves. Study these to master theoretical endgames.
+### **Tip 4: Study Endgames with Tablebase-Aware Analysis**
+In positions with ≤7 pieces, ChessDroid provides endgame-specific analysis. Study these positions to understand winning techniques.
 
 ### **Tip 5: Study Position Changes**
 Pay attention to how evaluations change after moves to understand position dynamics.
@@ -295,9 +305,9 @@ If a move you wanted to play is red (?? or ?), read the explanation to understan
 ### **Endgame Mastery**
 
 1. Load an endgame (≤7 pieces)
-2. Enable Tablebase Info
-3. Follow perfect moves
-4. Study the winning technique
+2. Enable Tablebase Info for endgame-specific analysis
+3. Study the engine's recommended moves
+4. Learn the winning technique
 5. Practice until it's second nature
 
 ### **Opening Preparation**
@@ -318,7 +328,7 @@ If a move you wanted to play is red (?? or ?), read the explanation to understan
 ### **Problem: Too much information displayed**
 **Solution:** Disable some feature toggles (e.g., turn off SEE Values)
 
-### **Problem: Not seeing endgame moves**
+### **Problem: Not seeing endgame-specific analysis**
 **Solution:** Ensure Tablebase Info is enabled and position has ≤7 pieces
 
 ### **Problem: Colors make text hard to read**
@@ -333,9 +343,7 @@ If a move you wanted to play is red (?? or ?), read the explanation to understan
 
 **SEE (Static Exchange Evaluation)** - Calculation showing material won/lost after all captures on a square
 
-**Tablebase** - Perfect endgame database with ≤7 pieces showing guaranteed best moves
-
-**DTZ (Distance to Zeroing)** - Moves until pawn move or capture (50-move rule)
+**Tablebase-Aware Analysis** - Endgame-specific analysis for positions with ≤7 pieces using pattern recognition
 
 **Zugzwang** - Position where any move worsens your position
 
@@ -357,19 +365,19 @@ If a move you wanted to play is red (?? or ?), read the explanation to understan
 
 ## 🚀 Advanced Features
 
-### **Customizing Display**
+### **Dark Mode**
 
-You can further customize ChessDroid by:
-1. Adjusting window size for more/less detail
-2. Choosing font size in Windows settings
-3. Using dark mode (if supported by system)
+ChessDroid includes a fully-featured dark mode theme:
+1. Open Settings → Check "Dark Mode"
+2. Theme applies to all windows and controls
+3. Saves your preference automatically
 
 ### **Keyboard Shortcuts**
 
-- **Ctrl+N** - New position
-- **Ctrl+A** - Analyze position
-- **Ctrl+,** - Open settings
-- **F1** - Help (this guide)
+ChessDroid supports global hotkeys (work even when window is minimized):
+
+- **Alt+X** - Analyze position (triggers "Show Lines" button)
+- **Alt+K** - Reset application (clears cache and restarts engine)
 
 ---
 
@@ -406,12 +414,13 @@ You can further customize ChessDroid by:
 ## 📝 Version History
 
 **v2.0.0** - Major UX Update
-- ✨ Color-coded move quality
-- ✨ Win percentage display
+- ✨ Color-coded move quality (6 levels with thematic colors)
+- ✨ Win percentage display (side-aware with Stockfish model)
 - ✨ Complexity levels (Beginner → Master)
-- ✨ Feature toggles
-- ✨ UI helpers and tooltips
-- 🔧 Refactored architecture (65% reduction in MainForm)
+- ✨ Feature toggles (11 toggles including 2nd/3rd line analysis)
+- ✨ Dark mode theme (fully integrated)
+- ✨ Global keyboard shortcuts (Alt+X, Alt+K)
+- 🔧 Refactored architecture (71.5% reduction in MainForm: 1,577→450 lines)
 
 **v1.6.0** - Optimization & Polish
 - ⚡ 50% faster analysis
@@ -421,7 +430,7 @@ You can further customize ChessDroid by:
 **v1.5.0** - Advanced Features
 - 🎯 Win rate model
 - 📖 Opening history
-- ♟️ Tablebase integration
+- ♟️ Tablebase-aware analysis
 
 **v1.4.0** - Stockfish Integration
 - 🔍 Threat detection
