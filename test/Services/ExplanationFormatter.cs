@@ -275,7 +275,7 @@ namespace ChessDroid.Services
         /// <summary>
         /// Format evaluation with win percentage
         /// </summary>
-        public static string FormatEvaluationWithWinRate(string evaluation, int materialCount)
+        public static string FormatEvaluationWithWinRate(string evaluation, int materialCount, string fen = "")
         {
             double? eval = MovesExplanation.ParseEvaluation(evaluation);
             if (!eval.HasValue)
@@ -290,8 +290,15 @@ namespace ChessDroid.Services
                 return evaluation; // Keep mate scores as-is
             }
 
-            // Show both eval and win%
-            string side = eval.Value >= 0 ? "White" : "Black";
+            // Stockfish evaluations are ALWAYS from White's perspective
+            // Positive eval = White is winning, Negative eval = Black is winning
+            // This is standard UCI protocol and never changes regardless of whose turn it is
+            string side;
+            if (eval.Value >= 0)
+                side = "White"; // Positive eval means White has the advantage
+            else
+                side = "Black"; // Negative eval means Black has the advantage
+
             return $"{evaluation} ({side}: {winRate:F0}% win chance)";
         }
 
@@ -357,24 +364,6 @@ namespace ChessDroid.Services
             richTextBox.SelectionFont = new Font(richTextBox.Font, FontStyle.Regular);
             richTextBox.SelectionColor = qualityColor;
             richTextBox.AppendText(adjustedExplanation);
-
-            // Evaluation with win rate (if intermediate or advanced)
-            if (CurrentLevel >= ComplexityLevel.Intermediate && !string.IsNullOrEmpty(evaluation))
-            {
-                double? eval = MovesExplanation.ParseEvaluation(evaluation);
-                if (eval.HasValue)
-                {
-                    double winRate = AdvancedAnalysis.EvalToWinningPercentage(Math.Abs(eval.Value), materialCount);
-                    Color winRateColor = GetWinRateColor(winRate);
-
-                    richTextBox.SelectionFont = new Font(richTextBox.Font, FontStyle.Italic);
-                    richTextBox.SelectionColor = winRateColor;
-
-                    string side = eval.Value >= 0 ? "White" : "Black";
-                    richTextBox.AppendText($" ({side} {winRate:F0}%)");
-                }
-            }
-
             richTextBox.AppendText(Environment.NewLine);
 
             // Reset formatting
