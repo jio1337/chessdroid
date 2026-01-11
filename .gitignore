@@ -36,15 +36,11 @@ _ReSharper*/
 *.[Rr]e[Ss]harper
 *.DotSettings.user
 
-# License files (contains activated licenses)
-*.lic
-.lic
-
 # Node modules and dependencies
 node_modules/
 package-lock.json
 
-# Environment variables - CRITICAL: Contains secrets!
+# Environment variables
 .env
 .env.local
 .env.production
@@ -87,9 +83,6 @@ Desktop.ini
 *.bak
 *.cache
 
-# Generated license keys (if batch generated)
-licenses_*.txt
-
 # NuGet packages
 *.nupkg
 *.snupkg
@@ -98,9 +91,6 @@ licenses_*.txt
 # Test results
 [Tt]est[Rr]esult*/
 [Bb]uild[Ll]og.*
-
-# Security audit reports (optional - uncomment if you don't want to commit)
-# SECURITY_*.md
 
 # Backup files
 *.backup
@@ -127,6 +117,3 @@ temp.html
 # Publishing/Release artifacts (use GitHub Releases instead)
 publish/
 *.zip
-
-# Outdated documentation (to be rewritten)
-USER_GUIDE.md
