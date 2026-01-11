@@ -15,7 +15,7 @@ ChessDroid is the most advanced open-source chess analysis tool, combining world
 
 ---
 
-## 🎨 New Features in v2.0
+## 🎨 Key Features
 
 ### **1. Color-Coded Move Quality**
 
@@ -133,37 +133,6 @@ Customize which analysis features you want to see:
 ✅ **SEE Values** - Static Exchange Evaluation
 - Turn OFF if: Numbers are confusing
 - Best for: Understanding capture trades
-
----
-
-### **5. PGN Export with Comments**
-
-Export your analysis to PGN format with embedded explanations!
-
-**Features:**
-- Annotated moves with explanations
-- Evaluation scores
-- Quality symbols (!!, !, ?!, ?, ??)
-- ChessDroid branding
-
-**Export Options:**
-- Save to .pgn file
-- Copy to clipboard
-- Share with friends
-- Import to other chess software
-
-**Example PGN:**
-```
-[Event "Analysis"]
-[Site "ChessDroid Analysis"]
-[Date "2026.01.10"]
-[Annotator "ChessDroid v2.0"]
-
-1. e4 {strong opening principle (controls center) [+0.2]} e5
-2. Nf3 {develops piece to good square [+0.3]} Nc6
-3. Bb5 {Spanish Opening - classical setup [+0.4]} a6
-*
-```
 
 ---
 
@@ -289,8 +258,8 @@ ChessDroid shows explanations for 1st, 2nd, and 3rd best moves. Compare to under
 ### **Tip 4: Study Endgames with Tablebase**
 In positions with ≤7 pieces, ChessDroid shows perfect moves. Study these to master theoretical endgames.
 
-### **Tip 5: Export Your Analysis**
-Save interesting positions with PGN export. Build your own game collection!
+### **Tip 5: Study Position Changes**
+Pay attention to how evaluations change after moves to understand position dynamics.
 
 ### **Tip 6: Adjust for Position Type**
 - Tactical puzzle? Enable only Tactical Analysis
@@ -337,7 +306,7 @@ If a move you wanted to play is red (?? or ?), read the explanation to understan
 2. Play your planned opening moves
 3. Check explanations at each step
 4. Ensure moves follow opening principles
-5. Export to PGN for review
+5. Compare with best engine recommendations
 
 ---
 
@@ -399,7 +368,6 @@ You can further customize ChessDroid by:
 
 - **Ctrl+N** - New position
 - **Ctrl+A** - Analyze position
-- **Ctrl+S** - Export to PGN
 - **Ctrl+,** - Open settings
 - **F1** - Help (this guide)
 
@@ -442,8 +410,8 @@ You can further customize ChessDroid by:
 - ✨ Win percentage display
 - ✨ Complexity levels (Beginner → Master)
 - ✨ Feature toggles
-- ✨ PGN export with comments
 - ✨ UI helpers and tooltips
+- 🔧 Refactored architecture (65% reduction in MainForm)
 
 **v1.6.0** - Optimization & Polish
 - ⚡ 50% faster analysis
