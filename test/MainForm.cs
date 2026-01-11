@@ -428,7 +428,17 @@ namespace ChessDroid
             richTextBoxConsole.SelectionBackColor = Color.MediumSeaGreen;
             richTextBoxConsole.SelectionColor = Color.Black;
             string bestSanFull = ConvertPvToSan(pvs, 0, bestMove, completeFen);
-            richTextBoxConsole.AppendText($"Best line: {bestSanFull} {evaluation}{Environment.NewLine}");
+
+            // Format evaluation with win percentage if enabled
+            string formattedEval = evaluation;
+            if (config?.ShowWinPercentage == true && ExplanationFormatter.CurrentLevel >= ExplanationFormatter.ComplexityLevel.Intermediate)
+            {
+                var tempBoard = ChessBoard.FromFEN(completeFen);
+                int materialCount = EndgameAnalysis.CountTotalPieces(tempBoard);
+                formattedEval = ExplanationFormatter.FormatEvaluationWithWinRate(evaluation, materialCount, completeFen);
+            }
+
+            richTextBoxConsole.AppendText($"Best line: {bestSanFull} {formattedEval}{Environment.NewLine}");
 
             // Add explanation for best move
             string explanation = MovesExplanation.GenerateMoveExplanation(bestMove, completeFen, pvs, evaluation);
@@ -470,7 +480,17 @@ namespace ChessDroid
                 // Extract first move from second line for explanation
                 string secondMove = pvs[1].Split(' ')[0];
                 string secondEval = evaluations.Count >= 2 ? evaluations[1] : "";
-                richTextBoxConsole.AppendText($"Second best: {secondSan} {secondEval}{Environment.NewLine}");
+
+                // Format evaluation with win percentage if enabled
+                string formattedSecondEval = secondEval;
+                if (config?.ShowWinPercentage == true && ExplanationFormatter.CurrentLevel >= ExplanationFormatter.ComplexityLevel.Intermediate)
+                {
+                    var tempBoard = ChessBoard.FromFEN(completeFen);
+                    int materialCount = EndgameAnalysis.CountTotalPieces(tempBoard);
+                    formattedSecondEval = ExplanationFormatter.FormatEvaluationWithWinRate(secondEval, materialCount, completeFen);
+                }
+
+                richTextBoxConsole.AppendText($"Second best: {secondSan} {formattedSecondEval}{Environment.NewLine}");
 
                 // Add explanation for second move
                 string secondExplanation = MovesExplanation.GenerateMoveExplanation(secondMove, completeFen, pvs, evaluation);

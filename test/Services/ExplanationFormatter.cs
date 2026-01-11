@@ -290,14 +290,28 @@ namespace ChessDroid.Services
                 return evaluation; // Keep mate scores as-is
             }
 
-            // Stockfish evaluations are ALWAYS from White's perspective
-            // Positive eval = White is winning, Negative eval = Black is winning
-            // This is standard UCI protocol and never changes regardless of whose turn it is
+            // Determine whose turn it is from FEN
+            bool isWhiteToMove = true;
+            if (!string.IsNullOrEmpty(fen))
+            {
+                string[] fenParts = fen.Split(' ');
+                if (fenParts.Length >= 2)
+                    isWhiteToMove = fenParts[1] == "w";
+            }
+
+            // The evaluation shown is from the side-to-move's perspective
+            // Positive = side to move is winning, Negative = side to move is losing
             string side;
             if (eval.Value >= 0)
-                side = "White"; // Positive eval means White has the advantage
+            {
+                // Positive evaluation - side to move has advantage
+                side = isWhiteToMove ? "White" : "Black";
+            }
             else
-                side = "Black"; // Negative eval means Black has the advantage
+            {
+                // Negative evaluation - opponent has advantage
+                side = isWhiteToMove ? "Black" : "White";
+            }
 
             return $"{evaluation} ({side}: {winRate:F0}% win chance)";
         }

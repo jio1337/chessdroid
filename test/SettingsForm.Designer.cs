@@ -66,6 +66,7 @@ namespace ChessDroid
             chkPositional = new CheckBox();
             chkEndgame = new CheckBox();
             chkOpening = new CheckBox();
+            chkWinRate = new CheckBox();
             chkTablebase = new CheckBox();
             chkColorCoding = new CheckBox();
             chkSEE = new CheckBox();
@@ -423,6 +424,7 @@ namespace ChessDroid
             grpExplanations.Controls.Add(chkPositional);
             grpExplanations.Controls.Add(chkEndgame);
             grpExplanations.Controls.Add(chkOpening);
+            grpExplanations.Controls.Add(chkWinRate);
             grpExplanations.Controls.Add(chkTablebase);
             grpExplanations.Controls.Add(chkColorCoding);
             grpExplanations.Controls.Add(chkSEE);
@@ -508,6 +510,20 @@ namespace ChessDroid
             chkOpening.Text = "Opening Principles";
             toolTip1.SetToolTip(chkOpening, "Show center control, development");
             chkOpening.UseVisualStyleBackColor = true;
+            //
+            // chkWinRate
+            //
+            chkWinRate.AutoSize = true;
+            chkWinRate.Checked = true;
+            chkWinRate.CheckState = CheckState.Checked;
+            chkWinRate.ForeColor = Color.White;
+            chkWinRate.Location = new Point(10, 155);
+            chkWinRate.Name = "chkWinRate";
+            chkWinRate.Size = new Size(160, 18);
+            chkWinRate.TabIndex = 5;
+            chkWinRate.Text = "Win Percentage";
+            toolTip1.SetToolTip(chkWinRate, "Show winning chances (side-aware)");
+            chkWinRate.UseVisualStyleBackColor = true;
             //
             // chkTablebase
             //
@@ -702,6 +718,7 @@ namespace ChessDroid
         private System.Windows.Forms.CheckBox chkPositional;
         private System.Windows.Forms.CheckBox chkEndgame;
         private System.Windows.Forms.CheckBox chkOpening;
+        private System.Windows.Forms.CheckBox chkWinRate;
         private System.Windows.Forms.CheckBox chkTablebase;
         private System.Windows.Forms.CheckBox chkColorCoding;
         private System.Windows.Forms.CheckBox chkSEE;
