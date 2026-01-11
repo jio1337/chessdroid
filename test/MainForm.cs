@@ -21,16 +21,6 @@ namespace ChessDroid
 
         private System.Windows.Forms.Timer? moveTimeoutTimer;
 
-        // Track consecutive failures for better error handling
-        private int consecutiveAnalysisFailures = 0;
-
-        private const int MAX_CONSECUTIVE_FAILURES = 2;
-
-        // Track engine restarts to prevent infinite loops
-        private int engineRestartCount = 0;
-
-        private DateTime lastRestartTime = DateTime.MinValue;
-        private const int MAX_RESTARTS_PER_MINUTE = 3;
 
         // Cache for engine results to avoid recomputation
         private class EngineResultCache
@@ -66,6 +56,8 @@ namespace ChessDroid
         private BoardDetectionService boardDetectionService = new BoardDetectionService();
         private PieceRecognitionService pieceRecognitionService = new PieceRecognitionService();
         private PositionStateManager positionStateManager = new PositionStateManager();
+        private EngineRestartManager engineRestartManager = new EngineRestartManager();
+        private ConsoleOutputFormatter? consoleFormatter;
 
         private AppConfig? config;
 
@@ -111,8 +103,8 @@ namespace ChessDroid
 
             if (string.IsNullOrEmpty(result.Item1))
             {
-                consecutiveAnalysisFailures++;
-                Debug.WriteLine($"ERROR: Analysis failed for this position (failures: {consecutiveAnalysisFailures}/{MAX_CONSECUTIVE_FAILURES})");
+                engineRestartManager.RecordFailure();
+                Debug.WriteLine($"ERROR: Analysis failed for this position");
                 Debug.WriteLine($"Failed FEN: {completeFen}");
 
                 // Clear cache so next attempt tries again
@@ -121,72 +113,49 @@ namespace ChessDroid
                 // Clear UI to show something happened
                 this.Invoke((MethodInvoker)(() =>
                 {
+                    var (failures, restarts) = engineRestartManager.GetMetrics();
                     richTextBoxConsole.Clear();
-                    richTextBoxConsole.AppendText($"Analysis failed - attempt {consecutiveAnalysisFailures} of {MAX_CONSECUTIVE_FAILURES}{Environment.NewLine}");
+                    richTextBoxConsole.AppendText($"Analysis failed - attempt {failures + 1}{Environment.NewLine}");
                     richTextBoxConsole.AppendText($"Position: {completeFen}{Environment.NewLine}");
                 }));
 
-                if (consecutiveAnalysisFailures >= MAX_CONSECUTIVE_FAILURES)
+                if (engineRestartManager.ShouldAttemptRestart())
                 {
-                    // Check if we're in an infinite restart loop
-                    var timeSinceLastRestart = DateTime.Now - lastRestartTime;
-                    if (timeSinceLastRestart.TotalMinutes < 1)
-                    {
-                        engineRestartCount++;
-                    }
-                    else
-                    {
-                        // Reset counter if more than 1 minute has passed
-                        engineRestartCount = 1;
-                    }
-
-                    lastRestartTime = DateTime.Now;
-
-                    if (engineRestartCount > MAX_RESTARTS_PER_MINUTE)
+                    if (engineRestartManager.ShouldRestartApplication())
                     {
                         // Too many restarts - automatically restart application
-                        Debug.WriteLine($"Too many engine restarts ({engineRestartCount}), triggering application restart...");
+                        var (failures, restarts) = engineRestartManager.GetMetrics();
                         this.Invoke((MethodInvoker)(() =>
                         {
                             labelStatus.Text = "Engine unstable - restarting application...";
-                            richTextBoxConsole.AppendText($"Too many engine restarts ({engineRestartCount}). Automatically restarting application...{Environment.NewLine}");
+                            richTextBoxConsole.AppendText($"Too many engine restarts ({restarts}). Automatically restarting application...{Environment.NewLine}");
                             buttonReset_Click(this, EventArgs.Empty);
                         }));
                         return;
                     }
 
                     this.Invoke((MethodInvoker)(() => labelStatus.Text = $"Restarting engine..."));
-                    Debug.WriteLine($"Too many consecutive failures ({consecutiveAnalysisFailures}), restarting engine (restart #{engineRestartCount})...");
 
-                    try
+                    bool restartSuccess = await engineRestartManager.RestartEngineAsync(engineService);
+                    var (_, restartCount) = engineRestartManager.GetMetrics();
+
+                    if (restartSuccess)
                     {
-                        if (engineService == null)
-                        {
-                            Debug.WriteLine("Engine service is null, cannot restart");
-                            throw new InvalidOperationException("Engine service not initialized");
-                        }
-
-                        await engineService.RestartAsync();
-
-                        // Wait for engine to fully initialize
-                        await Task.Delay(1000);
-
-                        consecutiveAnalysisFailures = 0;
                         this.Invoke((MethodInvoker)(() =>
                         {
                             labelStatus.Text = "Engine restarted - try again";
-                            richTextBoxConsole.AppendText($"Engine restarted successfully (restart #{engineRestartCount}). Please try again.{Environment.NewLine}");
+                            richTextBoxConsole.AppendText($"Engine restarted successfully (restart #{restartCount}). Please try again.{Environment.NewLine}");
                         }));
                     }
-                    catch (Exception restartEx)
+                    else
                     {
-                        Debug.WriteLine($"Engine restart failed: {restartEx.Message}");
                         this.Invoke((MethodInvoker)(() => labelStatus.Text = $"Engine restart failed"));
                     }
                 }
                 else
                 {
-                    this.Invoke((MethodInvoker)(() => labelStatus.Text = $"Analysis failed ({consecutiveAnalysisFailures}/{MAX_CONSECUTIVE_FAILURES}) - try again"));
+                    var (failures, _) = engineRestartManager.GetMetrics();
+                    this.Invoke((MethodInvoker)(() => labelStatus.Text = $"Analysis failed ({failures}) - try again"));
                 }
 
                 // Save state and continue instead of stopping completely
@@ -195,11 +164,7 @@ namespace ChessDroid
             }
 
             // Reset failure counter on success
-            if (consecutiveAnalysisFailures > 0)
-            {
-                Debug.WriteLine($"Analysis recovered after {consecutiveAnalysisFailures} failures");
-                consecutiveAnalysisFailures = 0;
-            }
+            engineRestartManager.RecordSuccess();
 
             // Update status to Ready after successful analysis
             this.Invoke((MethodInvoker)(() => labelStatus.Text = "Ready"));
@@ -329,188 +294,81 @@ namespace ChessDroid
 
         private void UpdateUIWithMoveResults(string bestMove, string evaluation, List<string> pvs, List<string> evaluations, string completeFen)
         {
-            richTextBoxConsole.Clear();
+            if (consoleFormatter == null) return;
+
+            consoleFormatter.Clear();
 
             // Check for blunders
             double? currentEval = MovesExplanation.ParseEvaluation(evaluation);
             if (currentEval.HasValue && previousEvaluation.HasValue)
             {
                 // Extract whose turn it is from FEN to determine who just moved
-                // FEN format: "position w/b ..." - second part tells whose turn it is NOW
-                // If it's White's turn now, Black just moved
-                // If it's Black's turn now, White just moved
                 string[] fenParts = completeFen.Split(' ');
                 bool whiteToMove = fenParts.Length > 1 && fenParts[1] == "w";
-                bool whiteJustMoved = !whiteToMove; // If it's Black's turn, White just moved
+                bool whiteJustMoved = !whiteToMove;
 
                 var (isBlunder, blunderType, evalDrop, whiteBlundered) = MovesExplanation.DetectBlunder(
                     currentEval, previousEvaluation, whiteJustMoved);
 
                 if (isBlunder)
                 {
-                    richTextBoxConsole.SelectionBackColor = Color.Orange;
-                    richTextBoxConsole.SelectionColor = Color.Black;
-                    richTextBoxConsole.SelectionFont = new Font(richTextBoxConsole.Font, FontStyle.Bold);
-                    richTextBoxConsole.AppendText($"⚠ {blunderType}! Eval swing: {evalDrop:F2} pawns{Environment.NewLine}");
-
-                    // Determine who blundered
-                    if (whiteBlundered)
-                    {
-                        richTextBoxConsole.AppendText($"White just blundered and gave Black a big opportunity!{Environment.NewLine}");
-                    }
-                    else
-                    {
-                        richTextBoxConsole.AppendText($"Black just blundered and gave White a big opportunity!{Environment.NewLine}");
-                    }
-
-                    richTextBoxConsole.SelectionFont = new Font(richTextBoxConsole.Font, FontStyle.Regular);
-                    richTextBoxConsole.SelectionBackColor = richTextBoxConsole.BackColor;
-                    richTextBoxConsole.AppendText(Environment.NewLine);
+                    consoleFormatter.DisplayBlunderWarning(blunderType, evalDrop, whiteBlundered);
                 }
             }
 
-            // Best line with explanation
-            richTextBoxConsole.SelectionBackColor = Color.MediumSeaGreen;
-            richTextBoxConsole.SelectionColor = Color.Black;
+            // Best line
             string bestSanFull = ConvertPvToSan(pvs, 0, bestMove, completeFen);
-
-            // Format evaluation with win percentage if enabled
-            string formattedEval = evaluation;
-            if (config?.ShowWinPercentage == true && ExplanationFormatter.CurrentLevel >= ExplanationFormatter.ComplexityLevel.Intermediate)
-            {
-                var tempBoard = ChessBoard.FromFEN(completeFen);
-                int materialCount = EndgameAnalysis.CountTotalPieces(tempBoard);
-                formattedEval = ExplanationFormatter.FormatEvaluationWithWinRate(evaluation, materialCount, completeFen);
-            }
-
-            richTextBoxConsole.AppendText($"Best line: {bestSanFull} {formattedEval}{Environment.NewLine}");
-
-            // Add explanation for best move
-            string explanation = MovesExplanation.GenerateMoveExplanation(bestMove, completeFen, pvs, evaluation);
-            if (!string.IsNullOrEmpty(explanation))
-            {
-                richTextBoxConsole.SelectionBackColor = richTextBoxConsole.BackColor;
-
-                // Use move quality color if enabled, otherwise use default line color
-                Color explanationColor = Color.PaleGreen; // Default for best line
-                string qualitySymbol = "";
-
-                if (config?.ShowMoveQualityColor == true)
-                {
-                    var quality = ExplanationFormatter.DetermineQualityFromEvaluation(explanation, evaluation);
-                    explanationColor = ExplanationFormatter.GetQualityColor(quality);
-                    qualitySymbol = ExplanationFormatter.GetQualitySymbol(quality);
-
-                    // Add space after symbol if present
-                    if (!string.IsNullOrEmpty(qualitySymbol))
-                        qualitySymbol = qualitySymbol + " ";
-                }
-
-                richTextBoxConsole.SelectionColor = explanationColor;
-                richTextBoxConsole.SelectionFont = new Font(richTextBoxConsole.Font, FontStyle.Italic);
-                richTextBoxConsole.AppendText($"  → {qualitySymbol}{explanation}{Environment.NewLine}");
-                richTextBoxConsole.SelectionFont = new Font(richTextBoxConsole.Font, FontStyle.Regular);
-            }
-
-            richTextBoxConsole.SelectionBackColor = richTextBoxConsole.BackColor;
-            richTextBoxConsole.SelectionColor = richTextBoxConsole.ForeColor;
+            string formattedEval = consoleFormatter.FormatEvaluationWithWinPercentage(evaluation, completeFen);
+            consoleFormatter.DisplayMoveLine(
+                "Best line",
+                bestSanFull,
+                formattedEval,
+                completeFen,
+                pvs,
+                bestMove,
+                Color.MediumSeaGreen,
+                Color.PaleGreen);
 
             // Second best
             if (config?.ShowSecondLine == true && pvs.Count >= 2)
             {
-                richTextBoxConsole.SelectionBackColor = Color.Yellow;
-                richTextBoxConsole.SelectionColor = Color.Black;
-                var secondSan = ChessNotationService.ConvertFullPvToSan(pvs[1], completeFen, ChessRulesService.ApplyUciMove, ChessRulesService.CanReachSquare, ChessRulesService.FindAllPiecesOfSameType);
-
-                // Extract first move from second line for explanation
+                var secondSan = ChessNotationService.ConvertFullPvToSan(pvs[1], completeFen,
+                    ChessRulesService.ApplyUciMove, ChessRulesService.CanReachSquare, ChessRulesService.FindAllPiecesOfSameType);
                 string secondMove = pvs[1].Split(' ')[0];
                 string secondEval = evaluations.Count >= 2 ? evaluations[1] : "";
+                string formattedSecondEval = consoleFormatter.FormatEvaluationWithWinPercentage(secondEval, completeFen);
 
-                // Format evaluation with win percentage if enabled
-                string formattedSecondEval = secondEval;
-                if (config?.ShowWinPercentage == true && ExplanationFormatter.CurrentLevel >= ExplanationFormatter.ComplexityLevel.Intermediate)
-                {
-                    var tempBoard = ChessBoard.FromFEN(completeFen);
-                    int materialCount = EndgameAnalysis.CountTotalPieces(tempBoard);
-                    formattedSecondEval = ExplanationFormatter.FormatEvaluationWithWinRate(secondEval, materialCount, completeFen);
-                }
-
-                richTextBoxConsole.AppendText($"Second best: {secondSan} {formattedSecondEval}{Environment.NewLine}");
-
-                // Add explanation for second move
-                string secondExplanation = MovesExplanation.GenerateMoveExplanation(secondMove, completeFen, pvs, evaluation);
-                if (!string.IsNullOrEmpty(secondExplanation))
-                {
-                    richTextBoxConsole.SelectionBackColor = richTextBoxConsole.BackColor;
-
-                    // Use move quality color if enabled, otherwise use default line color
-                    Color explanationColor = Color.DarkGoldenrod; // Default for second line
-                    string qualitySymbol = "";
-
-                    if (config?.ShowMoveQualityColor == true)
-                    {
-                        var quality = ExplanationFormatter.DetermineQualityFromEvaluation(secondExplanation, secondEval);
-                        explanationColor = ExplanationFormatter.GetQualityColor(quality);
-                        qualitySymbol = ExplanationFormatter.GetQualitySymbol(quality);
-
-                        // Add space after symbol if present
-                        if (!string.IsNullOrEmpty(qualitySymbol))
-                            qualitySymbol = qualitySymbol + " ";
-                    }
-
-                    richTextBoxConsole.SelectionColor = explanationColor;
-                    richTextBoxConsole.SelectionFont = new Font(richTextBoxConsole.Font, FontStyle.Italic);
-                    richTextBoxConsole.AppendText($"  → {qualitySymbol}{secondExplanation}{Environment.NewLine}");
-                    richTextBoxConsole.SelectionFont = new Font(richTextBoxConsole.Font, FontStyle.Regular);
-                }
-
-                richTextBoxConsole.SelectionBackColor = richTextBoxConsole.BackColor;
+                consoleFormatter.DisplayMoveLine(
+                    "Second best",
+                    secondSan,
+                    formattedSecondEval,
+                    completeFen,
+                    pvs,
+                    secondMove,
+                    Color.Yellow,
+                    Color.DarkGoldenrod);
             }
 
             // Third best
             if (config?.ShowThirdLine == true && pvs.Count >= 3)
             {
-                richTextBoxConsole.SelectionBackColor = Color.Red;
-                richTextBoxConsole.SelectionColor = Color.Black;
-                var thirdSan = ChessNotationService.ConvertFullPvToSan(pvs[2], completeFen, ChessRulesService.ApplyUciMove, ChessRulesService.CanReachSquare, ChessRulesService.FindAllPiecesOfSameType);
-
-                // Extract first move from third line for explanation
+                var thirdSan = ChessNotationService.ConvertFullPvToSan(pvs[2], completeFen,
+                    ChessRulesService.ApplyUciMove, ChessRulesService.CanReachSquare, ChessRulesService.FindAllPiecesOfSameType);
                 string thirdMove = pvs[2].Split(' ')[0];
                 string thirdEval = evaluations.Count >= 3 ? evaluations[2] : "";
-                richTextBoxConsole.AppendText($"Third best: {thirdSan} {thirdEval}{Environment.NewLine}");
 
-                // Add explanation for third move
-                string thirdExplanation = MovesExplanation.GenerateMoveExplanation(thirdMove, completeFen, pvs, evaluation);
-                if (!string.IsNullOrEmpty(thirdExplanation))
-                {
-                    richTextBoxConsole.SelectionBackColor = richTextBoxConsole.BackColor;
-
-                    // Use move quality color if enabled, otherwise use default line color
-                    Color explanationColor = Color.DarkRed; // Default for third line
-                    string qualitySymbol = "";
-
-                    if (config?.ShowMoveQualityColor == true)
-                    {
-                        var quality = ExplanationFormatter.DetermineQualityFromEvaluation(thirdExplanation, thirdEval);
-                        explanationColor = ExplanationFormatter.GetQualityColor(quality);
-                        qualitySymbol = ExplanationFormatter.GetQualitySymbol(quality);
-
-                        // Add space after symbol if present
-                        if (!string.IsNullOrEmpty(qualitySymbol))
-                            qualitySymbol = qualitySymbol + " ";
-                    }
-
-                    richTextBoxConsole.SelectionColor = explanationColor;
-                    richTextBoxConsole.SelectionFont = new Font(richTextBoxConsole.Font, FontStyle.Italic);
-                    richTextBoxConsole.AppendText($"  → {qualitySymbol}{thirdExplanation}{Environment.NewLine}");
-                    richTextBoxConsole.SelectionFont = new Font(richTextBoxConsole.Font, FontStyle.Regular);
-                }
-
-                richTextBoxConsole.SelectionBackColor = richTextBoxConsole.BackColor;
+                consoleFormatter.DisplayMoveLine(
+                    "Third best",
+                    thirdSan,
+                    thirdEval,
+                    completeFen,
+                    pvs,
+                    thirdMove,
+                    Color.Red,
+                    Color.DarkRed);
             }
 
-            richTextBoxConsole.SelectionBackColor = richTextBoxConsole.BackColor;
-            richTextBoxConsole.SelectionColor = richTextBoxConsole.ForeColor;
+            consoleFormatter.ResetFormatting();
 
             // Update previous evaluation for next move comparison
             previousEvaluation = currentEval;
@@ -551,6 +409,12 @@ namespace ChessDroid
 
             // Initialize game state via PositionStateManager
             positionStateManager.InitializeGameState(chkWhiteTurn.Checked);
+
+            // Initialize console formatter
+            consoleFormatter = new ConsoleOutputFormatter(
+                richTextBoxConsole,
+                config,
+                MovesExplanation.GenerateMoveExplanation);
 
             // Apply theme from config
             ApplyTheme(config.Theme == "Dark");
@@ -745,8 +609,7 @@ namespace ChessDroid
             {
                 engineService?.Dispose();
                 // Reset all failure tracking flags
-                consecutiveAnalysisFailures = 0;
-                engineRestartCount = 0;
+                engineRestartManager.Reset();
                 engineService = new ChessDroid.Services.ChessEngineService(Config);
                 positionStateManager.Reset();
                 lastEngineResult = null;
@@ -891,7 +754,7 @@ namespace ChessDroid
             {
                 Debug.WriteLine($"Error in button1_Click_1: {ex.Message}");
                 labelStatus.Text = $"Error: {ex.Message}";
-                consecutiveAnalysisFailures++;
+                engineRestartManager.RecordFailure();
             }
             finally
             {
