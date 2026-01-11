@@ -1,9 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Windows.Forms;
-using ChessDroid.Models;
-
 namespace ChessDroid.Services
 {
     /// <summary>

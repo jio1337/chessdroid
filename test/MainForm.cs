@@ -1,13 +1,9 @@
-using Emgu.CV;
-using Emgu.CV.CvEnum;
-using Emgu.CV.Structure;
-using Emgu.CV.Util;
-using System.Collections.Concurrent;
-using System.Diagnostics;
-using System.Drawing.Imaging;
-using System.Runtime.InteropServices;
 using ChessDroid.Models;
 using ChessDroid.Services;
+using Emgu.CV;
+using Emgu.CV.CvEnum;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace ChessDroid
 {
@@ -20,14 +16,6 @@ namespace ChessDroid
         private bool moveInProgress = false;
 
         private System.Windows.Forms.Timer? moveTimeoutTimer;
-
-
-
-        // Track previous evaluation for blunder detection
-        private double? previousEvaluation = null;
-
-        // Board state tracking for blunder detection
-        private string lastAnalyzedFEN = "";
 
         public const int WM_HOTKEY = 0x0312;
         public const uint MOD_ALT = 0x0001;
@@ -47,6 +35,7 @@ namespace ChessDroid
         private ConsoleOutputFormatter? consoleFormatter;
         private EngineAnalysisStrategy? analysisStrategy;
         private MoveAnalysisOrchestrator? moveOrchestrator;
+        private BlunderTracker blunderTracker = new BlunderTracker();
 
         private AppConfig? config;
 
@@ -81,106 +70,20 @@ namespace ChessDroid
             // Success - extract results
             var (bestMove, evaluation, pvs, evaluations, completeFen) = result.Value;
 
-            // Track board changes for blunder detection
-            UpdateBoardChangeTracking(completeFen, evaluation);
+            // Track board changes and display results
+            blunderTracker.UpdateBoardChangeTracking(completeFen, evaluation);
 
-            // Update UI with results
-            UpdateUIWithMoveResults(bestMove, evaluation, pvs, evaluations, completeFen);
-        }
+            // Display analysis results
+            consoleFormatter?.DisplayAnalysisResults(
+                bestMove, evaluation, pvs, evaluations, completeFen,
+                blunderTracker.GetPreviousEvaluation(),
+                config?.ShowSecondLine == true,
+                config?.ShowThirdLine == true);
 
-
-
-        private void UpdateUIWithMoveResults(string bestMove, string evaluation, List<string> pvs, List<string> evaluations, string completeFen)
-        {
-            if (consoleFormatter == null) return;
-
-            consoleFormatter.Clear();
-
-            // Check for blunders
+            // Update blunder tracker with current evaluation
             double? currentEval = MovesExplanation.ParseEvaluation(evaluation);
-            if (currentEval.HasValue && previousEvaluation.HasValue)
-            {
-                // Extract whose turn it is from FEN to determine who just moved
-                string[] fenParts = completeFen.Split(' ');
-                bool whiteToMove = fenParts.Length > 1 && fenParts[1] == "w";
-                bool whiteJustMoved = !whiteToMove;
-
-                var (isBlunder, blunderType, evalDrop, whiteBlundered) = MovesExplanation.DetectBlunder(
-                    currentEval, previousEvaluation, whiteJustMoved);
-
-                if (isBlunder)
-                {
-                    consoleFormatter.DisplayBlunderWarning(blunderType, evalDrop, whiteBlundered);
-                }
-            }
-
-            // Best line
-            string bestSanFull = ConvertPvToSan(pvs, 0, bestMove, completeFen);
-            string formattedEval = consoleFormatter.FormatEvaluationWithWinPercentage(evaluation, completeFen);
-            consoleFormatter.DisplayMoveLine(
-                "Best line",
-                bestSanFull,
-                formattedEval,
-                completeFen,
-                pvs,
-                bestMove,
-                Color.MediumSeaGreen,
-                Color.PaleGreen);
-
-            // Second best
-            if (config?.ShowSecondLine == true && pvs.Count >= 2)
-            {
-                var secondSan = ChessNotationService.ConvertFullPvToSan(pvs[1], completeFen,
-                    ChessRulesService.ApplyUciMove, ChessRulesService.CanReachSquare, ChessRulesService.FindAllPiecesOfSameType);
-                string secondMove = pvs[1].Split(' ')[0];
-                string secondEval = evaluations.Count >= 2 ? evaluations[1] : "";
-                string formattedSecondEval = consoleFormatter.FormatEvaluationWithWinPercentage(secondEval, completeFen);
-
-                consoleFormatter.DisplayMoveLine(
-                    "Second best",
-                    secondSan,
-                    formattedSecondEval,
-                    completeFen,
-                    pvs,
-                    secondMove,
-                    Color.Yellow,
-                    Color.DarkGoldenrod);
-            }
-
-            // Third best
-            if (config?.ShowThirdLine == true && pvs.Count >= 3)
-            {
-                var thirdSan = ChessNotationService.ConvertFullPvToSan(pvs[2], completeFen,
-                    ChessRulesService.ApplyUciMove, ChessRulesService.CanReachSquare, ChessRulesService.FindAllPiecesOfSameType);
-                string thirdMove = pvs[2].Split(' ')[0];
-                string thirdEval = evaluations.Count >= 3 ? evaluations[2] : "";
-
-                consoleFormatter.DisplayMoveLine(
-                    "Third best",
-                    thirdSan,
-                    thirdEval,
-                    completeFen,
-                    pvs,
-                    thirdMove,
-                    Color.Red,
-                    Color.DarkRed);
-            }
-
-            consoleFormatter.ResetFormatting();
-
-            // Update previous evaluation for next move comparison
-            previousEvaluation = currentEval;
+            blunderTracker.SetPreviousEvaluation(currentEval);
         }
-
-        private static string ConvertPvToSan(List<string> pvs, int index, string fallbackMove, string completeFen)
-        {
-            if (pvs != null && pvs.Count > index && !string.IsNullOrWhiteSpace(pvs[index]))
-            {
-                return ChessNotationService.ConvertFullPvToSan(pvs[index], completeFen, ChessRulesService.ApplyUciMove, ChessRulesService.CanReachSquare, ChessRulesService.FindAllPiecesOfSameType);
-            }
-            return ChessNotationService.ConvertFullPvToSan(fallbackMove, completeFen, ChessRulesService.ApplyUciMove, ChessRulesService.CanReachSquare, ChessRulesService.FindAllPiecesOfSameType);
-        }
-
 
         protected override void WndProc(ref Message m)
         {
@@ -244,66 +147,6 @@ namespace ChessDroid
             string selectedSite = config?.SelectedSite ?? "Lichess";
             pieceRecognitionService.LoadTemplatesAndMasks(selectedSite, Config);
         }
-
-        private ChessBoard ExtractBoardFromMat(Mat boardMat, bool blackAtBottom)
-        {
-            // Cleanup old cache entries periodically
-            pieceRecognitionService.ClearOldCacheEntries();
-
-            var swTotal = System.Diagnostics.Stopwatch.StartNew();
-            using (Mat grayBoard = new Mat())
-            {
-                CvInvoke.CvtColor(boardMat, grayBoard, ColorConversion.Bgr2Gray);
-
-                int boardSize = grayBoard.Width;
-                int cellSize = boardSize / BOARD_SIZE;
-                char[,] board = new char[BOARD_SIZE, BOARD_SIZE];
-
-                // Dynamic board sizing - accept any board size
-                Debug.WriteLine($"Board detected at native size: {boardSize}x{boardSize} pixels (cell size: {cellSize}px)");
-
-                System.Threading.Tasks.Parallel.For(0, BOARD_SIZE * BOARD_SIZE, idx =>
-                {
-                    int row = idx / BOARD_SIZE;
-                    int col = idx % BOARD_SIZE;
-                    var swCell = System.Diagnostics.Stopwatch.StartNew();
-                    Rectangle roi = new Rectangle(col * cellSize, row * cellSize, cellSize, cellSize);
-                    using (Mat cell = new Mat(grayBoard, roi))
-                    {
-                        if (blackAtBottom)
-                        {
-                            CvInvoke.Flip(cell, cell, FlipType.Vertical);
-                            CvInvoke.Flip(cell, cell, FlipType.Horizontal);
-                        }
-
-                        (string detectedPiece, double confidence) = pieceRecognitionService.DetectPieceAndConfidence(cell, Config.MatchThreshold);
-
-                        // Debug logging for each cell
-                        string square = $"{(char)('a' + col)}{8 - row}";
-                        if (!string.IsNullOrEmpty(detectedPiece))
-                        {
-                            Debug.WriteLine($"[{square}] Detected: {detectedPiece} (confidence: {confidence:F3})");
-                        }
-                        else if (confidence > 0.3) // Log close misses
-                        {
-                            Debug.WriteLine($"[{square}] Empty but had match with confidence: {confidence:F3}");
-                        }
-
-                        board[row, col] = string.IsNullOrEmpty(detectedPiece) || detectedPiece.Length == 0 ? '.' : detectedPiece[0];
-                    }
-                    swCell.Stop();
-                    if (swCell.ElapsedMilliseconds > 10)
-                        Debug.WriteLine($"[PERF] Cell ({row},{col}) extraction+match: {swCell.ElapsedMilliseconds}ms");
-                });
-                swTotal.Stop();
-                Debug.WriteLine($"[PERF] ExtractBoardFromMat TOTAL: {swTotal.ElapsedMilliseconds}ms");
-                return new ChessBoard(board);
-            }
-        }
-
-
-
-
 
         private void Form1_KeyDown(object sender, KeyEventArgs e)
         {
@@ -426,7 +269,7 @@ namespace ChessDroid
                 engineService = new ChessDroid.Services.ChessEngineService(Config);
                 positionStateManager.Reset();
                 moveOrchestrator?.ClearCache();
-                previousEvaluation = null; // Reset blunder detection
+                blunderTracker.Reset();
             }
             catch (Exception ex)
             {
@@ -521,7 +364,7 @@ namespace ChessDroid
                     CvInvoke.Flip(boardMat, boardMat, FlipType.Horizontal);
                 }
 
-                ChessBoard currentBoard = ExtractBoardFromMat(boardMat, blackAtBottom);
+                ChessBoard currentBoard = pieceRecognitionService.ExtractBoardFromMat(boardMat, blackAtBottom, Config.MatchThreshold);
 
                 // Validate detected board is not empty
                 bool boardIsEmpty = true;
@@ -591,7 +434,7 @@ namespace ChessDroid
             if (blackAtBottom)
                 CvInvoke.Flip(boardMat, boardMat, FlipType.Vertical | FlipType.Horizontal);
 
-            ChessBoard currentBoard = ExtractBoardFromMat(boardMat, blackAtBottom);
+            ChessBoard currentBoard = pieceRecognitionService.ExtractBoardFromMat(boardMat, blackAtBottom, Config.MatchThreshold);
 
             if (positionStateManager.LastDetectedBoard != null && ChessRulesService.CountBoardDifferences(positionStateManager.LastDetectedBoard, currentBoard) >= 2)
             {
@@ -600,111 +443,9 @@ namespace ChessDroid
             }
         }
 
-        // Track board changes and update evaluation history properly
-        private void UpdateBoardChangeTracking(string currentFEN, string currentEvaluation)
-        {
-            try
-            {
-                // Extract just the position part of FEN (ignore move counters)
-                string currentPosition = ChessNotationService.GetPositionFromFEN(currentFEN);
-                string lastPosition = ChessNotationService.GetPositionFromFEN(lastAnalyzedFEN);
-
-                // Check if board actually changed
-                if (currentPosition != lastPosition)
-                {
-                    // Board changed! This is a new move
-                    Debug.WriteLine($"Board changed detected: {lastPosition} -> {currentPosition}");
-
-                    // Parse current evaluation for next comparison
-                    double? currentEval = MovesExplanation.ParseEvaluation(currentEvaluation);
-
-                    // Only update previousEvaluation if we had a previous analysis
-                    // This ensures we're tracking consecutive moves properly
-                    if (!string.IsNullOrEmpty(lastAnalyzedFEN) && currentEval.HasValue)
-                    {
-                        previousEvaluation = currentEval;
-                    }
-                    else if (currentEval.HasValue)
-                    {
-                        // First analysis - just set it without comparison
-                        previousEvaluation = currentEval;
-                    }
-
-                    // Update last analyzed position
-                    lastAnalyzedFEN = currentFEN;
-                }
-                else
-                {
-                    // Same position re-analyzed (deeper analysis or user clicked again)
-                    // Don't update previousEvaluation - just update the FEN and eval
-                    lastAnalyzedFEN = currentFEN;
-                    Debug.WriteLine("Same position re-analyzed, keeping evaluation history intact");
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Error in UpdateBoardChangeTracking: {ex.Message}");
-            }
-        }
-
         private void ApplyTheme(bool isDarkMode)
         {
-            // Suspend layout to prevent flickering and improve performance
-            this.SuspendLayout();
-
-            if (isDarkMode)
-            {
-                // Dark Mode Colors
-                this.BackColor = Color.FromArgb(30, 30, 35);
-
-                // Labels
-                labelStatus.BackColor = Color.FromArgb(60, 60, 65);
-                labelStatus.ForeColor = Color.White;
-
-                // Buttons
-                button1.BackColor = Color.FromArgb(45, 45, 48);
-                button1.ForeColor = Color.Thistle;
-                buttonReset.BackColor = Color.FromArgb(45, 45, 48);
-                buttonReset.ForeColor = Color.LightCoral;
-                buttonSettings.BackColor = Color.FromArgb(45, 45, 48);
-                buttonSettings.ForeColor = Color.Orange;
-
-                // Console
-                richTextBoxConsole.BackColor = Color.FromArgb(30, 30, 35);
-                richTextBoxConsole.ForeColor = Color.LightGray;
-
-                // Checkbox
-                chkWhiteTurn.BackColor = Color.FromArgb(30, 30, 35);
-                chkWhiteTurn.ForeColor = Color.White;
-            }
-            else
-            {
-                // Light Mode Colors
-                this.BackColor = Color.WhiteSmoke;
-
-                // Labels
-                labelStatus.BackColor = Color.Gainsboro;
-                labelStatus.ForeColor = Color.Black;
-
-                // Buttons
-                button1.BackColor = Color.Lavender;
-                button1.ForeColor = Color.DarkSlateBlue;
-                buttonReset.BackColor = Color.MistyRose;
-                buttonReset.ForeColor = Color.DarkRed;
-                buttonSettings.BackColor = Color.LightYellow;
-                buttonSettings.ForeColor = Color.DarkGoldenrod;
-
-                // Console
-                richTextBoxConsole.BackColor = Color.AliceBlue;
-                richTextBoxConsole.ForeColor = Color.Black;
-
-                // Checkbox
-                chkWhiteTurn.BackColor = Color.WhiteSmoke;
-                chkWhiteTurn.ForeColor = Color.Black;
-            }
-
-            // Resume layout to apply all changes at once
-            this.ResumeLayout();
+            ThemeService.ApplyTheme(this, labelStatus, button1, buttonReset, buttonSettings, richTextBoxConsole, chkWhiteTurn, isDarkMode);
         }
     }
 }

@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Windows.Forms;
 using ChessDroid.Models;
 
 namespace ChessDroid.Services
@@ -144,6 +140,108 @@ namespace ChessDroid.Services
         public void Clear()
         {
             richTextBox.Clear();
+        }
+
+        /// <summary>
+        /// Displays complete analysis results including blunder detection and multiple lines
+        /// </summary>
+        public void DisplayAnalysisResults(
+            string bestMove,
+            string evaluation,
+            List<string> pvs,
+            List<string> evaluations,
+            string completeFen,
+            double? previousEvaluation,
+            bool showSecondLine,
+            bool showThirdLine)
+        {
+            Clear();
+
+            // Check for blunders
+            double? currentEval = MovesExplanation.ParseEvaluation(evaluation);
+            if (currentEval.HasValue && previousEvaluation.HasValue)
+            {
+                // Extract whose turn it is from FEN to determine who just moved
+                string[] fenParts = completeFen.Split(' ');
+                bool whiteToMove = fenParts.Length > 1 && fenParts[1] == "w";
+                bool whiteJustMoved = !whiteToMove;
+
+                var (isBlunder, blunderType, evalDrop, whiteBlundered) = MovesExplanation.DetectBlunder(
+                    currentEval, previousEvaluation, whiteJustMoved);
+
+                if (isBlunder)
+                {
+                    DisplayBlunderWarning(blunderType, evalDrop, whiteBlundered);
+                }
+            }
+
+            // Best line
+            string bestSanFull = ConvertPvToSan(pvs, 0, bestMove, completeFen);
+            string formattedEval = FormatEvaluationWithWinPercentage(evaluation, completeFen);
+            DisplayMoveLine(
+                "Best line",
+                bestSanFull,
+                formattedEval,
+                completeFen,
+                pvs,
+                bestMove,
+                Color.MediumSeaGreen,
+                Color.PaleGreen);
+
+            // Second best
+            if (showSecondLine && pvs.Count >= 2)
+            {
+                var secondSan = ChessNotationService.ConvertFullPvToSan(pvs[1], completeFen,
+                    ChessRulesService.ApplyUciMove, ChessRulesService.CanReachSquare, ChessRulesService.FindAllPiecesOfSameType);
+                string secondMove = pvs[1].Split(' ')[0];
+                string secondEval = evaluations.Count >= 2 ? evaluations[1] : "";
+                string formattedSecondEval = FormatEvaluationWithWinPercentage(secondEval, completeFen);
+
+                DisplayMoveLine(
+                    "Second best",
+                    secondSan,
+                    formattedSecondEval,
+                    completeFen,
+                    pvs,
+                    secondMove,
+                    Color.Yellow,
+                    Color.DarkGoldenrod);
+            }
+
+            // Third best
+            if (showThirdLine && pvs.Count >= 3)
+            {
+                var thirdSan = ChessNotationService.ConvertFullPvToSan(pvs[2], completeFen,
+                    ChessRulesService.ApplyUciMove, ChessRulesService.CanReachSquare, ChessRulesService.FindAllPiecesOfSameType);
+                string thirdMove = pvs[2].Split(' ')[0];
+                string thirdEval = evaluations.Count >= 3 ? evaluations[2] : "";
+
+                DisplayMoveLine(
+                    "Third best",
+                    thirdSan,
+                    thirdEval,
+                    completeFen,
+                    pvs,
+                    thirdMove,
+                    Color.Red,
+                    Color.DarkRed);
+            }
+
+            ResetFormatting();
+        }
+
+        /// <summary>
+        /// Converts PV to SAN notation with fallback
+        /// </summary>
+        private static string ConvertPvToSan(List<string> pvs, int index, string fallbackMove, string completeFen)
+        {
+            if (pvs != null && pvs.Count > index && !string.IsNullOrWhiteSpace(pvs[index]))
+            {
+                return ChessNotationService.ConvertFullPvToSan(pvs[index], completeFen,
+                    ChessRulesService.ApplyUciMove, ChessRulesService.CanReachSquare, ChessRulesService.FindAllPiecesOfSameType);
+            }
+            return ChessNotationService.ConvertFullPvToSan(fallbackMove, completeFen,
+                ChessRulesService.ApplyUciMove, ChessRulesService.CanReachSquare, ChessRulesService.FindAllPiecesOfSameType);
         }
     }
 }

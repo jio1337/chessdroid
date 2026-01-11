@@ -1,9 +1,6 @@
 #pragma warning disable CS8601 // Possible null reference assignment
 #pragma warning disable CS8602 // Dereference of a possibly null reference
 
-using System;
-using System.Windows.Forms;
-
 namespace ChessDroid
 {
     public partial class SettingsForm : Form

@@ -1,4 +1,3 @@
-using System;
 using ChessDroid.Models;
 
 namespace ChessDroid.Services

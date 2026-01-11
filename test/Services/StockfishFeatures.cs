@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using ChessDroid.Models;
 
 namespace ChessDroid.Services
@@ -198,7 +195,6 @@ namespace ChessDroid.Services
                 return MoveQuality.Bad;        // Loses advantage
             else
                 return MoveQuality.Terrible;   // Blunder
-
         }
 
         /// <summary>

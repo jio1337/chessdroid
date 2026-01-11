@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using ChessDroid.Models;
 
 namespace ChessDroid.Services
@@ -254,18 +252,23 @@ namespace ChessDroid.Services
             {
                 case PieceType.Knight:
                     return (Math.Abs(dr) == 2 && Math.Abs(df) == 1) || (Math.Abs(dr) == 1 && Math.Abs(df) == 2);
+
                 case PieceType.King:
                     return Math.Abs(dr) <= 1 && Math.Abs(df) <= 1 && (dr != 0 || df != 0);
+
                 case PieceType.Pawn:
                     bool isWhite = char.IsUpper(piece);
                     int direction = isWhite ? -1 : 1;
                     if (df == 0)
                         return dr == direction || (dr == 2 * direction && ((isWhite && fromRow == 6) || (!isWhite && fromRow == 1)));
                     return dr == direction && Math.Abs(df) == 1;
+
                 case PieceType.Bishop:
                     return Math.Abs(dr) == Math.Abs(df) && dr != 0;
+
                 case PieceType.Rook:
                     return (dr == 0 && df != 0) || (df == 0 && dr != 0);
+
                 case PieceType.Queen:
                     return (dr == 0 && df != 0) || (df == 0 && dr != 0) || (Math.Abs(dr) == Math.Abs(df) && dr != 0);
             }

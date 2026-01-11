@@ -1,6 +1,5 @@
-using System;
-using System.Diagnostics;
 using ChessDroid.Models;
+using System.Diagnostics;
 
 namespace ChessDroid.Services
 {

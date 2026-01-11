@@ -1,5 +1,3 @@
-using System;
-using System.IO;
 using System.Text.Json;
 
 namespace ChessDroid
@@ -21,6 +19,7 @@ namespace ChessDroid
 
         // Display settings
         public string SelectedEngine { get; set; } = ""; // Selected engine name
+
         public string SelectedSite { get; set; } = "Lichess"; // "Lichess" or "Chess.com"
         public bool ShowBestLine { get; set; } = true; // Show best line
         public bool ShowSecondLine { get; set; } = false; // Show 2nd best line
@@ -28,6 +27,7 @@ namespace ChessDroid
 
         // Explanation settings
         public string ExplanationComplexity { get; set; } = "Intermediate"; // Beginner, Intermediate, Advanced, Master
+
         public bool ShowTacticalAnalysis { get; set; } = true; // Show tactical patterns
         public bool ShowPositionalAnalysis { get; set; } = true; // Show positional evaluation
         public bool ShowEndgameAnalysis { get; set; } = true; // Show endgame patterns

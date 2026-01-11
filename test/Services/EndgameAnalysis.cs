@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using ChessDroid.Models;
 
 namespace ChessDroid.Services
@@ -145,7 +142,7 @@ namespace ChessDroid.Services
                     for (int c = 0; c < 8; c++)
                     {
                         char piece = board.GetPiece(r, c);
-                        if (piece == '.')  continue;
+                        if (piece == '.') continue;
 
                         if (piece == 'B')
                         {

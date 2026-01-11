@@ -1,10 +1,4 @@
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace ChessDroid.Services
 {
@@ -17,6 +11,7 @@ namespace ChessDroid.Services
 
         // UCI Protocol Commands
         private const string UCI_CMD_UCI = "uci";
+
         private const string UCI_CMD_UCINEWGAME = "ucinewgame";
         private const string UCI_CMD_POSITION = "position fen";
         private const string UCI_CMD_GO_DEPTH = "go depth";
@@ -49,7 +44,7 @@ namespace ChessDroid.Services
                 engineProcess = Process.Start(psi);
                 if (engineProcess == null)
                     throw new Exception("Failed to start engine process");
-                    
+
                 engineInput = engineProcess.StandardInput;
                 engineOutput = engineProcess.StandardOutput;
 
@@ -99,7 +94,7 @@ namespace ChessDroid.Services
                     while (!engineOutput.EndOfStream)
                     {
                         string? line = await engineOutput.ReadLineAsync().WaitAsync(cts.Token);
-                        
+
                         if (line == null) continue;
 
                         // Parse info lines containing PV
@@ -174,13 +169,13 @@ namespace ChessDroid.Services
                 }
 
                 retryCount++;
-                
+
                 // Only restart engine on last retry or if process is dead
                 if (retryCount < config.MaxEngineRetries)
                 {
                     // Check if engine process is still alive
                     bool engineDead = engineProcess == null || engineProcess.HasExited;
-                    
+
                     if (engineDead || retryCount == config.MaxEngineRetries - 1)
                     {
                         Debug.WriteLine($"Restarting engine (attempt {retryCount}/{config.MaxEngineRetries})...");

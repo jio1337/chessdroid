@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using ChessDroid.Models;
 
 namespace ChessDroid.Services
@@ -237,7 +234,7 @@ namespace ChessDroid.Services
             }
         }
 
-        #endregion
+        #endregion Pawn Structure Analysis
 
         #region Piece Activity Analysis
 
@@ -387,7 +384,7 @@ namespace ChessDroid.Services
             }
         }
 
-        #endregion
+        #endregion Piece Activity Analysis
 
         #region King Safety Analysis
 
@@ -474,7 +471,7 @@ namespace ChessDroid.Services
             }
         }
 
-        #endregion
+        #endregion King Safety Analysis
 
         #region Space Control
 
@@ -513,7 +510,7 @@ namespace ChessDroid.Services
             }
         }
 
-        #endregion
+        #endregion Space Control
 
         #region Helper Methods
 
@@ -612,6 +609,6 @@ namespace ChessDroid.Services
             return defenderCount >= 1;
         }
 
-        #endregion
+        #endregion Helper Methods
     }
 }

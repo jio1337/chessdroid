@@ -1,10 +1,6 @@
-using System;
-using System.Drawing;
-using System.Drawing.Imaging;
-using System.Windows.Forms;
 using Emgu.CV;
 using Emgu.CV.CvEnum;
-using Emgu.CV.Structure;
+using System.Drawing.Imaging;
 
 namespace ChessDroid.Services
 {

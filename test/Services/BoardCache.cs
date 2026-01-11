@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using ChessDroid.Models;
 
 namespace ChessDroid.Services
@@ -15,14 +13,17 @@ namespace ChessDroid.Services
 
         // Cache of piece locations by color
         private readonly List<(int row, int col, char piece)> whitePieces;
+
         private readonly List<(int row, int col, char piece)> blackPieces;
 
         // Cache of attacked squares by color
         private readonly HashSet<(int row, int col)> whiteAttacks;
+
         private readonly HashSet<(int row, int col)> blackAttacks;
 
         // King positions (frequently needed)
         private (int row, int col) whiteKingPos;
+
         private (int row, int col) blackKingPos;
 
         public BoardCache(ChessBoard board)

@@ -1,5 +1,3 @@
-using System;
-
 namespace ChessDroid.Models
 {
     public class GameState

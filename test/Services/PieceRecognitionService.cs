@@ -1,15 +1,8 @@
-using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Drawing;
-using System.IO;
-using System.Linq;
-using System.Windows.Forms;
-using ChessDroid;
 using Emgu.CV;
 using Emgu.CV.CvEnum;
 using Emgu.CV.Structure;
+using System.Collections.Concurrent;
+using System.Diagnostics;
 
 namespace ChessDroid.Services
 {
@@ -260,6 +253,67 @@ namespace ChessDroid.Services
             cellMatchCache.Clear();
             cacheHits = 0;
             cacheMisses = 0;
+        }
+
+        /// <summary>
+        /// Extracts chess board from Mat image and recognizes all pieces
+        /// </summary>
+        public Models.ChessBoard ExtractBoardFromMat(Mat boardMat, bool blackAtBottom, double matchThreshold)
+        {
+            const int BOARD_SIZE = 8;
+
+            // Cleanup old cache entries periodically
+            ClearOldCacheEntries();
+
+            var swTotal = Stopwatch.StartNew();
+            using (Mat grayBoard = new Mat())
+            {
+                CvInvoke.CvtColor(boardMat, grayBoard, ColorConversion.Bgr2Gray);
+
+                int boardSize = grayBoard.Width;
+                int cellSize = boardSize / BOARD_SIZE;
+                char[,] board = new char[BOARD_SIZE, BOARD_SIZE];
+
+                // Dynamic board sizing - accept any board size
+                Debug.WriteLine($"Board detected at native size: {boardSize}x{boardSize} pixels (cell size: {cellSize}px)");
+
+                System.Threading.Tasks.Parallel.For(0, BOARD_SIZE * BOARD_SIZE, idx =>
+                {
+                    int row = idx / BOARD_SIZE;
+                    int col = idx % BOARD_SIZE;
+                    var swCell = Stopwatch.StartNew();
+                    Rectangle roi = new Rectangle(col * cellSize, row * cellSize, cellSize, cellSize);
+                    using (Mat cell = new Mat(grayBoard, roi))
+                    {
+                        if (blackAtBottom)
+                        {
+                            CvInvoke.Flip(cell, cell, FlipType.Vertical);
+                            CvInvoke.Flip(cell, cell, FlipType.Horizontal);
+                        }
+
+                        (string detectedPiece, double confidence) = DetectPieceAndConfidence(cell, matchThreshold);
+
+                        // Debug logging for each cell
+                        string square = $"{(char)('a' + col)}{8 - row}";
+                        if (!string.IsNullOrEmpty(detectedPiece))
+                        {
+                            Debug.WriteLine($"[{square}] Detected: {detectedPiece} (confidence: {confidence:F3})");
+                        }
+                        else if (confidence > 0.3) // Log close misses
+                        {
+                            Debug.WriteLine($"[{square}] Empty but had match with confidence: {confidence:F3}");
+                        }
+
+                        board[row, col] = string.IsNullOrEmpty(detectedPiece) || detectedPiece.Length == 0 ? '.' : detectedPiece[0];
+                    }
+                    swCell.Stop();
+                    if (swCell.ElapsedMilliseconds > 10)
+                        Debug.WriteLine($"[PERF] Cell ({row},{col}) extraction+match: {swCell.ElapsedMilliseconds}ms");
+                });
+                swTotal.Stop();
+                Debug.WriteLine($"[PERF] ExtractBoardFromMat TOTAL: {swTotal.ElapsedMilliseconds}ms");
+                return new Models.ChessBoard(board);
+            }
         }
 
         /// <summary>
