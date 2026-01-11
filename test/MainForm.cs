@@ -22,19 +22,6 @@ namespace ChessDroid
         private System.Windows.Forms.Timer? moveTimeoutTimer;
 
 
-        // Cache for engine results to avoid recomputation
-        private class EngineResultCache
-        {
-            public string PositionKey { get; set; } = "";
-            public int Depth { get; set; }
-            public string BestMove { get; set; } = "";
-            public string Evaluation { get; set; } = "";
-            public System.Collections.Generic.List<string> PVs { get; set; } = new();
-            public System.Collections.Generic.List<string> Evaluations { get; set; } = new();
-            public DateTime CachedAt { get; set; }
-        }
-
-        private EngineResultCache? lastEngineResult;
 
         // Track previous evaluation for blunder detection
         private double? previousEvaluation = null;
@@ -58,6 +45,8 @@ namespace ChessDroid
         private PositionStateManager positionStateManager = new PositionStateManager();
         private EngineRestartManager engineRestartManager = new EngineRestartManager();
         private ConsoleOutputFormatter? consoleFormatter;
+        private EngineAnalysisStrategy? analysisStrategy;
+        private MoveAnalysisOrchestrator? moveOrchestrator;
 
         private AppConfig? config;
 
@@ -69,227 +58,36 @@ namespace ChessDroid
 
         private async Task ExecuteMoveAsync(Mat boardMat, Rectangle boardRect, ChessBoard currentBoard, bool blackAtBottom)
         {
-            var swTotal = System.Diagnostics.Stopwatch.StartNew();
-            // 1) Update castling and en passant rights
-            var swUpdatePos = System.Diagnostics.Stopwatch.StartNew();
-            positionStateManager.UpdatePositionState(currentBoard);
-            swUpdatePos.Stop();
+            if (moveOrchestrator == null) return;
 
-            // 2) Generate complete FEN
-            var swFen = System.Diagnostics.Stopwatch.StartNew();
-            string completeFen = positionStateManager.GenerateCompleteFEN(currentBoard);
-            swFen.Stop();
+            // Analyze position using orchestrator
+            var result = await moveOrchestrator.AnalyzePosition(
+                currentBoard,
+                Config.EngineDepth,
+                config?.ShowSecondLine == true,
+                config?.ShowThirdLine == true);
 
-            // 3) Check cache first
-            int depth = Config.EngineDepth;
-
-            // MultiPV only depends on how many lines you want to show (1/2/3), not depth.
-            int multiPVCount = config?.ShowThirdLine == true ? 3
-                             : config?.ShowSecondLine == true ? 2
-                             : 1;
-
-            multiPVCount = Math.Min(multiPVCount, depth);
-
-            bool useCache = lastEngineResult != null &&
-                           lastEngineResult.PositionKey == completeFen &&
-                           lastEngineResult.Depth == depth &&
-                           (DateTime.Now - lastEngineResult.CachedAt).TotalSeconds < 2;
-
-            var swEngine = System.Diagnostics.Stopwatch.StartNew();
-            var result = useCache && lastEngineResult != null
-                ? (lastEngineResult.BestMove, lastEngineResult.Evaluation, lastEngineResult.PVs, lastEngineResult.Evaluations)
-                : await GetEngineResultWithDegradation(completeFen, depth, multiPVCount);
-            swEngine.Stop();
-
-            if (string.IsNullOrEmpty(result.Item1))
+            // Handle failure (null result)
+            if (result == null)
             {
-                engineRestartManager.RecordFailure();
-                Debug.WriteLine($"ERROR: Analysis failed for this position");
-                Debug.WriteLine($"Failed FEN: {completeFen}");
-
-                // Clear cache so next attempt tries again
-                lastEngineResult = null;
-
-                // Clear UI to show something happened
-                this.Invoke((MethodInvoker)(() =>
+                // Check if app restart was requested
+                if (engineRestartManager.ShouldRestartApplication())
                 {
-                    var (failures, restarts) = engineRestartManager.GetMetrics();
-                    richTextBoxConsole.Clear();
-                    richTextBoxConsole.AppendText($"Analysis failed - attempt {failures + 1}{Environment.NewLine}");
-                    richTextBoxConsole.AppendText($"Position: {completeFen}{Environment.NewLine}");
-                }));
-
-                if (engineRestartManager.ShouldAttemptRestart())
-                {
-                    if (engineRestartManager.ShouldRestartApplication())
-                    {
-                        // Too many restarts - automatically restart application
-                        var (failures, restarts) = engineRestartManager.GetMetrics();
-                        this.Invoke((MethodInvoker)(() =>
-                        {
-                            labelStatus.Text = "Engine unstable - restarting application...";
-                            richTextBoxConsole.AppendText($"Too many engine restarts ({restarts}). Automatically restarting application...{Environment.NewLine}");
-                            buttonReset_Click(this, EventArgs.Empty);
-                        }));
-                        return;
-                    }
-
-                    this.Invoke((MethodInvoker)(() => labelStatus.Text = $"Restarting engine..."));
-
-                    bool restartSuccess = await engineRestartManager.RestartEngineAsync(engineService);
-                    var (_, restartCount) = engineRestartManager.GetMetrics();
-
-                    if (restartSuccess)
-                    {
-                        this.Invoke((MethodInvoker)(() =>
-                        {
-                            labelStatus.Text = "Engine restarted - try again";
-                            richTextBoxConsole.AppendText($"Engine restarted successfully (restart #{restartCount}). Please try again.{Environment.NewLine}");
-                        }));
-                    }
-                    else
-                    {
-                        this.Invoke((MethodInvoker)(() => labelStatus.Text = $"Engine restart failed"));
-                    }
+                    this.Invoke((MethodInvoker)(() => buttonReset_Click(this, EventArgs.Empty)));
                 }
-                else
-                {
-                    var (failures, _) = engineRestartManager.GetMetrics();
-                    this.Invoke((MethodInvoker)(() => labelStatus.Text = $"Analysis failed ({failures}) - try again"));
-                }
-
-                // Save state and continue instead of stopping completely
-                positionStateManager.SaveMoveState(currentBoard);
                 return;
             }
 
-            // Reset failure counter on success
-            engineRestartManager.RecordSuccess();
+            // Success - extract results
+            var (bestMove, evaluation, pvs, evaluations, completeFen) = result.Value;
 
-            // Update status to Ready after successful analysis
-            this.Invoke((MethodInvoker)(() => labelStatus.Text = "Ready"));
+            // Track board changes for blunder detection
+            UpdateBoardChangeTracking(completeFen, evaluation);
 
-            // Track board changes for proper blunder detection
-            UpdateBoardChangeTracking(completeFen, result.Item2);
-
-            // 4) Update UI with results
-            var swUI = System.Diagnostics.Stopwatch.StartNew();
-            UpdateUIWithMoveResults(result.Item1, result.Item2, result.Item3, result.Item4, completeFen);
-            swUI.Stop();
-
-            // Overlay feature removed - analysis now shown in console only
-
-            // 6) Save state for next move
-            var swSave = System.Diagnostics.Stopwatch.StartNew();
-            positionStateManager.SaveMoveState(currentBoard);
-            swSave.Stop();
-
-            swTotal.Stop();
-            Debug.WriteLine($"[PERF] ExecuteMoveAsync timings: UpdatePos={swUpdatePos.ElapsedMilliseconds}ms, FEN={swFen.ElapsedMilliseconds}ms, Engine={swEngine.ElapsedMilliseconds}ms, UI={swUI.ElapsedMilliseconds}ms, Save={swSave.ElapsedMilliseconds}ms, TOTAL={swTotal.ElapsedMilliseconds}ms");
+            // Update UI with results
+            UpdateUIWithMoveResults(bestMove, evaluation, pvs, evaluations, completeFen);
         }
 
-        private async Task<(string, string, List<string>, List<string>)> GetEngineResultWithDegradation(string fen, int depth, int multiPVCount)
-        {
-            try
-            {
-                if (engineService == null)
-                {
-                    Debug.WriteLine("Engine service is null");
-                    return ("", "", new List<string>(), new List<string>());
-                }
-
-                Debug.WriteLine($"GetEngineResultWithDegradation - FEN: {fen}, Depth: {depth}, MultiPV: {multiPVCount}");
-
-                // Try with requested depth first
-                var result = await engineService.GetBestMoveAsync(fen, depth, multiPVCount);
-
-                Debug.WriteLine($"Engine result - BestMove: '{result.bestMove}', Eval: '{result.evaluation}', PVs: {result.pvs?.Count ?? 0}");
-
-                // If failed, try degraded modes
-                if (string.IsNullOrEmpty(result.bestMove) && depth > 5)
-                {
-                    Debug.WriteLine($"Analysis failed at depth {depth}, trying degraded mode...");
-                    this.Invoke((MethodInvoker)(() => labelStatus.Text = $"Retrying with lower depth..."));
-
-                    // Try with 75% depth
-                    int degradedDepth = (int)(depth * 0.75);
-                    result = await engineService.GetBestMoveAsync(fen, degradedDepth, Math.Min(multiPVCount, degradedDepth));
-
-                    // Still failed? Try with 50% depth
-                    if (string.IsNullOrEmpty(result.bestMove) && degradedDepth > 3)
-                    {
-                        degradedDepth = Math.Max(3, depth / 2);
-                        Debug.WriteLine($"Still failed, trying depth {degradedDepth}...");
-                        result = await engineService.GetBestMoveAsync(fen, degradedDepth, Math.Min(multiPVCount, degradedDepth));
-                    }
-
-                    if (!string.IsNullOrEmpty(result.bestMove))
-                    {
-                        Debug.WriteLine($"Success with degraded depth {degradedDepth}");
-                        this.Invoke((MethodInvoker)(() => labelStatus.Text = $"Analysis at depth {degradedDepth}"));
-                    }
-                }
-
-                // Cache the result if successful
-                if (!string.IsNullOrEmpty(result.bestMove))
-                {
-                    lastEngineResult = new EngineResultCache
-                    {
-                        PositionKey = fen,
-                        Depth = depth,
-                        BestMove = result.bestMove,
-                        Evaluation = result.evaluation,
-                        PVs = result.pvs ?? new List<string>(),
-                        Evaluations = result.evaluations ?? new List<string>(),
-                        CachedAt = DateTime.Now
-                    };
-                }
-
-                return (result.bestMove, result.evaluation, result.pvs ?? new List<string>(), result.evaluations ?? new List<string>());
-            }
-            catch (Exception ex)
-            {
-                // Check if it's a pipe closure or engine crash
-                if (ex.Message.Contains("pipe") || ex.Message.Contains("closed") || ex is System.IO.IOException)
-                {
-                    Debug.WriteLine($"Engine pipe closed or crashed: {ex.Message}");
-                    this.Invoke((MethodInvoker)(() => labelStatus.Text = "Engine crashed, restarting..."));
-
-                    // Restart engine immediately
-                    try
-                    {
-                        if (engineService != null)
-                            await engineService.RestartAsync();
-                        // Don't reset the counter here - let the main flow handle it
-                        this.Invoke((MethodInvoker)(() => labelStatus.Text = "Engine restarted"));
-
-                        // Try one more time with the restarted engine
-                        if (engineService != null)
-                        {
-                            var result = await engineService.GetBestMoveAsync(fen, Math.Max(3, depth / 2), Math.Max(3, multiPVCount / 2));
-                            if (!string.IsNullOrEmpty(result.bestMove))
-                            {
-                                Debug.WriteLine("Analysis succeeded after engine restart");
-                                this.Invoke((MethodInvoker)(() => labelStatus.Text = "Ready"));
-                                return (result.bestMove, result.evaluation, result.pvs ?? new List<string>(), result.evaluations ?? new List<string>());
-                            }
-                        }
-                    }
-                    catch (Exception restartEx)
-                    {
-                        Debug.WriteLine($"Failed to restart engine: {restartEx.Message}");
-                        this.Invoke((MethodInvoker)(() => labelStatus.Text = "Engine restart failed"));
-                    }
-                }
-                else
-                {
-                    Debug.WriteLine($"Engine error: {ex.Message}");
-                    this.Invoke((MethodInvoker)(() => labelStatus.Text = $"Engine error: {ex.Message}"));
-                }
-
-                return ("", "", new List<string>(), new List<string>());
-            }
-        }
 
 
         private void UpdateUIWithMoveResults(string bestMove, string evaluation, List<string> pvs, List<string> evaluations, string completeFen)
@@ -415,6 +213,21 @@ namespace ChessDroid
                 richTextBoxConsole,
                 config,
                 MovesExplanation.GenerateMoveExplanation);
+
+            // Initialize analysis strategy
+            analysisStrategy = new EngineAnalysisStrategy(
+                engineService,
+                status => this.Invoke((MethodInvoker)(() => labelStatus.Text = status)));
+
+            // Initialize move orchestrator
+            moveOrchestrator = new MoveAnalysisOrchestrator(
+                positionStateManager,
+                analysisStrategy,
+                engineRestartManager,
+                config,
+                status => this.Invoke((MethodInvoker)(() => labelStatus.Text = status)),
+                () => this.Invoke((MethodInvoker)(() => richTextBoxConsole.Clear())),
+                text => this.Invoke((MethodInvoker)(() => richTextBoxConsole.AppendText(text))));
 
             // Apply theme from config
             ApplyTheme(config.Theme == "Dark");
@@ -612,7 +425,7 @@ namespace ChessDroid
                 engineRestartManager.Reset();
                 engineService = new ChessDroid.Services.ChessEngineService(Config);
                 positionStateManager.Reset();
-                lastEngineResult = null;
+                moveOrchestrator?.ClearCache();
                 previousEvaluation = null; // Reset blunder detection
             }
             catch (Exception ex)
