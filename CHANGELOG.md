@@ -10,9 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Major Refactoring 🔧
 - **Phase 4: Service Extraction**
   - Created `ThemeService` (104 lines) - Centralized theme management
-  - Created `BlunderTracker` (82 lines) - Blunder detection state management
   - Enhanced `PieceRecognitionService` - Added `ExtractBoardFromMat()` method
-  - Enhanced `ConsoleOutputFormatter` - Added `DisplayAnalysisResults()` with blunder warnings
+  - Enhanced `ConsoleOutputFormatter` - Added `DisplayAnalysisResults()` method
   - MainForm: 709 → 550 lines (22.4% reduction)
 
 - **Phase 5: Engine Path Resolution**
@@ -62,11 +61,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Global Keyboard Shortcuts**
   - Alt+X - Analyze position (works when minimized)
   - Alt+K - Reset application (works when minimized)
-
-- **Blunder Detection**
-  - Automatic detection of critical mistakes
-  - Visual warnings with evaluation drop
-  - Tracks position changes for context
 
 - **Tablebase-Aware Analysis**
   - Endgame-specific analysis for positions ≤7 pieces

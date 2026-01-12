@@ -19,7 +19,6 @@ chessdroid is a desktop application built for focused chess study. Analyze posit
 - **💡 Smart Explanations** - Human-readable explanations for 30+ tactical patterns
 - **🎯 Move Quality Colors** - 6 levels from Brilliant (!!) to Blunder (??) with color coding
 - **📈 Win Percentage** - Side-aware win probability using Stockfish evaluation model
-- **⚡ Blunder Detection** - Automatic detection and warning for critical mistakes
 
 ### Customization
 - **🎨 Dark/Light Themes** - Fully-featured dark mode with automatic theme persistence

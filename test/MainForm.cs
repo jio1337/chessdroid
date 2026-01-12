@@ -35,7 +35,8 @@ namespace ChessDroid
         private ConsoleOutputFormatter? consoleFormatter;
         private EngineAnalysisStrategy? analysisStrategy;
         private MoveAnalysisOrchestrator? moveOrchestrator;
-        private BlunderTracker blunderTracker = new BlunderTracker();
+        // TODO v3.0: Re-enable when continuous monitoring architecture is implemented
+        // private BlunderTracker blunderTracker = new BlunderTracker();
         private EnginePathResolver? enginePathResolver;
 
         private AppConfig? config;
@@ -71,19 +72,19 @@ namespace ChessDroid
             // Success - extract results
             var (bestMove, evaluation, pvs, evaluations, completeFen) = result.Value;
 
-            // Track board changes and display results
-            blunderTracker.UpdateBoardChangeTracking(completeFen, evaluation);
+            // TODO v3.0: Re-enable blunder tracking
+            // blunderTracker.UpdateBoardChangeTracking(completeFen, evaluation);
 
             // Display analysis results
             consoleFormatter?.DisplayAnalysisResults(
                 bestMove, evaluation, pvs, evaluations, completeFen,
-                blunderTracker.GetPreviousEvaluation(),
+                null, // TODO v3.0: blunderTracker.GetPreviousEvaluation(),
                 config?.ShowSecondLine == true,
                 config?.ShowThirdLine == true);
 
-            // Update blunder tracker with current evaluation
-            double? currentEval = MovesExplanation.ParseEvaluation(evaluation);
-            blunderTracker.SetPreviousEvaluation(currentEval);
+            // TODO v3.0: Re-enable blunder tracking
+            // double? currentEval = MovesExplanation.ParseEvaluation(evaluation);
+            // blunderTracker.SetPreviousEvaluation(currentEval);
         }
 
         protected override void WndProc(ref Message m)
@@ -139,6 +140,12 @@ namespace ChessDroid
 
             // Load explanation settings from config
             ExplanationFormatter.LoadFromConfig(config);
+
+            // TODO v3.0: Re-enable blunder tracking
+            // if (config.TrackBlunders)
+            // {
+            //     blunderTracker.StartTracking();
+            // }
 
             LoadTemplatesAndMasks();
         }
@@ -239,7 +246,7 @@ namespace ChessDroid
                 engineService = new ChessDroid.Services.ChessEngineService(Config);
                 positionStateManager.Reset();
                 moveOrchestrator?.ClearCache();
-                blunderTracker.Reset();
+                // TODO v3.0: blunderTracker.Reset();
             }
             catch (Exception ex)
             {
@@ -273,6 +280,16 @@ namespace ChessDroid
                 {
                     ApplyTheme(config.Theme == "Dark");
                 }));
+
+                // TODO v3.0: Re-enable blunder tracking
+                // if (config.TrackBlunders)
+                // {
+                //     blunderTracker.StartTracking();
+                // }
+                // else
+                // {
+                //     blunderTracker.StopTracking();
+                // }
 
                 // Restart engine with new timeout settings
                 _ = Task.Run(async () =>

@@ -122,9 +122,9 @@ namespace ChessDroid
             chkWhiteTurn.Text = "White to move";
             chkWhiteTurn.UseVisualStyleBackColor = false;
             chkWhiteTurn.CheckedChanged += chkWhiteTurn_CheckedChanged;
-            // 
+            //
             // MainForm
-            // 
+            //
             AutoScaleDimensions = new SizeF(7F, 14F);
             AutoScaleMode = AutoScaleMode.Font;
             AutoSizeMode = AutoSizeMode.GrowAndShrink;

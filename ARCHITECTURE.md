@@ -48,10 +48,10 @@ ChessDroid is an advanced chess analysis tool that combines tactical pattern rec
      │
      │      ┌────────────────────────────────────────────────────────┐
      │      │              Performance & Utility Layer               │
-     │      │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐ │
-     └─────→│  │ChessUtilities│  │  BoardCache  │  │BlunderTracker│ │
-            │  │(Shared Logic)│  │(Performance) │  │   (State)    │ │
-            │  └──────────────┘  └──────────────┘  └──────────────┘ │
+     │      │  ┌──────────────┐  ┌──────────────┐                   │
+     └─────→│  │ChessUtilities│  │  BoardCache  │                   │
+            │  │(Shared Logic)│  │(Performance) │                   │
+            │  └──────────────┘  └──────────────┘                   │
             └────────────────────────────────────────────────────────┘
 
                  ┌────────────────────────────────────────┐
@@ -508,44 +508,21 @@ public class ThemeService
 
 ---
 
-### 11. **BlunderTracker.cs** (Blunder Detection State) ⚡ NEW v2.0
-**Purpose:** Track board state changes and evaluation history for blunder detection
+### 11. **BlunderTracker.cs** (Blunder Detection State) ❌ DISABLED - TODO v3.0
+**Status:** Disabled - Requires continuous monitoring architecture incompatible with current manual Alt+X workflow
 
-**Architecture:**
-```csharp
-public class BlunderTracker
-{
-    private string lastAnalyzedFEN = "";
-    private double? previousEvaluation = null;
+**Reason for Disabling:**
+- Current implementation relies on manual position analysis (Alt+X keypress)
+- Smart heuristics fail when user move + opponent response exceeds position change threshold
+- Requires: automatic screen capture, background piece recognition, real-time analysis
 
-    public double? UpdateBoardChangeTracking(string currentFEN, string currentEvaluation);
-    public double? GetPreviousEvaluation();
-    public void SetPreviousEvaluation(double? evaluation);
-    public void Reset();
-}
-```
+**Planned for v3.0:**
+- Implement continuous board monitoring (every 2-3 seconds)
+- Background thread for automatic screen capture
+- Real-time position analysis without user interaction
+- Performance optimization for CPU/memory usage
 
-**Key Responsibilities:**
-- Compare current FEN vs last analyzed FEN (position changes only)
-- Track previous evaluation for blunder detection
-- Provide clean API for evaluation history
-- Reset state when starting new game
-
-**Blunder Detection Algorithm:**
-```
-1. Extract position from FEN (ignore turn/castling metadata)
-2. Compare with last analyzed position
-3. If position changed:
-   - Parse current evaluation
-   - Store as previousEvaluation
-   - Update lastAnalyzedFEN
-4. Return previousEvaluation for comparison
-```
-
-**Impact:**
-- Removed state management from MainForm (2 fields eliminated)
-- Enables automatic blunder warnings in console output
-- Clean separation of concerns
+**Preserved Implementation:** Code preserved in `Services/BlunderTracker.cs` for future reference
 
 ---
 
@@ -941,9 +918,8 @@ public static string GetMyEvaluation(double eval, ...)
 **v2.0.0** - Major UX Update & Refactoring (Current) 🎨
 - **Architecture Overhaul:** MainForm reduced from 1,577 to 420 lines (73.4% reduction)
 - **ThemeService (104 lines):** Centralized dark/light mode theme management
-- **BlunderTracker (82 lines):** Automatic blunder detection and tracking
 - **EnginePathResolver (100 lines):** Automatic engine discovery and validation
-- **ConsoleOutputFormatter Enhanced:** DisplayAnalysisResults with blunder warnings
+- **ConsoleOutputFormatter Enhanced:** DisplayAnalysisResults method
 - **Color-Coded Move Quality:** 6 levels with thematic colors (!!, !, neutral, ?!, ?, ??)
 - **Win Percentage Display:** Side-aware probability (White: 82% / Black: 18%)
 - **Complexity Levels:** 4 levels (Beginner → Master)

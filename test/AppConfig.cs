@@ -37,6 +37,9 @@ namespace ChessDroid
         public bool ShowMoveQualityColor { get; set; } = true; // Color-coded moves
         public bool ShowSEEValues { get; set; } = true; // Static Exchange Evaluation
 
+        // TODO v3.0: Blunder tracking (requires continuous board monitoring architecture)
+        // public bool TrackBlunders { get; set; } = false;
+
         private static readonly string ConfigFilePath = Path.Combine(
             Application.StartupPath, "config.json");
 
