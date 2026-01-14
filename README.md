@@ -15,6 +15,7 @@ chessdroid is a desktop application built for focused chess study. Analyze posit
 ### Core Analysis
 - **🧠 UCI Engine Support** - Works with any UCI-compatible engine (Stockfish, Komodo, Ethereal, Leela, etc.)
 - **👁️ Computer Vision** - Automatic board recognition from screenshots using OpenCV
+- **⚡ Auto-Monitoring (BETA)** - Continuous board monitoring with automatic turn detection
 - **📊 Multi-PV Analysis** - Display up to 3 best lines simultaneously with evaluations
 - **💡 Smart Explanations** - Human-readable explanations for 30+ tactical patterns
 - **🎯 Move Quality Colors** - 6 levels from Brilliant (!!) to Blunder (??) with color coding
@@ -86,7 +87,7 @@ dotnet run --configuration Release
 | Hotkey | Action |
 |--------|--------|
 | `Alt+X` | Analyze current position (Show Lines) |
-| `Alt+K` | Reset application state |
+| `Alt+K` | Toggle auto-monitoring on/off |
 
 ## Configuration
 
@@ -106,6 +107,7 @@ chessdroid stores settings in `config.json`. You can customize:
 - **Theme**: Dark or Light mode (fully integrated)
 - **Complexity Level**: Beginner, Intermediate, Advanced, or Master
 - **Feature Toggles**: Enable/disable specific analysis features (11 options)
+- **Auto-Monitor Board**: Enable continuous board monitoring (BETA - disabled by default)
 - **Show Debug Cells**: Visual debugging for piece recognition
 
 ## Technology Stack
@@ -159,6 +161,8 @@ dotnet test
 - Board detection may struggle with non-standard board themes
 - Very small board sizes (< 200px) may not be detected reliably
 - Some piece sets may require custom templates
+- **Auto-Monitoring (BETA)**: Occasional engine crashes on rapid position changes (unrelated to turn detection logic)
+- **Auto-Monitoring (BETA)**: May miss opponent moves if they respond extremely quickly (within 200ms debounce window)
 
 ## FAQ
 

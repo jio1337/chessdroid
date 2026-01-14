@@ -12,6 +12,7 @@ ChessDroid is the most advanced open-source chess analysis tool, combining world
 2. **Click Analyze** - ChessDroid will show the best moves
 3. **Read explanations** - Color-coded, clear explanations for each move
 4. **Adjust settings** - Customize complexity level and features
+5. **Try Auto-Monitoring** - Enable in Settings for automatic opponent move detection (BETA)
 
 ---
 
@@ -96,7 +97,41 @@ After:  "knight in good position (wins 6)"
 
 ---
 
-### **4. Feature Toggles**
+### **4. Auto-Monitoring (BETA)**
+
+**NEW!** Continuous board monitoring that automatically detects opponent moves and triggers analysis.
+
+**How it works:**
+1. Enable "Auto-Monitor Board" checkbox in Settings
+2. Set up your board position
+3. ChessDroid scans every 1 second for position changes
+4. When opponent moves, ChessDroid automatically analyzes
+5. You see best moves without pressing Alt+X!
+
+**Toggle on/off:**
+- Alt+K hotkey - Quick toggle during gameplay
+- Settings checkbox - Persistent enable/disable
+
+**When to use:**
+- Playing games and want real-time analysis suggestions
+- Practicing against engine with instant feedback
+- Training mode where you want automatic assistance
+
+**Known Limitations (BETA):**
+- Occasional engine crashes on rapid position changes (unrelated to turn detection)
+- May miss opponent moves if they respond extremely quickly (within 200ms)
+- Piece recognition accuracy affects reliability in complex positions
+- Auto-monitor is disabled by default on startup
+
+**Tips:**
+- Works best with stable board display
+- Ensure board is clearly visible
+- Use with standard piece sets for best recognition
+- Disable if you prefer manual analysis (Alt+X)
+
+---
+
+### **5. Feature Toggles**
 
 Customize which analysis features you want to see:
 
@@ -377,7 +412,7 @@ ChessDroid includes a fully-featured dark mode theme:
 ChessDroid supports global hotkeys (work even when window is minimized):
 
 - **Alt+X** - Analyze position (triggers "Show Lines" button)
-- **Alt+K** - Reset application (clears cache and restarts engine)
+- **Alt+K** - Toggle auto-monitoring on/off (enables/disables continuous board scanning)
 
 ---
 
@@ -413,6 +448,16 @@ ChessDroid supports global hotkeys (work even when window is minimized):
 
 ## 📝 Version History
 
+**v3.0.0-BETA** - Auto-Monitoring with Turn Detection
+- ⚡ **Auto-Monitor Board (BETA)** - Continuous board scanning with automatic opponent move detection
+- ⚡ FEN-based move detection with 200ms debounce
+- ⚡ Turn tracking using piece color analysis (white vs black)
+- ⚡ Alt+K hotkey to toggle auto-monitoring on/off
+- ⚡ Re-enabled BlunderTracker integration for real-time blunder warnings
+- 🔧 Board detection cache optimization (60s TTL, ConfirmCache method)
+- 🔧 Size filtering to reject oversized boards (>1000px)
+- 📝 Known limitations: Occasional engine crashes, may miss very fast moves
+
 **v2.0.0** - Major UX Update
 - ✨ Color-coded move quality (6 levels with thematic colors)
 - ✨ Win percentage display (side-aware with Stockfish model)
@@ -420,7 +465,7 @@ ChessDroid supports global hotkeys (work even when window is minimized):
 - ✨ Feature toggles (11 toggles including 2nd/3rd line analysis)
 - ✨ Dark mode theme (fully integrated)
 - ✨ Global keyboard shortcuts (Alt+X, Alt+K)
-- 🔧 Refactored architecture (71.5% reduction in MainForm: 1,577→450 lines)
+- 🔧 Refactored architecture (73.4% reduction in MainForm: 1,577→420 lines)
 
 **v1.6.0** - Optimization & Polish
 - ⚡ 50% faster analysis
@@ -467,5 +512,5 @@ Free and open-source forever!
 
 **Enjoy analyzing with ChessDroid! ♟️🎯**
 
-*Last Updated: 2026-01-10*
-*Version: 2.0.0*
+*Last Updated: 2026-01-13*
+*Version: 3.0.0-BETA (Auto-Monitoring)*

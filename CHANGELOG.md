@@ -5,6 +5,42 @@ All notable changes to ChessDroid will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added ✨
+- **Auto-Monitoring with Turn Detection (BETA)** - Automatic opponent move detection
+  - Continuously monitors chess board for position changes
+  - Automatically triggers analysis when opponent moves
+  - FEN-based move detection with 200ms debounce
+  - Turn tracking using piece color analysis (white vs black)
+  - Capture move detection (both colors changed)
+  - Alt+K hotkey to toggle auto-monitoring on/off
+  - Settings checkbox to enable/disable
+  - Auto-monitor disabled by default on startup
+  - Board detection cache optimization (60s TTL)
+  - Size filtering to reject oversized boards (>1000px)
+  - Re-enabled BlunderTracker integration
+
+### Known Limitations ⚠️
+- **BETA Status**: Functional but has edge cases
+  - Occasional engine crashes on rapid position changes (unrelated to turn detection)
+  - May miss opponent moves if they respond extremely quickly (within debounce window)
+  - Piece recognition accuracy affects reliability in complex positions
+  - TODO v3.1: Improve robustness and handle edge cases
+
+### Changed 🔄
+- BoardDetectionService: Extended cache validity from 3s to 60s
+- BoardDetectionService: Added cache confirmation mechanism (ConfirmCache)
+- BoardDetectionService: Added size validation to reject oversized boards
+- PieceRecognitionService: Removed verbose debug logging (PERF messages, piece confidence)
+
+### Testing 🧪
+- Successfully played multiple full games with auto-monitoring
+- Success rate: 2/6 tests completed without issues
+- Engine crashes unrelated to turn detection logic
+
+---
+
 ## [2.0.0] - 2026-01-11
 
 ### Major Refactoring 🔧

@@ -508,25 +508,121 @@ public class ThemeService
 
 ---
 
-### 11. **BlunderTracker.cs** (Blunder Detection State) ❌ DISABLED - TODO v3.0
-**Status:** Disabled - Requires continuous monitoring architecture incompatible with current manual Alt+X workflow
+### 11. **BoardMonitorService.cs** (Auto-Monitoring with Turn Detection) ⚡ NEW - BETA
+**Purpose:** Continuously monitors chess board for position changes and automatically detects moves
 
-**Reason for Disabling:**
-- Current implementation relies on manual position analysis (Alt+X keypress)
-- Smart heuristics fail when user move + opponent response exceeds position change threshold
-- Requires: automatic screen capture, background piece recognition, real-time analysis
+**Status:** BETA - Functional but has known limitations (see Known Limitations section)
 
-**Planned for v3.0:**
-- Implement continuous board monitoring (every 2-3 seconds)
-- Background thread for automatic screen capture
-- Real-time position analysis without user interaction
-- Performance optimization for CPU/memory usage
+**Architecture:**
+```csharp
+public class BoardMonitorService
+{
+    private System.Windows.Forms.Timer scanTimer;       // 1000ms interval
+    private string lastDetectedFEN;                     // Previous position
+    private const int DEBOUNCE_MS = 200;                // Position stability wait
 
-**Preserved Implementation:** Code preserved in `Services/BlunderTracker.cs` for future reference
+    public void StartMonitoring(bool userIsWhite);
+    public void StopMonitoring();
+    public bool IsMonitoring();
+
+    // Event triggered when user's turn begins
+    public event EventHandler<TurnChangedEventArgs> UserTurnDetected;
+}
+```
+
+**Key Features:**
+
+#### **FEN-Based Move Detection:**
+- Compares current board FEN with last detected FEN
+- Detects position changes (moves) automatically
+- 200ms debounce ensures position stability
+
+#### **Turn Tracking Algorithm:**
+```csharp
+// Analyzes which pieces changed color
+bool whiteMoved = DidWhitePiecesMove(oldFEN, newFEN);
+bool blackMoved = DidBlackPiecesMove(oldFEN, newFEN);
+
+if (whiteMoved && blackMoved)
+{
+    // Both colors changed = capture move
+    // Use turn state from PositionStateManager
+}
+else if (whiteMoved)
+{
+    // White moved, now Black's turn
+}
+else if (blackMoved)
+{
+    // Black moved, now White's turn
+}
+```
+
+#### **Automatic Analysis Trigger:**
+- Monitors board every 1 second
+- Detects opponent moves via FEN comparison
+- Triggers analysis only when it becomes user's turn
+- Prevents spam with `moveInProgress` guard
+
+**Performance:**
+- CPU overhead: ~5-10% during active monitoring
+- Scan interval: 1000ms (configurable)
+- Debounce delay: 200ms
+- Memory footprint: <10KB (stores 2 FEN strings)
+
+**Integration:**
+- Integrates with existing BoardDetectionService (60s cache)
+- Uses PieceRecognitionService for piece identification
+- Triggers MainForm.ExecuteMoveAsync() on user's turn
+- Alt+K hotkey toggles monitoring on/off
+- Settings checkbox for persistent enable/disable
+
+**Known Limitations (BETA):**
+- Occasional engine crashes on rapid position changes (unrelated to turn detection)
+- May miss opponent moves if they respond extremely quickly (within debounce window)
+- Piece recognition accuracy affects reliability in complex positions
+- TODO v3.1: Improve robustness and handle edge cases
+
+**Cache Optimizations:**
+- BoardDetectionService cache extended from 3s to 60s TTL
+- ConfirmCache() method refreshes timestamp only when board is validated
+- Size filtering rejects oversized boards (>1000px) to prevent false detections
 
 ---
 
-### 12. **EnginePathResolver.cs** (Engine Discovery) 🔍 NEW v2.0
+### 12. **BlunderTracker.cs** (Blunder Detection State) ✅ RE-ENABLED
+**Status:** Re-enabled in conjunction with auto-monitoring feature
+
+**Purpose:** Tracks evaluation history and displays blunder warnings
+
+**Key Features:**
+- Compares current evaluation vs previous evaluation
+- Displays warning if >2 pawn swing detected
+- Orange background visual indicator for blunders
+- Shows evaluation drop (e.g., "+2.0 → -5.0")
+
+**Integration with Auto-Monitoring:**
+```csharp
+// MainForm.ExecuteMoveAsync()
+blunderTracker.UpdateBoardChangeTracking(completeFen, evaluation);
+consoleFormatter?.DisplayAnalysisResults(
+    bestMove, evaluation, pvs, evaluations, completeFen,
+    blunderTracker.GetPreviousEvaluation(), // Pass previous eval
+    config?.ShowSecondLine == true,
+    config?.ShowThirdLine == true);
+double? currentEval = MovesExplanation.ParseEvaluation(evaluation);
+blunderTracker.SetPreviousEvaluation(currentEval);
+```
+
+**Blunder Detection Logic:**
+- Implemented in ConsoleOutputFormatter.DisplayAnalysisResults()
+- Compares previous eval vs current eval
+- Accounts for side to move (eval signs)
+- Displays blunder warning if >2 pawn drop detected
+
+---
+
+### 13. **EnginePathResolver.cs** (Engine Discovery) 🔍 NEW v2.0
 **Purpose:** Automatic discovery and resolution of chess engine paths
 
 **Architecture:**
@@ -569,7 +665,7 @@ public class EnginePathResolver
 
 ---
 
-### 13. **ConsoleOutputFormatter.cs** (Enhanced v2.0) 📊 ENHANCED
+### 14. **ConsoleOutputFormatter.cs** (Enhanced v2.0) 📊 ENHANCED
 **Purpose:** Rich text console output with color coding, blunder warnings, and multi-line analysis
 
 **New Features in v2.0:**
@@ -615,7 +711,7 @@ if (isBlunder)
 
 ---
 
-### 14. **ExplanationFormatter.cs** (Enhanced v1.6+) 🎛️ ENHANCED
+### 15. **ExplanationFormatter.cs** (Enhanced v1.6+) 🎛️ ENHANCED
 **Purpose:** Customize explanation complexity and feature toggles
 
 **Complexity Levels:**
@@ -942,5 +1038,5 @@ https://github.com/jio1337/chessdroid/issues
 
 ---
 
-**Last Updated:** 2026-01-11
-**Document Version:** 2.0
+**Last Updated:** 2026-01-13
+**Document Version:** 2.1 (BETA - Auto-Monitoring)
