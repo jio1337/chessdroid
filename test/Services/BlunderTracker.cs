@@ -1,18 +1,3 @@
-// TODO v3.0: DISABLED - Blunder tracking requires continuous monitoring architecture
-//
-// REASON FOR DISABLING:
-// - Current manual Alt+X workflow is incompatible with blunder detection
-// - Smart heuristics fail when user move + opponent response exceeds threshold
-// - Requires: automatic screen capture, background piece recognition, real-time analysis
-//
-// REQUIREMENTS FOR v3.0:
-// - Implement continuous board monitoring (every 2-3 seconds)
-// - Background thread for automatic screen capture
-// - Real-time position analysis without user interaction
-// - Performance optimization for CPU/memory usage
-//
-// CURRENT IMPLEMENTATION (preserved for future reference):
-
 using System.Diagnostics;
 
 namespace ChessDroid.Services

@@ -75,6 +75,7 @@ namespace ChessDroid
             btnHelp = new Button();
             btnCancel = new Button();
             chkDarkMode = new CheckBox();
+            chkAutoMonitor = new CheckBox();
             toolTip1 = new ToolTip(components);
             grpDetection.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)numMinBoardArea).BeginInit();
@@ -428,10 +429,11 @@ namespace ChessDroid
             grpExplanations.Controls.Add(chkTablebase);
             grpExplanations.Controls.Add(chkColorCoding);
             grpExplanations.Controls.Add(chkSEE);
+            grpExplanations.Controls.Add(chkAutoMonitor);
             grpExplanations.ForeColor = Color.White;
             grpExplanations.Location = new Point(316, 12);
             grpExplanations.Name = "grpExplanations";
-            grpExplanations.Size = new Size(270, 270);
+            grpExplanations.Size = new Size(270, 295);
             grpExplanations.TabIndex = 3;
             grpExplanations.TabStop = false;
             grpExplanations.Text = "Explanation Settings";
@@ -566,6 +568,20 @@ namespace ChessDroid
             chkSEE.Text = "SEE Values";
             toolTip1.SetToolTip(chkSEE, "Static Exchange Evaluation for captures");
             chkSEE.UseVisualStyleBackColor = true;
+            //
+            // chkAutoMonitor
+            //
+            chkAutoMonitor.AutoSize = true;
+            chkAutoMonitor.Checked = false;
+            chkAutoMonitor.CheckState = CheckState.Unchecked;
+            chkAutoMonitor.ForeColor = Color.LightGreen;
+            chkAutoMonitor.Location = new Point(10, 255);
+            chkAutoMonitor.Name = "chkAutoMonitor";
+            chkAutoMonitor.Size = new Size(250, 18);
+            chkAutoMonitor.TabIndex = 9;
+            chkAutoMonitor.Text = "Auto-Monitor Board (Continuous Analysis)";
+            toolTip1.SetToolTip(chkAutoMonitor, "Automatically analyze position when it becomes your turn");
+            chkAutoMonitor.UseVisualStyleBackColor = true;
             //
             // btnSave
             //
@@ -722,5 +738,6 @@ namespace ChessDroid
         private System.Windows.Forms.CheckBox chkTablebase;
         private System.Windows.Forms.CheckBox chkColorCoding;
         private System.Windows.Forms.CheckBox chkSEE;
+        private System.Windows.Forms.CheckBox chkAutoMonitor;
     }
 }

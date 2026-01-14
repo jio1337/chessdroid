@@ -35,9 +35,9 @@ namespace ChessDroid
         private ConsoleOutputFormatter? consoleFormatter;
         private EngineAnalysisStrategy? analysisStrategy;
         private MoveAnalysisOrchestrator? moveOrchestrator;
-        // TODO v3.0: Re-enable when continuous monitoring architecture is implemented
-        // private BlunderTracker blunderTracker = new BlunderTracker();
+        private BlunderTracker blunderTracker = new BlunderTracker();
         private EnginePathResolver? enginePathResolver;
+        private BoardMonitorService? boardMonitorService;
 
         private AppConfig? config;
 
@@ -72,19 +72,19 @@ namespace ChessDroid
             // Success - extract results
             var (bestMove, evaluation, pvs, evaluations, completeFen) = result.Value;
 
-            // TODO v3.0: Re-enable blunder tracking
-            // blunderTracker.UpdateBoardChangeTracking(completeFen, evaluation);
+            // Update blunder tracking
+            blunderTracker.UpdateBoardChangeTracking(completeFen, evaluation);
 
             // Display analysis results
             consoleFormatter?.DisplayAnalysisResults(
                 bestMove, evaluation, pvs, evaluations, completeFen,
-                null, // TODO v3.0: blunderTracker.GetPreviousEvaluation(),
+                blunderTracker.GetPreviousEvaluation(),
                 config?.ShowSecondLine == true,
                 config?.ShowThirdLine == true);
 
-            // TODO v3.0: Re-enable blunder tracking
-            // double? currentEval = MovesExplanation.ParseEvaluation(evaluation);
-            // blunderTracker.SetPreviousEvaluation(currentEval);
+            // Update previous evaluation for next comparison
+            double? currentEval = MovesExplanation.ParseEvaluation(evaluation);
+            blunderTracker.SetPreviousEvaluation(currentEval);
         }
 
         protected override void WndProc(ref Message m)
@@ -94,14 +94,48 @@ namespace ChessDroid
                 int hotkeyId = m.WParam.ToInt32();
                 if (hotkeyId == 1)
                 {
+                    // Alt+X - Manual analysis
                     button1.PerformClick();
                 }
                 else if (hotkeyId == 2)
                 {
-                    buttonReset.PerformClick();
+                    // Alt+K - Toggle auto-monitoring on/off
+                    ToggleAutoMonitoring();
                 }
             }
             base.WndProc(ref m);
+        }
+
+        /// <summary>
+        /// Toggles auto-monitoring on/off via Alt+K hotkey
+        /// Provides quick enable/disable without opening settings
+        /// </summary>
+        private void ToggleAutoMonitoring()
+        {
+            if (boardMonitorService == null || config == null)
+                return;
+
+            if (boardMonitorService.IsMonitoring())
+            {
+                // Currently ON -> Turn OFF
+                boardMonitorService.StopMonitoring();
+                blunderTracker.StopTracking();
+                config.AutoMonitorBoard = false;
+                config.Save();
+                labelStatus.Text = "Auto-Monitor: OFF";
+                Debug.WriteLine("Alt+K: Auto-monitoring DISABLED");
+            }
+            else
+            {
+                // Currently OFF -> Turn ON
+                bool userIsWhite = chkWhiteTurn.Checked;
+                boardMonitorService.StartMonitoring(userIsWhite);
+                blunderTracker.StartTracking();
+                config.AutoMonitorBoard = true;
+                config.Save();
+                labelStatus.Text = "Auto-Monitor: ON";
+                Debug.WriteLine("Alt+K: Auto-monitoring ENABLED");
+            }
         }
 
         public MainForm()
@@ -141,11 +175,22 @@ namespace ChessDroid
             // Load explanation settings from config
             ExplanationFormatter.LoadFromConfig(config);
 
-            // TODO v3.0: Re-enable blunder tracking
-            // if (config.TrackBlunders)
-            // {
-            //     blunderTracker.StartTracking();
-            // }
+            // Initialize BoardMonitorService
+            boardMonitorService = new BoardMonitorService(
+                screenCaptureService,
+                boardDetectionService,
+                pieceRecognitionService,
+                positionStateManager,
+                config);
+
+            // Subscribe to turn change event
+            boardMonitorService.UserTurnDetected += OnUserTurnDetected;
+
+            // Force auto-monitor OFF on every startup (user must enable with Alt+K)
+            config.AutoMonitorBoard = false;
+            config.Save();
+            labelStatus.Text = "Ready (Alt+K to enable auto-monitor)";
+            Debug.WriteLine("MainForm: Auto-monitor disabled on startup (use Alt+K to enable)");
 
             LoadTemplatesAndMasks();
         }
@@ -155,6 +200,59 @@ namespace ChessDroid
             // Use selected site from config
             string selectedSite = config?.SelectedSite ?? "Lichess";
             pieceRecognitionService.LoadTemplatesAndMasks(selectedSite, Config);
+        }
+
+        /// <summary>
+        /// Event handler triggered when BoardMonitorService detects it's the user's turn
+        /// Auto-triggers analysis without user interaction
+        /// </summary>
+        private async void OnUserTurnDetected(object? sender, TurnChangedEventArgs e)
+        {
+            // Guard: Don't interrupt manual analysis
+            if (moveInProgress)
+            {
+                Debug.WriteLine("OnUserTurnDetected: Skipped (manual analysis in progress)");
+                return;
+            }
+
+            // Validate board before analysis (prevent engine crashes on bad boards)
+            if (!IsValidBoardForAnalysis(e.CurrentBoard))
+            {
+                Debug.WriteLine("OnUserTurnDetected: Skipped (invalid board - would crash engine)");
+                return;
+            }
+
+            Debug.WriteLine("OnUserTurnDetected: Auto-triggering analysis");
+
+            // Auto-trigger analysis using pre-captured board state
+            await ExecuteMoveAsync(e.BoardMat, e.BoardRect, e.CurrentBoard, e.BlackAtBottom);
+        }
+
+        /// <summary>
+        /// Validates board has minimum pieces needed for valid engine analysis
+        /// Prevents sending garbage boards to engine (causes pipe crashes)
+        /// </summary>
+        private bool IsValidBoardForAnalysis(ChessBoard board)
+        {
+            int pieceCount = 0;
+            int kingCount = 0;
+
+            for (int r = 0; r < 8; r++)
+            {
+                for (int c = 0; c < 8; c++)
+                {
+                    char piece = board[r, c];
+                    if (piece != '.')
+                    {
+                        pieceCount++;
+                        if (char.ToUpper(piece) == 'K')
+                            kingCount++;
+                    }
+                }
+            }
+
+            // Must have exactly 2 kings and at least 4 pieces
+            return kingCount == 2 && pieceCount >= 4;
         }
 
         private void Form1_KeyDown(object sender, KeyEventArgs e)
@@ -246,7 +344,18 @@ namespace ChessDroid
                 engineService = new ChessDroid.Services.ChessEngineService(Config);
                 positionStateManager.Reset();
                 moveOrchestrator?.ClearCache();
-                // TODO v3.0: blunderTracker.Reset();
+                blunderTracker.Reset();
+
+                // Reset monitoring services
+                if (boardMonitorService?.IsMonitoring() == true)
+                {
+                    boardMonitorService.StopMonitoring();
+                    if (config?.AutoMonitorBoard == true)
+                    {
+                        bool userIsWhite = chkWhiteTurn.Checked;
+                        boardMonitorService.StartMonitoring(userIsWhite);
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -281,15 +390,18 @@ namespace ChessDroid
                     ApplyTheme(config.Theme == "Dark");
                 }));
 
-                // TODO v3.0: Re-enable blunder tracking
-                // if (config.TrackBlunders)
-                // {
-                //     blunderTracker.StartTracking();
-                // }
-                // else
-                // {
-                //     blunderTracker.StopTracking();
-                // }
+                // Handle auto-monitor toggle
+                if (config.AutoMonitorBoard && boardMonitorService?.IsMonitoring() != true)
+                {
+                    bool userIsWhite = chkWhiteTurn.Checked;
+                    boardMonitorService?.StartMonitoring(userIsWhite);
+                    blunderTracker.StartTracking();
+                }
+                else if (!config.AutoMonitorBoard && boardMonitorService?.IsMonitoring() == true)
+                {
+                    boardMonitorService?.StopMonitoring();
+                    blunderTracker.StopTracking();
+                }
 
                 // Restart engine with new timeout settings
                 _ = Task.Run(async () =>
@@ -314,6 +426,9 @@ namespace ChessDroid
                 MessageBox.Show("A move is already being processed. Please wait.");
                 return;
             }
+
+            // Pause auto-monitor during manual analysis
+            boardMonitorService?.PauseScanning();
 
             // Show immediate feedback
             labelStatus.Text = "Analyzing...";
@@ -404,6 +519,9 @@ namespace ChessDroid
                 // ALWAYS reset the flag so button can be clicked again
                 moveTimeoutTimer?.Stop();
                 moveInProgress = false;
+
+                // Resume auto-monitor after manual analysis
+                boardMonitorService?.ResumeScanning();
             }
         }
 

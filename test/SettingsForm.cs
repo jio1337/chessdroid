@@ -115,6 +115,7 @@ namespace ChessDroid
             chkTablebase.Checked = config.ShowTablebaseInfo;
             chkColorCoding.Checked = config.ShowMoveQualityColor;
             chkSEE.Checked = config.ShowSEEValues;
+            chkAutoMonitor.Checked = config.AutoMonitorBoard;
 
             // Load theme preference
             chkDarkMode.Checked = config.Theme == "Dark";
@@ -168,6 +169,7 @@ namespace ChessDroid
             config.ShowTablebaseInfo = chkTablebase.Checked;
             config.ShowMoveQualityColor = chkColorCoding.Checked;
             config.ShowSEEValues = chkSEE.Checked;
+            config.AutoMonitorBoard = chkAutoMonitor.Checked;
 
             config.Save();
 
@@ -305,7 +307,11 @@ namespace ChessDroid
                     }
                     else if (ctrl is CheckBox chk)
                     {
-                        chk.ForeColor = Color.White;
+                        // Special color for Auto-Monitor checkbox
+                        if (chk.Name == "chkAutoMonitor")
+                            chk.ForeColor = Color.LightGreen;
+                        else
+                            chk.ForeColor = Color.White;
                         chk.BackColor = Color.FromArgb(45, 45, 48);
                     }
                 }
@@ -410,7 +416,11 @@ namespace ChessDroid
                     }
                     else if (ctrl is CheckBox chk)
                     {
-                        chk.ForeColor = Color.Black;
+                        // Special color for Auto-Monitor checkbox
+                        if (chk.Name == "chkAutoMonitor")
+                            chk.ForeColor = Color.Green;
+                        else
+                            chk.ForeColor = Color.Black;
                         chk.BackColor = Color.WhiteSmoke;
                     }
                 }

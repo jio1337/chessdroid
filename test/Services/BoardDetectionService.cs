@@ -1,6 +1,7 @@
 using Emgu.CV;
 using Emgu.CV.CvEnum;
 using Emgu.CV.Util;
+using System.Diagnostics;
 
 namespace ChessDroid.Services
 {
@@ -12,7 +13,7 @@ namespace ChessDroid.Services
     {
         private Rectangle? lastBoardRectCached = null;
         private DateTime lastBoardRectCachedAt = DateTime.MinValue;
-        private const int CACHE_VALIDITY_SECONDS = 3;
+        private const int CACHE_VALIDITY_SECONDS = 60; // Extended to 60s - cache stays valid until explicitly cleared
 
         /// <summary>
         /// Detects board with caching and fallback strategies
@@ -27,11 +28,17 @@ namespace ChessDroid.Services
                 var quick = CaptureFixedRectangle(fullMat, lastBoardRectCached.Value);
                 if (quick != null)
                 {
-                    // Refresh timestamp to keep it alive
-                    lastBoardRectCachedAt = DateTime.Now;
+                    // DON'T refresh timestamp here - only refresh when caller confirms board is valid
+                    // This prevents bad cache from staying alive
                     return (quick, lastBoardRectCached.Value);
                 }
-                // If crop failed for some reason, continue to normal detection
+                else
+                {
+                    // Cache failed (likely oversized and rejected) - clear it to avoid spam
+                    Debug.WriteLine("BoardDetectionService: Cached rectangle failed validation, clearing cache");
+                    ClearCache();
+                }
+                // Continue to normal detection
             }
 
             // 2) Try to detect board automatically
@@ -68,7 +75,11 @@ namespace ChessDroid.Services
                                     Rectangle rect = CvInvoke.BoundingRectangle(approx);
                                     double aspectRatio = (double)rect.Width / rect.Height;
 
-                                    if (aspectRatio > 0.8 && aspectRatio < 1.2 && area > maxArea)
+                                    // Filter: Reject boards that are too large (likely desktop/maximized window)
+                                    // Chess boards are typically 600-950px, anything >1000px is suspicious
+                                    bool tooLarge = rect.Width > 1000 || rect.Height > 1000;
+
+                                    if (aspectRatio > 0.8 && aspectRatio < 1.2 && !tooLarge && area > maxArea)
                                     {
                                         maxArea = area;
                                         boardRect = rect;
@@ -89,9 +100,12 @@ namespace ChessDroid.Services
                         int nH = Math.Min(fullMat.Height - ny, boardRect.Height + padding * 2);
                         boardRect = new Rectangle(nx, ny, nW, nH);
 
-                        // Save cache
-                        lastBoardRectCached = boardRect;
-                        lastBoardRectCachedAt = DateTime.Now;
+                        // Save cache ONLY if board is reasonable size (prevent caching oversized boards)
+                        if (boardRect.Width <= 1000 && boardRect.Height <= 1000)
+                        {
+                            lastBoardRectCached = boardRect;
+                            lastBoardRectCachedAt = DateTime.Now;
+                        }
 
                         return (detectedBoard, boardRect);
                     }
@@ -108,8 +122,8 @@ namespace ChessDroid.Services
             Rectangle fallbackRect = new Rectangle(x, y, side, side);
             Mat? fallbackBoard = CaptureFixedRectangle(fullMat, fallbackRect);
 
-            // Cache the fallback so next click is instant
-            if (fallbackBoard != null)
+            // Cache the fallback so next click is instant (only if reasonable size)
+            if (fallbackBoard != null && fallbackRect.Width <= 1000 && fallbackRect.Height <= 1000)
             {
                 lastBoardRectCached = fallbackRect;
                 lastBoardRectCachedAt = DateTime.Now;
@@ -185,7 +199,12 @@ namespace ChessDroid.Services
                             {
                                 Rectangle rect = CvInvoke.BoundingRectangle(approx);
                                 double aspectRatio = (double)rect.Width / rect.Height;
-                                if (aspectRatio > aspectMin && aspectRatio < aspectMax && area > maxArea)
+
+                                // Filter: Reject boards that are too large (likely desktop/maximized window)
+                                // Chess boards are typically 600-950px, anything >1000px is suspicious
+                                bool tooLarge = rect.Width > 1000 || rect.Height > 1000;
+
+                                if (aspectRatio > aspectMin && aspectRatio < aspectMax && !tooLarge && area > maxArea)
                                 {
                                     maxArea = area;
                                     // Use rectangle corners as a robust fallback for warped boards
@@ -238,6 +257,14 @@ namespace ChessDroid.Services
                 rect.Y + rect.Height > fullMat.Height)
                 return null;
 
+            // Reject boards that are too large (likely desktop/maximized window)
+            // Chess boards are typically 600-950px, anything >1000px is suspicious
+            if (rect.Width > 1000 || rect.Height > 1000)
+            {
+                Debug.WriteLine($"BoardDetectionService: Rejecting oversized rectangle {rect.Width}x{rect.Height}");
+                return null;
+            }
+
             // Return board at native size - no forced resizing
             using (Mat boardMat = new Mat(fullMat, rect))
             {
@@ -267,6 +294,19 @@ namespace ChessDroid.Services
         {
             lastBoardRectCached = null;
             lastBoardRectCachedAt = DateTime.MinValue;
+        }
+
+        /// <summary>
+        /// Confirms that the cached location is valid and should be kept alive
+        /// Call this after validating the board has valid pieces
+        /// </summary>
+        public void ConfirmCache()
+        {
+            if (lastBoardRectCached.HasValue)
+            {
+                // Refresh timestamp to keep this good location cached
+                lastBoardRectCachedAt = DateTime.Now;
+            }
         }
     }
 }

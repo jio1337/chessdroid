@@ -293,25 +293,27 @@ namespace ChessDroid.Services
 
                         (string detectedPiece, double confidence) = DetectPieceAndConfidence(cell, matchThreshold);
 
-                        // Debug logging for each cell
-                        string square = $"{(char)('a' + col)}{8 - row}";
-                        if (!string.IsNullOrEmpty(detectedPiece))
-                        {
-                            Debug.WriteLine($"[{square}] Detected: {detectedPiece} (confidence: {confidence:F3})");
-                        }
-                        else if (confidence > 0.3) // Log close misses
-                        {
-                            Debug.WriteLine($"[{square}] Empty but had match with confidence: {confidence:F3}");
-                        }
+                        // Debug logging for each cell - commented out for cleaner logs
+                        // string square = $"{(char)('a' + col)}{8 - row}";
+                        // if (!string.IsNullOrEmpty(detectedPiece))
+                        // {
+                        //     Debug.WriteLine($"[{square}] Detected: {detectedPiece} (confidence: {confidence:F3})");
+                        // }
+                        // else if (confidence > 0.3) // Log close misses
+                        // {
+                        //     Debug.WriteLine($"[{square}] Empty but had match with confidence: {confidence:F3}");
+                        // }
 
                         board[row, col] = string.IsNullOrEmpty(detectedPiece) || detectedPiece.Length == 0 ? '.' : detectedPiece[0];
                     }
                     swCell.Stop();
-                    if (swCell.ElapsedMilliseconds > 10)
-                        Debug.WriteLine($"[PERF] Cell ({row},{col}) extraction+match: {swCell.ElapsedMilliseconds}ms");
+                    // Commented out for cleaner debug logs
+                    // if (swCell.ElapsedMilliseconds > 10)
+                    //     Debug.WriteLine($"[PERF] Cell ({row},{col}) extraction+match: {swCell.ElapsedMilliseconds}ms");
                 });
                 swTotal.Stop();
-                Debug.WriteLine($"[PERF] ExtractBoardFromMat TOTAL: {swTotal.ElapsedMilliseconds}ms");
+                // Commented out for cleaner debug logs
+                // Debug.WriteLine($"[PERF] ExtractBoardFromMat TOTAL: {swTotal.ElapsedMilliseconds}ms");
                 return new Models.ChessBoard(board);
             }
         }
