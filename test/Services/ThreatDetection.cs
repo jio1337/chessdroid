@@ -679,6 +679,7 @@ namespace ChessDroid.Services
 
         /// <summary>
         /// Detect opponent forks against our pieces
+        /// A fork is only a real threat if we would LOSE material (can't save both pieces)
         /// </summary>
         private static void DetectOpponentForks(ChessBoard board, bool opponentIsWhite, List<Threat> threats)
         {
@@ -693,7 +694,10 @@ namespace ChessDroid.Services
                     bool pieceIsWhite = char.IsUpper(piece);
                     if (pieceIsWhite != opponentIsWhite) continue;
 
-                    var attackedPieces = new List<(char piece, int value, string square)>();
+                    PieceType attackerType = PieceHelper.GetPieceType(piece);
+                    int attackerValue = ChessUtilities.GetPieceValue(attackerType);
+
+                    var attackedPieces = new List<(char piece, int value, string square, int row, int col, bool isDefended)>();
 
                     // Find all our pieces this opponent piece attacks
                     for (int tr = 0; tr < 8; tr++)
@@ -709,8 +713,10 @@ namespace ChessDroid.Services
                             if (ChessUtilities.CanAttackSquare(board, r, c, piece, tr, tc))
                             {
                                 PieceType targetType = PieceHelper.GetPieceType(target);
-                                int value = ChessUtilities.GetPieceValue(targetType);
-                                attackedPieces.Add((target, value, GetSquareName(tr, tc)));
+                                int value = targetType == PieceType.King ? 100 : ChessUtilities.GetPieceValue(targetType);
+                                // Check if our piece is defended by us (the non-opponent)
+                                bool isDefended = IsSquareAttackedBy(board, tr, tc, !opponentIsWhite);
+                                attackedPieces.Add((target, value, GetSquareName(tr, tc), tr, tc, isDefended));
                             }
                         }
                     }
@@ -719,6 +725,20 @@ namespace ChessDroid.Services
 
                     if (valuableAttacked.Count >= 2)
                     {
+                        // For a fork to be a REAL threat, we need to check if opponent actually wins material
+                        // Fork works if: at least one piece is undefended, OR attacker value < lowest target value (can trade up)
+                        bool hasUndefendedPiece = valuableAttacked.Any(p => !p.isDefended);
+                        int lowestTargetValue = valuableAttacked.Min(p => p.value);
+
+                        // If all pieces are defended AND attacker is worth same or more, fork doesn't win material
+                        // We can just take the attacker and only lose one trade
+                        if (!hasUndefendedPiece && attackerValue >= lowestTargetValue)
+                        {
+                            // Not a real fork - we can just let them take one piece and recapture
+                            // No material loss beyond a single trade
+                            continue;
+                        }
+
                         var pieceNames = valuableAttacked
                             .Select(p => ChessUtilities.GetPieceName(PieceHelper.GetPieceType(p.piece)))
                             .Take(2);
@@ -841,6 +861,19 @@ namespace ChessDroid.Services
 
                                 if (secondValue > firstValue && secondType == PieceType.King)
                                 {
+                                    // PAWN SPECIAL CASE: Pawns can only move forward, not along pin lines
+                                    // A pawn "pinned" along a diagonal or file often can't move anyway
+                                    // Only report pawn pins if the pawn could actually move along that line
+                                    if (firstType == PieceType.Pawn)
+                                    {
+                                        // Pawns can only move forward (white: up, black: down)
+                                        // They can only be meaningfully pinned if the pin is along their capture diagonal
+                                        // AND they have something to capture there
+                                        // For simplicity, skip pawn pins - they're rarely meaningful threats
+                                        // The pawn usually can't move anyway (blocked or no captures)
+                                        break;
+                                    }
+
                                     // Our piece is pinned to our king
                                     string pinnedName = ChessUtilities.GetPieceName(firstType);
                                     string pinnedSquare = GetSquareName(firstRow, firstCol);

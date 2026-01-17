@@ -1113,12 +1113,13 @@ namespace ChessDroid.Services
                                             // Undefended - definite exploitable pin
                                             return $"pins {ChessUtilities.GetPieceName(pinnedPieceType)} to {ChessUtilities.GetPieceName(behindPieceType)}";
                                         }
-                                        else if (materialGain >= 2)
+                                        else if (materialGain >= 4)
                                         {
-                                            // Defended but still profitable to capture (e.g., Queen behind)
-                                            return $"pins {ChessUtilities.GetPieceName(pinnedPieceType)} to {ChessUtilities.GetPieceName(behindPieceType)} (winning exchange)";
+                                            // Defended but still very profitable to capture (e.g., Queen behind, we'd get +6)
+                                            // Only report as "winning" if we gain at least 4 points (significant advantage)
+                                            return $"pins {ChessUtilities.GetPieceName(pinnedPieceType)} to {ChessUtilities.GetPieceName(behindPieceType)}";
                                         }
-                                        // If defended and would be just a trade, don't report as a pin
+                                        // If defended and gain is small, don't report - pinned piece can just move
                                     }
                                 }
                                 break;
@@ -2398,6 +2399,7 @@ namespace ChessDroid.Services
         }
 
         // GENERAL SACRIFICE - Intentional material loss with compensation
+        // A sacrifice is when we LOSE material overall, not just when we capture with a more valuable piece
         private static string? DetectSacrifice(ChessBoard board, int destRow, int destCol, char piece, char targetPiece, bool isWhite, string evaluation)
         {
             try
@@ -2411,8 +2413,8 @@ namespace ChessDroid.Services
                 int pieceValue = ChessUtilities.GetPieceValue(pieceType);
                 int targetValue = ChessUtilities.GetPieceValue(targetType);
 
-                // Sacrifice = giving up more value than we gain
-                if (pieceValue <= targetValue) return null; // Not a sacrifice, equal or winning trade
+                // If we're capturing something of equal or greater value, never a sacrifice
+                if (pieceValue <= targetValue) return null;
 
                 // CRITICAL: For it to be a sacrifice, the target should be defended
                 // If undefended, we're just winning material (not a sacrifice)
@@ -2420,62 +2422,66 @@ namespace ChessDroid.Services
 
                 if (!targetIsDefended)
                 {
-                    // Not a sacrifice - just a favorable trade or free piece
+                    // Not a sacrifice - just winning a free piece
                     return null;
                 }
 
-                // ADDITIONAL CHECK: Count OUR defenders vs THEIR defenders
-                // If we have equal or more defenders, it's a fair trade, not a sacrifice
-                int ourDefenders = CountDefenders(board, destRow, destCol, isWhite);
-                int theirDefenders = CountDefenders(board, destRow, destCol, !isWhite);
+                // USE SEE to determine if we actually LOSE material
+                // Create temp board after our capture
+                ChessBoard tempBoard = new ChessBoard(board.GetArray());
+                tempBoard.SetPiece(destRow, destCol, piece);
 
-                // If we have 2+ defenders, we're not really sacrificing (adequately protected)
-                if (ourDefenders >= 2 && ourDefenders >= theirDefenders)
+                int seeValue = MoveEvaluation.StaticExchangeEvaluation(tempBoard, destRow, destCol, piece, isWhite);
+
+                // If SEE is >= 0, we don't lose material, so it's NOT a sacrifice
+                // A sacrifice means we intentionally lose material for positional compensation
+                if (seeValue >= 0)
                 {
-                    // This is a protected piece, not a sacrifice
+                    // We break even or win material - not a sacrifice
+                    return null;
+                }
+
+                // We DO lose material (SEE < 0). Check if the loss is significant
+                int materialLoss = -seeValue; // Convert to positive number
+
+                // Only consider it a sacrifice if we lose at least 2 points of material
+                if (materialLoss < 2)
+                {
                     return null;
                 }
 
                 // ADDITIONAL CHECK: If we're giving check, it's often not a real sacrifice
-                // Example: Bxh7+ where king can't recapture due to queen battery
-                // The piece appears "defended" by the king, but king can't actually take
                 bool givingCheck = IsGivingCheck(board, destRow, destCol, piece, isWhite);
                 if (givingCheck)
                 {
-                    // If giving check and we can be recaptured, we need very strong compensation
-                    // Otherwise it's likely a tactical shot (free piece with check), not a sacrifice
-                    bool weCanBeRecaptured = ChessUtilities.IsSquareDefended(board, destRow, destCol, !isWhite);
-
-                    if (!weCanBeRecaptured)
+                    // With check, opponent might not be able to recapture safely
+                    // Be more conservative - require larger material loss
+                    if (materialLoss < 3)
                     {
-                        // We give check and can't be recaptured - this is a free piece, not a sacrifice!
                         return null;
                     }
                 }
-
-                // Material loss
-                int materialLoss = pieceValue - targetValue;
 
                 // Parse evaluation to see if we have compensation
                 double? eval = ParseEvaluation(evaluation);
 
                 if (eval.HasValue)
                 {
-                    // If we're sacrificing material but evaluation is still good/improving, it's a sound sacrifice
+                    // If we're sacrificing material but evaluation is still good, it's a sound sacrifice
                     bool hasCompensation = (isWhite && eval.Value > 0.5) || (!isWhite && eval.Value < -0.5);
 
                     if (hasCompensation)
                     {
-                        // Classify by piece sacrificed
-                        if (pieceType == PieceType.Queen)
+                        // Classify by material lost
+                        if (materialLoss >= 8)
                         {
                             return "queen sacrifice";
                         }
-                        else if (pieceType == PieceType.Rook && materialLoss >= 2)
+                        else if (materialLoss >= 4)
                         {
                             return "rook sacrifice";
                         }
-                        else if ((pieceType == PieceType.Bishop || pieceType == PieceType.Knight) && materialLoss >= 2)
+                        else if (materialLoss >= 2)
                         {
                             return "piece sacrifice";
                         }

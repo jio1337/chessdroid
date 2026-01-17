@@ -140,6 +140,14 @@ namespace ChessDroid.Services
 
             char piece = board[srcRank, srcFile];
 
+            // Guard against empty source square (board state may be desynced)
+            if (piece == '.' || PieceHelper.GetPieceType(piece) == PieceType.None)
+            {
+                // Return the UCI move as-is if we can't convert it properly
+                // This prevents broken notation like ".b1"
+                return uciMove;
+            }
+
             string pieceLetter = "";
             if (PieceHelper.GetPieceType(piece) != PieceType.Pawn)
             {

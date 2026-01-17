@@ -57,6 +57,10 @@ namespace ChessDroid.Services
                 int destFile = move[2] - 'a';
                 int destRank = 8 - (move[3] - '0');
 
+                // Store destination square to exclude from "defends piece" detection
+                // A piece can't defend itself by moving to a square!
+                string destSquare = GetSquareName(destRank, destFile);
+
                 char movingPiece = board.GetPiece(srcRank, srcFile);
 
                 // Create board after the move
@@ -72,7 +76,8 @@ namespace ChessDroid.Services
                 }
 
                 // 1. Check if any of our pieces were attacked before and are now defended
-                DetectNewlyDefendedPieces(board, afterMove, movingPlayerIsWhite, defenses);
+                // Pass destSquare to exclude the piece that just moved (can't defend itself)
+                DetectNewlyDefendedPieces(board, afterMove, movingPlayerIsWhite, destSquare, defenses);
 
                 // 2. Check if the moving piece was escaping an attack
                 DetectEscape(board, afterMove, srcRank, srcFile, destRank, destFile, movingPiece, movingPlayerIsWhite, defenses);
@@ -102,7 +107,7 @@ namespace ChessDroid.Services
         /// the move but are now defended after the move.
         /// </summary>
         private static void DetectNewlyDefendedPieces(ChessBoard before, ChessBoard after,
-            bool weAreWhite, List<Defense> defenses)
+            bool weAreWhite, string destSquare, List<Defense> defenses)
         {
             // Check each of our pieces
             for (int r = 0; r < 8; r++)
@@ -119,6 +124,9 @@ namespace ChessDroid.Services
                     if (pieceType == PieceType.King) continue; // King handled separately
 
                     string square = GetSquareName(r, c);
+
+                    // Skip the destination square - a piece can't defend itself by moving there!
+                    if (square == destSquare) continue;
 
                     // Was this piece attacked before?
                     bool wasAttackedBefore = IsSquareAttackedBy(before, r, c, !weAreWhite);
@@ -160,6 +168,8 @@ namespace ChessDroid.Services
 
         /// <summary>
         /// Detects if the moving piece was escaping an attack.
+        /// Only reports "saves" if the piece was actually IN DANGER (not just attacked).
+        /// A piece defended by a lower-value piece is NOT in danger.
         /// </summary>
         private static void DetectEscape(ChessBoard before, ChessBoard after,
             int srcRow, int srcCol, int destRow, int destCol, char piece,
@@ -168,32 +178,117 @@ namespace ChessDroid.Services
             PieceType pieceType = PieceHelper.GetPieceType(piece);
             if (pieceType == PieceType.King) return; // King escapes handled differently
 
+            int pieceValue = ChessUtilities.GetPieceValue(pieceType);
+            if (pieceValue < 3) return; // Don't report for pawns
+
             // Was the piece attacked on its original square?
             bool wasAttacked = IsSquareAttackedBy(before, srcRow, srcCol, !weAreWhite);
             if (!wasAttacked) return;
 
-            // Is the piece safe on its new square?
-            bool isNowAttacked = IsSquareAttackedBy(after, destRow, destCol, !weAreWhite);
-            bool isNowDefended = IsSquareAttackedBy(after, destRow, destCol, weAreWhite);
+            // Was the piece ALREADY defended?
+            bool wasDefended = IsSquareAttackedBy(before, srcRow, srcCol, weAreWhite);
 
-            if (!isNowAttacked || (isNowDefended && !wasAttacked))
+            // If piece was defended, check if it was truly in danger
+            // A piece is NOT in danger if: it's defended by a lower-value piece OR same-value trade
+            if (wasDefended)
             {
-                // Piece escaped to safety
-                // Note: We don't add this as it would be redundant with the move itself
-                // Only add if it was a valuable piece that escaped
-                int pieceValue = ChessUtilities.GetPieceValue(pieceType);
-                if (pieceValue >= 3 && !isNowAttacked)
+                // Get the value of our lowest defender
+                int lowestDefenderValue = GetLowestDefenderValue(before, srcRow, srcCol, weAreWhite);
+                // Get the value of their lowest attacker
+                int lowestAttackerValue = GetLowestAttackerValue(before, srcRow, srcCol, !weAreWhite);
+
+                // If we can trade evenly or favorably (our defender <= their attacker value),
+                // the piece wasn't really in danger
+                if (lowestDefenderValue <= lowestAttackerValue)
                 {
-                    string pieceName = ChessUtilities.GetPieceName(pieceType);
-                    defenses.Add(new Defense
-                    {
-                        Description = $"saves {pieceName}",
-                        Type = DefenseType.Escape,
-                        Importance = Math.Min(pieceValue - 1, 4),
-                        Square = GetSquareName(destRow, destCol)
-                    });
+                    // Adequately defended - not actually in danger
+                    return;
+                }
+
+                // Also check if we have multiple defenders vs attackers
+                int defenders = CountDefenders(before, srcRow, srcCol, weAreWhite);
+                int attackers = CountAttackers(before, srcRow, srcCol, !weAreWhite);
+                if (defenders >= attackers)
+                {
+                    // Adequately defended by numbers
+                    return;
                 }
             }
+
+            // Piece WAS in danger - check if it's safe now
+            bool isNowAttacked = IsSquareAttackedBy(after, destRow, destCol, !weAreWhite);
+
+            if (!isNowAttacked)
+            {
+                string pieceName = ChessUtilities.GetPieceName(pieceType);
+                defenses.Add(new Defense
+                {
+                    Description = $"saves {pieceName}",
+                    Type = DefenseType.Escape,
+                    Importance = Math.Min(pieceValue - 1, 4),
+                    Square = GetSquareName(destRow, destCol)
+                });
+            }
+        }
+
+        /// <summary>
+        /// Gets the value of the lowest-value defender of a square
+        /// </summary>
+        private static int GetLowestDefenderValue(ChessBoard board, int row, int col, bool defendingIsWhite)
+        {
+            int lowestValue = int.MaxValue;
+
+            for (int r = 0; r < 8; r++)
+            {
+                for (int c = 0; c < 8; c++)
+                {
+                    if (r == row && c == col) continue;
+
+                    char piece = board.GetPiece(r, c);
+                    if (piece == '.') continue;
+
+                    bool pieceIsWhite = char.IsUpper(piece);
+                    if (pieceIsWhite != defendingIsWhite) continue;
+
+                    if (ChessUtilities.CanAttackSquare(board, r, c, piece, row, col))
+                    {
+                        PieceType pieceType = PieceHelper.GetPieceType(piece);
+                        int value = ChessUtilities.GetPieceValue(pieceType);
+                        lowestValue = Math.Min(lowestValue, value);
+                    }
+                }
+            }
+
+            return lowestValue == int.MaxValue ? 0 : lowestValue;
+        }
+
+        /// <summary>
+        /// Gets the value of the lowest-value attacker of a square
+        /// </summary>
+        private static int GetLowestAttackerValue(ChessBoard board, int row, int col, bool attackingIsWhite)
+        {
+            int lowestValue = int.MaxValue;
+
+            for (int r = 0; r < 8; r++)
+            {
+                for (int c = 0; c < 8; c++)
+                {
+                    char piece = board.GetPiece(r, c);
+                    if (piece == '.') continue;
+
+                    bool pieceIsWhite = char.IsUpper(piece);
+                    if (pieceIsWhite != attackingIsWhite) continue;
+
+                    if (ChessUtilities.CanAttackSquare(board, r, c, piece, row, col))
+                    {
+                        PieceType pieceType = PieceHelper.GetPieceType(piece);
+                        int value = ChessUtilities.GetPieceValue(pieceType);
+                        lowestValue = Math.Min(lowestValue, value);
+                    }
+                }
+            }
+
+            return lowestValue == int.MaxValue ? 0 : lowestValue;
         }
 
         /// <summary>
@@ -288,16 +383,76 @@ namespace ChessDroid.Services
                     Square = GetSquareName(kingRow, kingCol)
                 });
             }
-            else if (attackersAfter < attackersBefore && attackersBefore >= 2)
+            else
             {
-                defenses.Add(new Defense
+                // Check if opponent was threatening checkmate before but not anymore
+                bool mateThreatenedBefore = IsCheckmateThreatened(before, kingRow, kingCol, weAreWhite);
+                bool mateThreatenedAfter = IsCheckmateThreatened(after, kingRow, kingCol, weAreWhite);
+
+                if (mateThreatenedBefore && !mateThreatenedAfter)
                 {
-                    Description = "improves king safety",
-                    Type = DefenseType.ProtectKing,
-                    Importance = 3,
-                    Square = GetSquareName(kingRow, kingCol)
-                });
+                    defenses.Add(new Defense
+                    {
+                        Description = "stops checkmate threat",
+                        Type = DefenseType.ProtectKing,
+                        Importance = 5,
+                        Square = GetSquareName(kingRow, kingCol)
+                    });
+                }
+                else if (attackersAfter < attackersBefore && attackersBefore >= 2)
+                {
+                    defenses.Add(new Defense
+                    {
+                        Description = "improves king safety",
+                        Type = DefenseType.ProtectKing,
+                        Importance = 3,
+                        Square = GetSquareName(kingRow, kingCol)
+                    });
+                }
             }
+        }
+
+        /// <summary>
+        /// Checks if opponent has a checkmate threat (can deliver mate on their next move)
+        /// </summary>
+        private static bool IsCheckmateThreatened(ChessBoard board, int kingRow, int kingCol, bool weAreWhite)
+        {
+            // For each opponent piece, check if they can give check
+            // Then check if that check would be checkmate (king has no escape squares)
+            // This is simplified - we just check if opponent can deliver an unblockable check
+            // with our king having no safe squares
+
+            char ourKing = weAreWhite ? 'K' : 'k';
+
+            // Count safe squares for our king
+            int safeSquares = 0;
+            for (int dr = -1; dr <= 1; dr++)
+            {
+                for (int dc = -1; dc <= 1; dc++)
+                {
+                    if (dr == 0 && dc == 0) continue;
+                    int r = kingRow + dr;
+                    int c = kingCol + dc;
+                    if (r < 0 || r >= 8 || c < 0 || c >= 8) continue;
+
+                    char sq = board.GetPiece(r, c);
+                    // Can't move to square with our own piece
+                    if (sq != '.' && char.IsUpper(sq) == weAreWhite) continue;
+
+                    // Check if square is attacked by opponent
+                    if (!IsSquareAttackedBy(board, r, c, !weAreWhite))
+                    {
+                        safeSquares++;
+                    }
+                }
+            }
+
+            // If king has very few safe squares AND is heavily attacked, mate might be threatened
+            // This is a simplified heuristic - true mate detection would require full search
+            int attackersOnKing = CountAttackersAroundKing(board, kingRow, kingCol, !weAreWhite);
+
+            // Heuristic: If king has 0-1 safe squares and 3+ attackers around, mate is likely threatened
+            return safeSquares <= 1 && attackersOnKing >= 3;
         }
 
         #region Helper Methods
