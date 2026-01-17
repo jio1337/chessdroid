@@ -902,12 +902,7 @@ namespace ChessDroid.Services
 
         #region Helper Methods
 
-        private static string GetSquareName(int row, int col)
-        {
-            char file = (char)('a' + col);
-            int rank = 8 - row;
-            return $"{file}{rank}";
-        }
+        private static string GetSquareName(int row, int col) => ChessUtilities.GetSquareName(row, col);
 
         private static bool IsSquareAttackedBy(ChessBoard board, int row, int col, bool byWhite)
         {

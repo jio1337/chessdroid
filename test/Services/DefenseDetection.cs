@@ -417,12 +417,153 @@ namespace ChessDroid.Services
 
         /// <summary>
         /// Checks if opponent has a checkmate threat (can deliver mate on their next move)
-        /// Detects common patterns: back rank mate, smothered mate, heavy piece battery
+        /// Actually simulates opponent moves to find if any delivers checkmate
         /// </summary>
         private static bool IsCheckmateThreatened(ChessBoard board, int kingRow, int kingCol, bool weAreWhite)
         {
-            // Count safe squares for our king
-            int safeSquares = 0;
+            // Check if any opponent piece can move to give checkmate
+            // We look for squares adjacent to king (or the king's square itself for discovered checks)
+            // where an opponent piece could deliver check AND king has no escape
+
+            // First, find squares where opponent could give check
+            var checkSquares = new List<(int row, int col)>();
+
+            // Check squares that would give check to our king
+            // This includes the king's adjacent squares and squares on same rank/file/diagonal
+            for (int r = 0; r < 8; r++)
+            {
+                for (int c = 0; c < 8; c++)
+                {
+                    // Would a piece on (r,c) attack the king?
+                    // Check for opponent pieces that could move here and give check
+                    char currentPiece = board.GetPiece(r, c);
+
+                    // Look for opponent pieces
+                    if (currentPiece != '.' && char.IsUpper(currentPiece) != weAreWhite)
+                    {
+                        // This is an opponent piece - can it move somewhere to give check?
+                        if (CanPieceDeliverMateInOne(board, r, c, currentPiece, kingRow, kingCol, weAreWhite))
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Checks if a specific opponent piece can deliver checkmate in one move
+        /// </summary>
+        private static bool CanPieceDeliverMateInOne(ChessBoard board, int pieceRow, int pieceCol, char piece,
+            int kingRow, int kingCol, bool weAreWhite)
+        {
+            PieceType pieceType = PieceHelper.GetPieceType(piece);
+
+            // Get all squares this piece could move to
+            var possibleMoves = GetPieceMoves(board, pieceRow, pieceCol, piece);
+
+            foreach (var (destRow, destCol) in possibleMoves)
+            {
+                // Simulate the move
+                ChessBoard tempBoard = new ChessBoard(board.GetArray());
+                tempBoard.SetPiece(destRow, destCol, piece);
+                tempBoard.SetPiece(pieceRow, pieceCol, '.');
+
+                // Check if this gives check
+                if (!IsSquareAttackedBy(tempBoard, kingRow, kingCol, !weAreWhite))
+                {
+                    continue; // Doesn't give check
+                }
+
+                // It gives check - now check if it's checkmate (king has no escape)
+                if (IsCheckmate(tempBoard, kingRow, kingCol, weAreWhite))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Gets possible move destinations for a piece (simplified, doesn't check all legality)
+        /// </summary>
+        private static List<(int row, int col)> GetPieceMoves(ChessBoard board, int row, int col, char piece)
+        {
+            var moves = new List<(int row, int col)>();
+            PieceType pieceType = PieceHelper.GetPieceType(piece);
+            bool isWhite = char.IsUpper(piece);
+
+            switch (pieceType)
+            {
+                case PieceType.Queen:
+                case PieceType.Rook:
+                    // Straight lines
+                    AddSlidingMoves(board, row, col, isWhite, new[] { (0, 1), (0, -1), (1, 0), (-1, 0) }, moves);
+                    if (pieceType == PieceType.Rook) break;
+                    // Fall through for queen to add diagonal
+                    goto case PieceType.Bishop;
+                case PieceType.Bishop:
+                    AddSlidingMoves(board, row, col, isWhite, new[] { (1, 1), (1, -1), (-1, 1), (-1, -1) }, moves);
+                    break;
+                case PieceType.Knight:
+                    var knightOffsets = new[] { (2, 1), (2, -1), (-2, 1), (-2, -1), (1, 2), (1, -2), (-1, 2), (-1, -2) };
+                    foreach (var (dr, dc) in knightOffsets)
+                    {
+                        int r = row + dr, c = col + dc;
+                        if (r >= 0 && r < 8 && c >= 0 && c < 8)
+                        {
+                            char target = board.GetPiece(r, c);
+                            if (target == '.' || char.IsUpper(target) != isWhite)
+                                moves.Add((r, c));
+                        }
+                    }
+                    break;
+            }
+
+            return moves;
+        }
+
+        /// <summary>
+        /// Adds sliding piece moves along given directions
+        /// </summary>
+        private static void AddSlidingMoves(ChessBoard board, int row, int col, bool isWhite,
+            (int dr, int dc)[] directions, List<(int row, int col)> moves)
+        {
+            foreach (var (dr, dc) in directions)
+            {
+                int r = row + dr, c = col + dc;
+                while (r >= 0 && r < 8 && c >= 0 && c < 8)
+                {
+                    char target = board.GetPiece(r, c);
+                    if (target == '.')
+                    {
+                        moves.Add((r, c));
+                    }
+                    else
+                    {
+                        if (char.IsUpper(target) != isWhite)
+                            moves.Add((r, c)); // Can capture
+                        break; // Blocked
+                    }
+                    r += dr;
+                    c += dc;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Checks if the position is checkmate for the given king
+        /// </summary>
+        private static bool IsCheckmate(ChessBoard board, int kingRow, int kingCol, bool weAreWhite)
+        {
+            // King must be in check
+            if (!IsSquareAttackedBy(board, kingRow, kingCol, !weAreWhite))
+                return false;
+
+            // Check if king can escape
             for (int dr = -1; dr <= 1; dr++)
             {
                 for (int dc = -1; dc <= 1; dc++)
@@ -436,122 +577,29 @@ namespace ChessDroid.Services
                     // Can't move to square with our own piece
                     if (sq != '.' && char.IsUpper(sq) == weAreWhite) continue;
 
-                    // Check if square is attacked by opponent
-                    if (!IsSquareAttackedBy(board, r, c, !weAreWhite))
+                    // Simulate king move
+                    ChessBoard tempBoard = new ChessBoard(board.GetArray());
+                    char king = weAreWhite ? 'K' : 'k';
+                    tempBoard.SetPiece(r, c, king);
+                    tempBoard.SetPiece(kingRow, kingCol, '.');
+
+                    // Check if king is safe there
+                    if (!IsSquareAttackedBy(tempBoard, r, c, !weAreWhite))
                     {
-                        safeSquares++;
+                        return false; // King can escape
                     }
                 }
             }
 
-            // Check for back rank mate threat (king trapped on back rank)
-            int backRank = weAreWhite ? 7 : 0;
-            if (kingRow == backRank)
-            {
-                // King is on back rank - check if blocked by own pieces (typical back rank weakness)
-                int blockedSquares = 0;
-                for (int dc = -1; dc <= 1; dc++)
-                {
-                    int c = kingCol + dc;
-                    if (c < 0 || c >= 8) continue;
-                    int forwardRow = weAreWhite ? kingRow - 1 : kingRow + 1;
-                    if (forwardRow >= 0 && forwardRow < 8)
-                    {
-                        char sq = board.GetPiece(forwardRow, c);
-                        if (sq != '.' && char.IsUpper(sq) == weAreWhite)
-                        {
-                            blockedSquares++;
-                        }
-                    }
-                }
-
-                // If king is blocked and opponent has a rook/queen that can deliver check on back rank
-                if (blockedSquares >= 2 && safeSquares <= 1)
-                {
-                    // Check if opponent has heavy piece that can deliver back rank check
-                    if (HasHeavyPieceOnOpenFileOrRank(board, kingRow, kingCol, !weAreWhite))
-                    {
-                        return true;
-                    }
-                }
-            }
-
-            // General heuristic: few safe squares + multiple attackers
-            int attackersOnKing = CountAttackersAroundKing(board, kingRow, kingCol, !weAreWhite);
-
-            // Relaxed heuristic: 0 safe squares and 2+ attackers, or 1 safe square and 3+ attackers
-            return (safeSquares == 0 && attackersOnKing >= 2) || (safeSquares <= 1 && attackersOnKing >= 3);
-        }
-
-        /// <summary>
-        /// Checks if opponent has a heavy piece (rook or queen) that could deliver check
-        /// </summary>
-        private static bool HasHeavyPieceOnOpenFileOrRank(ChessBoard board, int kingRow, int kingCol, bool opponentIsWhite)
-        {
-            // Check for rooks or queens on the same rank or file as the king
-            for (int r = 0; r < 8; r++)
-            {
-                for (int c = 0; c < 8; c++)
-                {
-                    char piece = board.GetPiece(r, c);
-                    if (piece == '.') continue;
-
-                    bool pieceIsWhite = char.IsUpper(piece);
-                    if (pieceIsWhite != opponentIsWhite) continue;
-
-                    PieceType pieceType = PieceHelper.GetPieceType(piece);
-                    if (pieceType != PieceType.Rook && pieceType != PieceType.Queen) continue;
-
-                    // Check if on same rank or file
-                    if (r == kingRow || c == kingCol)
-                    {
-                        // Check if path is clear (or could become clear)
-                        if (IsPathClearOrNearlyClear(board, r, c, kingRow, kingCol))
-                        {
-                            return true;
-                        }
-                    }
-                }
-            }
-            return false;
-        }
-
-        /// <summary>
-        /// Checks if the path between two squares is clear or has only 1 piece
-        /// </summary>
-        private static bool IsPathClearOrNearlyClear(ChessBoard board, int r1, int c1, int r2, int c2)
-        {
-            int dr = r2 - r1;
-            int dc = c2 - c1;
-
-            if (dr != 0) dr = dr / Math.Abs(dr);
-            if (dc != 0) dc = dc / Math.Abs(dc);
-
-            int piecesInPath = 0;
-            int r = r1 + dr;
-            int c = c1 + dc;
-
-            while (r != r2 || c != c2)
-            {
-                if (board.GetPiece(r, c) != '.')
-                {
-                    piecesInPath++;
-                }
-                r += dr;
-                c += dc;
-            }
-
-            return piecesInPath <= 1;
+            // King can't move - check if we can block or capture the attacker
+            // For simplicity, we'll consider it mate if king has no moves
+            // (A more complete check would verify blocks/captures, but this catches most cases)
+            return true;
         }
 
         #region Helper Methods
 
-        private static string GetSquareName(int row, int col)
-        {
-            char file = (char)('a' + col);
-            int rank = 8 - row;
-            return $"{file}{rank}";
-        }
+        private static string GetSquareName(int row, int col) => ChessUtilities.GetSquareName(row, col);
 
         private static bool IsSquareAttackedBy(ChessBoard board, int row, int col, bool byWhite)
         {

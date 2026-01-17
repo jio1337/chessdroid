@@ -212,6 +212,16 @@ namespace ChessDroid.Services
         // =============================
 
         /// <summary>
+        /// Convert row/col indices to algebraic notation (e.g., 0,4 -> "e8")
+        /// </summary>
+        public static string GetSquareName(int row, int col)
+        {
+            char file = (char)('a' + col);
+            int rank = 8 - row;
+            return $"{file}{rank}";
+        }
+
+        /// <summary>
         /// Count number of attackers on a square
         /// </summary>
         public static int CountAttackers(ChessBoard board, int row, int col, bool byWhite)
