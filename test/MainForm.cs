@@ -72,19 +72,26 @@ namespace ChessDroid
             // Success - extract results
             var (bestMove, evaluation, pvs, evaluations, completeFen) = result.Value;
 
-            // Update blunder tracking
-            blunderTracker.UpdateBoardChangeTracking(completeFen, evaluation);
+            // Update blunder tracking - ONLY when auto-monitoring is active
+            // Manual analysis doesn't track consecutive positions, so blunder detection
+            // would give false positives (comparing unrelated positions)
+            double? previousEval = null;
+            if (blunderTracker.IsTrackingEnabled())
+            {
+                previousEval = blunderTracker.GetPreviousEvaluation();
+                blunderTracker.UpdateBoardChangeTracking(completeFen, evaluation);
 
-            // Display analysis results
+                // Update previous evaluation for next comparison
+                double? currentEval = MovesExplanation.ParseEvaluation(evaluation);
+                blunderTracker.SetPreviousEvaluation(currentEval);
+            }
+
+            // Display analysis results (only show blunder warning if tracking is active)
             consoleFormatter?.DisplayAnalysisResults(
                 bestMove, evaluation, pvs, evaluations, completeFen,
-                blunderTracker.GetPreviousEvaluation(),
+                previousEval,
                 config?.ShowSecondLine == true,
                 config?.ShowThirdLine == true);
-
-            // Update previous evaluation for next comparison
-            double? currentEval = MovesExplanation.ParseEvaluation(evaluation);
-            blunderTracker.SetPreviousEvaluation(currentEval);
         }
 
         protected override void WndProc(ref Message m)
