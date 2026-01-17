@@ -227,6 +227,12 @@ namespace ChessDroid.Services
         {
             try
             {
+                // FORCED MATE: When there's a forced checkmate, no other explanation needed
+                if (!string.IsNullOrEmpty(evaluation) && evaluation.StartsWith("Mate in "))
+                {
+                    return $"forced checkmate ({evaluation.ToLower()})";
+                }
+
                 ChessBoard board = ChessBoard.FromFEN(fen);
 
                 if (string.IsNullOrEmpty(bestMove) || bestMove.Length < 4)
