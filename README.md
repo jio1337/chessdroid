@@ -18,6 +18,8 @@ chessdroid is a desktop application built for focused chess study. Analyze posit
 - **⚡ Auto-Monitoring (BETA)** - Continuous board monitoring with automatic turn detection
 - **📊 Multi-PV Analysis** - Display up to 3 best lines simultaneously with evaluations
 - **💡 Smart Explanations** - Human-readable explanations for 30+ tactical patterns
+- **⚔️ Threat Detection** - Shows NEW threats created by each move (pins, forks, attacks)
+- **🛡️ Defense Detection** - Shows defensive aspects of moves (protecting pieces, blocking attacks)
 - **🎯 Move Quality Colors** - 6 levels from Brilliant (!!) to Blunder (??) with color coding
 - **📈 Win Percentage** - Side-aware win probability using Stockfish evaluation model
 
@@ -107,6 +109,7 @@ chessdroid stores settings in `config.json`. You can customize:
 - **Theme**: Dark or Light mode (fully integrated)
 - **Complexity Level**: Beginner, Intermediate, Advanced, or Master
 - **Feature Toggles**: Enable/disable specific analysis features (11 options)
+- **Threats & Defenses**: Toggle threat/defense display on move explanations
 - **Auto-Monitor Board**: Enable continuous board monitoring (BETA - disabled by default)
 - **Show Debug Cells**: Visual debugging for piece recognition
 

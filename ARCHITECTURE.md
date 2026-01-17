@@ -590,7 +590,105 @@ else if (blackMoved)
 
 ---
 
-### 12. **BlunderTracker.cs** (Blunder Detection State) ✅ RE-ENABLED
+### 12. **ThreatDetection.cs** (Threat Analysis) ⚔️ NEW
+**Purpose:** Detects chess threats for both sides, showing NEW threats created by moves
+
+**Architecture:**
+```csharp
+public static class ThreatDetection
+{
+    public class Threat
+    {
+        public string Description { get; set; }
+        public ThreatType Type { get; set; }
+        public int Severity { get; set; }  // 1-5
+        public string Square { get; set; }
+    }
+
+    // Main methods
+    public static List<Threat> AnalyzeThreatsAfterMove(board, move, isWhite);
+    public static List<Threat> AnalyzeOpponentThreats(board, weAreWhite);
+}
+```
+
+**Key Features:**
+
+**Before/After Comparison:**
+- Detects threats BEFORE the move
+- Detects threats AFTER the move
+- Filters to show only NEW threats created by the move
+- Prevents false positives like "attacks queen" when already attacking
+
+**Threat Types Detected:**
+- HangingPiece - Undefended piece under attack
+- MaterialWin - Attacking higher value piece
+- Fork - Attacking multiple pieces
+- Pin - Piece pinned to more valuable piece/king
+- Skewer - Attacking through a piece
+- DiscoveredAttack - Moving reveals attack
+- CheckmateThreat - Threatening mate
+- Check - Giving check
+- Promotion - Pawn about to promote
+- TrappedPiece - Piece with no escape
+
+**Pin Detection Algorithm:**
+```csharp
+// Only report pin if:
+// 1. Absolute pin (to king) - always report
+// 2. OR we would WIN the piece behind:
+//    - Piece is undefended
+//    - OR we'd trade up (our value < their value)
+```
+
+**Performance:** O(n) where n = pieces on board, returns top 3 threats
+
+---
+
+### 13. **DefenseDetection.cs** (Defense Analysis) 🛡️ NEW
+**Purpose:** Detects defensive aspects of moves (protecting pieces, blocking attacks)
+
+**Architecture:**
+```csharp
+public static class DefenseDetection
+{
+    public class Defense
+    {
+        public string Description { get; set; }
+        public DefenseType Type { get; set; }
+        public int Value { get; set; }  // Material value defended
+        public string Square { get; set; }
+    }
+
+    public static List<Defense> AnalyzeDefensesAfterMove(board, move, isWhite);
+}
+```
+
+**Defense Types Detected:**
+- ProtectPiece - Newly defending a piece (knight, bishop, rook, queen)
+- ProtectPawn - Newly defending a pawn
+- BlockAttack - Blocking an attack on valuable piece
+- Escape - Moving attacked piece to safety
+- ProtectKing - Improving king safety
+
+**Detection Algorithm:**
+```csharp
+// 1. Find OUR pieces that are attacked by opponent
+// 2. Compare BEFORE/AFTER the move:
+//    - Which pieces are NOW defended that weren't before?
+//    - Which attacked pieces moved to safety?
+// 3. Only report significant defenses (value >= 1)
+```
+
+**Integration:**
+- Displayed in ConsoleOutputFormatter with 🛡 icon
+- Uses CornflowerBlue color for visibility
+- Shows alongside threats on same line: "→ explanation | 🛡 defends pawn"
+
+**Performance:** O(n²) where n = pieces on board, returns top 2 defenses
+
+---
+
+### 14. **BlunderTracker.cs** (Blunder Detection State) ✅ RE-ENABLED
 **Status:** Re-enabled in conjunction with auto-monitoring feature
 
 **Purpose:** Tracks evaluation history and displays blunder warnings
@@ -1011,7 +1109,14 @@ public static string GetMyEvaluation(double eval, ...)
 - **ExplanationFormatter:** Complexity levels, feature toggles, color-coding
 - Comprehensive documentation
 
-**v2.0.0** - Major UX Update & Refactoring (Current) 🎨
+**v2.1.0** - Threat & Defense Detection (Current) ⚔️🛡️
+- **ThreatDetection.cs:** Before/after comparison for accurate threat detection
+- **DefenseDetection.cs:** Detect defensive moves (protecting, blocking, escaping)
+- **Pin/X-ray fixes:** Only report when material would actually be won
+- **SEE settings:** Respects ShowSEEValues toggle
+- **ConsoleOutputFormatter:** Integrated defense display with shield icon
+
+**v2.0.0** - Major UX Update & Refactoring 🎨
 - **Architecture Overhaul:** MainForm reduced from 1,577 to 420 lines (73.4% reduction)
 - **ThemeService (104 lines):** Centralized dark/light mode theme management
 - **EnginePathResolver (100 lines):** Automatic engine discovery and validation
@@ -1038,5 +1143,5 @@ https://github.com/jio1337/chessdroid/issues
 
 ---
 
-**Last Updated:** 2026-01-13
-**Document Version:** 2.1 (BETA - Auto-Monitoring)
+**Last Updated:** 2026-01-17
+**Document Version:** 2.2 (Defense Detection & Threat Improvements)

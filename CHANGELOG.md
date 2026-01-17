@@ -8,6 +8,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added ✨
+- **Defense Detection** - Detect defensive moves with shield icon (🛡)
+  - Protecting attacked pieces (newly defended)
+  - Blocking attacks on valuable pieces
+  - Escaping threats (moving attacked pieces to safety)
+  - King safety improvements
+  - Displayed alongside threats on move explanations
+
+- **Threat Detection Improvements**
+  - Before/after comparison: Only shows NEW threats created by a move
+  - Fixes false positives like "attacks queen" when piece was already attacking
+  - Pin detection: Only reports when material would actually be won
+  - X-ray attack detection: Only reports when we'd capture the piece behind
+
 - **Auto-Monitoring with Turn Detection (BETA)** - Automatic opponent move detection
   - Continuously monitors chess board for position changes
   - Automatically triggers analysis when opponent moves
@@ -28,11 +41,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Piece recognition accuracy affects reliability in complex positions
   - TODO v3.1: Improve robustness and handle edge cases
 
+### Fixed 🐛
+- SEE values now respect ShowSEEValues setting (no longer shown when disabled)
+- Pin detection no longer reports pins when the piece behind is defended
+- X-ray attacks no longer trigger for defended pieces behind
+
 ### Changed 🔄
 - BoardDetectionService: Extended cache validity from 3s to 60s
 - BoardDetectionService: Added cache confirmation mechanism (ConfirmCache)
 - BoardDetectionService: Added size validation to reject oversized boards
 - PieceRecognitionService: Removed verbose debug logging (PERF messages, piece confidence)
+- ConsoleOutputFormatter: Integrated defense display with shield icon (🛡) in blue
 
 ### Testing 🧪
 - Successfully played multiple full games with auto-monitoring

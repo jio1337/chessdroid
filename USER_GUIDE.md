@@ -97,7 +97,34 @@ After:  "knight in good position (wins 6)"
 
 ---
 
-### **4. Auto-Monitoring (BETA)**
+### **4. Threat & Defense Display**
+
+ChessDroid now shows threats and defenses for each move!
+
+**Threats (⚔️)** - NEW threats created by the move:
+- Attacks on undefended pieces
+- Pins (piece pinned to king or valuable piece)
+- Forks (attacking multiple pieces)
+- Promotion threats
+- Check and checkmate threats
+
+**Defenses (🛡️)** - Defensive aspects of the move:
+- Protecting attacked pieces
+- Blocking attacks on valuable pieces
+- Escaping threats (moving attacked piece to safety)
+- Improving king safety
+
+**Example Display:**
+```
+Best line: g3 ... → ! creates connected pawns | 🛡 defends pawn on f4
+Second best: Be3 ... → centralizes piece | ⚔ attacks rook on a7
+```
+
+**Key Improvement:** Threats now show only NEW threats created by the move. If your knight was already attacking the queen before the move, it won't say "attacks queen" - it only shows what changed!
+
+---
+
+### **5. Auto-Monitoring (BETA)**
 
 **NEW!** Continuous board monitoring that automatically detects opponent moves and triggers analysis.
 
@@ -131,7 +158,7 @@ After:  "knight in good position (wins 6)"
 
 ---
 
-### **5. Feature Toggles**
+### **6. Feature Toggles**
 
 Customize which analysis features you want to see:
 
@@ -179,6 +206,11 @@ Customize which analysis features you want to see:
 ✅ **SEE Values** - Static Exchange Evaluation
 - Turn OFF if: Numbers are confusing
 - Best for: Understanding capture trades
+
+✅ **Show Threats** - Display threat and defense information
+- Turn OFF if: Too much information on screen
+- Best for: Understanding what each move accomplishes
+- Shows: ⚔️ threats created, 🛡️ defenses provided
 
 ---
 
@@ -448,7 +480,15 @@ ChessDroid supports global hotkeys (work even when window is minimized):
 
 ## 📝 Version History
 
-**v3.0.0-BETA** - Auto-Monitoring with Turn Detection
+**v2.1.0** - Threat & Defense Detection
+- ⚔️ **Threat Detection** - Shows NEW threats created by each move (before/after comparison)
+- 🛡️ **Defense Detection** - Shows defensive aspects (protecting, blocking, escaping)
+- 🔧 **Pin/X-ray fixes** - Only reports when material would actually be won
+- 🔧 **SEE settings** - Respects ShowSEEValues toggle properly
+- 🎨 Shield icon (🛡) with CornflowerBlue color for defenses
+- 🎨 Sword icon (⚔) with LimeGreen color for threats
+
+**v2.0.1-BETA** - Auto-Monitoring with Turn Detection
 - ⚡ **Auto-Monitor Board (BETA)** - Continuous board scanning with automatic opponent move detection
 - ⚡ FEN-based move detection with 200ms debounce
 - ⚡ Turn tracking using piece color analysis (white vs black)
@@ -512,5 +552,5 @@ Free and open-source forever!
 
 **Enjoy analyzing with ChessDroid! ♟️🎯**
 
-*Last Updated: 2026-01-13*
-*Version: 3.0.0-BETA (Auto-Monitoring)*
+*Last Updated: 2026-01-17*
+*Version: 2.1.0 (Threat & Defense Detection)*
