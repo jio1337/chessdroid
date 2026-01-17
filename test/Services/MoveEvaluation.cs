@@ -152,6 +152,9 @@ namespace ChessDroid.Services
                 // Without move history, we can't know if this is a recapture
                 // But we can be smarter about what we report
 
+                // Check if SEE values should be displayed
+                bool showSEE = ExplanationFormatter.Features.ShowSEEValues;
+
                 if (seeValue > 0)
                 {
                     // We win material after full exchange
@@ -165,7 +168,8 @@ namespace ChessDroid.Services
                     else
                     {
                         // Actually winning material
-                        return $"wins {ChessUtilities.GetPieceName(capturedType)} (SEE +{seeValue})";
+                        string seeInfo = showSEE ? $" (SEE +{seeValue})" : "";
+                        return $"wins {ChessUtilities.GetPieceName(capturedType)}{seeInfo}";
                     }
                 }
                 else if (seeValue == 0)
@@ -184,7 +188,8 @@ namespace ChessDroid.Services
                 }
                 else // seeValue < 0
                 {
-                    return $"captures {ChessUtilities.GetPieceName(capturedType)} (loses exchange)";
+                    string seeInfo = showSEE ? " (loses exchange)" : "";
+                    return $"captures {ChessUtilities.GetPieceName(capturedType)}{seeInfo}";
                 }
             }
             catch

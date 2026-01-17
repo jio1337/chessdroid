@@ -45,7 +45,7 @@ namespace ChessDroid.Services
         }
 
         /// <summary>
-        /// Displays a move line with evaluation and optional explanation
+        /// Displays a move line with evaluation, explanation, and threats
         /// </summary>
         public void DisplayMoveLine(
             string label,
@@ -55,7 +55,8 @@ namespace ChessDroid.Services
             List<string> pvs,
             string firstMove,
             Color headerBackColor,
-            Color defaultExplanationColor)
+            Color defaultExplanationColor,
+            bool showThreats = false)
         {
             // Display header with background color
             AppendTextWithFormat($"{label}: {sanMove} {evaluation}{Environment.NewLine}",
@@ -63,7 +64,22 @@ namespace ChessDroid.Services
 
             // Generate and display explanation
             string explanation = generateExplanation(firstMove, completeFen, pvs, evaluation);
-            if (!string.IsNullOrEmpty(explanation))
+
+            // Get threats for this specific move if enabled
+            string threatsText = "";
+            if (showThreats && config?.ShowThreats == true)
+            {
+                threatsText = GetThreatsForMove(completeFen, firstMove);
+            }
+
+            // Get defenses for this specific move if enabled
+            string defensesText = "";
+            if (showThreats && config?.ShowThreats == true) // Use same setting as threats
+            {
+                defensesText = GetDefensesForMove(completeFen, firstMove);
+            }
+
+            if (!string.IsNullOrEmpty(explanation) || !string.IsNullOrEmpty(threatsText) || !string.IsNullOrEmpty(defensesText))
             {
                 ResetBackground();
 
@@ -71,7 +87,7 @@ namespace ChessDroid.Services
                 Color explanationColor = defaultExplanationColor;
                 string qualitySymbol = "";
 
-                if (config?.ShowMoveQualityColor == true)
+                if (config?.ShowMoveQualityColor == true && !string.IsNullOrEmpty(explanation))
                 {
                     var quality = ExplanationFormatter.DetermineQualityFromEvaluation(explanation, evaluation);
                     explanationColor = ExplanationFormatter.GetQualityColor(quality);
@@ -82,11 +98,104 @@ namespace ChessDroid.Services
                         qualitySymbol = qualitySymbol + " ";
                 }
 
-                AppendTextWithFormat($"  → {qualitySymbol}{explanation}{Environment.NewLine}",
-                    richTextBox.BackColor, explanationColor, FontStyle.Italic);
+                // Build the explanation line
+                if (!string.IsNullOrEmpty(explanation))
+                {
+                    AppendTextWithFormat($"  → {qualitySymbol}{explanation}",
+                        richTextBox.BackColor, explanationColor, FontStyle.Italic);
+
+                    // Add defenses on same line if present (before threats)
+                    if (!string.IsNullOrEmpty(defensesText))
+                    {
+                        AppendTextWithFormat(" | ", richTextBox.BackColor, Color.Gray, FontStyle.Regular);
+                        AppendTextWithFormat($"🛡 {defensesText}", richTextBox.BackColor, Color.CornflowerBlue, FontStyle.Regular);
+                    }
+
+                    // Add threats on same line if present
+                    if (!string.IsNullOrEmpty(threatsText))
+                    {
+                        AppendTextWithFormat(" | ", richTextBox.BackColor, Color.Gray, FontStyle.Regular);
+                        AppendTextWithFormat($"⚔ {threatsText}", richTextBox.BackColor, Color.LimeGreen, FontStyle.Regular);
+                    }
+
+                    AppendTextWithFormat(Environment.NewLine, richTextBox.BackColor, explanationColor, FontStyle.Regular);
+                }
+                else if (!string.IsNullOrEmpty(defensesText) || !string.IsNullOrEmpty(threatsText))
+                {
+                    // No explanation but we have defenses/threats
+                    AppendTextWithFormat($"  → ", richTextBox.BackColor, explanationColor, FontStyle.Italic);
+
+                    if (!string.IsNullOrEmpty(defensesText))
+                    {
+                        AppendTextWithFormat($"🛡 {defensesText}", richTextBox.BackColor, Color.CornflowerBlue, FontStyle.Regular);
+                        if (!string.IsNullOrEmpty(threatsText))
+                        {
+                            AppendTextWithFormat(" | ", richTextBox.BackColor, Color.Gray, FontStyle.Regular);
+                        }
+                    }
+
+                    if (!string.IsNullOrEmpty(threatsText))
+                    {
+                        AppendTextWithFormat($"⚔ {threatsText}", richTextBox.BackColor, Color.LimeGreen, FontStyle.Regular);
+                    }
+
+                    AppendTextWithFormat(Environment.NewLine, richTextBox.BackColor, explanationColor, FontStyle.Regular);
+                }
             }
 
             ResetFormatting();
+        }
+
+        /// <summary>
+        /// Gets threat descriptions for a specific move
+        /// </summary>
+        private string GetThreatsForMove(string completeFen, string move)
+        {
+            try
+            {
+                string[] fenParts = completeFen.Split(' ');
+                bool whiteToMove = fenParts.Length > 1 && fenParts[1] == "w";
+
+                ChessBoard board = ChessBoard.FromFEN(completeFen);
+                var threats = ThreatDetection.AnalyzeThreatsAfterMove(board, move, whiteToMove);
+
+                if (threats.Count > 0)
+                {
+                    return string.Join(", ", threats.Select(t => t.Description));
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error getting threats for move: {ex.Message}");
+            }
+
+            return "";
+        }
+
+        /// <summary>
+        /// Gets defense descriptions for a specific move
+        /// </summary>
+        private string GetDefensesForMove(string completeFen, string move)
+        {
+            try
+            {
+                string[] fenParts = completeFen.Split(' ');
+                bool whiteToMove = fenParts.Length > 1 && fenParts[1] == "w";
+
+                ChessBoard board = ChessBoard.FromFEN(completeFen);
+                var defenses = DefenseDetection.AnalyzeDefensesAfterMove(board, move, whiteToMove);
+
+                if (defenses.Count > 0)
+                {
+                    return string.Join(", ", defenses.Select(d => d.Description));
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error getting defenses for move: {ex.Message}");
+            }
+
+            return "";
         }
 
         /// <summary>
@@ -175,7 +284,7 @@ namespace ChessDroid.Services
                 }
             }
 
-            // Best line
+            // Best line - always show threats
             string bestSanFull = ConvertPvToSan(pvs, 0, bestMove, completeFen);
             string formattedEval = FormatEvaluationWithWinPercentage(evaluation, completeFen);
             DisplayMoveLine(
@@ -186,9 +295,10 @@ namespace ChessDroid.Services
                 pvs,
                 bestMove,
                 Color.MediumSeaGreen,
-                Color.PaleGreen);
+                Color.PaleGreen,
+                showThreats: true);
 
-            // Second best
+            // Second best - show threats if enabled
             if (showSecondLine && pvs.Count >= 2)
             {
                 var secondSan = ChessNotationService.ConvertFullPvToSan(pvs[1], completeFen,
@@ -205,10 +315,11 @@ namespace ChessDroid.Services
                     pvs,
                     secondMove,
                     Color.Yellow,
-                    Color.DarkGoldenrod);
+                    Color.DarkGoldenrod,
+                    showThreats: true);
             }
 
-            // Third best
+            // Third best - show threats if enabled
             if (showThirdLine && pvs.Count >= 3)
             {
                 var thirdSan = ChessNotationService.ConvertFullPvToSan(pvs[2], completeFen,
@@ -224,10 +335,44 @@ namespace ChessDroid.Services
                     pvs,
                     thirdMove,
                     Color.Red,
-                    Color.DarkRed);
+                    Color.DarkRed,
+                    showThreats: true);
+            }
+
+            // Display opponent threats at the bottom (independent of which move we choose)
+            if (config?.ShowThreats == true)
+            {
+                DisplayOpponentThreats(completeFen);
             }
 
             ResetFormatting();
+        }
+
+        /// <summary>
+        /// Displays opponent threats (shown at the bottom, independent of our move choice)
+        /// </summary>
+        private void DisplayOpponentThreats(string completeFen)
+        {
+            try
+            {
+                string[] fenParts = completeFen.Split(' ');
+                bool whiteToMove = fenParts.Length > 1 && fenParts[1] == "w";
+
+                ChessBoard board = ChessBoard.FromFEN(completeFen);
+                var opponentThreats = ThreatDetection.AnalyzeOpponentThreats(board, whiteToMove);
+
+                if (opponentThreats.Count > 0)
+                {
+                    richTextBox.AppendText(Environment.NewLine);
+                    AppendTextWithFormat("⚠ Opponent threats: ", richTextBox.BackColor, Color.Orange, FontStyle.Bold);
+                    string oppThreatText = string.Join(", ", opponentThreats.Select(t => t.Description));
+                    AppendTextWithFormat($"{oppThreatText}{Environment.NewLine}", richTextBox.BackColor, Color.Coral, FontStyle.Regular);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error displaying opponent threats: {ex.Message}");
+            }
         }
 
         /// <summary>
