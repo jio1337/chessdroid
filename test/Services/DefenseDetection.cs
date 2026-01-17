@@ -168,8 +168,7 @@ namespace ChessDroid.Services
 
         /// <summary>
         /// Detects if the moving piece was escaping an attack.
-        /// Only reports "saves" if the piece was actually IN DANGER (not just attacked).
-        /// A piece defended by a lower-value piece is NOT in danger.
+        /// A piece is IN DANGER if attacked by a lower-value piece (e.g., bishop attacked by pawn).
         /// </summary>
         private static void DetectEscape(ChessBoard before, ChessBoard after,
             int srcRow, int srcCol, int destRow, int destCol, char piece,
@@ -185,33 +184,37 @@ namespace ChessDroid.Services
             bool wasAttacked = IsSquareAttackedBy(before, srcRow, srcCol, !weAreWhite);
             if (!wasAttacked) return;
 
-            // Was the piece ALREADY defended?
-            bool wasDefended = IsSquareAttackedBy(before, srcRow, srcCol, weAreWhite);
+            // Get the value of their lowest attacker
+            int lowestAttackerValue = GetLowestAttackerValue(before, srcRow, srcCol, !weAreWhite);
 
-            // If piece was defended, check if it was truly in danger
-            // A piece is NOT in danger if: it's defended by a lower-value piece OR same-value trade
-            if (wasDefended)
+            // Key insight: If attacked by a lower-value piece, the piece IS in danger
+            // regardless of whether it's defended. Example: Bishop (3) attacked by Pawn (1)
+            // - If they take, we recapture: they lose 1, we lose 3, net -2 for us
+            bool attackedByLowerValue = lowestAttackerValue > 0 && lowestAttackerValue < pieceValue;
+
+            if (!attackedByLowerValue)
             {
-                // Get the value of our lowest defender
-                int lowestDefenderValue = GetLowestDefenderValue(before, srcRow, srcCol, weAreWhite);
-                // Get the value of their lowest attacker
-                int lowestAttackerValue = GetLowestAttackerValue(before, srcRow, srcCol, !weAreWhite);
+                // Attacked by same-value or higher-value piece
+                // Check if we have adequate defense
+                bool wasDefended = IsSquareAttackedBy(before, srcRow, srcCol, weAreWhite);
 
-                // If we can trade evenly or favorably (our defender <= their attacker value),
-                // the piece wasn't really in danger
-                if (lowestDefenderValue <= lowestAttackerValue)
+                if (wasDefended)
                 {
-                    // Adequately defended - not actually in danger
-                    return;
-                }
+                    int lowestDefenderValue = GetLowestDefenderValue(before, srcRow, srcCol, weAreWhite);
 
-                // Also check if we have multiple defenders vs attackers
-                int defenders = CountDefenders(before, srcRow, srcCol, weAreWhite);
-                int attackers = CountAttackers(before, srcRow, srcCol, !weAreWhite);
-                if (defenders >= attackers)
-                {
-                    // Adequately defended by numbers
-                    return;
+                    // If our defender is worth <= their attacker, we're safe
+                    if (lowestDefenderValue <= lowestAttackerValue)
+                    {
+                        return;
+                    }
+
+                    // Also check defender count
+                    int defenders = CountDefenders(before, srcRow, srcCol, weAreWhite);
+                    int attackers = CountAttackers(before, srcRow, srcCol, !weAreWhite);
+                    if (defenders >= attackers)
+                    {
+                        return;
+                    }
                 }
             }
 
@@ -414,16 +417,10 @@ namespace ChessDroid.Services
 
         /// <summary>
         /// Checks if opponent has a checkmate threat (can deliver mate on their next move)
+        /// Detects common patterns: back rank mate, smothered mate, heavy piece battery
         /// </summary>
         private static bool IsCheckmateThreatened(ChessBoard board, int kingRow, int kingCol, bool weAreWhite)
         {
-            // For each opponent piece, check if they can give check
-            // Then check if that check would be checkmate (king has no escape squares)
-            // This is simplified - we just check if opponent can deliver an unblockable check
-            // with our king having no safe squares
-
-            char ourKing = weAreWhite ? 'K' : 'k';
-
             // Count safe squares for our king
             int safeSquares = 0;
             for (int dr = -1; dr <= 1; dr++)
@@ -447,12 +444,104 @@ namespace ChessDroid.Services
                 }
             }
 
-            // If king has very few safe squares AND is heavily attacked, mate might be threatened
-            // This is a simplified heuristic - true mate detection would require full search
+            // Check for back rank mate threat (king trapped on back rank)
+            int backRank = weAreWhite ? 7 : 0;
+            if (kingRow == backRank)
+            {
+                // King is on back rank - check if blocked by own pieces (typical back rank weakness)
+                int blockedSquares = 0;
+                for (int dc = -1; dc <= 1; dc++)
+                {
+                    int c = kingCol + dc;
+                    if (c < 0 || c >= 8) continue;
+                    int forwardRow = weAreWhite ? kingRow - 1 : kingRow + 1;
+                    if (forwardRow >= 0 && forwardRow < 8)
+                    {
+                        char sq = board.GetPiece(forwardRow, c);
+                        if (sq != '.' && char.IsUpper(sq) == weAreWhite)
+                        {
+                            blockedSquares++;
+                        }
+                    }
+                }
+
+                // If king is blocked and opponent has a rook/queen that can deliver check on back rank
+                if (blockedSquares >= 2 && safeSquares <= 1)
+                {
+                    // Check if opponent has heavy piece that can deliver back rank check
+                    if (HasHeavyPieceOnOpenFileOrRank(board, kingRow, kingCol, !weAreWhite))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            // General heuristic: few safe squares + multiple attackers
             int attackersOnKing = CountAttackersAroundKing(board, kingRow, kingCol, !weAreWhite);
 
-            // Heuristic: If king has 0-1 safe squares and 3+ attackers around, mate is likely threatened
-            return safeSquares <= 1 && attackersOnKing >= 3;
+            // Relaxed heuristic: 0 safe squares and 2+ attackers, or 1 safe square and 3+ attackers
+            return (safeSquares == 0 && attackersOnKing >= 2) || (safeSquares <= 1 && attackersOnKing >= 3);
+        }
+
+        /// <summary>
+        /// Checks if opponent has a heavy piece (rook or queen) that could deliver check
+        /// </summary>
+        private static bool HasHeavyPieceOnOpenFileOrRank(ChessBoard board, int kingRow, int kingCol, bool opponentIsWhite)
+        {
+            // Check for rooks or queens on the same rank or file as the king
+            for (int r = 0; r < 8; r++)
+            {
+                for (int c = 0; c < 8; c++)
+                {
+                    char piece = board.GetPiece(r, c);
+                    if (piece == '.') continue;
+
+                    bool pieceIsWhite = char.IsUpper(piece);
+                    if (pieceIsWhite != opponentIsWhite) continue;
+
+                    PieceType pieceType = PieceHelper.GetPieceType(piece);
+                    if (pieceType != PieceType.Rook && pieceType != PieceType.Queen) continue;
+
+                    // Check if on same rank or file
+                    if (r == kingRow || c == kingCol)
+                    {
+                        // Check if path is clear (or could become clear)
+                        if (IsPathClearOrNearlyClear(board, r, c, kingRow, kingCol))
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Checks if the path between two squares is clear or has only 1 piece
+        /// </summary>
+        private static bool IsPathClearOrNearlyClear(ChessBoard board, int r1, int c1, int r2, int c2)
+        {
+            int dr = r2 - r1;
+            int dc = c2 - c1;
+
+            if (dr != 0) dr = dr / Math.Abs(dr);
+            if (dc != 0) dc = dc / Math.Abs(dc);
+
+            int piecesInPath = 0;
+            int r = r1 + dr;
+            int c = c1 + dc;
+
+            while (r != r2 || c != c2)
+            {
+                if (board.GetPiece(r, c) != '.')
+                {
+                    piecesInPath++;
+                }
+                r += dr;
+                c += dc;
+            }
+
+            return piecesInPath <= 1;
         }
 
         #region Helper Methods

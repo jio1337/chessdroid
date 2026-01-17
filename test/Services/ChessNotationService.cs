@@ -159,16 +159,22 @@ namespace ChessDroid.Services
                 else if (pieceLetter == "N") pieceLetter = "N";
             }
 
-            // Check for castling
-            if (PieceHelper.GetPieceType(piece) == PieceType.King)
+            bool isCapture = board[destRank, destFile] != '.';
+
+            // Check for castling - king moves 2 squares AND it's not a capture
+            // (After castling, king on c1 capturing on a1 moves 2 squares but isn't castling!)
+            if (PieceHelper.GetPieceType(piece) == PieceType.King && !isCapture)
             {
                 if (Math.Abs(destFile - srcFile) == 2)
                 {
-                    return destFile > srcFile ? "O-O" : "O-O-O";
+                    // Additional check: king must be on starting file (e-file = 4)
+                    // to be a valid castling move
+                    if (srcFile == 4)
+                    {
+                        return destFile > srcFile ? "O-O" : "O-O-O";
+                    }
                 }
             }
-
-            bool isCapture = board[destRank, destFile] != '.';
 
             // For pawn captures, we need to show source file
             if (PieceHelper.GetPieceType(piece) == PieceType.Pawn && isCapture)

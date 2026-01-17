@@ -440,34 +440,22 @@ namespace ChessDroid.Services
                 }
 
                 // KING SAFETY ANALYSIS
-                // Only report king safety issues if the move WORSENS king safety (not if king already had issues)
+                // Only report POSITIVE king safety changes (improvements)
+                // Negative messages like "exposes king" are confusing on best moves -
+                // the engine already factored this in, showing it makes users think it's bad
                 if (pieceType == PieceType.King && reasons.Count < 2)
                 {
                     // Compare shelter BEFORE and AFTER the move
-                    // If we're moving our king, check if we're making things worse
                     int beforeShelter = CountPawnShield(board, srcRank, srcFile, isWhite);
                     int afterShelter = CountPawnShield(tempBoard, destRank, destFile, isWhite);
 
-                    // Only show negative message if we're LOSING pawn protection
-                    if (afterShelter < beforeShelter && afterShelter == 0)
+                    // Only show POSITIVE messages for king moves
+                    if (afterShelter > beforeShelter)
                     {
-                        string? shelterInfo = PositionalEvaluation.DetectKingShelter(tempBoard, destRank, destFile, isWhite);
-                        if (!string.IsNullOrEmpty(shelterInfo))
-                            reasons.Add(shelterInfo);
-                    }
-                    else if (afterShelter > beforeShelter)
-                    {
-                        // King is moving to a BETTER protected square
                         reasons.Add("improves king safety");
                     }
-
-                    // Weak squares near king - only if we're creating MORE weak squares
-                    if (reasons.Count < 2)
-                    {
-                        string? weakSquaresInfo = PositionalEvaluation.DetectWeakKingSquares(tempBoard, destRank, destFile, isWhite);
-                        // Skip weak squares message if it's the best move - engine already considered it
-                        // Only show if we have no other explanations and this is truly significant
-                    }
+                    // Don't show "exposes king" - if it's the best move, the tradeoff is worth it
+                    // and showing this message confuses users into thinking the move is bad
                 }
 
                 // BASIC POSITIONAL CONSIDERATIONS (fallback if still no reasons)
