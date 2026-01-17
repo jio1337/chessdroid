@@ -227,8 +227,9 @@ namespace ChessDroid.Services
         {
             try
             {
-                // FORCED MATE: When there's a forced checkmate, no other explanation needed
-                if (!string.IsNullOrEmpty(evaluation) && evaluation.StartsWith("Mate in "))
+                // FORCED MATE: When there's a forced checkmate FOR US, no other explanation needed
+                // "Mate in X" = we have mate, "Mate in -X" = opponent has mate against us
+                if (!string.IsNullOrEmpty(evaluation) && evaluation.StartsWith("Mate in ") && !evaluation.Contains("-"))
                 {
                     return $"forced checkmate ({evaluation.ToLower()})";
                 }

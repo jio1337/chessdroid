@@ -66,12 +66,15 @@ namespace ChessDroid.Services
             string explanation = generateExplanation(firstMove, completeFen, pvs, evaluation);
 
             // Get threats for this specific move if enabled
-            // Skip threats/defenses when there's a forced mate - they don't matter
+            // Skip threats/defenses when WE have forced mate - they don't matter
+            // "Mate in X" = we have mate, "Mate in -X" = opponent has mate (still show analysis)
             string threatsText = "";
             string defensesText = "";
-            bool isForcedMate = !string.IsNullOrEmpty(evaluation) && evaluation.StartsWith("Mate in ");
+            bool weHaveForcedMate = !string.IsNullOrEmpty(evaluation) &&
+                                     evaluation.StartsWith("Mate in ") &&
+                                     !evaluation.Contains("-");
 
-            if (showThreats && config?.ShowThreats == true && !isForcedMate)
+            if (showThreats && config?.ShowThreats == true && !weHaveForcedMate)
             {
                 threatsText = GetThreatsForMove(completeFen, firstMove);
                 defensesText = GetDefensesForMove(completeFen, firstMove);
