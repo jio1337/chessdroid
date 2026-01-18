@@ -1,16 +1,13 @@
-#pragma warning disable CS8601 // Possible null reference assignment
-#pragma warning disable CS8602 // Dereference of a possibly null reference
-
 namespace ChessDroid
 {
     public partial class SettingsForm : Form
     {
         private AppConfig config;
-        private Action? onConfigChanged;
+        private readonly Action? onConfigChanged;
 
         public SettingsForm(AppConfig config, Action? onConfigChanged = null)
         {
-            this.config = config;
+            this.config = config ?? throw new ArgumentNullException(nameof(config));
             this.onConfigChanged = onConfigChanged;
             InitializeComponent();
             PopulateEngineDepthComboBox();

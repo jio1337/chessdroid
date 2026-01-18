@@ -29,28 +29,28 @@ namespace ChessDroid
         private void InitializeComponent()
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
-            button1 = new Button();
+            buttonAnalyze = new Button();
             buttonReset = new Button();
             buttonSettings = new Button();
             richTextBoxConsole = new RichTextBox();
             labelStatus = new Label();
             chkWhiteTurn = new CheckBox();
             SuspendLayout();
-            // 
-            // button1
-            // 
-            button1.BackColor = Color.Lavender;
-            button1.Cursor = Cursors.Hand;
-            button1.FlatStyle = FlatStyle.Popup;
-            button1.Font = new Font("Courier New", 9F, FontStyle.Bold);
-            button1.ForeColor = Color.DarkSlateBlue;
-            button1.Location = new Point(12, 12);
-            button1.Name = "button1";
-            button1.Size = new Size(175, 35);
-            button1.TabIndex = 0;
-            button1.Text = "Show Lines";
-            button1.UseVisualStyleBackColor = false;
-            button1.Click += button1_Click_1;
+            //
+            // buttonAnalyze
+            //
+            buttonAnalyze.BackColor = Color.Lavender;
+            buttonAnalyze.Cursor = Cursors.Hand;
+            buttonAnalyze.FlatStyle = FlatStyle.Popup;
+            buttonAnalyze.Font = new Font("Courier New", 9F, FontStyle.Bold);
+            buttonAnalyze.ForeColor = Color.DarkSlateBlue;
+            buttonAnalyze.Location = new Point(12, 12);
+            buttonAnalyze.Name = "buttonAnalyze";
+            buttonAnalyze.Size = new Size(175, 35);
+            buttonAnalyze.TabIndex = 0;
+            buttonAnalyze.Text = "Show Lines";
+            buttonAnalyze.UseVisualStyleBackColor = false;
+            buttonAnalyze.Click += buttonAnalyze_Click;
             // 
             // buttonReset
             // 
@@ -135,7 +135,7 @@ namespace ChessDroid
             Controls.Add(buttonSettings);
             Controls.Add(richTextBoxConsole);
             Controls.Add(buttonReset);
-            Controls.Add(button1);
+            Controls.Add(buttonAnalyze);
             Font = new Font("Courier New", 8.25F, FontStyle.Bold);
             FormBorderStyle = FormBorderStyle.SizableToolWindow;
             Icon = (Icon)resources.GetObject("$this.Icon");
@@ -155,7 +155,7 @@ namespace ChessDroid
 
         #endregion
         private Button buttonReset;
-        private Button button1;
+        private Button buttonAnalyze;
         private Button buttonSettings;
         private RichTextBox richTextBoxConsole;
         private Label labelStatus;

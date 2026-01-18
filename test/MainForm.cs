@@ -7,10 +7,8 @@ using System.Runtime.InteropServices;
 
 namespace ChessDroid
 {
-    // Use a smaller template/cell size for much faster matching
     public partial class MainForm : Form
     {
-        private const int TEMPLATE_SIZE = 64;
         private System.Windows.Forms.Timer? manualTimer;
 
         private bool moveInProgress = false;
@@ -43,9 +41,6 @@ namespace ChessDroid
 
         // Helper property to ensure config is never null
         private AppConfig Config => config ?? throw new InvalidOperationException("Configuration not loaded");
-
-        private const int BOARD_SIZE = 8;
-        // Removed fixed RECTIFIED_BOARD_SIZE - now using dynamic sizing based on detected board
 
         private async Task ExecuteMoveAsync(Mat boardMat, Rectangle boardRect, ChessBoard currentBoard, bool blackAtBottom)
         {
@@ -103,7 +98,7 @@ namespace ChessDroid
                 if (hotkeyId == 1)
                 {
                     // Alt+X - Manual analysis
-                    button1.PerformClick();
+                    buttonAnalyze.PerformClick();
                 }
                 else if (hotkeyId == 2)
                 {
@@ -267,7 +262,7 @@ namespace ChessDroid
         {
             if (e.KeyCode == Keys.X)
             {
-                button1.PerformClick();
+                buttonAnalyze.PerformClick();
             }
         }
 
@@ -426,7 +421,7 @@ namespace ChessDroid
             settingsForm.ShowDialog();
         }
 
-        private async void button1_Click_1(object sender, EventArgs e)
+        private async void buttonAnalyze_Click(object sender, EventArgs e)
         {
             // If a move is already in progress, ignore this invocation
             if (moveInProgress)
@@ -518,7 +513,7 @@ namespace ChessDroid
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Error in button1_Click_1: {ex.Message}");
+                Debug.WriteLine($"Error in buttonAnalyze_Click: {ex.Message}");
                 labelStatus.Text = $"Error: {ex.Message}";
                 engineRestartManager.RecordFailure();
             }
@@ -558,7 +553,7 @@ namespace ChessDroid
 
         private void ApplyTheme(bool isDarkMode)
         {
-            ThemeService.ApplyTheme(this, labelStatus, button1, buttonReset, buttonSettings, richTextBoxConsole, chkWhiteTurn, isDarkMode);
+            ThemeService.ApplyTheme(this, labelStatus, buttonAnalyze, buttonReset, buttonSettings, richTextBoxConsole, chkWhiteTurn, isDarkMode);
         }
     }
 }

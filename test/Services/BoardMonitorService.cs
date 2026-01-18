@@ -26,15 +26,13 @@ namespace ChessDroid.Services
     }
 
     /// <summary>
-    /// Service that continuously monitors the chess board for changes and detects moves
-    /// Automatically triggers analysis when it becomes the user's turn
+    /// Service that continuously monitors the chess board for changes and detects moves.
+    /// Automatically triggers analysis when it becomes the user's turn.
     ///
     /// BETA STATUS: This feature is functional but has known limitations:
     /// - Occasional engine crashes when positions change rapidly (unrelated to turn detection)
     /// - May miss opponent moves if they respond extremely quickly (within debounce window)
     /// - Piece recognition accuracy affects reliability in complex positions
-    ///
-    /// TODO v3.1: Improve robustness and handle edge cases
     /// </summary>
     public class BoardMonitorService
     {
@@ -47,22 +45,25 @@ namespace ChessDroid.Services
         private System.Windows.Forms.Timer? scanTimer;
         private ChessBoard? lastDetectedBoard;
         private string? lastFEN; // FEN of last stable position (for reliable move detection)
+        private string? lastExpandedFEN; // Cached expanded FEN for faster comparison
         private bool isMonitoring = false;
         private bool userIsWhite = true;
         private bool isUserTurn = true;
 
         // Debouncing: Track candidate position before committing to it
         private string? candidateFEN = null;
-
         private DateTime candidateFENFirstSeen = DateTime.MinValue;
         private int candidateConfirmations = 0; // Number of consecutive scans with same candidate
-        private const int DEBOUNCE_MS = 350; // Wait 350ms for position to stabilize
+
+        // Adaptive timing: Faster scanning when waiting for opponent's move
+        private const int SCAN_INTERVAL_IDLE = 800; // Normal: 800ms when it's user's turn
+        private const int SCAN_INTERVAL_WAITING = 400; // Fast: 400ms when waiting for opponent
+        private const int DEBOUNCE_MS = 250; // Wait 250ms for position to stabilize (reduced from 350)
         private const int REQUIRED_CONFIRMATIONS = 2; // Require 2 consecutive scans with same FEN
 
-        // Invalid board tracking: Only clear cache after multiple consecutive failures
+        // Invalid board tracking
         private int consecutiveInvalidBoards = 0;
-
-        private const int MAX_INVALID_BEFORE_CACHE_CLEAR = 5; // Allow 5 retries before clearing cache
+        private const int MAX_INVALID_BEFORE_CACHE_CLEAR = 3; // Reduced from 5 for faster recovery
 
         // Debug counter for same-position scans
         private int sameFENScans = 0;
@@ -106,10 +107,10 @@ namespace ChessDroid.Services
             // Clear board detection cache to force fresh detection
             boardDetectionService.ClearCache();
 
-            // Initialize timer
+            // Initialize timer with adaptive interval (starts idle since it's user's turn)
             scanTimer = new System.Windows.Forms.Timer
             {
-                Interval = 1000 // 1 second scan interval
+                Interval = SCAN_INTERVAL_IDLE
             };
             scanTimer.Tick += ScanTimer_Tick;
             scanTimer.Start();
@@ -201,6 +202,7 @@ namespace ChessDroid.Services
                 // 6. Store as baseline for future move detection
                 lastDetectedBoard = currentBoard;
                 lastFEN = currentBoard.ToFEN(); // Store FEN for comparison
+                lastExpandedFEN = ExpandFEN(lastFEN.Split(' ')[0]); // Cache expanded for faster comparison
 
                 // 7. After immediate analysis, next detected move will be USER's move
                 //    Set isUserTurn = true so that when user makes their move:
@@ -290,6 +292,7 @@ namespace ChessDroid.Services
                     // First scan - store current position as baseline
                     lastDetectedBoard = currentBoard;
                     lastFEN = currentFEN;
+                    lastExpandedFEN = ExpandFEN(currentFEN.Split(' ')[0]);
                     candidateFEN = null; // Clear any pending candidate
                     Debug.WriteLine($"BoardMonitorService: Initial board captured (FEN: {currentFEN})");
                     return;
@@ -354,9 +357,8 @@ namespace ChessDroid.Services
                 candidateFEN = null; // Clear candidate - we're committing to this move
                 candidateConfirmations = 0;
 
-                // Determine who moved by checking which pieces changed
-                bool whitePiecesMoved = DidWhitePiecesMove(lastFEN, currentFEN);
-                bool blackPiecesMoved = DidBlackPiecesMove(lastFEN, currentFEN);
+                // Determine who moved by checking which pieces changed (optimized single-pass)
+                var (whitePiecesMoved, blackPiecesMoved) = DetectWhichColorMoved(lastFEN, currentFEN);
 
                 // Handle captures: Both colors change, but only one side actively moved
                 // Use turn state to determine who moved when both colors changed
@@ -386,30 +388,40 @@ namespace ChessDroid.Services
 
                 if (wasUserMove)
                 {
-                    // User made a move - just update FEN and wait for opponent
-                    Debug.WriteLine($"BoardMonitorService: User move detected (ignoring, waiting for opponent)");
-                    Debug.WriteLine($"BoardMonitorService: Old FEN: {lastFEN}");
-                    Debug.WriteLine($"BoardMonitorService: New FEN: {currentFEN}");
+                    // User made a move - update FEN and switch to fast scanning for opponent response
+                    Debug.WriteLine($"BoardMonitorService: User move detected (waiting for opponent)");
                     lastDetectedBoard = currentBoard;
                     lastFEN = currentFEN;
+                    lastExpandedFEN = ExpandFEN(currentFEN.Split(' ')[0]);
                     isUserTurn = false; // Now waiting for opponent
-                    Debug.WriteLine($"BoardMonitorService: Turn changed to OPPONENT (waiting for response)");
+
+                    // Switch to faster scanning while waiting for opponent
+                    if (scanTimer != null)
+                    {
+                        scanTimer.Interval = SCAN_INTERVAL_WAITING;
+                        Debug.WriteLine($"BoardMonitorService: Switched to FAST scanning ({SCAN_INTERVAL_WAITING}ms)");
+                    }
                     return;
                 }
                 else if (wasOpponentMove)
                 {
                     // Opponent made a move - trigger analysis
                     Debug.WriteLine($"BoardMonitorService: Opponent move detected!");
-                    Debug.WriteLine($"BoardMonitorService: Old FEN: {lastFEN}");
-                    Debug.WriteLine($"BoardMonitorService: New FEN: {currentFEN}");
 
                     // Update last detected position
                     lastDetectedBoard = currentBoard;
                     lastFEN = currentFEN;
+                    lastExpandedFEN = ExpandFEN(currentFEN.Split(' ')[0]);
 
                     // Now it's user's turn - trigger analysis
                     isUserTurn = true;
-                    Debug.WriteLine($"BoardMonitorService: Turn changed to USER - Triggering analysis");
+
+                    // Switch back to normal scanning (user is thinking)
+                    if (scanTimer != null)
+                    {
+                        scanTimer.Interval = SCAN_INTERVAL_IDLE;
+                        Debug.WriteLine($"BoardMonitorService: Switched to NORMAL scanning ({SCAN_INTERVAL_IDLE}ms)");
+                    }
 
                     // Update position state manager
                     bool whiteToMove = (userIsWhite && isUserTurn) || (!userIsWhite && !isUserTurn);
@@ -427,6 +439,7 @@ namespace ChessDroid.Services
                     Debug.WriteLine($"BoardMonitorService: Ambiguous move detected - updating FEN");
                     lastDetectedBoard = currentBoard;
                     lastFEN = currentFEN;
+                    lastExpandedFEN = ExpandFEN(currentFEN.Split(' ')[0]);
                 }
             }
             catch (Exception ex)
@@ -672,77 +685,53 @@ namespace ChessDroid.Services
         }
 
         /// <summary>
-        /// Determines if white pieces moved by comparing FEN strings
-        /// White pieces are uppercase: P, N, B, R, Q, K
+        /// Determines which color's pieces moved by comparing expanded FEN strings.
+        /// Returns (whiteMoved, blackMoved) tuple.
+        /// Optimized: Single pass through both positions instead of separate parsing.
         /// </summary>
-        private bool DidWhitePiecesMove(string oldFEN, string newFEN)
+        private (bool whiteMoved, bool blackMoved) DetectWhichColorMoved(string oldFEN, string newFEN)
         {
-            // Extract board positions from FEN (first part before space)
-            string oldBoard = oldFEN.Split(' ')[0];
-            string newBoard = newFEN.Split(' ')[0];
+            // Use cached expanded FEN if available, otherwise expand
+            string oldExpanded = lastExpandedFEN ?? ExpandFEN(oldFEN.Split(' ')[0]);
+            string newExpanded = ExpandFEN(newFEN.Split(' ')[0]);
 
-            // Get positions of all white pieces (uppercase letters)
-            var oldWhitePieces = GetPiecePositions(oldBoard, char.IsUpper);
-            var newWhitePieces = GetPiecePositions(newBoard, char.IsUpper);
-
-            // If positions are different, white pieces moved
-            return !oldWhitePieces.SequenceEqual(newWhitePieces);
-        }
-
-        /// <summary>
-        /// Determines if black pieces moved by comparing FEN strings
-        /// Black pieces are lowercase: p, n, b, r, q, k
-        /// </summary>
-        private bool DidBlackPiecesMove(string oldFEN, string newFEN)
-        {
-            // Extract board positions from FEN (first part before space)
-            string oldBoard = oldFEN.Split(' ')[0];
-            string newBoard = newFEN.Split(' ')[0];
-
-            // Get positions of all black pieces (lowercase letters)
-            var oldBlackPieces = GetPiecePositions(oldBoard, char.IsLower);
-            var newBlackPieces = GetPiecePositions(newBoard, char.IsLower);
-
-            // If positions are different, black pieces moved
-            return !oldBlackPieces.SequenceEqual(newBlackPieces);
-        }
-
-        /// <summary>
-        /// Extracts piece positions from FEN board string based on filter
-        /// Returns a sorted string of positions for comparison
-        /// </summary>
-        private string GetPiecePositions(string fenBoard, Func<char, bool> filter)
-        {
-            var positions = new List<string>();
-            string[] ranks = fenBoard.Split('/');
-
-            for (int rank = 0; rank < ranks.Length; rank++)
+            if (oldExpanded.Length != 64 || newExpanded.Length != 64)
             {
-                int file = 0;
-                foreach (char c in ranks[rank])
+                // Invalid expansion - can't determine
+                return (false, false);
+            }
+
+            bool whiteMoved = false;
+            bool blackMoved = false;
+
+            // Single pass through both boards
+            for (int i = 0; i < 64; i++)
+            {
+                char oldPiece = oldExpanded[i];
+                char newPiece = newExpanded[i];
+
+                if (oldPiece != newPiece)
                 {
-                    if (char.IsDigit(c))
+                    // This square changed - check which color was affected
+                    if (char.IsUpper(oldPiece) || char.IsUpper(newPiece))
                     {
-                        // Empty squares - skip ahead
-                        file += (c - '0');
+                        whiteMoved = true;
                     }
-                    else if (filter(c))
+                    if (char.IsLower(oldPiece) || char.IsLower(newPiece))
                     {
-                        // This piece matches our filter (white or black)
-                        positions.Add($"{(char)('a' + file)}{8 - rank}{c}");
-                        file++;
+                        blackMoved = true;
                     }
-                    else
+
+                    // Early exit if both colors already detected as moved
+                    if (whiteMoved && blackMoved)
                     {
-                        // Piece doesn't match filter - skip
-                        file++;
+                        break;
                     }
                 }
             }
 
-            // Sort positions for consistent comparison
-            positions.Sort();
-            return string.Join(",", positions);
+            return (whiteMoved, blackMoved);
         }
+
     }
 }
