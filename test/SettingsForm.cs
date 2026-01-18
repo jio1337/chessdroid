@@ -118,6 +118,12 @@ namespace ChessDroid
             chkWDL.Checked = config.ShowWDL;
             chkAutoMonitor.Checked = config.AutoMonitorBoard;
 
+            // Lc0-inspired features
+            trkAggressiveness.Value = Math.Clamp(config.Aggressiveness, 0, 100);
+            UpdateAggressivenessLabel();
+            chkOpeningName.Checked = config.ShowOpeningName;
+            chkMoveQuality.Checked = config.ShowMoveQuality;
+
             // Load theme preference
             chkDarkMode.Checked = config.Theme == "Dark";
             ApplyTheme(config.Theme == "Dark");
@@ -172,6 +178,11 @@ namespace ChessDroid
             config.ShowThreats = chkThreats.Checked;
             config.ShowWDL = chkWDL.Checked;
             config.AutoMonitorBoard = chkAutoMonitor.Checked;
+
+            // Lc0-inspired features
+            config.Aggressiveness = trkAggressiveness.Value;
+            config.ShowOpeningName = chkOpeningName.Checked;
+            config.ShowMoveQuality = chkMoveQuality.Checked;
 
             config.Save();
 
@@ -318,6 +329,28 @@ namespace ChessDroid
                     }
                 }
 
+                // Lc0 Features GroupBox
+                grpLc0Features.ForeColor = Color.Cyan;
+                grpLc0Features.BackColor = Color.FromArgb(45, 45, 48);
+
+                foreach (Control ctrl in grpLc0Features.Controls)
+                {
+                    if (ctrl is Label lbl)
+                    {
+                        lbl.ForeColor = Color.White;
+                        lbl.BackColor = Color.FromArgb(45, 45, 48);
+                    }
+                    else if (ctrl is CheckBox chk)
+                    {
+                        chk.ForeColor = Color.White;
+                        chk.BackColor = Color.FromArgb(45, 45, 48);
+                    }
+                    else if (ctrl is TrackBar)
+                    {
+                        ctrl.BackColor = Color.FromArgb(45, 45, 48);
+                    }
+                }
+
                 // Buttons
                 btnSave.ForeColor = Color.LightGreen;
                 btnSave.BackColor = Color.FromArgb(45, 45, 48);
@@ -427,6 +460,28 @@ namespace ChessDroid
                     }
                 }
 
+                // Lc0 Features GroupBox
+                grpLc0Features.ForeColor = Color.DarkCyan;
+                grpLc0Features.BackColor = Color.WhiteSmoke;
+
+                foreach (Control ctrl in grpLc0Features.Controls)
+                {
+                    if (ctrl is Label lbl)
+                    {
+                        lbl.ForeColor = Color.Black;
+                        lbl.BackColor = Color.WhiteSmoke;
+                    }
+                    else if (ctrl is CheckBox chk)
+                    {
+                        chk.ForeColor = Color.Black;
+                        chk.BackColor = Color.WhiteSmoke;
+                    }
+                    else if (ctrl is TrackBar)
+                    {
+                        ctrl.BackColor = Color.WhiteSmoke;
+                    }
+                }
+
                 // Buttons
                 btnSave.ForeColor = Color.DarkGreen;
                 btnSave.BackColor = Color.Gainsboro;
@@ -444,6 +499,24 @@ namespace ChessDroid
 
             // Resume layout to apply all changes at once
             this.ResumeLayout();
+        }
+
+        private void TrkAggressiveness_Scroll(object? sender, EventArgs e)
+        {
+            UpdateAggressivenessLabel();
+        }
+
+        private void UpdateAggressivenessLabel()
+        {
+            string style = trkAggressiveness.Value switch
+            {
+                <= 20 => "Very Solid",
+                <= 40 => "Solid",
+                <= 60 => "Balanced",
+                <= 80 => "Aggressive",
+                _ => "Very Aggressive"
+            };
+            lblAggressivenessValue.Text = $"{trkAggressiveness.Value} ({style})";
         }
     }
 }

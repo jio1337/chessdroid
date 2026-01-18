@@ -37,14 +37,19 @@ namespace ChessDroid.Services
             Check,              // Giving check
             PassedPawn,         // Creating/advancing passed pawn
             Promotion,          // Pawn about to promote
-            TrappedPiece        // Piece with no escape squares
+            TrappedPiece,       // Piece with no escape squares
+            EnPassant           // En passant capture available
         }
 
         /// <summary>
         /// Analyzes NEW threats WE create after making the best move.
         /// Only returns threats that didn't exist before the move.
         /// </summary>
-        public static List<Threat> AnalyzeThreatsAfterMove(ChessBoard board, string move, bool movingPlayerIsWhite)
+        /// <param name="board">The current board position</param>
+        /// <param name="move">The UCI move to analyze</param>
+        /// <param name="movingPlayerIsWhite">Whether white is making the move</param>
+        /// <param name="enPassantSquare">The en passant target square from FEN (e.g., "e3") or "-" if none</param>
+        public static List<Threat> AnalyzeThreatsAfterMove(ChessBoard board, string move, bool movingPlayerIsWhite, string enPassantSquare = "-")
         {
             var threatsAfter = new List<Threat>();
 
@@ -86,6 +91,9 @@ namespace ChessDroid.Services
                 DetectPromotionThreats(afterMove, movingPlayerIsWhite, threatsAfter);
                 DetectTrappedPieces(afterMove, movingPlayerIsWhite, threatsAfter);
 
+                // Detect if we have an en passant capture available (using the EP square from the FEN)
+                DetectEnPassantThreat(board, enPassantSquare, movingPlayerIsWhite, threatsAfter);
+
                 // Filter out threats that already existed before the move
                 // A threat is "new" if its description didn't exist in threatsBefore
                 var beforeDescriptions = new HashSet<string>(threatsBefore.Select(t => t.Description));
@@ -109,7 +117,10 @@ namespace ChessDroid.Services
         /// Analyzes threats the OPPONENT currently has against us (before we move).
         /// This checks what the opponent could do on their NEXT move if we don't address it.
         /// </summary>
-        public static List<Threat> AnalyzeOpponentThreats(ChessBoard board, bool weAreWhite)
+        /// <param name="board">The current board position</param>
+        /// <param name="weAreWhite">Whether we are playing white</param>
+        /// <param name="enPassantSquare">The en passant target square from FEN (e.g., "e3") or "-" if none</param>
+        public static List<Threat> AnalyzeOpponentThreats(ChessBoard board, bool weAreWhite, string enPassantSquare = "-")
         {
             var threats = new List<Threat>();
 
@@ -131,6 +142,9 @@ namespace ChessDroid.Services
 
                 // Check for pins against us
                 DetectPinsAgainstUs(board, weAreWhite, threats);
+
+                // Check if opponent can capture our pawn en passant
+                DetectOpponentEnPassantThreat(board, enPassantSquare, weAreWhite, threats);
             }
             catch (Exception ex)
             {
@@ -418,6 +432,93 @@ namespace ChessDroid.Services
                                 //    (meaning the piece behind is undefended or we'd win the exchange)
                                 if (secondValue > firstValue)
                                 {
+                                    // PAWN SPECIAL CASE: Pawns can only move forward or capture diagonally.
+                                    // A pawn is only meaningfully "pinned" if:
+                                    // 1. It's pinned along a diagonal AND
+                                    // 2. Moving diagonally (capturing) would expose the piece behind
+                                    // Pawns CANNOT be pinned along files/ranks because they don't move that way anyway
+                                    // (they can only move forward, so a rook "pinning" a pawn to a king on the same file is meaningless)
+                                    if (firstType == PieceType.Pawn)
+                                    {
+                                        // Check if this is a diagonal pin (bishop/queen on diagonal)
+                                        bool isDiagonalPin = (dR != 0 && dF != 0);
+
+                                        if (!isDiagonalPin)
+                                        {
+                                            // Pawn pinned along a file or rank - not a real pin since pawns don't move that way
+                                            break;
+                                        }
+
+                                        // Even on a diagonal, pawn can only capture in the forward diagonal direction
+                                        // Check if the pawn could actually capture in this pin direction
+                                        bool pawnIsWhite = char.IsUpper(firstPiece.Value);
+                                        int pawnForwardDir = pawnIsWhite ? -1 : 1; // White moves up (negative row), black moves down
+
+                                        // The pin direction from attacker to pawn
+                                        // If attacker is below-left of pawn and pawn is white, pawn could capture toward attacker (moving down-left)
+                                        // But white pawns capture UP (forward), so this wouldn't expose the king
+                                        // The pawn can only "unpin" by capturing in the direction AWAY from the attacker (toward the king)
+                                        // which means capturing in the direction of (dR, dF) from the pawn's perspective
+
+                                        // For a pin to matter: the pawn must be able to capture in the direction toward the piece behind
+                                        // Pawn captures diagonally forward: (pawnForwardDir, ±1)
+                                        // Pin direction from pawn to king: (dR, dF) [same as attacker's ray direction]
+
+                                        // If the pin is along the pawn's forward-diagonal capture direction, it's a real pin
+                                        // Otherwise, the pawn can't move along that diagonal anyway
+                                        bool pawnCanMoveAlongPin = (dR == pawnForwardDir);
+
+                                        if (!pawnCanMoveAlongPin)
+                                        {
+                                            // Pawn is "pinned" along a backward diagonal - but pawns can't move backward!
+                                            break;
+                                        }
+
+                                        // Even if the pawn CAN move in this diagonal direction, it can only do so by CAPTURING
+                                        // Check if there's actually an enemy piece to capture
+                                        int captureRow = firstRow + pawnForwardDir;
+                                        int captureCol1 = firstCol - 1;
+                                        int captureCol2 = firstCol + 1;
+
+                                        bool hasCapture = false;
+                                        if (captureRow >= 0 && captureRow < 8)
+                                        {
+                                            // Check if there's an enemy piece to capture that would break the pin
+                                            if (captureCol1 >= 0 && captureCol1 < 8)
+                                            {
+                                                char target1 = board.GetPiece(captureRow, captureCol1);
+                                                if (target1 != '.' && char.IsUpper(target1) == attackerIsWhite)
+                                                {
+                                                    // There's an enemy piece the pawn could capture - check if it's along the pin line
+                                                    // The pin line direction is (dR, dF)
+                                                    if (dF == -1 || dF == 1) // diagonal pin
+                                                    {
+                                                        // Check if this capture square is along the pin line toward the king
+                                                        int captureDirFromPawn = captureCol1 - firstCol; // -1 or would be checked above
+                                                        if (captureDirFromPawn == dF)
+                                                            hasCapture = true;
+                                                    }
+                                                }
+                                            }
+                                            if (!hasCapture && captureCol2 >= 0 && captureCol2 < 8)
+                                            {
+                                                char target2 = board.GetPiece(captureRow, captureCol2);
+                                                if (target2 != '.' && char.IsUpper(target2) == attackerIsWhite)
+                                                {
+                                                    int captureDirFromPawn = captureCol2 - firstCol; // +1
+                                                    if (captureDirFromPawn == dF)
+                                                        hasCapture = true;
+                                                }
+                                            }
+                                        }
+
+                                        if (!hasCapture)
+                                        {
+                                            // Pawn has no capture that would break the pin - not a meaningful pin
+                                            break;
+                                        }
+                                    }
+
                                     bool isAbsolutePin = secondType == PieceType.King;
                                     bool wouldWinMaterial = false;
 
@@ -545,6 +646,79 @@ namespace ChessDroid.Services
                         });
                     }
                 }
+            }
+        }
+
+        /// <summary>
+        /// Detect en passant capture opportunities.
+        /// En passant is a special pawn capture that can only happen immediately after
+        /// an enemy pawn moves two squares forward from its starting position.
+        /// </summary>
+        private static void DetectEnPassantThreat(ChessBoard board, string enPassantSquare, bool movingPlayerIsWhite, List<Threat> threats)
+        {
+            // If no en passant square available, nothing to detect
+            if (string.IsNullOrEmpty(enPassantSquare) || enPassantSquare == "-")
+                return;
+
+            // Parse the en passant target square
+            if (enPassantSquare.Length < 2)
+                return;
+
+            int epFile = enPassantSquare[0] - 'a';
+            int epRank = 8 - (enPassantSquare[1] - '0');
+
+            // Validate
+            if (epFile < 0 || epFile > 7 || epRank < 0 || epRank > 7)
+                return;
+
+            // Determine which rank our pawns should be on to capture en passant
+            // White captures en passant on rank 6 (row 2 in array), black on rank 3 (row 5)
+            // The EP square is where the capturing pawn lands (behind the enemy pawn)
+            char ourPawn = movingPlayerIsWhite ? 'P' : 'p';
+            int expectedPawnRank = movingPlayerIsWhite ? 3 : 4; // Rank 5 for white (row 3), rank 4 for black (row 4)
+
+            // Check if we have a pawn that can capture en passant
+            bool canCaptureEP = false;
+            string capturingPawnFile = "";
+
+            // Check left of EP square
+            if (epFile > 0)
+            {
+                char leftPiece = board.GetPiece(expectedPawnRank, epFile - 1);
+                if (leftPiece == ourPawn)
+                {
+                    canCaptureEP = true;
+                    capturingPawnFile = ((char)('a' + epFile - 1)).ToString();
+                }
+            }
+
+            // Check right of EP square
+            if (epFile < 7)
+            {
+                char rightPiece = board.GetPiece(expectedPawnRank, epFile + 1);
+                if (rightPiece == ourPawn)
+                {
+                    canCaptureEP = true;
+                    if (!string.IsNullOrEmpty(capturingPawnFile))
+                        capturingPawnFile += " or " + ((char)('a' + epFile + 1)).ToString();
+                    else
+                        capturingPawnFile = ((char)('a' + epFile + 1)).ToString();
+                }
+            }
+
+            if (canCaptureEP)
+            {
+                // The enemy pawn is on the same file as the EP square, but one rank behind
+                int enemyPawnRank = movingPlayerIsWhite ? epRank + 1 : epRank - 1;
+                string enemyPawnSquare = GetSquareName(enemyPawnRank, epFile);
+
+                threats.Add(new Threat
+                {
+                    Description = $"en passant capture available on {enPassantSquare}",
+                    Type = ThreatType.EnPassant,
+                    Severity = 2, // Moderate severity - it's a pawn capture
+                    Square = enPassantSquare
+                });
             }
         }
 
@@ -896,6 +1070,93 @@ namespace ChessDroid.Services
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Detect if the opponent can capture our pawn via en passant.
+        /// This is a threat against us - our pawn is vulnerable.
+        ///
+        /// IMPORTANT: The en passant square in FEN tells us which pawn is vulnerable:
+        /// - EP on rank 3 (e.g., "c3") means a WHITE pawn on rank 4 just moved 2 squares
+        ///   and could be captured by a BLACK pawn on b4 or d4
+        /// - EP on rank 6 (e.g., "c6") means a BLACK pawn on rank 5 just moved 2 squares
+        ///   and could be captured by a WHITE pawn on b5 or d5
+        ///
+        /// This is only a threat to US if OUR pawn is the vulnerable one.
+        /// </summary>
+        private static void DetectOpponentEnPassantThreat(ChessBoard board, string enPassantSquare, bool weAreWhite, List<Threat> threats)
+        {
+            // If no en passant square available, nothing to detect
+            if (string.IsNullOrEmpty(enPassantSquare) || enPassantSquare == "-")
+                return;
+
+            // Parse the en passant target square
+            if (enPassantSquare.Length < 2)
+                return;
+
+            int epFile = enPassantSquare[0] - 'a';
+
+            // Validate file
+            if (epFile < 0 || epFile > 7)
+                return;
+
+            // Determine whose pawn is vulnerable based on the EP square's rank
+            // EP on rank 3 = White pawn vulnerable (White just pushed to rank 4)
+            // EP on rank 6 = Black pawn vulnerable (Black just pushed to rank 5)
+            bool whitePawnVulnerable = (enPassantSquare[1] == '3');
+            bool blackPawnVulnerable = (enPassantSquare[1] == '6');
+
+            // This is only a threat to US if OUR pawn is the vulnerable one
+            bool ourPawnIsVulnerable = (weAreWhite && whitePawnVulnerable) || (!weAreWhite && blackPawnVulnerable);
+
+            if (!ourPawnIsVulnerable)
+            {
+                // The opponent's pawn is vulnerable, not ours - not a threat to us
+                return;
+            }
+
+            // Our pawn is vulnerable - check if opponent actually has a pawn that can capture it
+            // The vulnerable pawn is on rank 4 (row 4) for White, rank 5 (row 3) for Black
+            // Enemy capturing pawns must be adjacent on the same rank
+            char enemyPawn = weAreWhite ? 'p' : 'P';
+            int vulnerablePawnRank = weAreWhite ? 4 : 3; // row index: White pawn on rank 4 (row 4), Black on rank 5 (row 3)
+
+            bool opponentCanCaptureEP = false;
+
+            // Check left of vulnerable pawn for enemy pawn
+            if (epFile > 0)
+            {
+                char leftPiece = board.GetPiece(vulnerablePawnRank, epFile - 1);
+                if (leftPiece == enemyPawn)
+                {
+                    opponentCanCaptureEP = true;
+                }
+            }
+
+            // Check right of vulnerable pawn for enemy pawn
+            if (epFile < 7)
+            {
+                char rightPiece = board.GetPiece(vulnerablePawnRank, epFile + 1);
+                if (rightPiece == enemyPawn)
+                {
+                    opponentCanCaptureEP = true;
+                }
+            }
+
+            if (opponentCanCaptureEP)
+            {
+                // Our pawn is vulnerable and opponent has a pawn that can capture it
+                string ourPawnSquare = GetSquareName(vulnerablePawnRank, epFile);
+                char pawnFile = (char)('a' + epFile);
+
+                threats.Add(new Threat
+                {
+                    Description = $"opponent can capture {pawnFile}-pawn en passant",
+                    Type = ThreatType.EnPassant,
+                    Severity = 2,
+                    Square = ourPawnSquare
+                });
+            }
         }
 
         #endregion Opponent Threat Detection Methods

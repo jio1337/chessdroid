@@ -30,11 +30,11 @@ namespace ChessDroid
         {
             components = new System.ComponentModel.Container();
             grpDetection = new GroupBox();
+            chkDebugCells = new CheckBox();
             numMinBoardArea = new NumericUpDown();
             numCannyHigh = new NumericUpDown();
             numCannyLow = new NumericUpDown();
             numMatchThreshold = new NumericUpDown();
-            chkDebugCells = new CheckBox();
             lblMinBoardArea = new Label();
             lblCannyHigh = new Label();
             lblCannyLow = new Label();
@@ -71,12 +71,18 @@ namespace ChessDroid
             chkSEE = new CheckBox();
             chkThreats = new CheckBox();
             chkWDL = new CheckBox();
+            chkAutoMonitor = new CheckBox();
+            grpLc0Features = new GroupBox();
+            lblAggressiveness = new Label();
+            trkAggressiveness = new TrackBar();
+            lblAggressivenessValue = new Label();
+            chkOpeningName = new CheckBox();
+            chkMoveQuality = new CheckBox();
             btnSave = new Button();
             btnReset = new Button();
             btnHelp = new Button();
             btnCancel = new Button();
             chkDarkMode = new CheckBox();
-            chkAutoMonitor = new CheckBox();
             toolTip1 = new ToolTip(components);
             grpDetection.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)numMinBoardArea).BeginInit();
@@ -89,10 +95,12 @@ namespace ChessDroid
             ((System.ComponentModel.ISupportInitialize)numEngineTimeout).BeginInit();
             grpDisplay.SuspendLayout();
             grpExplanations.SuspendLayout();
+            grpLc0Features.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)trkAggressiveness).BeginInit();
             SuspendLayout();
             // 
             // grpDetection
-            //
+            // 
             grpDetection.Controls.Add(chkDebugCells);
             grpDetection.Controls.Add(numMinBoardArea);
             grpDetection.Controls.Add(numCannyHigh);
@@ -109,6 +117,18 @@ namespace ChessDroid
             grpDetection.TabIndex = 0;
             grpDetection.TabStop = false;
             grpDetection.Text = "Board Detection";
+            // 
+            // chkDebugCells
+            // 
+            chkDebugCells.AutoSize = true;
+            chkDebugCells.ForeColor = Color.White;
+            chkDebugCells.Location = new Point(10, 145);
+            chkDebugCells.Name = "chkDebugCells";
+            chkDebugCells.Size = new Size(103, 18);
+            chkDebugCells.TabIndex = 8;
+            chkDebugCells.Text = "Debug Cells";
+            toolTip1.SetToolTip(chkDebugCells, "Show board visualization popup for debugging piece recognition");
+            chkDebugCells.UseVisualStyleBackColor = true;
             // 
             // numMinBoardArea
             // 
@@ -158,19 +178,7 @@ namespace ChessDroid
             numMatchThreshold.TabIndex = 4;
             toolTip1.SetToolTip(numMatchThreshold, "Minimum similarity for piece recognition (0.1-1.0). Higher = stricter matching.");
             numMatchThreshold.Value = new decimal(new int[] { 75, 0, 0, 131072 });
-            //
-            // chkDebugCells
-            //
-            chkDebugCells.AutoSize = true;
-            chkDebugCells.ForeColor = Color.White;
-            chkDebugCells.Location = new Point(10, 145);
-            chkDebugCells.Name = "chkDebugCells";
-            chkDebugCells.Size = new Size(110, 18);
-            chkDebugCells.TabIndex = 8;
-            chkDebugCells.Text = "Debug Cells";
-            toolTip1.SetToolTip(chkDebugCells, "Show board visualization popup for debugging piece recognition");
-            chkDebugCells.UseVisualStyleBackColor = true;
-            //
+            // 
             // lblMinBoardArea
             // 
             lblMinBoardArea.Location = new Point(10, 119);
@@ -411,15 +419,15 @@ namespace ChessDroid
             chkShowBest.UseVisualStyleBackColor = true;
             // 
             // lblBest
-            //
+            // 
             lblBest.Location = new Point(10, 82);
             lblBest.Name = "lblBest";
             lblBest.Size = new Size(150, 19);
             lblBest.TabIndex = 0;
             lblBest.Text = "Show Best Line:";
-            //
+            // 
             // grpExplanations
-            //
+            // 
             grpExplanations.Controls.Add(cmbComplexity);
             grpExplanations.Controls.Add(lblComplexity);
             grpExplanations.Controls.Add(chkTactical);
@@ -435,175 +443,245 @@ namespace ChessDroid
             grpExplanations.ForeColor = Color.White;
             grpExplanations.Location = new Point(316, 12);
             grpExplanations.Name = "grpExplanations";
-            grpExplanations.Size = new Size(270, 320);
+            grpExplanations.Size = new Size(255, 320);
             grpExplanations.TabIndex = 3;
             grpExplanations.TabStop = false;
             grpExplanations.Text = "Explanation Settings";
-            //
+            // 
             // cmbComplexity
-            //
+            // 
             cmbComplexity.DropDownStyle = ComboBoxStyle.DropDownList;
             cmbComplexity.FormattingEnabled = true;
             cmbComplexity.Location = new Point(120, 20);
             cmbComplexity.Name = "cmbComplexity";
-            cmbComplexity.Size = new Size(135, 22);
+            cmbComplexity.Size = new Size(124, 22);
             cmbComplexity.TabIndex = 0;
             toolTip1.SetToolTip(cmbComplexity, "Explanation detail level: Beginner (simple) to Master (technical)");
-            //
+            // 
             // lblComplexity
-            //
+            // 
             lblComplexity.Location = new Point(10, 23);
             lblComplexity.Name = "lblComplexity";
             lblComplexity.Size = new Size(110, 19);
             lblComplexity.TabIndex = 0;
             lblComplexity.Text = "Complexity:";
             toolTip1.SetToolTip(lblComplexity, "Explanation detail level: Beginner (simple) to Master (technical)");
-            //
+            // 
             // chkTactical
-            //
+            // 
             chkTactical.AutoSize = true;
             chkTactical.Checked = true;
             chkTactical.CheckState = CheckState.Checked;
             chkTactical.ForeColor = Color.White;
             chkTactical.Location = new Point(10, 55);
             chkTactical.Name = "chkTactical";
-            chkTactical.Size = new Size(160, 18);
+            chkTactical.Size = new Size(145, 18);
             chkTactical.TabIndex = 1;
             chkTactical.Text = "Tactical Analysis";
             toolTip1.SetToolTip(chkTactical, "Show pins, forks, skewers, discovered attacks");
             chkTactical.UseVisualStyleBackColor = true;
-            //
+            // 
             // chkPositional
-            //
+            // 
             chkPositional.AutoSize = true;
             chkPositional.Checked = true;
             chkPositional.CheckState = CheckState.Checked;
             chkPositional.ForeColor = Color.White;
             chkPositional.Location = new Point(10, 80);
             chkPositional.Name = "chkPositional";
-            chkPositional.Size = new Size(180, 18);
+            chkPositional.Size = new Size(159, 18);
             chkPositional.TabIndex = 2;
             chkPositional.Text = "Positional Analysis";
             toolTip1.SetToolTip(chkPositional, "Show pawn structure, outposts, mobility");
             chkPositional.UseVisualStyleBackColor = true;
-            //
+            // 
             // chkEndgame
-            //
+            // 
             chkEndgame.AutoSize = true;
             chkEndgame.Checked = true;
             chkEndgame.CheckState = CheckState.Checked;
             chkEndgame.ForeColor = Color.White;
             chkEndgame.Location = new Point(10, 105);
             chkEndgame.Name = "chkEndgame";
-            chkEndgame.Size = new Size(160, 18);
+            chkEndgame.Size = new Size(138, 18);
             chkEndgame.TabIndex = 3;
             chkEndgame.Text = "Endgame Analysis";
             toolTip1.SetToolTip(chkEndgame, "Show endgame patterns, zugzwang");
             chkEndgame.UseVisualStyleBackColor = true;
-            //
+            // 
             // chkOpening
-            //
+            // 
             chkOpening.AutoSize = true;
             chkOpening.Checked = true;
             chkOpening.CheckState = CheckState.Checked;
             chkOpening.ForeColor = Color.White;
             chkOpening.Location = new Point(10, 130);
             chkOpening.Name = "chkOpening";
-            chkOpening.Size = new Size(180, 18);
+            chkOpening.Size = new Size(152, 18);
             chkOpening.TabIndex = 4;
             chkOpening.Text = "Opening Principles";
             toolTip1.SetToolTip(chkOpening, "Show center control, development");
             chkOpening.UseVisualStyleBackColor = true;
-            //
+            // 
             // chkTablebase
-            //
+            // 
             chkTablebase.AutoSize = true;
             chkTablebase.Checked = true;
             chkTablebase.CheckState = CheckState.Checked;
             chkTablebase.ForeColor = Color.White;
             chkTablebase.Location = new Point(10, 155);
             chkTablebase.Name = "chkTablebase";
-            chkTablebase.Size = new Size(160, 18);
+            chkTablebase.Size = new Size(124, 18);
             chkTablebase.TabIndex = 6;
             chkTablebase.Text = "Tablebase Info";
             toolTip1.SetToolTip(chkTablebase, "Show perfect endgame moves");
             chkTablebase.UseVisualStyleBackColor = true;
-            //
+            // 
             // chkColorCoding
-            //
+            // 
             chkColorCoding.AutoSize = true;
             chkColorCoding.Checked = true;
             chkColorCoding.CheckState = CheckState.Checked;
             chkColorCoding.ForeColor = Color.White;
             chkColorCoding.Location = new Point(10, 180);
             chkColorCoding.Name = "chkColorCoding";
-            chkColorCoding.Size = new Size(180, 18);
+            chkColorCoding.Size = new Size(145, 18);
             chkColorCoding.TabIndex = 7;
             chkColorCoding.Text = "Color-Coded Moves";
             toolTip1.SetToolTip(chkColorCoding, "Visual quality indicators (green=good, red=bad)");
             chkColorCoding.UseVisualStyleBackColor = true;
-            //
+            // 
             // chkSEE
-            //
+            // 
             chkSEE.AutoSize = true;
             chkSEE.Checked = true;
             chkSEE.CheckState = CheckState.Checked;
             chkSEE.ForeColor = Color.White;
             chkSEE.Location = new Point(10, 205);
             chkSEE.Name = "chkSEE";
-            chkSEE.Size = new Size(160, 18);
+            chkSEE.Size = new Size(96, 18);
             chkSEE.TabIndex = 8;
             chkSEE.Text = "SEE Values";
             toolTip1.SetToolTip(chkSEE, "Static Exchange Evaluation for captures");
             chkSEE.UseVisualStyleBackColor = true;
-            //
+            // 
             // chkThreats
-            //
+            // 
             chkThreats.AutoSize = true;
             chkThreats.Checked = true;
             chkThreats.CheckState = CheckState.Checked;
             chkThreats.ForeColor = Color.White;
             chkThreats.Location = new Point(10, 230);
             chkThreats.Name = "chkThreats";
-            chkThreats.Size = new Size(160, 18);
+            chkThreats.Size = new Size(138, 18);
             chkThreats.TabIndex = 9;
             chkThreats.Text = "Threats Analysis";
             toolTip1.SetToolTip(chkThreats, "Show threats we create and opponent threats against us");
             chkThreats.UseVisualStyleBackColor = true;
-            //
+            // 
             // chkWDL
-            //
+            // 
             chkWDL.AutoSize = true;
             chkWDL.Checked = true;
             chkWDL.CheckState = CheckState.Checked;
             chkWDL.ForeColor = Color.White;
             chkWDL.Location = new Point(10, 255);
             chkWDL.Name = "chkWDL";
-            chkWDL.Size = new Size(160, 18);
+            chkWDL.Size = new Size(166, 18);
             chkWDL.TabIndex = 10;
             chkWDL.Text = "WDL & Sharpness (Lc0)";
             toolTip1.SetToolTip(chkWDL, "Show Win/Draw/Loss probabilities and position sharpness (Lc0-inspired)");
             chkWDL.UseVisualStyleBackColor = true;
-            //
+            // 
             // chkAutoMonitor
-            //
+            // 
             chkAutoMonitor.AutoSize = true;
-            chkAutoMonitor.Checked = false;
-            chkAutoMonitor.CheckState = CheckState.Unchecked;
             chkAutoMonitor.ForeColor = Color.LightGreen;
             chkAutoMonitor.Location = new Point(10, 280);
             chkAutoMonitor.Name = "chkAutoMonitor";
-            chkAutoMonitor.Size = new Size(250, 18);
+            chkAutoMonitor.Size = new Size(152, 18);
             chkAutoMonitor.TabIndex = 11;
-            chkAutoMonitor.Text = "Auto-Monitor Board (Continuous Analysis)";
+            chkAutoMonitor.Text = "Auto-Monitor Board";
             toolTip1.SetToolTip(chkAutoMonitor, "Automatically analyze position when it becomes your turn");
             chkAutoMonitor.UseVisualStyleBackColor = true;
-            //
+            // 
+            // grpLc0Features
+            // 
+            grpLc0Features.Controls.Add(lblAggressiveness);
+            grpLc0Features.Controls.Add(trkAggressiveness);
+            grpLc0Features.Controls.Add(lblAggressivenessValue);
+            grpLc0Features.Controls.Add(chkOpeningName);
+            grpLc0Features.Controls.Add(chkMoveQuality);
+            grpLc0Features.ForeColor = Color.White;
+            grpLc0Features.Location = new Point(316, 338);
+            grpLc0Features.Name = "grpLc0Features";
+            grpLc0Features.Size = new Size(255, 158);
+            grpLc0Features.TabIndex = 9;
+            grpLc0Features.TabStop = false;
+            grpLc0Features.Text = "Lc0-Inspired Features";
+            // 
+            // lblAggressiveness
+            // 
+            lblAggressiveness.Location = new Point(10, 23);
+            lblAggressiveness.Name = "lblAggressiveness";
+            lblAggressiveness.Size = new Size(100, 19);
+            lblAggressiveness.TabIndex = 0;
+            lblAggressiveness.Text = "Play Style:";
+            toolTip1.SetToolTip(lblAggressiveness, "0=Very Solid (avoid risk), 50=Balanced, 100=Very Aggressive (seek complications)");
+            // 
+            // trkAggressiveness
+            // 
+            trkAggressiveness.Location = new Point(10, 42);
+            trkAggressiveness.Maximum = 100;
+            trkAggressiveness.Name = "trkAggressiveness";
+            trkAggressiveness.Size = new Size(150, 45);
+            trkAggressiveness.TabIndex = 1;
+            trkAggressiveness.TickFrequency = 25;
+            toolTip1.SetToolTip(trkAggressiveness, "0=Very Solid (avoid risk), 50=Balanced, 100=Very Aggressive (seek complications)");
+            trkAggressiveness.Value = 50;
+            trkAggressiveness.Scroll += TrkAggressiveness_Scroll;
+            // 
+            // lblAggressivenessValue
+            // 
+            lblAggressivenessValue.Location = new Point(160, 45);
+            lblAggressivenessValue.Name = "lblAggressivenessValue";
+            lblAggressivenessValue.Size = new Size(90, 19);
+            lblAggressivenessValue.TabIndex = 2;
+            lblAggressivenessValue.Text = "50 (Balanced)";
+            // 
+            // chkOpeningName
+            // 
+            chkOpeningName.AutoSize = true;
+            chkOpeningName.Checked = true;
+            chkOpeningName.CheckState = CheckState.Checked;
+            chkOpeningName.ForeColor = Color.White;
+            chkOpeningName.Location = new Point(10, 96);
+            chkOpeningName.Name = "chkOpeningName";
+            chkOpeningName.Size = new Size(145, 18);
+            chkOpeningName.TabIndex = 3;
+            chkOpeningName.Text = "Show Opening Name";
+            toolTip1.SetToolTip(chkOpeningName, "Display opening name when in known theory (ECO codes)");
+            chkOpeningName.UseVisualStyleBackColor = true;
+            // 
+            // chkMoveQuality
+            // 
+            chkMoveQuality.AutoSize = true;
+            chkMoveQuality.Checked = true;
+            chkMoveQuality.CheckState = CheckState.Checked;
+            chkMoveQuality.ForeColor = Color.White;
+            chkMoveQuality.Location = new Point(10, 121);
+            chkMoveQuality.Name = "chkMoveQuality";
+            chkMoveQuality.Size = new Size(229, 18);
+            chkMoveQuality.TabIndex = 4;
+            chkMoveQuality.Text = "Move Quality (Brilliant/Best)";
+            toolTip1.SetToolTip(chkMoveQuality, "Show move quality indicators like chess.com (!!, !, ?!, ?, ??)");
+            chkMoveQuality.UseVisualStyleBackColor = true;
+            // 
             // btnSave
-            //
+            // 
             btnSave.FlatStyle = FlatStyle.Popup;
             btnSave.ForeColor = SystemColors.ControlLightLight;
-            btnSave.Location = new Point(12, 502);
+            btnSave.Location = new Point(36, 502);
             btnSave.Name = "btnSave";
             btnSave.Size = new Size(100, 28);
             btnSave.TabIndex = 4;
@@ -612,10 +690,10 @@ namespace ChessDroid
             btnSave.Click += BtnSave_Click;
             // 
             // btnReset
-            //
+            // 
             btnReset.FlatStyle = FlatStyle.Popup;
             btnReset.ForeColor = SystemColors.ControlLightLight;
-            btnReset.Location = new Point(210, 502);
+            btnReset.Location = new Point(248, 502);
             btnReset.Name = "btnReset";
             btnReset.Size = new Size(100, 28);
             btnReset.TabIndex = 5;
@@ -624,10 +702,10 @@ namespace ChessDroid
             btnReset.Click += BtnReset_Click;
             // 
             // btnHelp
-            //
+            // 
             btnHelp.FlatStyle = FlatStyle.Popup;
             btnHelp.ForeColor = SystemColors.ControlLightLight;
-            btnHelp.Location = new Point(12, 536);
+            btnHelp.Location = new Point(142, 502);
             btnHelp.Name = "btnHelp";
             btnHelp.Size = new Size(100, 28);
             btnHelp.TabIndex = 6;
@@ -636,11 +714,11 @@ namespace ChessDroid
             btnHelp.Click += BtnHelp_Click;
             // 
             // btnCancel
-            //
+            // 
             btnCancel.DialogResult = DialogResult.Cancel;
             btnCancel.FlatStyle = FlatStyle.Popup;
             btnCancel.ForeColor = SystemColors.ControlLightLight;
-            btnCancel.Location = new Point(210, 536);
+            btnCancel.Location = new Point(354, 502);
             btnCancel.Name = "btnCancel";
             btnCancel.Size = new Size(100, 28);
             btnCancel.TabIndex = 7;
@@ -654,7 +732,7 @@ namespace ChessDroid
             chkDarkMode.Checked = true;
             chkDarkMode.CheckState = CheckState.Checked;
             chkDarkMode.ForeColor = Color.White;
-            chkDarkMode.Location = new Point(221, 570);
+            chkDarkMode.Location = new Point(460, 508);
             chkDarkMode.Name = "chkDarkMode";
             chkDarkMode.Size = new Size(89, 18);
             chkDarkMode.TabIndex = 8;
@@ -670,12 +748,13 @@ namespace ChessDroid
             AutoSizeMode = AutoSizeMode.GrowAndShrink;
             BackColor = Color.FromArgb(45, 45, 48);
             CancelButton = btnCancel;
-            ClientSize = new Size(598, 597);
+            ClientSize = new Size(585, 542);
             Controls.Add(chkDarkMode);
             Controls.Add(btnCancel);
             Controls.Add(btnHelp);
             Controls.Add(btnReset);
             Controls.Add(btnSave);
+            Controls.Add(grpLc0Features);
             Controls.Add(grpExplanations);
             Controls.Add(grpDisplay);
             Controls.Add(grpEngine);
@@ -688,6 +767,7 @@ namespace ChessDroid
             StartPosition = FormStartPosition.CenterParent;
             Text = "chessdroid://settings";
             grpDetection.ResumeLayout(false);
+            grpDetection.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)numMinBoardArea).EndInit();
             ((System.ComponentModel.ISupportInitialize)numCannyHigh).EndInit();
             ((System.ComponentModel.ISupportInitialize)numCannyLow).EndInit();
@@ -700,6 +780,9 @@ namespace ChessDroid
             grpDisplay.PerformLayout();
             grpExplanations.ResumeLayout(false);
             grpExplanations.PerformLayout();
+            grpLc0Features.ResumeLayout(false);
+            grpLc0Features.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)trkAggressiveness).EndInit();
             ResumeLayout(false);
             PerformLayout();
 
@@ -756,5 +839,11 @@ namespace ChessDroid
         private System.Windows.Forms.CheckBox chkThreats;
         private System.Windows.Forms.CheckBox chkWDL;
         private System.Windows.Forms.CheckBox chkAutoMonitor;
+        private System.Windows.Forms.GroupBox grpLc0Features;
+        private System.Windows.Forms.Label lblAggressiveness;
+        private System.Windows.Forms.TrackBar trkAggressiveness;
+        private System.Windows.Forms.Label lblAggressivenessValue;
+        private System.Windows.Forms.CheckBox chkOpeningName;
+        private System.Windows.Forms.CheckBox chkMoveQuality;
     }
 }

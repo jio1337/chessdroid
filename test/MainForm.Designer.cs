@@ -122,9 +122,9 @@ namespace ChessDroid
             chkWhiteTurn.Text = "White to move";
             chkWhiteTurn.UseVisualStyleBackColor = false;
             chkWhiteTurn.CheckedChanged += chkWhiteTurn_CheckedChanged;
-            //
+            // 
             // MainForm
-            //
+            // 
             AutoScaleDimensions = new SizeF(7F, 14F);
             AutoScaleMode = AutoScaleMode.Font;
             AutoSizeMode = AutoSizeMode.GrowAndShrink;
@@ -144,7 +144,7 @@ namespace ChessDroid
             MinimizeBox = false;
             Name = "MainForm";
             StartPosition = FormStartPosition.CenterScreen;
-            Text = "chessdroid v2.0.0";
+            Text = "chessdroid v2.0.0++";
             TopMost = true;
             FormClosed += Form1_FormClosed;
             Load += Form1_Load;

@@ -41,6 +41,11 @@ namespace ChessDroid
         // Auto-monitoring settings
         public bool AutoMonitorBoard { get; set; } = false; // Enable continuous board monitoring
 
+        // Lc0-inspired features
+        public int Aggressiveness { get; set; } = 50; // 0=Solid (avoid risk), 50=Balanced, 100=Aggressive (seek complications)
+        public bool ShowOpeningName { get; set; } = true; // Show opening name when in known theory
+        public bool ShowMoveQuality { get; set; } = true; // Show move quality indicators (brilliant, best, good, etc.)
+
         private static readonly string ConfigFilePath = Path.Combine(
             Application.StartupPath, "config.json");
 

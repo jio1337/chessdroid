@@ -156,9 +156,10 @@ namespace ChessDroid.Services
             {
                 string[] fenParts = completeFen.Split(' ');
                 bool whiteToMove = fenParts.Length > 1 && fenParts[1] == "w";
+                string enPassantSquare = fenParts.Length > 3 ? fenParts[3] : "-";
 
                 ChessBoard board = ChessBoard.FromFEN(completeFen);
-                var threats = ThreatDetection.AnalyzeThreatsAfterMove(board, move, whiteToMove);
+                var threats = ThreatDetection.AnalyzeThreatsAfterMove(board, move, whiteToMove, enPassantSquare);
 
                 if (threats.Count > 0)
                 {
@@ -329,6 +330,53 @@ namespace ChessDroid.Services
                 }
             }
 
+            // Display opening name if in known theory and enabled
+            if (config?.ShowOpeningName == true)
+            {
+                string openingDisplay = OpeningBook.GetOpeningDisplay(completeFen);
+                System.Diagnostics.Debug.WriteLine($"OpeningBook lookup for FEN: {completeFen?.Split(' ')[0]} => {openingDisplay}");
+
+                if (!string.IsNullOrEmpty(openingDisplay) && openingDisplay != "Starting Position")
+                {
+                    richTextBox.SelectionColor = Color.CornflowerBlue;
+                    richTextBox.AppendText($"Opening: {openingDisplay}{Environment.NewLine}");
+                    ResetFormatting();
+                }
+                else
+                {
+                    // Show "Out of book" when we're past known theory
+                    richTextBox.SelectionColor = Color.Gray;
+                    richTextBox.AppendText($"Opening: Out of book{Environment.NewLine}");
+                    ResetFormatting();
+                }
+            }
+
+            // Display play style indicator based on aggressiveness setting
+            if (config != null)
+            {
+                string playStyle = config.Aggressiveness switch
+                {
+                    <= 20 => "Very Solid",
+                    <= 40 => "Solid",
+                    <= 60 => "Balanced",
+                    <= 80 => "Aggressive",
+                    _ => "Very Aggressive"
+                };
+
+                Color styleColor = config.Aggressiveness switch
+                {
+                    <= 20 => Color.SteelBlue,
+                    <= 40 => Color.CadetBlue,
+                    <= 60 => Color.Gold,
+                    <= 80 => Color.OrangeRed,
+                    _ => Color.Crimson
+                };
+
+                richTextBox.SelectionColor = styleColor;
+                richTextBox.AppendText($"Style: {playStyle} ({config.Aggressiveness}){Environment.NewLine}");
+                ResetFormatting();
+            }
+
             // Best line - always show threats
             string bestSanFull = ConvertPvToSan(pvs, 0, bestMove, completeFen);
             string formattedEval = FormatEvaluation(evaluation);
@@ -402,9 +450,10 @@ namespace ChessDroid.Services
             {
                 string[] fenParts = completeFen.Split(' ');
                 bool whiteToMove = fenParts.Length > 1 && fenParts[1] == "w";
+                string enPassantSquare = fenParts.Length > 3 ? fenParts[3] : "-";
 
                 ChessBoard board = ChessBoard.FromFEN(completeFen);
-                var opponentThreats = ThreatDetection.AnalyzeOpponentThreats(board, whiteToMove);
+                var opponentThreats = ThreatDetection.AnalyzeOpponentThreats(board, whiteToMove, enPassantSquare);
 
                 if (opponentThreats.Count > 0)
                 {
