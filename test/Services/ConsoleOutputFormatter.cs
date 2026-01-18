@@ -296,6 +296,9 @@ namespace ChessDroid.Services
             bool showThirdLine,
             WDLInfo? wdl = null)
         {
+            // Validate required parameter - store in local var for null-state tracking
+            string fen = completeFen ?? throw new ArgumentNullException(nameof(completeFen));
+
             Clear();
 
             // Check for blunders
@@ -303,7 +306,7 @@ namespace ChessDroid.Services
             if (currentEval.HasValue && previousEvaluation.HasValue)
             {
                 // Extract whose turn it is from FEN to determine who just moved
-                string[] fenParts = completeFen.Split(' ');
+                string[] fenParts = fen.Split(' ');
                 bool whiteToMove = fenParts.Length > 1 && fenParts[1] == "w";
                 bool whiteJustMoved = !whiteToMove;
 
@@ -378,13 +381,13 @@ namespace ChessDroid.Services
             }
 
             // Best line - always show threats
-            string bestSanFull = ConvertPvToSan(pvs, 0, bestMove, completeFen);
+            string bestSanFull = ConvertPvToSan(pvs, 0, bestMove, fen);
             string formattedEval = FormatEvaluation(evaluation);
             DisplayMoveLine(
                 "Best line",
                 bestSanFull,
                 formattedEval,
-                completeFen,
+                fen,
                 pvs,
                 bestMove,
                 Color.MediumSeaGreen,
@@ -394,7 +397,7 @@ namespace ChessDroid.Services
             // Second best - show threats if enabled
             if (showSecondLine && pvs.Count >= 2)
             {
-                var secondSan = ChessNotationService.ConvertFullPvToSan(pvs[1], completeFen,
+                var secondSan = ChessNotationService.ConvertFullPvToSan(pvs[1], fen,
                     ChessRulesService.ApplyUciMove, ChessRulesService.CanReachSquare, ChessRulesService.FindAllPiecesOfSameType);
                 string secondMove = pvs[1].Split(' ')[0];
                 string secondEval = evaluations.Count >= 2 ? evaluations[1] : "";
@@ -404,7 +407,7 @@ namespace ChessDroid.Services
                     "Second best",
                     secondSan,
                     formattedSecondEval,
-                    completeFen,
+                    fen,
                     pvs,
                     secondMove,
                     Color.Yellow,
@@ -415,7 +418,7 @@ namespace ChessDroid.Services
             // Third best - show threats if enabled
             if (showThirdLine && pvs.Count >= 3)
             {
-                var thirdSan = ChessNotationService.ConvertFullPvToSan(pvs[2], completeFen,
+                var thirdSan = ChessNotationService.ConvertFullPvToSan(pvs[2], fen,
                     ChessRulesService.ApplyUciMove, ChessRulesService.CanReachSquare, ChessRulesService.FindAllPiecesOfSameType);
                 string thirdMove = pvs[2].Split(' ')[0];
                 string thirdEval = evaluations.Count >= 3 ? evaluations[2] : "";
@@ -424,7 +427,7 @@ namespace ChessDroid.Services
                     "Third best",
                     thirdSan,
                     thirdEval,
-                    completeFen,
+                    fen,
                     pvs,
                     thirdMove,
                     Color.Red,
@@ -435,7 +438,7 @@ namespace ChessDroid.Services
             // Display opponent threats at the bottom (independent of which move we choose)
             if (config?.ShowThreats == true)
             {
-                DisplayOpponentThreats(completeFen);
+                DisplayOpponentThreats(fen);
             }
 
             ResetFormatting();
