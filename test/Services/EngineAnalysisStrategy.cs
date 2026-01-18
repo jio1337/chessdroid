@@ -21,7 +21,7 @@ namespace ChessDroid.Services
         /// Gets engine result with automatic depth degradation fallback
         /// Tries: requested depth → 75% depth → 50% depth (min 3)
         /// </summary>
-        public async Task<(string bestMove, string evaluation, List<string> pvs, List<string> evaluations)> GetResultWithDegradation(
+        public async Task<(string bestMove, string evaluation, List<string> pvs, List<string> evaluations, WDLInfo? wdl)> GetResultWithDegradation(
             string fen, int depth, int multiPVCount)
         {
             try
@@ -57,7 +57,7 @@ namespace ChessDroid.Services
                     }
                 }
 
-                return (result.bestMove, result.evaluation, result.pvs ?? new List<string>(), result.evaluations ?? new List<string>());
+                return (result.bestMove, result.evaluation, result.pvs ?? new List<string>(), result.evaluations ?? new List<string>(), result.wdl);
             }
             catch (Exception ex)
             {
@@ -68,7 +68,7 @@ namespace ChessDroid.Services
         /// <summary>
         /// Handles engine exceptions with automatic restart for pipe/crash errors
         /// </summary>
-        private async Task<(string, string, List<string>, List<string>)> HandleEngineException(
+        private async Task<(string, string, List<string>, List<string>, WDLInfo?)> HandleEngineException(
             Exception ex, string fen, int depth, int multiPVCount)
         {
             // Check if it's a pipe closure or engine crash
@@ -89,7 +89,7 @@ namespace ChessDroid.Services
                     {
                         Debug.WriteLine("Analysis succeeded after engine restart");
                         updateStatus("Ready");
-                        return (result.bestMove, result.evaluation, result.pvs ?? new List<string>(), result.evaluations ?? new List<string>());
+                        return (result.bestMove, result.evaluation, result.pvs ?? new List<string>(), result.evaluations ?? new List<string>(), result.wdl);
                     }
                 }
                 catch (Exception restartEx)
@@ -104,7 +104,7 @@ namespace ChessDroid.Services
                 updateStatus($"Engine error: {ex.Message}");
             }
 
-            return ("", "", new List<string>(), new List<string>());
+            return ("", "", new List<string>(), new List<string>(), null);
         }
     }
 }

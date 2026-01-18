@@ -111,10 +111,11 @@ namespace ChessDroid
             chkPositional.Checked = config.ShowPositionalAnalysis;
             chkEndgame.Checked = config.ShowEndgameAnalysis;
             chkOpening.Checked = config.ShowOpeningPrinciples;
-            chkWinRate.Checked = config.ShowWinPercentage;
             chkTablebase.Checked = config.ShowTablebaseInfo;
             chkColorCoding.Checked = config.ShowMoveQualityColor;
             chkSEE.Checked = config.ShowSEEValues;
+            chkThreats.Checked = config.ShowThreats;
+            chkWDL.Checked = config.ShowWDL;
             chkAutoMonitor.Checked = config.AutoMonitorBoard;
 
             // Load theme preference
@@ -165,10 +166,11 @@ namespace ChessDroid
             config.ShowPositionalAnalysis = chkPositional.Checked;
             config.ShowEndgameAnalysis = chkEndgame.Checked;
             config.ShowOpeningPrinciples = chkOpening.Checked;
-            config.ShowWinPercentage = chkWinRate.Checked;
             config.ShowTablebaseInfo = chkTablebase.Checked;
             config.ShowMoveQualityColor = chkColorCoding.Checked;
             config.ShowSEEValues = chkSEE.Checked;
+            config.ShowThreats = chkThreats.Checked;
+            config.ShowWDL = chkWDL.Checked;
             config.AutoMonitorBoard = chkAutoMonitor.Checked;
 
             config.Save();

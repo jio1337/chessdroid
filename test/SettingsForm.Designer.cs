@@ -66,10 +66,11 @@ namespace ChessDroid
             chkPositional = new CheckBox();
             chkEndgame = new CheckBox();
             chkOpening = new CheckBox();
-            chkWinRate = new CheckBox();
             chkTablebase = new CheckBox();
             chkColorCoding = new CheckBox();
             chkSEE = new CheckBox();
+            chkThreats = new CheckBox();
+            chkWDL = new CheckBox();
             btnSave = new Button();
             btnReset = new Button();
             btnHelp = new Button();
@@ -425,15 +426,16 @@ namespace ChessDroid
             grpExplanations.Controls.Add(chkPositional);
             grpExplanations.Controls.Add(chkEndgame);
             grpExplanations.Controls.Add(chkOpening);
-            grpExplanations.Controls.Add(chkWinRate);
             grpExplanations.Controls.Add(chkTablebase);
             grpExplanations.Controls.Add(chkColorCoding);
             grpExplanations.Controls.Add(chkSEE);
+            grpExplanations.Controls.Add(chkThreats);
+            grpExplanations.Controls.Add(chkWDL);
             grpExplanations.Controls.Add(chkAutoMonitor);
             grpExplanations.ForeColor = Color.White;
             grpExplanations.Location = new Point(316, 12);
             grpExplanations.Name = "grpExplanations";
-            grpExplanations.Size = new Size(270, 295);
+            grpExplanations.Size = new Size(270, 320);
             grpExplanations.TabIndex = 3;
             grpExplanations.TabStop = false;
             grpExplanations.Text = "Explanation Settings";
@@ -513,27 +515,13 @@ namespace ChessDroid
             toolTip1.SetToolTip(chkOpening, "Show center control, development");
             chkOpening.UseVisualStyleBackColor = true;
             //
-            // chkWinRate
-            //
-            chkWinRate.AutoSize = true;
-            chkWinRate.Checked = true;
-            chkWinRate.CheckState = CheckState.Checked;
-            chkWinRate.ForeColor = Color.White;
-            chkWinRate.Location = new Point(10, 155);
-            chkWinRate.Name = "chkWinRate";
-            chkWinRate.Size = new Size(160, 18);
-            chkWinRate.TabIndex = 5;
-            chkWinRate.Text = "Win Percentage";
-            toolTip1.SetToolTip(chkWinRate, "Show winning chances (side-aware)");
-            chkWinRate.UseVisualStyleBackColor = true;
-            //
             // chkTablebase
             //
             chkTablebase.AutoSize = true;
             chkTablebase.Checked = true;
             chkTablebase.CheckState = CheckState.Checked;
             chkTablebase.ForeColor = Color.White;
-            chkTablebase.Location = new Point(10, 180);
+            chkTablebase.Location = new Point(10, 155);
             chkTablebase.Name = "chkTablebase";
             chkTablebase.Size = new Size(160, 18);
             chkTablebase.TabIndex = 6;
@@ -547,7 +535,7 @@ namespace ChessDroid
             chkColorCoding.Checked = true;
             chkColorCoding.CheckState = CheckState.Checked;
             chkColorCoding.ForeColor = Color.White;
-            chkColorCoding.Location = new Point(10, 205);
+            chkColorCoding.Location = new Point(10, 180);
             chkColorCoding.Name = "chkColorCoding";
             chkColorCoding.Size = new Size(180, 18);
             chkColorCoding.TabIndex = 7;
@@ -561,7 +549,7 @@ namespace ChessDroid
             chkSEE.Checked = true;
             chkSEE.CheckState = CheckState.Checked;
             chkSEE.ForeColor = Color.White;
-            chkSEE.Location = new Point(10, 230);
+            chkSEE.Location = new Point(10, 205);
             chkSEE.Name = "chkSEE";
             chkSEE.Size = new Size(160, 18);
             chkSEE.TabIndex = 8;
@@ -569,16 +557,44 @@ namespace ChessDroid
             toolTip1.SetToolTip(chkSEE, "Static Exchange Evaluation for captures");
             chkSEE.UseVisualStyleBackColor = true;
             //
+            // chkThreats
+            //
+            chkThreats.AutoSize = true;
+            chkThreats.Checked = true;
+            chkThreats.CheckState = CheckState.Checked;
+            chkThreats.ForeColor = Color.White;
+            chkThreats.Location = new Point(10, 230);
+            chkThreats.Name = "chkThreats";
+            chkThreats.Size = new Size(160, 18);
+            chkThreats.TabIndex = 9;
+            chkThreats.Text = "Threats Analysis";
+            toolTip1.SetToolTip(chkThreats, "Show threats we create and opponent threats against us");
+            chkThreats.UseVisualStyleBackColor = true;
+            //
+            // chkWDL
+            //
+            chkWDL.AutoSize = true;
+            chkWDL.Checked = true;
+            chkWDL.CheckState = CheckState.Checked;
+            chkWDL.ForeColor = Color.White;
+            chkWDL.Location = new Point(10, 255);
+            chkWDL.Name = "chkWDL";
+            chkWDL.Size = new Size(160, 18);
+            chkWDL.TabIndex = 10;
+            chkWDL.Text = "WDL & Sharpness (Lc0)";
+            toolTip1.SetToolTip(chkWDL, "Show Win/Draw/Loss probabilities and position sharpness (Lc0-inspired)");
+            chkWDL.UseVisualStyleBackColor = true;
+            //
             // chkAutoMonitor
             //
             chkAutoMonitor.AutoSize = true;
             chkAutoMonitor.Checked = false;
             chkAutoMonitor.CheckState = CheckState.Unchecked;
             chkAutoMonitor.ForeColor = Color.LightGreen;
-            chkAutoMonitor.Location = new Point(10, 255);
+            chkAutoMonitor.Location = new Point(10, 280);
             chkAutoMonitor.Name = "chkAutoMonitor";
             chkAutoMonitor.Size = new Size(250, 18);
-            chkAutoMonitor.TabIndex = 9;
+            chkAutoMonitor.TabIndex = 11;
             chkAutoMonitor.Text = "Auto-Monitor Board (Continuous Analysis)";
             toolTip1.SetToolTip(chkAutoMonitor, "Automatically analyze position when it becomes your turn");
             chkAutoMonitor.UseVisualStyleBackColor = true;
@@ -734,10 +750,11 @@ namespace ChessDroid
         private System.Windows.Forms.CheckBox chkPositional;
         private System.Windows.Forms.CheckBox chkEndgame;
         private System.Windows.Forms.CheckBox chkOpening;
-        private System.Windows.Forms.CheckBox chkWinRate;
         private System.Windows.Forms.CheckBox chkTablebase;
         private System.Windows.Forms.CheckBox chkColorCoding;
         private System.Windows.Forms.CheckBox chkSEE;
+        private System.Windows.Forms.CheckBox chkThreats;
+        private System.Windows.Forms.CheckBox chkWDL;
         private System.Windows.Forms.CheckBox chkAutoMonitor;
     }
 }

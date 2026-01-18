@@ -14,6 +14,7 @@ namespace ChessDroid.Services
         public string Evaluation { get; set; } = "";
         public List<string> PVs { get; set; } = new();
         public List<string> Evaluations { get; set; } = new();
+        public WDLInfo? WDL { get; set; }
         public DateTime CachedAt { get; set; }
     }
 
@@ -57,7 +58,7 @@ namespace ChessDroid.Services
         /// Handles caching, degradation, and failure recovery
         /// Returns null if analysis fails
         /// </summary>
-        public async Task<(string bestMove, string evaluation, List<string> pvs, List<string> evaluations, string completeFen)?> AnalyzePosition(
+        public async Task<(string bestMove, string evaluation, List<string> pvs, List<string> evaluations, string completeFen, WDLInfo? wdl)?> AnalyzePosition(
             ChessBoard currentBoard, int depth, bool showSecondLine, bool showThirdLine)
         {
             var swTotal = Stopwatch.StartNew();
@@ -82,7 +83,7 @@ namespace ChessDroid.Services
             // 5) Get engine result
             var swEngine = Stopwatch.StartNew();
             var result = useCache && lastEngineResult != null
-                ? (lastEngineResult.BestMove, lastEngineResult.Evaluation, lastEngineResult.PVs, lastEngineResult.Evaluations)
+                ? (lastEngineResult.BestMove, lastEngineResult.Evaluation, lastEngineResult.PVs, lastEngineResult.Evaluations, lastEngineResult.WDL)
                 : await analysisStrategy.GetResultWithDegradation(completeFen, depth, multiPVCount);
             swEngine.Stop();
 
@@ -152,6 +153,7 @@ namespace ChessDroid.Services
                     Evaluation = result.Item2,
                     PVs = result.Item3,
                     Evaluations = result.Item4,
+                    WDL = result.Item5,
                     CachedAt = DateTime.Now
                 };
             }
@@ -162,7 +164,7 @@ namespace ChessDroid.Services
             swTotal.Stop();
             Debug.WriteLine($"[PERF] AnalyzePosition timings: UpdatePos={swUpdatePos.ElapsedMilliseconds}ms, FEN={swFen.ElapsedMilliseconds}ms, Engine={swEngine.ElapsedMilliseconds}ms, TOTAL={swTotal.ElapsedMilliseconds}ms");
 
-            return (result.Item1, result.Item2, result.Item3, result.Item4, completeFen);
+            return (result.Item1, result.Item2, result.Item3, result.Item4, completeFen, result.Item5);
         }
 
         /// <summary>

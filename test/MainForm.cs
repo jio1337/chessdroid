@@ -70,7 +70,7 @@ namespace ChessDroid
             }
 
             // Success - extract results
-            var (bestMove, evaluation, pvs, evaluations, completeFen) = result.Value;
+            var (bestMove, evaluation, pvs, evaluations, completeFen, wdl) = result.Value;
 
             // Update blunder tracking - ONLY when auto-monitoring is active
             // Manual analysis doesn't track consecutive positions, so blunder detection
@@ -91,7 +91,8 @@ namespace ChessDroid
                 bestMove, evaluation, pvs, evaluations, completeFen,
                 previousEval,
                 config?.ShowSecondLine == true,
-                config?.ShowThirdLine == true);
+                config?.ShowThirdLine == true,
+                wdl);
         }
 
         protected override void WndProc(ref Message m)

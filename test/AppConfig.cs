@@ -32,10 +32,11 @@ namespace ChessDroid
         public bool ShowPositionalAnalysis { get; set; } = true; // Show positional evaluation
         public bool ShowEndgameAnalysis { get; set; } = true; // Show endgame patterns
         public bool ShowOpeningPrinciples { get; set; } = true; // Show opening principles
-        public bool ShowWinPercentage { get; set; } = true; // Show win percentage
         public bool ShowTablebaseInfo { get; set; } = true; // Show tablebase information
         public bool ShowMoveQualityColor { get; set; } = true; // Color-coded moves
         public bool ShowSEEValues { get; set; } = true; // Static Exchange Evaluation
+        public bool ShowThreats { get; set; } = true; // Show threats analysis
+        public bool ShowWDL { get; set; } = true; // Show Win/Draw/Loss probabilities (Lc0-inspired)
 
         // Auto-monitoring settings
         public bool AutoMonitorBoard { get; set; } = false; // Enable continuous board monitoring

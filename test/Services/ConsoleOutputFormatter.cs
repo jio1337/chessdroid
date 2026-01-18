@@ -200,17 +200,10 @@ namespace ChessDroid.Services
         }
 
         /// <summary>
-        /// Formats evaluation with win percentage if enabled
+        /// Formats evaluation string (win percentage removed - WDL replaces it)
         /// </summary>
-        public string FormatEvaluationWithWinPercentage(string evaluation, string completeFen)
+        public string FormatEvaluation(string evaluation)
         {
-            if (config?.ShowWinPercentage == true &&
-                ExplanationFormatter.CurrentLevel >= ExplanationFormatter.ComplexityLevel.Intermediate)
-            {
-                var tempBoard = ChessBoard.FromFEN(completeFen);
-                int materialCount = EndgameAnalysis.CountTotalPieces(tempBoard);
-                return ExplanationFormatter.FormatEvaluationWithWinRate(evaluation, materialCount, completeFen);
-            }
             return evaluation;
         }
 
@@ -253,6 +246,42 @@ namespace ChessDroid.Services
         }
 
         /// <summary>
+        /// Displays WDL (Win/Draw/Loss) information with sharpness indicator
+        /// Inspired by Leela Chess Zero's evaluation model
+        /// </summary>
+        private void DisplayWDLInfo(WDLInfo wdl)
+        {
+            // WDL header
+            richTextBox.SelectionColor = Color.Gray;
+            richTextBox.AppendText("Position: ");
+
+            // Win percentage - green shade based on value
+            Color winColor = wdl.WinPercent > 60 ? Color.LimeGreen :
+                            wdl.WinPercent > 40 ? Color.MediumSeaGreen : Color.DarkSeaGreen;
+            richTextBox.SelectionColor = winColor;
+            richTextBox.AppendText($"W:{wdl.WinPercent:F0}% ");
+
+            // Draw percentage - neutral color
+            richTextBox.SelectionColor = Color.Gold;
+            richTextBox.AppendText($"D:{wdl.DrawPercent:F0}% ");
+
+            // Loss percentage - red shade based on value
+            Color lossColor = wdl.LossPercent > 60 ? Color.Crimson :
+                             wdl.LossPercent > 40 ? Color.IndianRed : Color.RosyBrown;
+            richTextBox.SelectionColor = lossColor;
+            richTextBox.AppendText($"L:{wdl.LossPercent:F0}% ");
+
+            // Sharpness indicator
+            string character = wdl.GetPositionCharacter();
+            Color sharpnessColor = WDLUtilities.GetSharpnessColor(wdl.Sharpness);
+            richTextBox.SelectionColor = sharpnessColor;
+            richTextBox.AppendText($"({character})");
+
+            richTextBox.AppendText(Environment.NewLine);
+            ResetFormatting();
+        }
+
+        /// <summary>
         /// Displays complete analysis results including blunder detection and multiple lines
         /// </summary>
         public void DisplayAnalysisResults(
@@ -263,7 +292,8 @@ namespace ChessDroid.Services
             string completeFen,
             double? previousEvaluation,
             bool showSecondLine,
-            bool showThirdLine)
+            bool showThirdLine,
+            WDLInfo? wdl = null)
         {
             Clear();
 
@@ -285,9 +315,23 @@ namespace ChessDroid.Services
                 }
             }
 
+            // Display WDL information if available and enabled
+            if (config?.ShowWDL == true)
+            {
+                if (wdl != null)
+                {
+                    System.Diagnostics.Debug.WriteLine($"WDL data received: W={wdl.Win} D={wdl.Draw} L={wdl.Loss}");
+                    DisplayWDLInfo(wdl);
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine("WDL: No data available from engine");
+                }
+            }
+
             // Best line - always show threats
             string bestSanFull = ConvertPvToSan(pvs, 0, bestMove, completeFen);
-            string formattedEval = FormatEvaluationWithWinPercentage(evaluation, completeFen);
+            string formattedEval = FormatEvaluation(evaluation);
             DisplayMoveLine(
                 "Best line",
                 bestSanFull,
@@ -306,7 +350,7 @@ namespace ChessDroid.Services
                     ChessRulesService.ApplyUciMove, ChessRulesService.CanReachSquare, ChessRulesService.FindAllPiecesOfSameType);
                 string secondMove = pvs[1].Split(' ')[0];
                 string secondEval = evaluations.Count >= 2 ? evaluations[1] : "";
-                string formattedSecondEval = FormatEvaluationWithWinPercentage(secondEval, completeFen);
+                string formattedSecondEval = FormatEvaluation(secondEval);
 
                 DisplayMoveLine(
                     "Second best",

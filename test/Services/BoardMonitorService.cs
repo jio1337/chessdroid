@@ -53,11 +53,15 @@ namespace ChessDroid.Services
 
         // Debouncing: Track candidate position before committing to it
         private string? candidateFEN = null;
+
         private DateTime candidateFENFirstSeen = DateTime.MinValue;
-        private const int DEBOUNCE_MS = 200; // Wait 200ms for position to stabilize (reduced for faster response)
+        private int candidateConfirmations = 0; // Number of consecutive scans with same candidate
+        private const int DEBOUNCE_MS = 350; // Wait 350ms for position to stabilize
+        private const int REQUIRED_CONFIRMATIONS = 2; // Require 2 consecutive scans with same FEN
 
         // Invalid board tracking: Only clear cache after multiple consecutive failures
         private int consecutiveInvalidBoards = 0;
+
         private const int MAX_INVALID_BEFORE_CACHE_CLEAR = 5; // Allow 5 retries before clearing cache
 
         // Debug counter for same-position scans
@@ -301,12 +305,13 @@ namespace ChessDroid.Services
                     {
                         Debug.WriteLine($"BoardMonitorService: Position reverted to previous (flicker cancelled)");
                         candidateFEN = null;
+                        candidateConfirmations = 0;
                     }
 
                     // DEBUG: Every 5th scan with same FEN, log it to help diagnose stuck scans
                     if (sameFENScans % 5 == 0)
                     {
-                        Debug.WriteLine($"BoardMonitorService: [DEBUG] Same FEN for {sameFENScans} scans: {currentFEN}");
+                        Debug.WriteLine($"BoardMonitorService: [DEBUG] Same FEN for {sameFENScans} scans");
                     }
                     return;
                 }
@@ -317,25 +322,37 @@ namespace ChessDroid.Services
                 // New position detected - start/continue debouncing
                 if (candidateFEN == null || candidateFEN != currentFEN)
                 {
-                    // First time seeing this new position - start debounce timer
+                    // First time seeing this new position - validate it's a legal transition
+                    if (!IsValidMoveTransition(lastFEN, currentFEN))
+                    {
+                        Debug.WriteLine($"BoardMonitorService: REJECTED - Invalid move transition (mid-drag or glitch?)");
+                        return;
+                    }
+
+                    // Start debounce timer
                     candidateFEN = currentFEN;
                     candidateFENFirstSeen = DateTime.Now;
-                    Debug.WriteLine($"BoardMonitorService: New position detected, waiting {DEBOUNCE_MS}ms to confirm...");
-                    Debug.WriteLine($"BoardMonitorService: [DEBUG] Candidate FEN: {currentFEN}");
+                    candidateConfirmations = 1;
+                    Debug.WriteLine($"BoardMonitorService: New position detected, waiting for confirmation...");
                     return;
                 }
 
-                // Same candidate position - check if debounce period elapsed
+                // Same candidate position - increment confirmation counter
+                candidateConfirmations++;
+                Debug.WriteLine($"BoardMonitorService: Candidate confirmed {candidateConfirmations}/{REQUIRED_CONFIRMATIONS} times");
+
+                // Check if debounce period elapsed AND we have enough confirmations
                 double elapsedMs = (DateTime.Now - candidateFENFirstSeen).TotalMilliseconds;
-                if (elapsedMs < DEBOUNCE_MS)
+                if (elapsedMs < DEBOUNCE_MS || candidateConfirmations < REQUIRED_CONFIRMATIONS)
                 {
-                    // Still debouncing - wait longer
+                    // Still debouncing or need more confirmations - wait longer
                     return;
                 }
 
-                // Debounce period complete - commit to this position as a confirmed move
-                Debug.WriteLine($"BoardMonitorService: Position stable for {DEBOUNCE_MS}ms, processing as confirmed move");
+                // Debounce period complete AND confirmed multiple times - commit to this position
+                Debug.WriteLine($"BoardMonitorService: Position CONFIRMED stable ({candidateConfirmations} scans, {elapsedMs:F0}ms)");
                 candidateFEN = null; // Clear candidate - we're committing to this move
+                candidateConfirmations = 0;
 
                 // Determine who moved by checking which pieces changed
                 bool whitePiecesMoved = DidWhitePiecesMove(lastFEN, currentFEN);
@@ -462,7 +479,10 @@ namespace ChessDroid.Services
         private bool IsBoardValid(ChessBoard board)
         {
             int pieceCount = 0;
-            int kingCount = 0;
+            int whiteKingCount = 0;
+            int blackKingCount = 0;
+            int whitePawnCount = 0;
+            int blackPawnCount = 0;
 
             for (int r = 0; r < 8; r++)
             {
@@ -472,24 +492,183 @@ namespace ChessDroid.Services
                     if (piece != '.')
                     {
                         pieceCount++;
-                        if (char.ToUpper(piece) == 'K')
-                            kingCount++;
+                        if (piece == 'K') whiteKingCount++;
+                        else if (piece == 'k') blackKingCount++;
+                        else if (piece == 'P') whitePawnCount++;
+                        else if (piece == 'p') blackPawnCount++;
                     }
                 }
             }
 
             // Valid board must have:
-            // - Exactly 2 kings (one white, one black) - REQUIRED
-            // - At least 4 total pieces (allows king + pawn endgames)
-            // This is lenient to handle endgames and spotty recognition
-            bool isValid = kingCount == 2 && pieceCount >= 4;
+            // - Exactly 1 white king and 1 black king - REQUIRED
+            // - At least 2 total pieces (bare kings endgame is valid)
+            // - No more than 8 pawns per side
+            // - Pawns can't be on ranks 1 or 8 (would have promoted)
+            bool hasValidKings = whiteKingCount == 1 && blackKingCount == 1;
+            bool hasEnoughPieces = pieceCount >= 2;
+            bool hasValidPawnCounts = whitePawnCount <= 8 && blackPawnCount <= 8;
+
+            // Check for pawns on invalid ranks (rank 1 or 8)
+            bool pawnsOnValidRanks = true;
+            for (int c = 0; c < 8; c++)
+            {
+                char rank1 = board[7, c]; // Rank 1 (row 7 in 0-indexed)
+                char rank8 = board[0, c]; // Rank 8 (row 0 in 0-indexed)
+                if (rank1 == 'P' || rank1 == 'p' || rank8 == 'P' || rank8 == 'p')
+                {
+                    pawnsOnValidRanks = false;
+                    break;
+                }
+            }
+
+            bool isValid = hasValidKings && hasEnoughPieces && hasValidPawnCounts && pawnsOnValidRanks;
 
             if (!isValid)
             {
-                Debug.WriteLine($"BoardMonitorService: Invalid board - {pieceCount} pieces, {kingCount} kings");
+                Debug.WriteLine($"BoardMonitorService: Invalid board - {pieceCount} pieces, kings(W:{whiteKingCount}/B:{blackKingCount}), pawns(W:{whitePawnCount}/B:{blackPawnCount}), pawnsValid:{pawnsOnValidRanks}");
             }
 
             return isValid;
+        }
+
+        /// <summary>
+        /// Validates that the transition from old FEN to new FEN represents a legal chess move.
+        /// Rejects impossible transitions like:
+        /// - More than 2 pieces disappearing (impossible - max is 1 capture + 1 en passant pawn)
+        /// - Piece appearing from nowhere (except promotion)
+        /// - Multiple pieces moving at once (except castling)
+        /// </summary>
+        private bool IsValidMoveTransition(string oldFEN, string newFEN)
+        {
+            try
+            {
+                // Count pieces in each position
+                int oldPieceCount = CountPiecesInFEN(oldFEN);
+                int newPieceCount = CountPiecesInFEN(newFEN);
+
+                // Calculate change in piece count
+                int pieceCountChange = newPieceCount - oldPieceCount;
+
+                // Valid transitions:
+                // - 0: No capture (piece moved)
+                // - -1: Normal capture (one piece taken)
+                // - -2: En passant (capturing pawn + captured pawn both "disappear" from original squares)
+                //       OR double capture scenario which shouldn't happen
+                // - +1: Unlikely but could happen with piece recognition glitch recovery
+                if (pieceCountChange < -2)
+                {
+                    // More than 2 pieces disappeared - definitely invalid (mid-drag or glitch)
+                    Debug.WriteLine($"BoardMonitorService: INVALID TRANSITION - {Math.Abs(pieceCountChange)} pieces disappeared (expected max 2)");
+                    return false;
+                }
+
+                if (pieceCountChange > 1)
+                {
+                    // More than 1 piece appeared - invalid (pieces can't appear from nowhere)
+                    // Allow +1 for potential glitch recovery where a piece wasn't recognized before
+                    Debug.WriteLine($"BoardMonitorService: INVALID TRANSITION - {pieceCountChange} pieces appeared (expected max 1)");
+                    return false;
+                }
+
+                // Count how many squares changed
+                int squaresChanged = CountChangedSquares(oldFEN, newFEN);
+
+                // Valid square changes:
+                // - 2: Normal move (from + to)
+                // - 3: En passant (from + to + captured pawn square) or Castling short/long
+                // - 4: Castling (king from/to + rook from/to)
+                // - 5+: Something weird happened - reject
+                if (squaresChanged > 4)
+                {
+                    Debug.WriteLine($"BoardMonitorService: INVALID TRANSITION - {squaresChanged} squares changed (expected max 4)");
+                    return false;
+                }
+
+                if (squaresChanged < 2)
+                {
+                    // Less than 2 squares changed - not a real move
+                    // Could be piece recognition flicker on same square
+                    Debug.WriteLine($"BoardMonitorService: INVALID TRANSITION - Only {squaresChanged} square(s) changed (expected min 2)");
+                    return false;
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"BoardMonitorService: Error validating transition: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Counts total pieces in a FEN string
+        /// </summary>
+        private int CountPiecesInFEN(string fen)
+        {
+            string boardPart = fen.Split(' ')[0];
+            int count = 0;
+            foreach (char c in boardPart)
+            {
+                if (char.IsLetter(c))
+                    count++;
+            }
+            return count;
+        }
+
+        /// <summary>
+        /// Counts how many squares changed between two FEN positions
+        /// </summary>
+        private int CountChangedSquares(string oldFEN, string newFEN)
+        {
+            string oldBoard = oldFEN.Split(' ')[0];
+            string newBoard = newFEN.Split(' ')[0];
+
+            // Expand FEN to 64-character string (one per square)
+            string oldExpanded = ExpandFEN(oldBoard);
+            string newExpanded = ExpandFEN(newBoard);
+
+            if (oldExpanded.Length != 64 || newExpanded.Length != 64)
+            {
+                Debug.WriteLine($"BoardMonitorService: FEN expansion error - old:{oldExpanded.Length}, new:{newExpanded.Length}");
+                return 99; // Return high number to reject
+            }
+
+            int changedCount = 0;
+            for (int i = 0; i < 64; i++)
+            {
+                if (oldExpanded[i] != newExpanded[i])
+                    changedCount++;
+            }
+
+            return changedCount;
+        }
+
+        /// <summary>
+        /// Expands FEN board notation to 64-character string
+        /// e.g., "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR" becomes full 64 chars
+        /// </summary>
+        private string ExpandFEN(string fenBoard)
+        {
+            var expanded = new System.Text.StringBuilder(64);
+
+            foreach (char c in fenBoard)
+            {
+                if (c == '/')
+                    continue;
+                else if (char.IsDigit(c))
+                {
+                    int emptyCount = c - '0';
+                    expanded.Append('.', emptyCount);
+                }
+                else
+                {
+                    expanded.Append(c);
+                }
+            }
+
+            return expanded.ToString();
         }
 
         /// <summary>

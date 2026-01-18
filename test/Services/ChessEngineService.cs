@@ -8,6 +8,7 @@ namespace ChessDroid.Services
         private StreamWriter? engineInput;
         private StreamReader? engineOutput;
         private readonly AppConfig config;
+        private string? lastEnginePath;
 
         // UCI Protocol Commands
         private const string UCI_CMD_UCI = "uci";
@@ -23,24 +24,70 @@ namespace ChessDroid.Services
         private const string UCI_TOKEN_CP = "cp";
         private const string UCI_TOKEN_MATE = "mate";
         private const string UCI_TOKEN_PV = "pv";
+        private const string UCI_TOKEN_WDL = "wdl";
 
         public ChessEngineService(AppConfig config)
         {
             this.config = config;
         }
 
+        /// <summary>
+        /// Check if engine process is alive and ready
+        /// </summary>
+        public bool IsEngineAlive()
+        {
+            return engineProcess != null && !engineProcess.HasExited && engineInput != null && engineOutput != null;
+        }
+
+        /// <summary>
+        /// Safely write to engine, checking if process is alive first
+        /// </summary>
+        private async Task<bool> SafeWriteLineAsync(string command)
+        {
+            try
+            {
+                if (!IsEngineAlive())
+                {
+                    Debug.WriteLine($"Engine not alive, cannot send: {command}");
+                    return false;
+                }
+
+                await engineInput!.WriteLineAsync(command);
+                await engineInput.FlushAsync();
+                return true;
+            }
+            catch (IOException ex)
+            {
+                Debug.WriteLine($"IOException writing to engine: {ex.Message}");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error writing to engine: {ex.Message}");
+                return false;
+            }
+        }
+
         public async Task InitializeAsync(string enginePath)
         {
             try
             {
+                // Store path for restart capability
+                lastEnginePath = enginePath;
+
+                // Clean up any existing process
+                CleanupProcess();
+
                 ProcessStartInfo psi = new ProcessStartInfo
                 {
                     FileName = enginePath,
                     UseShellExecute = false,
                     RedirectStandardInput = true,
                     RedirectStandardOutput = true,
+                    RedirectStandardError = true, // Also capture stderr
                     CreateNoWindow = true
                 };
+
                 engineProcess = Process.Start(psi);
                 if (engineProcess == null)
                     throw new Exception("Failed to start engine process");
@@ -48,108 +95,219 @@ namespace ChessDroid.Services
                 engineInput = engineProcess.StandardInput;
                 engineOutput = engineProcess.StandardOutput;
 
-                await engineInput.WriteLineAsync(UCI_CMD_UCI);
-                await engineInput.FlushAsync();
-                await Task.Delay(10);
+                // Give the process a moment to fully start
+                await Task.Delay(100);
+
+                if (!IsEngineAlive())
+                {
+                    throw new Exception("Engine process died immediately after start");
+                }
+
+                // Step 1: Send 'uci' and wait for 'uciok' response
+                if (!await SafeWriteLineAsync(UCI_CMD_UCI))
+                {
+                    throw new Exception("Failed to send UCI command");
+                }
+
+                // Wait for 'uciok' with timeout
+                bool receivedUciOk = false;
+                using (var cts = new CancellationTokenSource(5000))
+                {
+                    while (!receivedUciOk && IsEngineAlive())
+                    {
+                        try
+                        {
+                            string? line = await engineOutput.ReadLineAsync().WaitAsync(cts.Token);
+                            if (line != null && line.StartsWith("uciok"))
+                            {
+                                receivedUciOk = true;
+                                Debug.WriteLine("Engine: received uciok");
+                            }
+                        }
+                        catch (OperationCanceledException)
+                        {
+                            Debug.WriteLine("Warning: Timeout waiting for uciok");
+                            break;
+                        }
+                    }
+                }
+
+                if (!IsEngineAlive())
+                {
+                    throw new Exception("Engine died during UCI initialization");
+                }
+
+                // Step 1.5: Enable WDL output (for Lc0-inspired WDL display)
+                await SafeWriteLineAsync($"{UCI_CMD_SETOPTION} UCI_ShowWDL value true");
+                Debug.WriteLine("Engine: enabled UCI_ShowWDL for WDL output");
+
+                // Step 2: Send 'isready' and wait for 'readyok'
+                if (!await SafeWriteLineAsync("isready"))
+                {
+                    throw new Exception("Failed to send isready command");
+                }
+
+                bool receivedReadyOk = false;
+                using (var cts2 = new CancellationTokenSource(5000))
+                {
+                    while (!receivedReadyOk && IsEngineAlive())
+                    {
+                        try
+                        {
+                            string? line = await engineOutput.ReadLineAsync().WaitAsync(cts2.Token);
+                            if (line != null && line.StartsWith("readyok"))
+                            {
+                                receivedReadyOk = true;
+                                Debug.WriteLine("Engine: received readyok - fully initialized");
+                            }
+                        }
+                        catch (OperationCanceledException)
+                        {
+                            Debug.WriteLine("Warning: Timeout waiting for readyok");
+                            break;
+                        }
+                    }
+                }
+
+                Debug.WriteLine($"Engine initialized: uciok={receivedUciOk}, readyok={receivedReadyOk}, alive={IsEngineAlive()}");
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"Error starting engine: {ex.Message}");
+                CleanupProcess();
                 throw;
             }
         }
 
-        public async Task<(string bestMove, string evaluation, List<string> pvs, List<string> evaluations)> GetBestMoveAsync(
+        public async Task<(string bestMove, string evaluation, List<string> pvs, List<string> evaluations, WDLInfo? wdl)> GetBestMoveAsync(
             string fen, int depth, int multiPV)
         {
             string bestMove = "";
             string evaluation = "";
             var pvs = new List<string>();
             var evaluations = new List<string>();
+            WDLInfo? wdlInfo = null;
             int retryCount = 0;
-
-            if (engineInput == null || engineOutput == null)
-                return (bestMove, evaluation, pvs, evaluations);
-
-            // Configure engine to output N PV lines
-            await engineInput.WriteLineAsync($"{UCI_CMD_SETOPTION} MultiPV value {multiPV}");
-            await engineInput.FlushAsync();
 
             while (retryCount < config.MaxEngineRetries)
             {
+                // Check engine health before each attempt
+                if (!IsEngineAlive())
+                {
+                    Debug.WriteLine($"Engine not alive at start of attempt {retryCount + 1}, restarting...");
+                    await RestartAsync();
+                    if (!IsEngineAlive())
+                    {
+                        Debug.WriteLine("Failed to restart engine");
+                        retryCount++;
+                        continue;
+                    }
+                }
+
                 try
                 {
-                    await engineInput.WriteLineAsync(UCI_CMD_UCINEWGAME);
-                    await engineInput.FlushAsync();
-
-                    await engineInput.WriteLineAsync($"{UCI_CMD_POSITION} {fen}");
-                    await engineInput.FlushAsync();
-
-                    await engineInput.WriteLineAsync($"{UCI_CMD_GO_DEPTH} {depth}");
-                    await engineInput.FlushAsync();
-
-                    var cts = new CancellationTokenSource();
-                    cts.CancelAfter(config.EngineResponseTimeoutMs);
-
-                    while (!engineOutput.EndOfStream)
+                    // Configure MultiPV
+                    if (!await SafeWriteLineAsync($"{UCI_CMD_SETOPTION} MultiPV value {multiPV}"))
                     {
-                        string? line = await engineOutput.ReadLineAsync().WaitAsync(cts.Token);
+                        throw new IOException("Failed to set MultiPV option");
+                    }
 
-                        if (line == null) continue;
+                    // Send ucinewgame (clears hash tables)
+                    if (!await SafeWriteLineAsync(UCI_CMD_UCINEWGAME))
+                    {
+                        throw new IOException("Failed to send ucinewgame");
+                    }
 
-                        // Parse info lines containing PV
-                        if (line.StartsWith(UCI_RESPONSE_INFO) && line.Contains(UCI_TOKEN_PV))
+                    // Set position
+                    if (!await SafeWriteLineAsync($"{UCI_CMD_POSITION} {fen}"))
+                    {
+                        throw new IOException("Failed to set position");
+                    }
+
+                    // Start analysis
+                    if (!await SafeWriteLineAsync($"{UCI_CMD_GO_DEPTH} {depth}"))
+                    {
+                        throw new IOException("Failed to start analysis");
+                    }
+
+                    // Read analysis results
+                    using (var cts = new CancellationTokenSource(config.EngineResponseTimeoutMs))
+                    {
+                        while (IsEngineAlive())
                         {
-                            var tokens = line.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-                            int mpvIndex = 1;
-                            string evalStr = "";
-                            var pvList = new List<string>();
+                            string? line = await engineOutput!.ReadLineAsync().WaitAsync(cts.Token);
 
-                            for (int i = 0; i < tokens.Length; i++)
+                            if (line == null) continue;
+
+                            // Parse info lines containing PV
+                            if (line.StartsWith(UCI_RESPONSE_INFO) && line.Contains(UCI_TOKEN_PV))
                             {
-                                if (tokens[i] == UCI_TOKEN_MULTIPV && i + 1 < tokens.Length && int.TryParse(tokens[i + 1], out int mpv))
-                                    mpvIndex = mpv;
+                                var tokens = line.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                                int mpvIndex = 1;
+                                string evalStr = "";
+                                var pvList = new List<string>();
 
-                                if (tokens[i] == UCI_TOKEN_SCORE && i + 2 < tokens.Length)
+                                for (int i = 0; i < tokens.Length; i++)
                                 {
-                                    if (tokens[i + 1] == UCI_TOKEN_CP && double.TryParse(tokens[i + 2], out double cp))
-                                        evalStr = (cp / 100.0 >= 0 ? "+" : "") + (cp / 100.0).ToString("F2");
-                                    else if (tokens[i + 1] == UCI_TOKEN_MATE)
-                                        evalStr = "Mate in " + tokens[i + 2];
+                                    if (tokens[i] == UCI_TOKEN_MULTIPV && i + 1 < tokens.Length && int.TryParse(tokens[i + 1], out int mpv))
+                                        mpvIndex = mpv;
+
+                                    if (tokens[i] == UCI_TOKEN_SCORE && i + 2 < tokens.Length)
+                                    {
+                                        if (tokens[i + 1] == UCI_TOKEN_CP && double.TryParse(tokens[i + 2], out double cp))
+                                            evalStr = (cp / 100.0 >= 0 ? "+" : "") + (cp / 100.0).ToString("F2");
+                                        else if (tokens[i + 1] == UCI_TOKEN_MATE)
+                                            evalStr = "Mate in " + tokens[i + 2];
+                                    }
+
+                                    // Parse WDL (Win/Draw/Loss) data - format: "wdl W D L" (per mille values)
+                                    if (tokens[i] == UCI_TOKEN_WDL && i + 3 < tokens.Length)
+                                    {
+                                        if (int.TryParse(tokens[i + 1], out int w) &&
+                                            int.TryParse(tokens[i + 2], out int d) &&
+                                            int.TryParse(tokens[i + 3], out int l))
+                                        {
+                                            // Only store WDL for best line (multipv 1)
+                                            if (mpvIndex == 1)
+                                            {
+                                                wdlInfo = new WDLInfo(w, d, l);
+                                            }
+                                        }
+                                    }
+
+                                    if (tokens[i] == UCI_TOKEN_PV)
+                                    {
+                                        for (int j = i + 1; j < tokens.Length; j++)
+                                            pvList.Add(tokens[j]);
+                                        break;
+                                    }
                                 }
 
-                                if (tokens[i] == UCI_TOKEN_PV)
+                                string pvLine = string.Join(" ", pvList);
+
+                                // Ensure the lists have the correct index
+                                while (pvs.Count < mpvIndex)
                                 {
-                                    for (int j = i + 1; j < tokens.Length; j++)
-                                        pvList.Add(tokens[j]);
-                                    break;
+                                    pvs.Add("");
+                                    evaluations.Add("");
                                 }
+
+                                pvs[mpvIndex - 1] = pvLine;
+                                evaluations[mpvIndex - 1] = evalStr;
+
+                                // The eval for PV1 (best line)
+                                if (mpvIndex == 1)
+                                    evaluation = evalStr;
                             }
-
-                            string pvLine = string.Join(" ", pvList);
-
-                            // Ensure the lists have the correct index
-                            while (pvs.Count < mpvIndex)
+                            else if (line.StartsWith(UCI_RESPONSE_BESTMOVE))
                             {
-                                pvs.Add("");
-                                evaluations.Add("");
+                                var parts = line.Split(' ');
+                                if (parts.Length >= 2)
+                                {
+                                    bestMove = parts[1];
+                                }
+                                break;
                             }
-
-                            pvs[mpvIndex - 1] = pvLine;
-                            evaluations[mpvIndex - 1] = evalStr;
-
-                            // The eval for PV1 (best line)
-                            if (mpvIndex == 1)
-                                evaluation = evalStr;
-                        }
-                        else if (line.StartsWith(UCI_RESPONSE_BESTMOVE))
-                        {
-                            var parts = line.Split(' ');
-                            if (parts.Length >= 2)
-                            {
-                                bestMove = parts[1];
-                            }
-                            break;
                         }
                     }
 
@@ -161,7 +319,12 @@ namespace ChessDroid.Services
                 catch (OperationCanceledException)
                 {
                     Debug.WriteLine($"Engine response timeout (attempt {retryCount + 1}/{config.MaxEngineRetries})");
-                    // Don't restart on first timeout - just retry
+                }
+                catch (IOException ex)
+                {
+                    Debug.WriteLine($"Engine IO error: {ex.Message}");
+                    // IO error likely means pipe is broken - force restart
+                    CleanupProcess();
                 }
                 catch (Exception ex)
                 {
@@ -170,24 +333,11 @@ namespace ChessDroid.Services
 
                 retryCount++;
 
-                // Only restart engine on last retry or if process is dead
                 if (retryCount < config.MaxEngineRetries)
                 {
-                    // Check if engine process is still alive
-                    bool engineDead = engineProcess == null || engineProcess.HasExited;
-
-                    if (engineDead || retryCount == config.MaxEngineRetries - 1)
-                    {
-                        Debug.WriteLine($"Restarting engine (attempt {retryCount}/{config.MaxEngineRetries})...");
-                        await RestartAsync();
-                        await Task.Delay(500); // Give engine time to initialize
-                    }
-                    else
-                    {
-                        // Just wait a bit before retry without full restart
-                        Debug.WriteLine($"Retrying without restart (attempt {retryCount}/{config.MaxEngineRetries})...");
-                        await Task.Delay(100);
-                    }
+                    Debug.WriteLine($"Restarting engine (attempt {retryCount}/{config.MaxEngineRetries})...");
+                    await RestartAsync();
+                    await Task.Delay(200); // Give engine time to initialize
                 }
             }
 
@@ -198,45 +348,87 @@ namespace ChessDroid.Services
                 evaluations = evaluations.Take(multiPV).ToList();
             }
 
-            return (bestMove, evaluation, pvs, evaluations);
+            // If engine didn't provide WDL, estimate from centipawns
+            if (wdlInfo == null && !string.IsNullOrEmpty(evaluation) && !evaluation.StartsWith("Mate"))
+            {
+                // Parse centipawns from evaluation string (e.g., "+1.50" or "-0.75")
+                if (double.TryParse(evaluation.Replace("+", ""), out double evalPawns))
+                {
+                    double centipawns = evalPawns * 100;
+                    wdlInfo = WDLUtilities.EstimateWDLFromCentipawns(centipawns);
+                    Debug.WriteLine($"WDL estimated from eval {evaluation}: {wdlInfo}");
+                }
+            }
+
+            return (bestMove, evaluation, pvs, evaluations, wdlInfo);
         }
 
-        public async Task RestartAsync()
+        private void CleanupProcess()
         {
-            string? enginePath = null;
             try
             {
-                if (engineProcess != null && !engineProcess.HasExited)
+                if (engineInput != null)
                 {
-                    enginePath = engineProcess.StartInfo?.FileName;
-                    engineProcess.Kill();
+                    try { engineInput.Close(); } catch { }
+                    engineInput = null;
+                }
+
+                if (engineOutput != null)
+                {
+                    try { engineOutput.Close(); } catch { }
+                    engineOutput = null;
+                }
+
+                if (engineProcess != null)
+                {
+                    try
+                    {
+                        if (!engineProcess.HasExited)
+                        {
+                            engineProcess.Kill();
+                        }
+                        engineProcess.Dispose();
+                    }
+                    catch { }
+                    engineProcess = null;
                 }
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Error restarting engine: {ex.Message}");
+                Debug.WriteLine($"Error during cleanup: {ex.Message}");
             }
+        }
 
-            if (!string.IsNullOrEmpty(enginePath))
+        public async Task RestartAsync()
+        {
+            Debug.WriteLine("RestartAsync called");
+
+            CleanupProcess();
+
+            // Wait a bit for OS to release resources
+            await Task.Delay(100);
+
+            if (!string.IsNullOrEmpty(lastEnginePath))
             {
-                await InitializeAsync(enginePath);
+                try
+                {
+                    await InitializeAsync(lastEnginePath);
+                    Debug.WriteLine("Engine restarted successfully");
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Failed to restart engine: {ex.Message}");
+                }
+            }
+            else
+            {
+                Debug.WriteLine("Cannot restart engine: no engine path stored");
             }
         }
 
         public void Dispose()
         {
-            try
-            {
-                if (engineProcess != null && !engineProcess.HasExited)
-                {
-                    engineProcess.Kill();
-                    engineProcess.Dispose();
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Error disposing engine: {ex.Message}");
-            }
+            CleanupProcess();
         }
     }
 }
