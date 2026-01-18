@@ -92,36 +92,32 @@ namespace ChessDroid.Services
         }
 
         /// <summary>
-        /// Check if a square is defended by a specific side
+        /// Check if a square is attacked/defended by a specific side
+        /// </summary>
+        public static bool IsSquareAttackedBy(ChessBoard board, int row, int col, bool byWhite)
+        {
+            for (int r = 0; r < 8; r++)
+            {
+                for (int c = 0; c < 8; c++)
+                {
+                    char piece = board.GetPiece(r, c);
+                    if (piece == '.') continue;
+
+                    bool pieceIsWhite = char.IsUpper(piece);
+                    if (pieceIsWhite != byWhite) continue;
+
+                    if (CanAttackSquare(board, r, c, piece, row, col))
+                        return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Alias for IsSquareAttackedBy - check if a square is defended by a specific side
         /// </summary>
         public static bool IsSquareDefended(ChessBoard board, int row, int col, bool byWhite)
-        {
-            try
-            {
-                // Check all possible piece types that could defend this square
-                for (int r = 0; r < 8; r++)
-                {
-                    for (int c = 0; c < 8; c++)
-                    {
-                        char piece = board.GetPiece(r, c);
-                        if (piece == '.') continue;
-
-                        bool pieceIsWhite = char.IsUpper(piece);
-                        if (pieceIsWhite != byWhite) continue;
-
-                        // Check if this piece can attack the target square
-                        if (CanAttackSquare(board, r, c, piece, row, col))
-                            return true;
-                    }
-                }
-
-                return false;
-            }
-            catch
-            {
-                return false;
-            }
-        }
+            => IsSquareAttackedBy(board, row, col, byWhite);
 
         // =============================
         // PATH VALIDATION
@@ -198,15 +194,6 @@ namespace ChessDroid.Services
             return true;
         }
 
-        /// <summary>
-        /// Check if path is clear (diagonal OR straight line)
-        /// </summary>
-        public static bool IsPathClear(ChessBoard board, int fromRow, int fromCol, int toRow, int toCol)
-        {
-            return IsDiagonalClear(board, fromRow, fromCol, toRow, toCol) ||
-                   IsLineClear(board, fromRow, fromCol, toRow, toCol);
-        }
-
         // =============================
         // BOARD ANALYSIS HELPERS
         // =============================
@@ -247,94 +234,60 @@ namespace ChessDroid.Services
         }
 
         /// <summary>
-        /// Check if a piece is pinned
+        /// Count number of defenders of a square (excludes the piece on the square itself)
         /// </summary>
-        public static bool IsPiecePinned(ChessBoard board, int row, int col)
+        public static int CountDefenders(ChessBoard board, int row, int col, bool byWhite)
         {
-            char piece = board.GetPiece(row, col);
-            if (piece == '.') return false;
-
-            bool isWhite = char.IsUpper(piece);
-
-            // Find king position
-            char king = isWhite ? 'K' : 'k';
-            int kingRow = -1, kingCol = -1;
+            int count = 0;
 
             for (int r = 0; r < 8; r++)
             {
                 for (int c = 0; c < 8; c++)
                 {
-                    if (board.GetPiece(r, c) == king)
-                    {
-                        kingRow = r;
-                        kingCol = c;
-                        break;
-                    }
-                }
-                if (kingRow != -1) break;
-            }
+                    if (r == row && c == col) continue; // Don't count the piece itself
 
-            if (kingRow == -1) return false;
+                    char piece = board.GetPiece(r, c);
+                    if (piece == '.') continue;
 
-            // Check if piece is on a line with the king
-            bool onSameLine = (row == kingRow || col == kingCol);
-            bool onSameDiagonal = (Math.Abs(row - kingRow) == Math.Abs(col - kingCol));
+                    bool pieceIsWhite = char.IsUpper(piece);
+                    if (pieceIsWhite != byWhite) continue;
 
-            if (!onSameLine && !onSameDiagonal)
-                return false;
-
-            // Check if enemy long-range piece is attacking through this piece
-            for (int r = 0; r < 8; r++)
-            {
-                for (int c = 0; c < 8; c++)
-                {
-                    char enemyPiece = board.GetPiece(r, c);
-                    if (enemyPiece == '.') continue;
-
-                    bool enemyIsWhite = char.IsUpper(enemyPiece);
-                    if (enemyIsWhite == isWhite) continue;
-
-                    PieceType enemyType = PieceHelper.GetPieceType(enemyPiece);
-
-                    // Check if enemy piece is a long-range piece that could pin
-                    if (enemyType == PieceType.Bishop || enemyType == PieceType.Rook || enemyType == PieceType.Queen)
-                    {
-                        // Check if enemy piece can attack king
-                        if (CanAttackSquare(board, r, c, enemyPiece, kingRow, kingCol))
-                        {
-                            // Check if our piece is between enemy and king
-                            if (IsPieceBetween(board, r, c, kingRow, kingCol, row, col))
-                            {
-                                return true;
-                            }
-                        }
-                    }
+                    if (CanAttackSquare(board, r, c, piece, row, col))
+                        count++;
                 }
             }
 
-            return false;
+            return count;
         }
 
         /// <summary>
-        /// Check if a piece at (pieceRow, pieceCol) is between (fromRow, fromCol) and (toRow, toCol)
+        /// Get the value of the lowest-value attacker of a square
+        /// Returns 0 if no attackers
         /// </summary>
-        private static bool IsPieceBetween(ChessBoard board, int fromRow, int fromCol, int toRow, int toCol, int pieceRow, int pieceCol)
+        public static int GetLowestAttackerValue(ChessBoard board, int row, int col, bool attackerIsWhite)
         {
-            // Check if on same line/diagonal
-            bool onLine = (fromRow == toRow && toRow == pieceRow) || (fromCol == toCol && toCol == pieceCol);
-            bool onDiagonal = Math.Abs(fromRow - toRow) == Math.Abs(fromCol - toCol) &&
-                             Math.Abs(fromRow - pieceRow) == Math.Abs(fromCol - pieceCol);
+            int lowestValue = int.MaxValue;
 
-            if (!onLine && !onDiagonal)
-                return false;
+            for (int r = 0; r < 8; r++)
+            {
+                for (int c = 0; c < 8; c++)
+                {
+                    char piece = board.GetPiece(r, c);
+                    if (piece == '.') continue;
 
-            // Check if piece is between the two points
-            bool rowBetween = (pieceRow > Math.Min(fromRow, toRow) && pieceRow < Math.Max(fromRow, toRow)) ||
-                             (fromRow == toRow && pieceRow == fromRow);
-            bool colBetween = (pieceCol > Math.Min(fromCol, toCol) && pieceCol < Math.Max(fromCol, toCol)) ||
-                             (fromCol == toCol && pieceCol == fromCol);
+                    bool pieceIsWhite = char.IsUpper(piece);
+                    if (pieceIsWhite != attackerIsWhite) continue;
 
-            return rowBetween && colBetween;
+                    if (CanAttackSquare(board, r, c, piece, row, col))
+                    {
+                        int value = GetPieceValue(PieceHelper.GetPieceType(piece));
+                        if (value < lowestValue)
+                            lowestValue = value;
+                    }
+                }
+            }
+
+            return lowestValue == int.MaxValue ? 0 : lowestValue;
         }
     }
 }

@@ -117,11 +117,6 @@ namespace ChessDroid.Services
         }
 
         /// <summary>
-        /// Check if a square is defended by a specific side
-        /// </summary>
-        // Moved to ChessUtilities.IsSquareDefended
-
-        /// <summary>
         /// Detect if a capture wins material using SEE
         /// Inspired by Ethereal's move picker filtering
         /// </summary>
@@ -355,7 +350,7 @@ namespace ChessDroid.Services
         }
 
         // =============================
-        // HELPER METHODS - Moved to ChessUtilities
+        // HELPER METHODS
         // =============================
 
         private static bool IsGivingCheck(ChessBoard board, int pieceRow, int pieceCol, char piece, bool isWhite)

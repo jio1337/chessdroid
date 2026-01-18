@@ -905,49 +905,10 @@ namespace ChessDroid.Services
         private static string GetSquareName(int row, int col) => ChessUtilities.GetSquareName(row, col);
 
         private static bool IsSquareAttackedBy(ChessBoard board, int row, int col, bool byWhite)
-        {
-            for (int r = 0; r < 8; r++)
-            {
-                for (int c = 0; c < 8; c++)
-                {
-                    char piece = board.GetPiece(r, c);
-                    if (piece == '.') continue;
-
-                    bool pieceIsWhite = char.IsUpper(piece);
-                    if (pieceIsWhite != byWhite) continue;
-
-                    if (ChessUtilities.CanAttackSquare(board, r, c, piece, row, col))
-                        return true;
-                }
-            }
-            return false;
-        }
+            => ChessUtilities.IsSquareAttackedBy(board, row, col, byWhite);
 
         private static int GetLowestAttackerValue(ChessBoard board, int row, int col, bool attackerIsWhite)
-        {
-            int lowestValue = int.MaxValue;
-
-            for (int r = 0; r < 8; r++)
-            {
-                for (int c = 0; c < 8; c++)
-                {
-                    char piece = board.GetPiece(r, c);
-                    if (piece == '.') continue;
-
-                    bool pieceIsWhite = char.IsUpper(piece);
-                    if (pieceIsWhite != attackerIsWhite) continue;
-
-                    if (ChessUtilities.CanAttackSquare(board, r, c, piece, row, col))
-                    {
-                        int value = ChessUtilities.GetPieceValue(PieceHelper.GetPieceType(piece));
-                        if (value < lowestValue)
-                            lowestValue = value;
-                    }
-                }
-            }
-
-            return lowestValue == int.MaxValue ? 0 : lowestValue;
-        }
+            => ChessUtilities.GetLowestAttackerValue(board, row, col, attackerIsWhite);
 
         /// <summary>
         /// Check if a piece can escape to at least one safe square

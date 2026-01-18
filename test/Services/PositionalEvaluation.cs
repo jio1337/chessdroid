@@ -157,7 +157,9 @@ namespace ChessDroid.Services
         }
 
         /// <summary>
-        /// Detect connected pawns (adjacent pawns on same rank or one rank apart)
+        /// Detect connected pawns (pawns on adjacent files that DEFEND each other)
+        /// Definition: "Connected pawns are two or more pawns of the same color on adjacent files
+        /// that defend each other, forming a strong defensive unit or pawn chain."
         /// Strength: Mutually supporting, strong pawn chain
         /// </summary>
         public static string? DetectConnectedPawns(ChessBoard board, int pawnRow, int pawnCol, bool isWhite)
@@ -166,24 +168,47 @@ namespace ChessDroid.Services
             {
                 char pawnChar = isWhite ? 'P' : 'p';
 
-                // Check adjacent files within one rank
-                for (int fileOffset = -1; fileOffset <= 1; fileOffset += 2) // -1 or +1
+                // Connected pawns MUST defend each other
+                // A pawn defends a square diagonally in front of it
+                // For white: defends diagonally upward (lower row numbers)
+                // For black: defends diagonally downward (higher row numbers)
+
+                // Check if THIS pawn is defended by another pawn (pawn behind and diagonal)
+                int supportDirection = isWhite ? 1 : -1; // Direction our pawns come FROM
+                for (int fileOffset = -1; fileOffset <= 1; fileOffset += 2)
                 {
-                    int adjacentFile = pawnCol + fileOffset;
-                    if (adjacentFile < 0 || adjacentFile >= 8) continue;
+                    int supportRow = pawnRow + supportDirection;
+                    int supportCol = pawnCol + fileOffset;
 
-                    for (int rankOffset = -1; rankOffset <= 1; rankOffset++)
+                    if (supportRow >= 0 && supportRow < 8 && supportCol >= 0 && supportCol < 8)
                     {
-                        int adjacentRow = pawnRow + rankOffset;
-                        if (adjacentRow < 0 || adjacentRow >= 8) continue;
-
-                        if (board.GetPiece(adjacentRow, adjacentFile) == pawnChar)
+                        if (board.GetPiece(supportRow, supportCol) == pawnChar)
                         {
+                            // Found a pawn that DEFENDS this pawn - truly connected
                             return "creates connected pawns";
                         }
                     }
                 }
 
+                // Also check if THIS pawn defends another pawn (pawn ahead and diagonal)
+                int defendDirection = isWhite ? -1 : 1; // Direction we attack
+                for (int fileOffset = -1; fileOffset <= 1; fileOffset += 2)
+                {
+                    int defendRow = pawnRow + defendDirection;
+                    int defendCol = pawnCol + fileOffset;
+
+                    if (defendRow >= 0 && defendRow < 8 && defendCol >= 0 && defendCol < 8)
+                    {
+                        if (board.GetPiece(defendRow, defendCol) == pawnChar)
+                        {
+                            // This pawn defends another pawn - truly connected
+                            return "creates connected pawns";
+                        }
+                    }
+                }
+
+                // Pawns on same rank but adjacent files are NOT connected unless they can defend each other
+                // (which they can't since pawns only capture diagonally forward)
                 return null;
             }
             catch
@@ -240,7 +265,9 @@ namespace ChessDroid.Services
 
         /// <summary>
         /// Detect outpost (piece on square enemy pawns can't attack)
-        /// Inspired by Ethereal's outpost bonus
+        /// Definition: "An outpost is a strategically secure square, typically on the 4th, 5th, or 6th rank,
+        /// that is defended by a friendly pawn and CANNOT BE ATTACKED BY ANY of the opponent's pawns."
+        /// Key: No enemy pawn on adjacent files can ever advance to attack this square
         /// Strength: Stable, strong square especially for knights
         /// </summary>
         public static string? DetectOutpost(ChessBoard board, int pieceRow, int pieceCol, char piece, bool isWhite)
@@ -253,50 +280,88 @@ namespace ChessDroid.Services
                 if (pieceType != PieceType.Knight && pieceType != PieceType.Bishop)
                     return null;
 
-                // Check if this square can be attacked by enemy pawns
-                char enemyPawn = isWhite ? 'p' : 'P';
-                int pawnAttackDirection = isWhite ? 1 : -1; // Opposite of pawn move direction
+                // First check: Must be on 4th, 5th, or 6th rank (row 2, 3, or 4 for white; row 3, 4, or 5 for black)
+                // For white: ranks 4-6 are rows 4, 3, 2 (0-indexed from white's perspective)
+                // For black: ranks 4-6 are rows 3, 4, 5
+                bool onCorrectRank = isWhite ? (pieceRow >= 2 && pieceRow <= 4) : (pieceRow >= 3 && pieceRow <= 5);
+                if (!onCorrectRank)
+                    return null;
 
-                // Check two diagonal attack squares (where enemy pawns could attack from)
+                // Second check: MUST be supported by our pawn
+                bool supportedByPawn = IsPawnSupported(board, pieceRow, pieceCol, isWhite);
+                if (!supportedByPawn)
+                    return null;
+
+                // Third check (CRITICAL): No enemy pawn on adjacent files can EVER attack this square
+                // This means checking the ENTIRE adjacent file from the enemy's starting rank up to our square
+                char enemyPawn = isWhite ? 'p' : 'P';
+
+                // Check both adjacent files (left and right)
                 for (int fileOffset = -1; fileOffset <= 1; fileOffset += 2)
                 {
-                    int attackFromRow = pieceRow + pawnAttackDirection;
-                    int attackFromCol = pieceCol + fileOffset;
+                    int adjacentFile = pieceCol + fileOffset;
+                    if (adjacentFile < 0 || adjacentFile >= 8) continue;
 
-                    if (attackFromRow >= 0 && attackFromRow < 8 && attackFromCol >= 0 && attackFromCol < 8)
+                    // For white outpost: check if any black pawn on the adjacent file
+                    // is positioned such that it could advance to attack our square
+                    // Black pawns move DOWN (increasing row numbers), attack diagonally
+                    // So a black pawn at row R attacks squares at row R+1, files +/-1
+                    // Our piece is at (pieceRow, pieceCol). For a pawn to attack it from adjacentFile,
+                    // the pawn must be at row (pieceRow - 1) for black (attacking down-diagonal)
+                    // BUT any black pawn ABOVE that row (lower row number) could advance to attack
+
+                    if (isWhite)
                     {
-                        // Check if enemy pawn exists on this square OR can advance to attack
-                        if (board.GetPiece(attackFromRow, attackFromCol) == enemyPawn)
-                            return null; // Can be attacked by pawn
-
-                        // Also check if enemy pawn is behind and can advance to attack
-                        int pawnBehindRow = attackFromRow + pawnAttackDirection;
-                        if (pawnBehindRow >= 0 && pawnBehindRow < 8)
+                        // Black pawns start at row 1, move toward row 7
+                        // A black pawn at row R can attack our square if R < pieceRow (and on adjacent file)
+                        // because it can advance to row (pieceRow - 1) and then attack diagonally
+                        for (int r = 1; r < pieceRow; r++) // Check from black's second rank down to just above our piece
                         {
-                            if (board.GetPiece(pawnBehindRow, attackFromCol) == enemyPawn)
-                                return null; // Pawn can advance to attack
+                            if (board.GetPiece(r, adjacentFile) == enemyPawn)
+                            {
+                                // This pawn could potentially advance to attack our square
+                                // Check if the path is clear for it to reach the attacking position
+                                bool pathClear = true;
+                                for (int checkRow = r + 1; checkRow < pieceRow; checkRow++)
+                                {
+                                    if (board.GetPiece(checkRow, adjacentFile) != '.')
+                                    {
+                                        pathClear = false;
+                                        break;
+                                    }
+                                }
+                                if (pathClear)
+                                    return null; // Enemy pawn can advance to attack - NOT an outpost
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // White pawns start at row 6, move toward row 0
+                        // A white pawn at row R can attack our square if R > pieceRow
+                        for (int r = 6; r > pieceRow; r--) // Check from white's second rank up to just below our piece
+                        {
+                            if (board.GetPiece(r, adjacentFile) == enemyPawn)
+                            {
+                                // This pawn could potentially advance to attack our square
+                                bool pathClear = true;
+                                for (int checkRow = r - 1; checkRow > pieceRow; checkRow--)
+                                {
+                                    if (board.GetPiece(checkRow, adjacentFile) != '.')
+                                    {
+                                        pathClear = false;
+                                        break;
+                                    }
+                                }
+                                if (pathClear)
+                                    return null; // Enemy pawn can advance to attack - NOT an outpost
+                            }
                         }
                     }
                 }
 
-                // CRITICAL: An outpost MUST be supported by our pawn
-                // Definition: A secure square protected by a friendly pawn and immune to enemy pawn attacks
-                bool supportedByPawn = IsPawnSupported(board, pieceRow, pieceCol, isWhite);
-
-                // If not pawn-supported, it's NOT an outpost (even if enemy pawns can't attack)
-                if (!supportedByPawn)
-                    return null;
-
-                // Check if in enemy territory (advanced outpost)
-                // Outposts are typically on 4th, 5th, or 6th rank
-                bool inEnemyTerritory = isWhite ? pieceRow <= 4 : pieceRow >= 3;
-
-                if (inEnemyTerritory)
-                {
-                    return $"{ChessUtilities.GetPieceName(pieceType)} on strong outpost";
-                }
-
-                return null;
+                // All checks passed - this is a true outpost
+                return $"{ChessUtilities.GetPieceName(pieceType)} on strong outpost";
             }
             catch
             {
@@ -578,8 +643,6 @@ namespace ChessDroid.Services
 
             return moveCount;
         }
-
-        // Moved to ChessUtilities: IsSquareDefended, CanAttackSquare, IsPathClear, GetPieceName
 
         private static bool IsSquareWellDefended(ChessBoard board, int row, int col, bool byWhite)
         {

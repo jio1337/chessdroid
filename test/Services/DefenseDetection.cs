@@ -269,30 +269,7 @@ namespace ChessDroid.Services
         /// Gets the value of the lowest-value attacker of a square
         /// </summary>
         private static int GetLowestAttackerValue(ChessBoard board, int row, int col, bool attackingIsWhite)
-        {
-            int lowestValue = int.MaxValue;
-
-            for (int r = 0; r < 8; r++)
-            {
-                for (int c = 0; c < 8; c++)
-                {
-                    char piece = board.GetPiece(r, c);
-                    if (piece == '.') continue;
-
-                    bool pieceIsWhite = char.IsUpper(piece);
-                    if (pieceIsWhite != attackingIsWhite) continue;
-
-                    if (ChessUtilities.CanAttackSquare(board, r, c, piece, row, col))
-                    {
-                        PieceType pieceType = PieceHelper.GetPieceType(piece);
-                        int value = ChessUtilities.GetPieceValue(pieceType);
-                        lowestValue = Math.Min(lowestValue, value);
-                    }
-                }
-            }
-
-            return lowestValue == int.MaxValue ? 0 : lowestValue;
-        }
+            => ChessUtilities.GetLowestAttackerValue(board, row, col, attackingIsWhite);
 
         /// <summary>
         /// Detects if the move blocks an attack on a valuable piece.
@@ -602,65 +579,13 @@ namespace ChessDroid.Services
         private static string GetSquareName(int row, int col) => ChessUtilities.GetSquareName(row, col);
 
         private static bool IsSquareAttackedBy(ChessBoard board, int row, int col, bool byWhite)
-        {
-            for (int r = 0; r < 8; r++)
-            {
-                for (int c = 0; c < 8; c++)
-                {
-                    char piece = board.GetPiece(r, c);
-                    if (piece == '.') continue;
-
-                    bool pieceIsWhite = char.IsUpper(piece);
-                    if (pieceIsWhite != byWhite) continue;
-
-                    if (ChessUtilities.CanAttackSquare(board, r, c, piece, row, col))
-                        return true;
-                }
-            }
-            return false;
-        }
+            => ChessUtilities.IsSquareAttackedBy(board, row, col, byWhite);
 
         private static int CountDefenders(ChessBoard board, int row, int col, bool defendingIsWhite)
-        {
-            int count = 0;
-            for (int r = 0; r < 8; r++)
-            {
-                for (int c = 0; c < 8; c++)
-                {
-                    if (r == row && c == col) continue; // Don't count the piece itself
-
-                    char piece = board.GetPiece(r, c);
-                    if (piece == '.') continue;
-
-                    bool pieceIsWhite = char.IsUpper(piece);
-                    if (pieceIsWhite != defendingIsWhite) continue;
-
-                    if (ChessUtilities.CanAttackSquare(board, r, c, piece, row, col))
-                        count++;
-                }
-            }
-            return count;
-        }
+            => ChessUtilities.CountDefenders(board, row, col, defendingIsWhite);
 
         private static int CountAttackers(ChessBoard board, int row, int col, bool attackingIsWhite)
-        {
-            int count = 0;
-            for (int r = 0; r < 8; r++)
-            {
-                for (int c = 0; c < 8; c++)
-                {
-                    char piece = board.GetPiece(r, c);
-                    if (piece == '.') continue;
-
-                    bool pieceIsWhite = char.IsUpper(piece);
-                    if (pieceIsWhite != attackingIsWhite) continue;
-
-                    if (ChessUtilities.CanAttackSquare(board, r, c, piece, row, col))
-                        count++;
-                }
-            }
-            return count;
-        }
+            => ChessUtilities.CountAttackers(board, row, col, attackingIsWhite);
 
         private static int CountAttackersAroundKing(ChessBoard board, int kingRow, int kingCol, bool attackingIsWhite)
         {

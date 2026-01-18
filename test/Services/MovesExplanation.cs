@@ -1019,9 +1019,6 @@ namespace ChessDroid.Services
             }
         }
 
-        // Check if a piece can attack a specific square
-        // Moved to ChessUtilities.CanAttackSquare and ChessUtilities.IsPathClear
-
         // Detect if this piece is pinning an enemy piece
         // PIN: "A pin is a tactic where a long-range piece attacks an opponent's piece, preventing it
         // from moving because it would expose a more valuable piece or the king behind it."
@@ -1281,9 +1278,6 @@ namespace ChessDroid.Services
                 return false;
             }
         }
-
-        // Check if a square is defended by pieces of the specified color
-        // Moved to ChessUtilities.IsSquareDefended
 
         // Detect discovered attack: when moving a piece reveals an attack from another piece
         private static string? DetectDiscoveredAttack(ChessBoard originalBoard, ChessBoard newBoard, int srcRow, int srcCol, int destRow, int destCol, char movedPiece, bool isWhite)
@@ -2706,37 +2700,6 @@ namespace ChessDroid.Services
 
         // Helper: Count how many pieces of a given color defend a square
         private static int CountDefenders(ChessBoard board, int row, int col, bool byWhite)
-        {
-            try
-            {
-                int defenderCount = 0;
-
-                // Check all squares on the board
-                for (int r = 0; r < 8; r++)
-                {
-                    for (int c = 0; c < 8; c++)
-                    {
-                        char piece = board.GetPiece(r, c);
-                        if (piece == '.') continue;
-
-                        // Check if this piece is the right color
-                        bool pieceIsWhite = char.IsUpper(piece);
-                        if (pieceIsWhite != byWhite) continue;
-
-                        // Check if this piece can attack the target square
-                        if (ChessUtilities.CanAttackSquare(board, r, c, piece, row, col))
-                        {
-                            defenderCount++;
-                        }
-                    }
-                }
-
-                return defenderCount;
-            }
-            catch
-            {
-                return 0;
-            }
-        }
+            => ChessUtilities.CountAttackers(board, row, col, byWhite); // CountAttackers works as CountDefenders
     }
 }
