@@ -3,36 +3,44 @@
 [![.NET](https://img.shields.io/badge/.NET-8.0-blue.svg)](https://dotnet.microsoft.com/download/dotnet/8.0)
 [![Platform](https://img.shields.io/badge/platform-Windows-lightgrey.svg)](https://www.microsoft.com/windows)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Version](https://img.shields.io/badge/version-2.2.0-brightgreen.svg)](CHANGELOG.md)
 
 **Offline chess analysis & training for Windows**
 
-chessdroid is a desktop application built for focused chess study. Analyze positions, explore ideas, and learn with your favorite UCI engines — all on your computer, no internet required.
+chessdroid is a desktop application built for focused chess study. Analyze positions, explore ideas, and learn with your favorite UCI engines - all on your computer, no internet required.
 
 ![chessdroid](chessdroid.png)
 
 ## Features
 
 ### Core Analysis
-- **🧠 UCI Engine Support** - Works with any UCI-compatible engine (Stockfish, Komodo, Ethereal, Leela, etc.)
-- **👁️ Computer Vision** - Automatic board recognition from screenshots using OpenCV
-- **⚡ Auto-Monitoring (BETA)** - Continuous board monitoring with automatic turn detection
-- **📊 Multi-PV Analysis** - Display up to 3 best lines simultaneously with evaluations
-- **💡 Smart Explanations** - Human-readable explanations for 30+ tactical patterns
-- **⚔️ Threat Detection** - Shows NEW threats created by each move (pins, forks, attacks)
-- **🛡️ Defense Detection** - Shows defensive aspects of moves (protecting pieces, blocking attacks)
-- **🎯 Move Quality Colors** - 6 levels from Brilliant (!!) to Blunder (??) with color coding
-- **📈 Win Percentage** - Side-aware win probability using Stockfish evaluation model
+- **UCI Engine Support** - Works with any UCI-compatible engine (Stockfish, Komodo, Ethereal, Leela, etc.)
+- **Computer Vision** - Automatic board recognition from screenshots using OpenCV
+- **Auto-Monitoring (BETA)** - Continuous board monitoring with automatic turn detection
+- **Multi-PV Analysis** - Display up to 3 best lines simultaneously with evaluations
+- **Smart Explanations** - Human-readable explanations for 30+ tactical patterns
+- **Threat Detection** - Shows NEW threats created by each move (pins, forks, attacks)
+- **Defense Detection** - Shows defensive aspects of moves (protecting pieces, blocking attacks)
+- **Move Quality Colors** - 6 levels from Brilliant (!!) to Blunder (??) with color coding
+- **Win Percentage** - Side-aware win probability using Stockfish evaluation model
+
+### Lc0-Inspired Features (v2.2.0)
+- **WDL Display** - Win/Draw/Loss probabilities from engine analysis
+- **Opening Book (BETA)** - 565+ opening positions with ECO codes and opening names
+- **Move Quality Indicators** - Brilliant, Best, Good, Inaccuracy, Mistake, Blunder labels
+- **Aggressiveness Slider** - Functional style control (0=solid, 100=aggressive) that actually affects move selection
 
 ### Customization
-- **🎨 Dark/Light Themes** - Fully-featured dark mode with automatic theme persistence
-- **⚙️ Complexity Levels** - Choose from Beginner, Intermediate, Advanced, or Master explanations
-- **🎛️ Feature Toggles** - 11 toggles to customize analysis (Tactical, Positional, Endgame, Opening, Win%, Tablebase, SEE, etc.)
-- **🔧 Flexible Settings** - Customize engine depth, match threshold, and display preferences
+- **Dark/Light Themes** - Fully-featured dark mode with automatic theme persistence
+- **Complexity Levels** - Choose from Beginner, Intermediate, Advanced, or Master explanations
+- **Feature Toggles** - 11+ toggles to customize analysis (Tactical, Positional, Endgame, Opening, Win%, Tablebase, SEE, WDL, etc.)
+- **Flexible Settings** - Customize engine depth, match threshold, and display preferences
 
 ### User Experience
-- **⌨️ Global Hotkeys** - `Alt+X` to analyze, `Alt+K` to reset (works even when minimized)
-- **🔍 Debug Mode** - Optional cell visualization for troubleshooting piece recognition
-- **♟️ Tablebase-Aware** - Endgame-specific analysis for positions with ≤7 pieces
+- **Global Hotkeys** - `Alt+X` to analyze, `Alt+K` to toggle auto-monitor (works even when minimized)
+- **Debug Mode** - Optional cell visualization for troubleshooting piece recognition
+- **Tablebase-Aware** - Endgame-specific analysis for positions with 7 or fewer pieces
+- **Config Hot-Reload** - Settings changes take effect immediately without restart
 
 ## Supported Chess Websites
 
@@ -60,7 +68,7 @@ chessdroid is a desktop application built for focused chess study. Analyze posit
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/chessdroid.git
+git clone https://github.com/jio1337/chessdroid.git
 cd chessdroid
 
 # Navigate to project directory
@@ -79,7 +87,7 @@ dotnet run --configuration Release
 ## Quick Start
 
 1. **Launch ChessDroid** - Run `chessdroid.exe`
-2. **Configure Engine** - Go to Settings → Select your UCI engine
+2. **Configure Engine** - Go to Settings and select your UCI engine
 3. **Take Screenshot** - Capture a chess position from your preferred website
 4. **Press Alt+X** - ChessDroid will analyze the position and show best moves
 5. **Review Analysis** - See move explanations, evaluations, and multiple lines
@@ -97,19 +105,22 @@ chessdroid stores settings in `config.json`. You can customize:
 
 ### Engine & Analysis
 - **Selected Engine**: Choose from available UCI engines
-- **Engine Depth**: Analysis depth (1-30, default: 20)
+- **Engine Depth**: Analysis depth (1-30, default: 15)
 - **Multi-PV Lines**: Show 2nd and 3rd best lines (optional)
+- **Aggressiveness**: 0-100 slider (0=solid, 50=balanced, 100=aggressive)
 
 ### Visual Recognition
-- **Match Threshold**: Piece recognition sensitivity (0.1-1.0, default: 0.75)
+- **Match Threshold**: Piece recognition sensitivity (0.1-1.0, default: 0.55)
 - **Canny Thresholds**: Edge detection for board recognition
 - **Selected Site**: Chess.com, Lichess, or ChessPuzzle templates
 
 ### Display & UI
 - **Theme**: Dark or Light mode (fully integrated)
 - **Complexity Level**: Beginner, Intermediate, Advanced, or Master
-- **Feature Toggles**: Enable/disable specific analysis features (11 options)
+- **Feature Toggles**: Enable/disable specific analysis features (11+ options)
 - **Threats & Defenses**: Toggle threat/defense display on move explanations
+- **WDL Display**: Show Win/Draw/Loss probabilities
+- **Opening Name**: Show detected opening name (BETA)
 - **Auto-Monitor Board**: Enable continuous board monitoring (BETA - disabled by default)
 - **Show Debug Cells**: Visual debugging for piece recognition
 
@@ -123,7 +134,7 @@ chessdroid stores settings in `config.json`. You can customize:
 
 ## Important Notice
 
-⚠️ **chessdroid is for educational purposes only.**
+**chessdroid is for educational purposes only.**
 
 This tool is designed for:
 - Analyzing finished games
@@ -164,8 +175,9 @@ dotnet test
 - Board detection may struggle with non-standard board themes
 - Very small board sizes (< 200px) may not be detected reliably
 - Some piece sets may require custom templates
-- **Auto-Monitoring (BETA)**: Occasional engine crashes on rapid position changes (unrelated to turn detection logic)
+- **Auto-Monitoring (BETA)**: Occasional engine crashes on rapid position changes
 - **Auto-Monitoring (BETA)**: May miss opponent moves if they respond extremely quickly (within 200ms debounce window)
+- **Opening Book (BETA)**: Coverage is not exhaustive, strongest for main line openings
 
 ## FAQ
 
@@ -181,6 +193,9 @@ A: Currently ChessDroid is Windows-only. Cross-platform support may be added in 
 **Q: Is this tool allowed on chess platforms?**
 A: No. Using analysis tools during live games violates most chess platform terms of service and is considered cheating. Please read our terms on chessdroid.net before downloading/installing.
 
+**Q: How does the Aggressiveness slider work?**
+A: The slider (0-100) affects which moves are recommended. At 0 (solid), ChessDroid prefers safe, quiet moves. At 100 (aggressive), it prefers sharp, tactical moves. The engine still calculates all moves, but the selection is filtered based on "sharpness" metrics within acceptable evaluation tolerance.
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
@@ -191,6 +206,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [ChessDotNet](https://github.com/ProgramFOX/Chess.NET) - Chess library for .NET
 - [Stockfish](https://stockfishchess.org/) - World's strongest chess engine, inspiration for move evaluation features
 - [Ethereal](https://github.com/AndyGrant/Ethereal) - High-performance chess engine, inspiration for positional evaluation
+- [Lc0](https://lczero.org/) - Leela Chess Zero, inspiration for WDL display and aggressiveness features
 
 ## Disclaimer
 
@@ -198,4 +214,4 @@ chessdroid is an independent project and is not affiliated with, endorsed by, or
 
 ---
 
-**Made with ♟️ by the chessdroid team**
+**Made with chess by the chessdroid team**

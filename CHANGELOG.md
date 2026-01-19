@@ -5,10 +5,42 @@ All notable changes to ChessDroid will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+---
 
-### Added ✨
-- **Defense Detection** - Detect defensive moves with shield icon (🛡)
+## [2.2.0] - 2026-01-19
+
+### Added
+- **Lc0-Inspired Features**
+  - **WDL Display (Win/Draw/Loss)** - Shows win/draw/loss probabilities from engine analysis
+  - **Opening Book** - 565+ opening positions with ECO codes and opening names (BETA)
+  - **Move Quality Indicators** - Brilliant, Best, Good, Inaccuracy, Mistake, Blunder labels
+  - **Functional Aggressiveness Slider** - Actually affects move selection (0=solid, 100=aggressive)
+
+- **MoveSharpnessAnalyzer Service**
+  - Calculates "sharpness" score (0-100) for candidate moves
+  - Factors: captures, sacrifices, pawn breaks, checks, promotions, piece activity
+  - Used by EngineAnalysisStrategy to filter moves based on user's style preference
+
+- **Config Hot-Reload**
+  - Settings changes now update all services immediately
+  - No more stale config references after settings dialog
+
+### Changed
+- EngineAnalysisStrategy now requests 3+ PVs when aggressiveness != 50
+- Aggressiveness 0-30: prefers solid/safe moves
+- Aggressiveness 70-100: prefers sharp/aggressive moves
+- Allows 0.2-0.4 pawn eval loss for style preference
+
+### Fixed
+- Config changes (like Aggressiveness slider) now take effect immediately without restart
+- AppConfig.Reload() updates instance in-place so all services see new values
+
+---
+
+## [2.1.0] - 2026-01-17
+
+### Added
+- **Defense Detection** - Detect defensive moves with shield icon
   - Protecting attacked pieces (newly defended)
   - Blocking attacks on valuable pieces
   - Escaping threats (moving attacked pieces to safety)
@@ -34,35 +66,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Size filtering to reject oversized boards (>1000px)
   - Re-enabled BlunderTracker integration
 
-### Known Limitations ⚠️
+### Known Limitations
 - **BETA Status**: Functional but has edge cases
   - Occasional engine crashes on rapid position changes (unrelated to turn detection)
   - May miss opponent moves if they respond extremely quickly (within debounce window)
   - Piece recognition accuracy affects reliability in complex positions
-  - TODO v3.1: Improve robustness and handle edge cases
 
-### Fixed 🐛
+### Fixed
 - SEE values now respect ShowSEEValues setting (no longer shown when disabled)
 - Pin detection no longer reports pins when the piece behind is defended
 - X-ray attacks no longer trigger for defended pieces behind
 
-### Changed 🔄
+### Changed
 - BoardDetectionService: Extended cache validity from 3s to 60s
 - BoardDetectionService: Added cache confirmation mechanism (ConfirmCache)
 - BoardDetectionService: Added size validation to reject oversized boards
 - PieceRecognitionService: Removed verbose debug logging (PERF messages, piece confidence)
-- ConsoleOutputFormatter: Integrated defense display with shield icon (🛡) in blue
-
-### Testing 🧪
-- Successfully played multiple full games with auto-monitoring
-- Success rate: 2/6 tests completed without issues
-- Engine crashes unrelated to turn detection logic
+- ConsoleOutputFormatter: Integrated defense display with shield icon in blue
 
 ---
 
 ## [2.0.0] - 2026-01-11
 
-### Major Refactoring 🔧
+### Major Refactoring
 - **Phase 4: Service Extraction**
   - Created `ThemeService` (104 lines) - Centralized theme management
   - Enhanced `PieceRecognitionService` - Added `ExtractBoardFromMat()` method
@@ -75,7 +101,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - MainForm: 450 → 420 lines (6.7% reduction)
   - **Overall: 1,577 → 420 lines (73.4% total reduction)**
 
-### Added ✨
+### Added
 - **Color-Coded Move Quality** - 6 levels with thematic colors
   - Dark Green (!!) - Brilliant/Excellent move
   - Green (!) - Good, solid move
@@ -115,49 +141,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Global Keyboard Shortcuts**
   - Alt+X - Analyze position (works when minimized)
-  - Alt+K - Reset application (works when minimized)
+  - Alt+K - Toggle auto-monitoring on/off
 
 - **Tablebase-Aware Analysis**
-  - Endgame-specific analysis for positions ≤7 pieces
+  - Endgame-specific analysis for positions with 7 or fewer pieces
   - Pattern-based endgame recognition
   - DTZ (Distance to Zeroing) awareness
 
-### Changed 🔄
+### Changed
 - **Architecture Overhaul**
   - Service-oriented design with clear separation of concerns
   - 73.4% reduction in MainForm complexity
   - Better testability and maintainability
   - Cleaner dependency injection
 
-- **Documentation Accuracy**
-  - Complete USER_GUIDE.md accuracy sweep
-  - Corrected all keyboard shortcuts
-  - Fixed tablebase references (clarified as pattern-based)
-  - Added missing feature toggle documentation
-  - Updated version history with accurate stats
-
-### Performance 🚀
-- Cleaner code architecture for better maintainability
-- Reduced coupling between UI and business logic
-- Better memory management with focused services
-
-### Fixed 🐛
+### Fixed
 - Removed unused `UpdateUIWithMoveResults()` method
 - Removed unused `ConvertPvToSan()` method from MainForm
 - Fixed engine path discovery logic
 - Improved theme application consistency
 
-### Documentation 📚
-- Updated README.md with all v2.0 features
-- Updated USER_GUIDE.md with accurate implementation details
-- Updated CHANGELOG.md with Phase 4 and 5 refactoring
-- Corrected keyboard shortcut documentation throughout
-
 ---
 
 ## [1.6.0] - 2026-01-10
 
-### Added ⚡
+### Added
 - **ChessUtilities.cs** - Consolidated shared utility functions
   - `GetPieceValue()`, `GetPieceName()` - Piece operations
   - `CanAttackSquare()`, `IsSquareDefended()` - Attack detection
@@ -181,7 +189,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Tooltip helpers for better UX
   - Visual feedback (flashing controls, progress indicators)
 
-### Changed 🔧
+### Changed
 - **MovesExplanation.cs**
   - Fixed skewer detection (now validates MORE valuable piece in front)
   - Fixed X-ray attack detection (validates first piece under attack)
@@ -198,37 +206,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Fixed outpost detection (now enforces mandatory pawn support)
   - Removed 110+ lines of duplicate helper methods
 
-- **StockfishFeatures.cs** ⚡ **CRITICAL PERFORMANCE FIX**
-  - `BuildThreatArray()` optimized from O(n³) to O(n²)
+- **StockfishFeatures.cs** - CRITICAL PERFORMANCE FIX
+  - `BuildThreatArray()` optimized from O(n^3) to O(n^2)
   - Uses BoardCache instead of triple-nested loops
-  - **~100x faster in typical positions** (262,144 → ~2,000 iterations)
+  - **~100x faster in typical positions** (262,144 to ~2,000 iterations)
   - Removed 110+ lines of duplicate helper methods
 
-- **SettingsForm.cs** & **AppConfig.cs**
-  - Added Explanation Settings group with 8 feature toggles
-  - Added Complexity Level dropdown (Beginner → Master)
-  - All settings persist in `config.json`
-
-### Performance 🚀
+### Performance
 - Eliminated **410+ lines of duplicate code** across 4 files
-- Reduced complexity from O(n³) to O(n²) in critical algorithms
+- Reduced complexity from O(n^3) to O(n^2) in critical algorithms
 - Expected overall performance: **4-10x faster** for tactical analysis
 - Memory usage increased by ~2KB per position (negligible trade-off)
 
-### Fixed 🐛
+### Fixed
 - Skewer detection now correctly identifies MORE valuable piece in front
 - X-ray attacks no longer trigger for generic piece alignments
 - Exchange sacrifices properly validated with SEE (no false positives on recaptures)
 - "Wins knight" vs "trades knight" correctly distinguished using defender analysis
 - Build succeeds with **0 warnings, 0 errors**
 
-### Documentation 📚
-- Updated ARCHITECTURE.md with new modules (ChessUtilities, BoardCache)
-- Added performance analysis and optimization guides
-- Updated version history with detailed change log
-- Created CHANGELOG.md (this file)
-
-### Removed ♻️
+### Removed
 - Duplicate implementations of `CanAttackSquare()` (4 files)
 - Duplicate implementations of `IsSquareDefended()` (4 files)
 - Duplicate implementations of `GetPieceValue()` (5+ files)
@@ -248,19 +245,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dark/Light theme support
 - Hotkey support (Alt+X for analysis)
 - Support for Chess.com, Lichess, and custom templates
-
----
-
-## Future Versions (Planned)
-
-### [2.1.0] - TBD
-- PGN import/export
-- Training mode with puzzles
-- Opening book integration
-- Game annotation automation
-
-### [3.0.0] - TBD
-- Cross-platform support (macOS, Linux via .NET MAUI)
-- Cloud sync for analysis history
-- Real-time move suggestions overlay
-- Advanced visualization (heat maps, threat visualization)

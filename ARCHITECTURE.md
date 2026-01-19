@@ -1100,35 +1100,44 @@ public static string GetMyEvaluation(double eval, ...)
 - Opening history tracking
 - Tablebase integration
 
-**v1.6.0** - Optimization & Polish ⚡
+**v1.6.0** - Optimization & Polish
 - **ChessUtilities:** Eliminated 410+ lines of duplicate code
 - **BoardCache:** 4-10x performance improvement for tactical analysis
-- **StockfishFeatures:** Fixed O(n³) bottleneck → O(n²) (~100x faster)
+- **StockfishFeatures:** Fixed O(n^3) bottleneck to O(n^2) (~100x faster)
 - **SEE Improvements:** Better trade vs win detection
 - **Tactical Fixes:** Skewer, X-ray attack, exchange sacrifice validation
 - **ExplanationFormatter:** Complexity levels, feature toggles, color-coding
 - Comprehensive documentation
 
-**v2.1.0** - Threat & Defense Detection (Current) ⚔️🛡️
-- **ThreatDetection.cs:** Before/after comparison for accurate threat detection
-- **DefenseDetection.cs:** Detect defensive moves (protecting, blocking, escaping)
-- **Pin/X-ray fixes:** Only report when material would actually be won
-- **SEE settings:** Respects ShowSEEValues toggle
-- **ConsoleOutputFormatter:** Integrated defense display with shield icon
-
-**v2.0.0** - Major UX Update & Refactoring 🎨
+**v2.0.0** - Major UX Update & Refactoring
 - **Architecture Overhaul:** MainForm reduced from 1,577 to 420 lines (73.4% reduction)
 - **ThemeService (104 lines):** Centralized dark/light mode theme management
 - **EnginePathResolver (100 lines):** Automatic engine discovery and validation
 - **ConsoleOutputFormatter Enhanced:** DisplayAnalysisResults method
 - **Color-Coded Move Quality:** 6 levels with thematic colors (!!, !, neutral, ?!, ?, ??)
 - **Win Percentage Display:** Side-aware probability (White: 82% / Black: 18%)
-- **Complexity Levels:** 4 levels (Beginner → Master)
+- **Complexity Levels:** 4 levels (Beginner to Master)
 - **Feature Toggles:** 11 customization options
 - **Dark Mode:** Fully integrated theme system
-- **Global Hotkeys:** Alt+X (analyze), Alt+K (reset)
+- **Global Hotkeys:** Alt+X (analyze), Alt+K (toggle auto-monitor)
 - **Service-Oriented Design:** Clean separation of concerns, better testability
 - Build: 0 warnings, 0 errors
+
+**v2.1.0** - Threat & Defense Detection
+- **ThreatDetection.cs:** Before/after comparison for accurate threat detection
+- **DefenseDetection.cs:** Detect defensive moves (protecting, blocking, escaping)
+- **Pin/X-ray fixes:** Only report when material would actually be won
+- **SEE settings:** Respects ShowSEEValues toggle
+- **ConsoleOutputFormatter:** Integrated defense display with shield icon
+- **Auto-Monitoring (BETA):** Automatic opponent move detection
+
+**v2.2.0** - Lc0-Inspired Features (Current)
+- **WDL Display:** Win/Draw/Loss probabilities from engine analysis
+- **Opening Book (BETA):** 565+ opening positions with ECO codes
+- **Move Quality Indicators:** Brilliant, Best, Good, Inaccuracy, Mistake, Blunder
+- **Functional Aggressiveness:** Slider actually affects move selection (0=solid, 100=aggressive)
+- **MoveSharpnessAnalyzer:** Evaluates move "sharpness" for style-based filtering
+- **Config Hot-Reload:** Settings changes update all services immediately
 
 ---
 
@@ -1143,5 +1152,5 @@ https://github.com/jio1337/chessdroid/issues
 
 ---
 
-**Last Updated:** 2026-01-17
-**Document Version:** 2.2 (Defense Detection & Threat Improvements)
+**Last Updated:** 2026-01-19
+**Document Version:** 2.3 (Lc0-Inspired Features)

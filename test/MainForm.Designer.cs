@@ -144,7 +144,7 @@ namespace ChessDroid
             MinimizeBox = false;
             Name = "MainForm";
             StartPosition = FormStartPosition.CenterScreen;
-            Text = "chessdroid v2.0.0++";
+            Text = "chessdroid v2.2.0";
             TopMost = true;
             FormClosed += Form1_FormClosed;
             Load += Form1_Load;
