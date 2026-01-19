@@ -974,18 +974,20 @@ namespace ChessDroid.Services
                         int lowestAttackerValue = GetLowestAttackerValue(board, r, c, opponentIsWhite);
                         if (lowestAttackerValue > 0 && lowestAttackerValue < pieceValue)
                         {
-                            // Opponent can trade favorably
+                            // Opponent attacks with lower-value piece - this is a threat we must address
+                            // Even if our piece can escape, user should know about the threat
                             bool canEscape = CanPieceEscape(board, r, c, piece, !opponentIsWhite);
-                            if (!canEscape)
+
+                            // Higher severity if piece can't escape (trapped), lower if it can move
+                            int severity = canEscape ? 2 : Math.Min(pieceValue - lowestAttackerValue, 4);
+
+                            threats.Add(new Threat
                             {
-                                threats.Add(new Threat
-                                {
-                                    Description = $"{pieceName} on {square} under attack",
-                                    Type = ThreatType.MaterialWin,
-                                    Severity = Math.Min(pieceValue - lowestAttackerValue, 4),
-                                    Square = square
-                                });
-                            }
+                                Description = $"{pieceName} on {square} is attacked",
+                                Type = ThreatType.MaterialWin,
+                                Severity = severity,
+                                Square = square
+                            });
                         }
                     }
                 }

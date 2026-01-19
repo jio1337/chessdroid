@@ -568,10 +568,161 @@ namespace ChessDroid.Services
                 }
             }
 
-            // King can't move - check if we can block or capture the attacker
-            // For simplicity, we'll consider it mate if king has no moves
-            // (A more complete check would verify blocks/captures, but this catches most cases)
+            // King can't move - check if we can capture the attacker
+            // Find the attacking piece(s)
+            var attackers = FindAttackers(board, kingRow, kingCol, !weAreWhite);
+
+            // If there's only one attacker, check if we can capture it
+            if (attackers.Count == 1)
+            {
+                var (attackerRow, attackerCol) = attackers[0];
+
+                // Can any of our pieces (other than king) capture the attacker?
+                if (IsSquareAttackedBy(board, attackerRow, attackerCol, weAreWhite))
+                {
+                    // We can capture the attacker - not checkmate
+                    return false;
+                }
+
+                // Can we block the check? (only relevant for sliding pieces)
+                char attackerPiece = board.GetPiece(attackerRow, attackerCol);
+                PieceType attackerType = PieceHelper.GetPieceType(attackerPiece);
+
+                if (attackerType == PieceType.Bishop || attackerType == PieceType.Rook || attackerType == PieceType.Queen)
+                {
+                    // Check if any of our pieces can block
+                    if (CanBlockCheck(board, kingRow, kingCol, attackerRow, attackerCol, weAreWhite))
+                    {
+                        return false; // We can block - not checkmate
+                    }
+                }
+            }
+            // If there are multiple attackers (double check), only king moves work, which we already checked
+
             return true;
+        }
+
+        /// <summary>
+        /// Find all pieces attacking a square
+        /// </summary>
+        private static List<(int row, int col)> FindAttackers(ChessBoard board, int targetRow, int targetCol, bool attackerIsWhite)
+        {
+            var attackers = new List<(int row, int col)>();
+
+            for (int r = 0; r < 8; r++)
+            {
+                for (int c = 0; c < 8; c++)
+                {
+                    char piece = board.GetPiece(r, c);
+                    if (piece == '.') continue;
+                    if (char.IsUpper(piece) != attackerIsWhite) continue;
+
+                    if (ChessUtilities.CanAttackSquare(board, r, c, piece, targetRow, targetCol))
+                    {
+                        attackers.Add((r, c));
+                    }
+                }
+            }
+
+            return attackers;
+        }
+
+        /// <summary>
+        /// Check if any of our pieces can block a check from a sliding piece
+        /// </summary>
+        private static bool CanBlockCheck(ChessBoard board, int kingRow, int kingCol, int attackerRow, int attackerCol, bool weAreWhite)
+        {
+            // Get squares between attacker and king
+            var squaresBetween = GetSquaresBetween(attackerRow, attackerCol, kingRow, kingCol);
+
+            foreach (var (blockRow, blockCol) in squaresBetween)
+            {
+                // Can any of our pieces move to this square to block?
+                for (int r = 0; r < 8; r++)
+                {
+                    for (int c = 0; c < 8; c++)
+                    {
+                        char piece = board.GetPiece(r, c);
+                        if (piece == '.') continue;
+                        if (char.IsUpper(piece) != weAreWhite) continue;
+                        if (PieceHelper.GetPieceType(piece) == PieceType.King) continue; // King can't block
+
+                        // Can this piece move to the blocking square?
+                        if (CanPieceMoveToSquare(board, r, c, piece, blockRow, blockCol))
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Get squares between two points (exclusive of endpoints)
+        /// </summary>
+        private static List<(int row, int col)> GetSquaresBetween(int r1, int c1, int r2, int c2)
+        {
+            var squares = new List<(int row, int col)>();
+
+            int dr = Math.Sign(r2 - r1);
+            int dc = Math.Sign(c2 - c1);
+
+            int r = r1 + dr;
+            int c = c1 + dc;
+
+            while (r != r2 || c != c2)
+            {
+                squares.Add((r, c));
+                r += dr;
+                c += dc;
+            }
+
+            return squares;
+        }
+
+        /// <summary>
+        /// Check if a piece can legally move to a target square (simplified)
+        /// </summary>
+        private static bool CanPieceMoveToSquare(ChessBoard board, int pieceRow, int pieceCol, char piece, int targetRow, int targetCol)
+        {
+            // Target must be empty for blocking
+            if (board.GetPiece(targetRow, targetCol) != '.') return false;
+
+            PieceType pieceType = PieceHelper.GetPieceType(piece);
+            bool isWhite = char.IsUpper(piece);
+
+            switch (pieceType)
+            {
+                case PieceType.Pawn:
+                    int direction = isWhite ? -1 : 1;
+                    // Single push
+                    if (pieceCol == targetCol && pieceRow + direction == targetRow)
+                        return true;
+                    // Double push from starting rank
+                    int startRank = isWhite ? 6 : 1;
+                    if (pieceCol == targetCol && pieceRow == startRank && pieceRow + 2 * direction == targetRow)
+                    {
+                        // Check if path is clear
+                        if (board.GetPiece(pieceRow + direction, pieceCol) == '.')
+                            return true;
+                    }
+                    return false;
+
+                case PieceType.Knight:
+                    int dr = Math.Abs(targetRow - pieceRow);
+                    int dc = Math.Abs(targetCol - pieceCol);
+                    return (dr == 2 && dc == 1) || (dr == 1 && dc == 2);
+
+                case PieceType.Bishop:
+                case PieceType.Rook:
+                case PieceType.Queen:
+                    return ChessUtilities.CanAttackSquare(board, pieceRow, pieceCol, piece, targetRow, targetCol);
+
+                default:
+                    return false;
+            }
         }
 
         #region Helper Methods
