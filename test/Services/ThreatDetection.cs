@@ -181,6 +181,7 @@ namespace ChessDroid.Services
         /// <summary>
         /// Checks if the moving piece gives check AND will be immediately recaptured.
         /// In such cases, tactical threats (skewers, forks, mate threats) are "phantom" - they don't survive.
+        /// Example: Bxc6+ where a pawn can simply recapture - fork on king+knight is phantom.
         /// </summary>
         private static bool IsPieceImmediatelyRecapturable(ChessBoard board, int pieceRow, int pieceCol, char piece, bool isWhite)
         {
@@ -213,6 +214,33 @@ namespace ChessDroid.Services
             // Check if our piece can be captured by the opponent
             bool canBeRecaptured = ChessUtilities.IsSquareDefended(board, pieceRow, pieceCol, !isWhite);
             if (!canBeRecaptured) return false;
+
+            // IMPORTANT: If a PAWN can recapture, it's almost always going to happen.
+            // Pawn recapture is "free" - opponent wins material AND escapes check.
+            // This covers cases like Bxc6+ bxc6 where the "fork" is phantom.
+            char enemyPawn = isWhite ? 'p' : 'P';
+            // Black pawns (capturing white pieces) are ABOVE our piece (lower row index) and capture downward
+            // White pawns (capturing black pieces) are BELOW our piece (higher row index) and capture upward
+            int pawnCaptureDir = isWhite ? -1 : 1; // Where enemy pawn would be relative to our piece
+
+            // Check if an enemy pawn can capture our piece
+            int pawnRow = pieceRow + pawnCaptureDir;
+            if (pawnRow >= 0 && pawnRow < 8)
+            {
+                // Check both diagonal squares where a pawn could be
+                for (int dc = -1; dc <= 1; dc += 2)
+                {
+                    int pawnCol = pieceCol + dc;
+                    if (pawnCol >= 0 && pawnCol < 8)
+                    {
+                        if (board.GetPiece(pawnRow, pawnCol) == enemyPawn)
+                        {
+                            // A pawn can recapture - this is a phantom threat
+                            return true;
+                        }
+                    }
+                }
+            }
 
             // When we give check and can be recaptured, the opponent MUST deal with check.
             // If the only way to deal with check is to capture our piece, then our piece
