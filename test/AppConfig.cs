@@ -84,6 +84,70 @@ namespace ChessDroid
             }
         }
 
+        /// <summary>
+        /// Reloads configuration from disk and updates this instance in-place.
+        /// This ensures all services holding a reference to this config get updated values.
+        /// </summary>
+        public void Reload()
+        {
+            try
+            {
+                if (File.Exists(ConfigFilePath))
+                {
+                    string json = File.ReadAllText(ConfigFilePath);
+                    var loaded = JsonSerializer.Deserialize<AppConfig>(json);
+                    if (loaded != null)
+                    {
+                        CopyFrom(loaded);
+                        System.Diagnostics.Debug.WriteLine($"[Config] Reloaded - Aggressiveness: {Aggressiveness}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error reloading config: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Copies all property values from another AppConfig instance.
+        /// Used to update config in-place so all references stay valid.
+        /// </summary>
+        public void CopyFrom(AppConfig other)
+        {
+            TemplatesFolder = other.TemplatesFolder;
+            EnginesFolder = other.EnginesFolder;
+            MatchThreshold = other.MatchThreshold;
+            CannyThresholdLow = other.CannyThresholdLow;
+            CannyThresholdHigh = other.CannyThresholdHigh;
+            MinBoardArea = other.MinBoardArea;
+            MoveTimeoutMs = other.MoveTimeoutMs;
+            EngineResponseTimeoutMs = other.EngineResponseTimeoutMs;
+            MaxEngineRetries = other.MaxEngineRetries;
+            EngineDepth = other.EngineDepth;
+            Theme = other.Theme;
+            ShowDebugCells = other.ShowDebugCells;
+            SelectedEngine = other.SelectedEngine;
+            SelectedSite = other.SelectedSite;
+            ShowBestLine = other.ShowBestLine;
+            ShowSecondLine = other.ShowSecondLine;
+            ShowThirdLine = other.ShowThirdLine;
+            ExplanationComplexity = other.ExplanationComplexity;
+            ShowTacticalAnalysis = other.ShowTacticalAnalysis;
+            ShowPositionalAnalysis = other.ShowPositionalAnalysis;
+            ShowEndgameAnalysis = other.ShowEndgameAnalysis;
+            ShowOpeningPrinciples = other.ShowOpeningPrinciples;
+            ShowTablebaseInfo = other.ShowTablebaseInfo;
+            ShowMoveQualityColor = other.ShowMoveQualityColor;
+            ShowSEEValues = other.ShowSEEValues;
+            ShowThreats = other.ShowThreats;
+            ShowWDL = other.ShowWDL;
+            AutoMonitorBoard = other.AutoMonitorBoard;
+            Aggressiveness = other.Aggressiveness;
+            ShowOpeningName = other.ShowOpeningName;
+            ShowMoveQuality = other.ShowMoveQuality;
+        }
+
         public string GetTemplatesPath()
         {
             // Try multiple locations

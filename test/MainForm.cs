@@ -382,26 +382,27 @@ namespace ChessDroid
         {
             var settingsForm = new SettingsForm(Config, () =>
             {
-                // Reload config and apply changes
-                config = AppConfig.Load();
+                // Reload config in-place so all services get updated values
+                // (services hold references to config, replacing it would leave them with stale data)
+                Config.Reload();
 
                 // Apply explanation settings
-                ExplanationFormatter.LoadFromConfig(config);
+                ExplanationFormatter.LoadFromConfig(Config);
 
                 // Apply theme changes
                 this.Invoke((MethodInvoker)(() =>
                 {
-                    ApplyTheme(config.Theme == "Dark");
+                    ApplyTheme(Config.Theme == "Dark");
                 }));
 
                 // Handle auto-monitor toggle
-                if (config.AutoMonitorBoard && boardMonitorService?.IsMonitoring() != true)
+                if (Config.AutoMonitorBoard && boardMonitorService?.IsMonitoring() != true)
                 {
                     bool userIsWhite = chkWhiteTurn.Checked;
                     boardMonitorService?.StartMonitoring(userIsWhite);
                     blunderTracker.StartTracking();
                 }
-                else if (!config.AutoMonitorBoard && boardMonitorService?.IsMonitoring() == true)
+                else if (!Config.AutoMonitorBoard && boardMonitorService?.IsMonitoring() == true)
                 {
                     boardMonitorService?.StopMonitoring();
                     blunderTracker.StopTracking();
