@@ -46,6 +46,11 @@ namespace ChessDroid
         public bool ShowOpeningName { get; set; } = true; // Show opening name when in known theory
         public bool ShowMoveQuality { get; set; } = true; // Show move quality indicators (brilliant, best, good, etc.)
 
+        // Opening book settings
+        public string AbkBookPath { get; set; } = ""; // Path to ABK opening book file (Arena format)
+        public bool UseAbkBook { get; set; } = false; // Enable ABK book move suggestions
+        public bool ShowBookMoves { get; set; } = true; // Show book move suggestions in console
+
         private static readonly string ConfigFilePath = Path.Combine(
             Application.StartupPath, "config.json");
 
@@ -146,6 +151,9 @@ namespace ChessDroid
             Aggressiveness = other.Aggressiveness;
             ShowOpeningName = other.ShowOpeningName;
             ShowMoveQuality = other.ShowMoveQuality;
+            AbkBookPath = other.AbkBookPath;
+            UseAbkBook = other.UseAbkBook;
+            ShowBookMoves = other.ShowBookMoves;
         }
 
         public string GetTemplatesPath()

@@ -12,9 +12,15 @@ namespace ChessDroid.Services
         private GameState? currentGameState;
         private ChessBoard? lastDetectedBoard;
         private DateTime lastMoveTime = DateTime.Now;
+        private List<string> moveHistory = new List<string>();
 
         public DateTime LastMoveTime => lastMoveTime;
         public ChessBoard? LastDetectedBoard => lastDetectedBoard;
+
+        /// <summary>
+        /// Gets the list of UCI moves played so far in the current game.
+        /// </summary>
+        public IReadOnlyList<string> MoveHistory => moveHistory.AsReadOnly();
 
         /// <summary>
         /// Initializes a new game state
@@ -30,6 +36,7 @@ namespace ChessDroid.Services
             };
             lastDetectedBoard = null;
             lastMoveTime = DateTime.Now;
+            moveHistory.Clear();
         }
 
         /// <summary>
@@ -68,6 +75,13 @@ namespace ChessDroid.Services
                     ChessRulesService.DetectMoveAndUpdateCastling(lastDetectedBoard, currentBoard, currentGameState.CastlingRights);
                 currentGameState.CastlingRights = updatedCastlingPrev;
                 currentGameState.EnPassantTarget = newEpPrev;
+
+                // Record the detected move in history (if valid)
+                if (!string.IsNullOrEmpty(uciMovePrev) && uciMovePrev.Length >= 4)
+                {
+                    moveHistory.Add(uciMovePrev);
+                    Debug.WriteLine($"[PositionStateManager] Move recorded: {uciMovePrev} (total: {moveHistory.Count})");
+                }
             }
             else
             {
@@ -133,6 +147,7 @@ namespace ChessDroid.Services
             currentGameState = null;
             lastDetectedBoard = null;
             lastMoveTime = DateTime.Now;
+            moveHistory.Clear();
         }
 
         /// <summary>

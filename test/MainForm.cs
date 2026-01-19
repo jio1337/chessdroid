@@ -36,6 +36,7 @@ namespace ChessDroid
         private BlunderTracker blunderTracker = new BlunderTracker();
         private EnginePathResolver? enginePathResolver;
         private BoardMonitorService? boardMonitorService;
+        private AbkBookService? abkBookService;
 
         private AppConfig? config;
 
@@ -81,13 +82,31 @@ namespace ChessDroid
                 blunderTracker.SetPreviousEvaluation(currentEval);
             }
 
+            // Get ABK book moves if enabled (uses FEN-based lookup - works for any position)
+            List<BookMove>? bookMoves = null;
+
+            // Try to load book if not loaded yet (lazy loading)
+            if (config?.UseAbkBook == true && abkBookService != null && !abkBookService.IsBookLoaded)
+            {
+                if (!string.IsNullOrEmpty(config.AbkBookPath) && File.Exists(config.AbkBookPath))
+                {
+                    abkBookService.LoadBook(config.AbkBookPath);
+                }
+            }
+
+            if (config?.UseAbkBook == true && abkBookService?.IsBookLoaded == true)
+            {
+                bookMoves = abkBookService.GetBookMovesForPosition(completeFen);
+            }
+
             // Display analysis results (only show blunder warning if tracking is active)
             consoleFormatter?.DisplayAnalysisResults(
                 bestMove, evaluation, pvs, evaluations, completeFen,
                 previousEval,
                 config?.ShowSecondLine == true,
                 config?.ShowThirdLine == true,
-                wdl);
+                wdl,
+                bookMoves);
         }
 
         protected override void WndProc(ref Message m)
@@ -189,6 +208,33 @@ namespace ChessDroid
 
             // Subscribe to turn change event
             boardMonitorService.UserTurnDetected += OnUserTurnDetected;
+
+            // Initialize ABK book service
+            try
+            {
+                abkBookService = new AbkBookService();
+                Debug.WriteLine($"[MainForm] ABK config: UseAbkBook={config.UseAbkBook}, Path='{config.AbkBookPath}'");
+                if (config.UseAbkBook && !string.IsNullOrEmpty(config.AbkBookPath))
+                {
+                    Debug.WriteLine($"[MainForm] ABK book path exists: {File.Exists(config.AbkBookPath)}");
+                    if (abkBookService.LoadBook(config.AbkBookPath))
+                    {
+                        Debug.WriteLine($"[MainForm] ABK book loaded: {config.AbkBookPath} ({abkBookService.TotalPositions} positions)");
+                    }
+                    else
+                    {
+                        Debug.WriteLine($"[MainForm] Failed to load ABK book: {config.AbkBookPath}");
+                    }
+                }
+                else
+                {
+                    Debug.WriteLine("[MainForm] ABK book disabled or no path configured");
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[MainForm] EXCEPTION loading ABK book: {ex.Message}");
+            }
 
             // Force auto-monitor OFF on every startup (user must enable with Alt+K)
             config.AutoMonitorBoard = false;

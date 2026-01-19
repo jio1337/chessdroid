@@ -283,6 +283,38 @@ namespace ChessDroid.Services
         }
 
         /// <summary>
+        /// Displays ABK opening book moves
+        /// </summary>
+        public void DisplayBookMoves(List<BookMove> bookMoves)
+        {
+            if (bookMoves == null || bookMoves.Count == 0)
+                return;
+
+            richTextBox.SelectionColor = Color.Khaki;
+            richTextBox.AppendText($"📖 Book moves: ");
+
+            for (int i = 0; i < Math.Min(bookMoves.Count, 5); i++)
+            {
+                var move = bookMoves[i];
+                if (i > 0)
+                {
+                    richTextBox.SelectionColor = Color.Gray;
+                    richTextBox.AppendText(", ");
+                }
+
+                // Move with win rate
+                richTextBox.SelectionColor = Color.PaleGreen;
+                richTextBox.AppendText($"{move.UciMove}");
+
+                richTextBox.SelectionColor = Color.Gray;
+                richTextBox.AppendText($"({move.WinRate:F0}%/{move.Games})");
+            }
+
+            richTextBox.AppendText(Environment.NewLine);
+            ResetFormatting();
+        }
+
+        /// <summary>
         /// Displays complete analysis results including blunder detection and multiple lines
         /// </summary>
         public void DisplayAnalysisResults(
@@ -294,7 +326,8 @@ namespace ChessDroid.Services
             double? previousEvaluation,
             bool showSecondLine,
             bool showThirdLine,
-            WDLInfo? wdl = null)
+            WDLInfo? wdl = null,
+            List<BookMove>? bookMoves = null)
         {
             // Validate required parameter - store in local var for null-state tracking
             string fen = completeFen ?? throw new ArgumentNullException(nameof(completeFen));
@@ -352,6 +385,12 @@ namespace ChessDroid.Services
                     richTextBox.AppendText($"Opening: Out of book{Environment.NewLine}");
                     ResetFormatting();
                 }
+            }
+
+            // Display ABK book moves if available and enabled
+            if (config?.ShowBookMoves == true && bookMoves != null && bookMoves.Count > 0)
+            {
+                DisplayBookMoves(bookMoves);
             }
 
             // Display play style indicator based on aggressiveness setting
