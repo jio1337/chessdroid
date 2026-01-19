@@ -252,9 +252,12 @@ namespace ChessDroid.Services
                         // Check if the piece can escape to a safe square
                         bool canEscape = CanPieceEscape(board, r, c, piece, !attackerIsWhite);
 
-                        if (!canEscape)
+                        // Also check if the attack can be blocked (for sliding piece attacks)
+                        bool canBlock = ChessUtilities.CanBlockSlidingAttack(board, r, c, !attackerIsWhite);
+
+                        if (!canEscape && !canBlock)
                         {
-                            // Truly hanging - can't escape!
+                            // Truly hanging - can't escape and can't be blocked!
                             threats.Add(new Threat
                             {
                                 Description = $"wins {pieceName} on {square}",
@@ -633,7 +636,10 @@ namespace ChessDroid.Services
                     // Count safe squares for this piece
                     bool canEscape = CanPieceEscape(board, r, c, piece, !attackerIsWhite);
 
-                    if (!canEscape && !isDefended)
+                    // Also check if the attack can be blocked (for sliding piece attacks)
+                    bool canBlock = ChessUtilities.CanBlockSlidingAttack(board, r, c, !attackerIsWhite);
+
+                    if (!canEscape && !isDefended && !canBlock)
                     {
                         string pieceName = ChessUtilities.GetPieceName(pieceType);
                         string square = GetSquareName(r, c);

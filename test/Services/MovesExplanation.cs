@@ -1654,10 +1654,14 @@ namespace ChessDroid.Services
                             char targetPiece = board.GetPiece(target.row, target.col);
                             int safeEscapeSquares = CountSafeSquaresForPiece(board, target.row, target.col, targetPiece, !isWhite);
 
+                            // Also check if the attack can be blocked (for sliding piece attacks)
+                            bool canBlock = ChessUtilities.CanBlockSlidingAttack(board, target.row, target.col, !isWhite);
+
                             // Only report as "wins undefended piece" if:
                             // 1. Target has NO safe escape squares (trapped), AND
-                            // 2. Either we can't be recaptured OR we're winning the trade
-                            if (safeEscapeSquares == 0)
+                            // 2. Attack cannot be blocked, AND
+                            // 3. Either we can't be recaptured OR we're winning the trade
+                            if (safeEscapeSquares == 0 && !canBlock)
                             {
                                 if (weCanBeRecaptured)
                                 {
@@ -1673,7 +1677,7 @@ namespace ChessDroid.Services
                                     return $"wins undefended {ChessUtilities.GetPieceName(target.type)}";
                                 }
                             }
-                            // If target has escape squares, it's not really hanging - it can just move away
+                            // If target has escape squares or attack can be blocked, it's not really hanging
                         }
                     }
                 }

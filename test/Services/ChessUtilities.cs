@@ -289,5 +289,223 @@ namespace ChessDroid.Services
 
             return lowestValue == int.MaxValue ? 0 : lowestValue;
         }
+
+        // =============================
+        // BLOCKING DETECTION
+        // =============================
+
+        /// <summary>
+        /// Check if a sliding piece attack can be blocked by interposing a piece.
+        /// For bishop, rook, and queen attacks, a defender can place a piece between
+        /// the attacker and target to block the threat.
+        /// </summary>
+        /// <param name="board">Current board position</param>
+        /// <param name="targetRow">Row of the piece being attacked</param>
+        /// <param name="targetCol">Column of the piece being attacked</param>
+        /// <param name="defenderIsWhite">Color of the defending side (same as the target piece)</param>
+        /// <returns>True if the attack can be blocked</returns>
+        public static bool CanBlockSlidingAttack(ChessBoard board, int targetRow, int targetCol, bool defenderIsWhite)
+        {
+            // Find all attackers of the target square
+            var attackers = FindAttackers(board, targetRow, targetCol, !defenderIsWhite);
+
+            foreach (var (attackerRow, attackerCol, attackerPiece) in attackers)
+            {
+                PieceType attackerType = PieceHelper.GetPieceType(attackerPiece);
+
+                // Only sliding pieces (bishop, rook, queen) can be blocked
+                // Knight attacks cannot be blocked
+                if (attackerType != PieceType.Bishop && attackerType != PieceType.Rook && attackerType != PieceType.Queen)
+                    continue;
+
+                // Get squares between attacker and target
+                var blockingSquares = GetSquaresBetween(attackerRow, attackerCol, targetRow, targetCol);
+
+                if (blockingSquares.Count == 0)
+                    continue; // Adjacent attack, can't be blocked
+
+                // Check if any defender piece can move to a blocking square
+                foreach (var (blockRow, blockCol) in blockingSquares)
+                {
+                    if (CanDefenderReachSquare(board, blockRow, blockCol, defenderIsWhite))
+                    {
+                        return true; // Found a way to block this attacker
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Find all pieces of the specified color that attack a given square.
+        /// </summary>
+        private static List<(int row, int col, char piece)> FindAttackers(ChessBoard board, int targetRow, int targetCol, bool attackerIsWhite)
+        {
+            var attackers = new List<(int row, int col, char piece)>();
+
+            for (int r = 0; r < 8; r++)
+            {
+                for (int c = 0; c < 8; c++)
+                {
+                    char piece = board.GetPiece(r, c);
+                    if (piece == '.') continue;
+
+                    bool pieceIsWhite = char.IsUpper(piece);
+                    if (pieceIsWhite != attackerIsWhite) continue;
+
+                    if (CanAttackSquare(board, r, c, piece, targetRow, targetCol))
+                    {
+                        attackers.Add((r, c, piece));
+                    }
+                }
+            }
+
+            return attackers;
+        }
+
+        /// <summary>
+        /// Get all squares between two points (exclusive of both endpoints).
+        /// Only works for straight lines (horizontal, vertical, diagonal).
+        /// </summary>
+        private static List<(int row, int col)> GetSquaresBetween(int fromRow, int fromCol, int toRow, int toCol)
+        {
+            var squares = new List<(int, int)>();
+
+            int rowDir = Math.Sign(toRow - fromRow);
+            int colDir = Math.Sign(toCol - fromCol);
+
+            // Must be a straight line (rook) or diagonal (bishop)
+            int rowDiff = Math.Abs(toRow - fromRow);
+            int colDiff = Math.Abs(toCol - fromCol);
+
+            if (rowDiff != colDiff && rowDiff != 0 && colDiff != 0)
+                return squares; // Not a valid line
+
+            int r = fromRow + rowDir;
+            int c = fromCol + colDir;
+
+            while (r != toRow || c != toCol)
+            {
+                squares.Add((r, c));
+                r += rowDir;
+                c += colDir;
+
+                // Safety check to prevent infinite loop
+                if (squares.Count > 7) break;
+            }
+
+            return squares;
+        }
+
+        /// <summary>
+        /// Check if any piece of the specified color can move to the given square.
+        /// </summary>
+        private static bool CanDefenderReachSquare(ChessBoard board, int targetRow, int targetCol, bool defenderIsWhite)
+        {
+            for (int r = 0; r < 8; r++)
+            {
+                for (int c = 0; c < 8; c++)
+                {
+                    char piece = board.GetPiece(r, c);
+                    if (piece == '.') continue;
+
+                    bool pieceIsWhite = char.IsUpper(piece);
+                    if (pieceIsWhite != defenderIsWhite) continue;
+
+                    PieceType pieceType = PieceHelper.GetPieceType(piece);
+
+                    // Don't count the king as a blocker (too valuable/risky)
+                    if (pieceType == PieceType.King) continue;
+
+                    // Check if this piece can legally move to the blocking square
+                    if (CanPieceMoveToSquare(board, r, c, piece, targetRow, targetCol, defenderIsWhite))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Check if a specific piece can move to a given square (for blocking).
+        /// </summary>
+        private static bool CanPieceMoveToSquare(ChessBoard board, int fromRow, int fromCol, char piece, int toRow, int toCol, bool pieceIsWhite)
+        {
+            // Target square must be empty (we're blocking, not capturing)
+            if (board.GetPiece(toRow, toCol) != '.')
+                return false;
+
+            PieceType pieceType = PieceHelper.GetPieceType(piece);
+
+            switch (pieceType)
+            {
+                case PieceType.Pawn:
+                    int direction = pieceIsWhite ? -1 : 1;
+                    int startRank = pieceIsWhite ? 6 : 1;
+
+                    // Single push
+                    if (fromCol == toCol && fromRow + direction == toRow)
+                        return true;
+
+                    // Double push from starting position
+                    if (fromCol == toCol && fromRow == startRank && fromRow + 2 * direction == toRow)
+                    {
+                        // Check that the intermediate square is empty
+                        if (board.GetPiece(fromRow + direction, fromCol) == '.')
+                            return true;
+                    }
+                    return false;
+
+                case PieceType.Knight:
+                    int rowDiff = Math.Abs(toRow - fromRow);
+                    int colDiff = Math.Abs(toCol - fromCol);
+                    return (rowDiff == 2 && colDiff == 1) || (rowDiff == 1 && colDiff == 2);
+
+                case PieceType.Bishop:
+                    if (Math.Abs(toRow - fromRow) != Math.Abs(toCol - fromCol))
+                        return false;
+                    return IsPathClearForBlock(board, fromRow, fromCol, toRow, toCol);
+
+                case PieceType.Rook:
+                    if (toRow != fromRow && toCol != fromCol)
+                        return false;
+                    return IsPathClearForBlock(board, fromRow, fromCol, toRow, toCol);
+
+                case PieceType.Queen:
+                    bool isDiagonal = Math.Abs(toRow - fromRow) == Math.Abs(toCol - fromCol);
+                    bool isStraight = toRow == fromRow || toCol == fromCol;
+                    if (!isDiagonal && !isStraight)
+                        return false;
+                    return IsPathClearForBlock(board, fromRow, fromCol, toRow, toCol);
+
+                default:
+                    return false;
+            }
+        }
+
+        /// <summary>
+        /// Check if the path between two squares is clear (no pieces in the way).
+        /// </summary>
+        private static bool IsPathClearForBlock(ChessBoard board, int fromRow, int fromCol, int toRow, int toCol)
+        {
+            int rowDir = Math.Sign(toRow - fromRow);
+            int colDir = Math.Sign(toCol - fromCol);
+
+            int r = fromRow + rowDir;
+            int c = fromCol + colDir;
+
+            while (r != toRow || c != toCol)
+            {
+                if (board.GetPiece(r, c) != '.')
+                    return false;
+                r += rowDir;
+                c += colDir;
+            }
+
+            return true;
+        }
     }
 }
