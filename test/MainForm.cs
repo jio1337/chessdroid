@@ -160,7 +160,8 @@ namespace ChessDroid
             // Initialize analysis strategy
             analysisStrategy = new EngineAnalysisStrategy(
                 engineService,
-                status => this.Invoke((MethodInvoker)(() => labelStatus.Text = status)));
+                status => this.Invoke((MethodInvoker)(() => labelStatus.Text = status)),
+                config);
 
             // Initialize move orchestrator
             moveOrchestrator = new MoveAnalysisOrchestrator(
