@@ -275,6 +275,10 @@ namespace ChessDroid.Services
                 tempBoard.SetPiece(destRank, destFile, piece);
                 tempBoard.SetPiece(srcRank, srcFile, '.');
 
+                // Check if piece gives check and will be immediately recaptured
+                // If so, most threats are "phantom" - they won't materialize
+                bool pieceWillBeRecaptured = IsPieceImmediatelyRecapturable(tempBoard, destRank, destFile, piece, isWhite);
+
                 // =============================
                 // STOCKFISH FEATURES - PRIORITY 1
                 // Singular move and threat detection
@@ -298,7 +302,8 @@ namespace ChessDroid.Services
                     reasons.Add("forced move");
 
                 // THREAT CREATION (attacking valuable piece with lower-value piece)
-                if (reasons.Count < 2)
+                // Skip if piece will be recaptured - the threat is phantom
+                if (reasons.Count < 2 && !pieceWillBeRecaptured)
                 {
                     string? threatCreation = StockfishFeatures.DetectThreatCreation(
                         board, tempBoard, destRank, destFile, piece, isWhite);
@@ -723,6 +728,92 @@ namespace ChessDroid.Services
             return (false, "", evalDrop, whiteBlundered);
         }
 
+        /// <summary>
+        /// Checks if the moving piece gives check AND will be immediately recaptured.
+        /// In such cases, tactical threats (skewers, forks) are "phantom" - they don't survive.
+        /// Example: Qxd8+ where the queen captures the opponent's queen with check,
+        /// but the queen will be recaptured by king or rook - no skewer/fork materializes.
+        /// </summary>
+        private static bool IsPieceImmediatelyRecapturable(ChessBoard board, int pieceRow, int pieceCol, char piece, bool isWhite)
+        {
+            // Check if we're giving check
+            bool givesCheck = IsGivingCheck(board, pieceRow, pieceCol, piece, isWhite);
+            if (!givesCheck) return false;
+
+            // Check if our piece can be captured by the opponent
+            bool canBeRecaptured = ChessUtilities.IsSquareDefended(board, pieceRow, pieceCol, !isWhite);
+            if (!canBeRecaptured) return false;
+
+            // When we give check and can be recaptured, the opponent MUST deal with check.
+            // If the only way to deal with check is to capture our piece, then our piece
+            // doesn't survive to execute any further threats (skewers, forks, etc.)
+
+            // Find enemy king
+            char enemyKing = isWhite ? 'k' : 'K';
+            int kingRow = -1, kingCol = -1;
+            for (int r = 0; r < 8; r++)
+            {
+                for (int c = 0; c < 8; c++)
+                {
+                    if (board.GetPiece(r, c) == enemyKing)
+                    {
+                        kingRow = r;
+                        kingCol = c;
+                        break;
+                    }
+                }
+                if (kingRow >= 0) break;
+            }
+
+            if (kingRow < 0) return false;
+
+            // Check if king can escape to a safe square (not capturing our piece)
+            for (int dr = -1; dr <= 1; dr++)
+            {
+                for (int dc = -1; dc <= 1; dc++)
+                {
+                    if (dr == 0 && dc == 0) continue;
+                    int newRow = kingRow + dr;
+                    int newCol = kingCol + dc;
+                    if (newRow < 0 || newRow >= 8 || newCol < 0 || newCol >= 8) continue;
+
+                    // Skip if this is our piece's square (that would be capturing, not escaping)
+                    if (newRow == pieceRow && newCol == pieceCol) continue;
+
+                    char targetSquare = board.GetPiece(newRow, newCol);
+                    // Can't move to square with own piece
+                    if (targetSquare != '.' && char.IsUpper(targetSquare) == !isWhite) continue;
+
+                    // Check if square is safe (simulate king move)
+                    ChessBoard tempBoard = new ChessBoard(board.GetArray());
+                    tempBoard.SetPiece(kingRow, kingCol, '.');
+                    tempBoard.SetPiece(newRow, newCol, enemyKing);
+
+                    if (!ChessUtilities.IsSquareAttackedBy(tempBoard, newRow, newCol, isWhite))
+                    {
+                        // King has an escape square - our piece might survive
+                        return false;
+                    }
+                }
+            }
+
+            // Check if check can be blocked (only matters for sliding pieces)
+            PieceType pieceType = PieceHelper.GetPieceType(piece);
+            if (pieceType == PieceType.Bishop || pieceType == PieceType.Rook || pieceType == PieceType.Queen)
+            {
+                // Can a piece block between our piece and their king?
+                if (ChessUtilities.CanBlockSlidingAttack(board, kingRow, kingCol, !isWhite))
+                {
+                    // Check can be blocked - our piece might survive
+                    return false;
+                }
+            }
+
+            // King can't escape and can't block - must capture our piece
+            // Our piece is definitely getting recaptured, so phantom threats don't materialize
+            return true;
+        }
+
         // Detect tactical patterns like forks, pins, skewers, discovered attacks
         private static string? DetectTacticalPattern(ChessBoard originalBoard, ChessBoard board, int srcRow, int srcCol, int pieceRow, int pieceCol, char piece, PieceType pieceType, bool isWhite)
         {
@@ -731,6 +822,11 @@ namespace ChessDroid.Services
                 // Validate piece position
                 if (pieceRow < 0 || pieceRow >= 8 || pieceCol < 0 || pieceCol >= 8)
                     return null;
+
+                // CRITICAL: Check if piece gives check and will be immediately recaptured
+                // If so, skip tactics that require the piece to survive (skewers, forks)
+                // because they are "phantom threats" that won't materialize
+                bool pieceWillBeRecaptured = IsPieceImmediatelyRecapturable(board, pieceRow, pieceCol, piece, isWhite);
 
                 List<(int row, int col, PieceType type)> attackedPieces = new List<(int, int, PieceType)>();
 
@@ -767,6 +863,7 @@ namespace ChessDroid.Services
                 }
 
                 // PIN: Check if this piece pins an enemy piece (highest priority after discovered checks)
+                // Pins can still work even if piece is recaptured (the pin exists during check)
                 var pinInfo = DetectPin(board, pieceRow, pieceCol, piece, isWhite);
                 if (!string.IsNullOrEmpty(pinInfo))
                 {
@@ -774,14 +871,19 @@ namespace ChessDroid.Services
                 }
 
                 // SKEWER: Check if this piece skewers an enemy piece
-                var skewerInfo = DetectSkewer(board, pieceRow, pieceCol, piece, isWhite);
-                if (!string.IsNullOrEmpty(skewerInfo))
+                // Skip if piece will be recaptured - skewer won't materialize
+                if (!pieceWillBeRecaptured)
                 {
-                    return skewerInfo;
+                    var skewerInfo = DetectSkewer(board, pieceRow, pieceCol, piece, isWhite);
+                    if (!string.IsNullOrEmpty(skewerInfo))
+                    {
+                        return skewerInfo;
+                    }
                 }
 
                 // FORK: One piece attacks two or more enemy pieces at once
-                if (attackedPieces.Count >= 2)
+                // Skip if piece will be recaptured - fork won't materialize
+                if (attackedPieces.Count >= 2 && !pieceWillBeRecaptured)
                 {
                     bool hasKing = attackedPieces.Any(p => p.type == PieceType.King);
 
@@ -930,32 +1032,37 @@ namespace ChessDroid.Services
                     return removalInfo;
                 }
 
-                // TRAPPED PIECE: Check if this move traps an enemy piece
-                var trappedInfo = DetectTrappedPiece(board, pieceRow, pieceCol, isWhite);
-                if (!string.IsNullOrEmpty(trappedInfo))
+                // Skip phantom threats if piece will be recaptured - they won't materialize
+                // These tactics require the piece to survive to be relevant
+                if (!pieceWillBeRecaptured)
                 {
-                    return trappedInfo;
-                }
+                    // TRAPPED PIECE: Check if this move traps an enemy piece
+                    var trappedInfo = DetectTrappedPiece(board, pieceRow, pieceCol, isWhite);
+                    if (!string.IsNullOrEmpty(trappedInfo))
+                    {
+                        return trappedInfo;
+                    }
 
-                // HANGING PIECE: Winning an undefended piece
-                var hangingInfo = DetectHangingPiece(attackedPieces, board, isWhite, pieceType, pieceRow, pieceCol);
-                if (!string.IsNullOrEmpty(hangingInfo))
-                {
-                    return hangingInfo;
-                }
+                    // HANGING PIECE: Winning an undefended piece
+                    var hangingInfo = DetectHangingPiece(attackedPieces, board, isWhite, pieceType, pieceRow, pieceCol);
+                    if (!string.IsNullOrEmpty(hangingInfo))
+                    {
+                        return hangingInfo;
+                    }
 
-                // OVERLOADING: Check if this move exploits an overloaded defender
-                var overloadInfo = DetectOverloading(board, pieceRow, pieceCol, isWhite);
-                if (!string.IsNullOrEmpty(overloadInfo))
-                {
-                    return overloadInfo;
-                }
+                    // OVERLOADING: Check if this move exploits an overloaded defender
+                    var overloadInfo = DetectOverloading(board, pieceRow, pieceCol, isWhite);
+                    if (!string.IsNullOrEmpty(overloadInfo))
+                    {
+                        return overloadInfo;
+                    }
 
-                // BACK RANK WEAKNESS: Check if this threatens back rank mate
-                var backRankInfo = DetectBackRankThreat(board, pieceRow, pieceCol, piece, isWhite);
-                if (!string.IsNullOrEmpty(backRankInfo))
-                {
-                    return backRankInfo;
+                    // BACK RANK WEAKNESS: Check if this threatens back rank mate
+                    var backRankInfo = DetectBackRankThreat(board, pieceRow, pieceCol, piece, isWhite);
+                    if (!string.IsNullOrEmpty(backRankInfo))
+                    {
+                        return backRankInfo;
+                    }
                 }
 
                 // DEFLECTION: Check if capturing this piece deflects a key defender
@@ -979,31 +1086,36 @@ namespace ChessDroid.Services
                     return smotheredMateInfo;
                 }
 
-                // DOUBLE ATTACK: Attack two pieces with different threats
-                var doubleAttackInfo = DetectDoubleAttack(board, pieceRow, pieceCol, piece, isWhite);
-                if (!string.IsNullOrEmpty(doubleAttackInfo))
+                // Skip these if piece will be recaptured - they are phantom threats
+                if (!pieceWillBeRecaptured)
                 {
-                    return doubleAttackInfo;
+                    // DOUBLE ATTACK: Attack two pieces with different threats
+                    var doubleAttackInfo = DetectDoubleAttack(board, pieceRow, pieceCol, piece, isWhite);
+                    if (!string.IsNullOrEmpty(doubleAttackInfo))
+                    {
+                        return doubleAttackInfo;
+                    }
+
+                    // X-RAY ATTACK: Attack through another piece
+                    var xrayInfo = DetectXRayAttack(board, pieceRow, pieceCol, piece, isWhite);
+                    if (!string.IsNullOrEmpty(xrayInfo))
+                    {
+                        return xrayInfo;
+                    }
+
+                    // DECOY: Sacrifice to lure piece to bad square
+                    var decoyInfo = DetectDecoy(board, pieceRow, pieceCol, isWhite);
+                    if (!string.IsNullOrEmpty(decoyInfo))
+                    {
+                        return decoyInfo;
+                    }
                 }
 
-                // X-RAY ATTACK: Attack through another piece
-                var xrayInfo = DetectXRayAttack(board, pieceRow, pieceCol, piece, isWhite);
-                if (!string.IsNullOrEmpty(xrayInfo))
-                {
-                    return xrayInfo;
-                }
-
-                // DECOY: Sacrifice to lure piece to bad square
-                var decoyInfo = DetectDecoy(board, pieceRow, pieceCol, isWhite);
-                if (!string.IsNullOrEmpty(decoyInfo))
-                {
-                    return decoyInfo;
-                }
-
-                // Check for check
+                // Check for check - always show this, it's not a phantom threat
                 if (IsGivingCheck(board, pieceRow, pieceCol, piece, isWhite))
                 {
-                    if (attackedPieces.Count >= 1)
+                    // Don't claim "check with attack" if piece will be recaptured - it's misleading
+                    if (attackedPieces.Count >= 1 && !pieceWillBeRecaptured)
                     {
                         return "check with attack"; // Check + attacking another piece
                     }

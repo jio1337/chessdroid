@@ -83,13 +83,30 @@ namespace ChessDroid.Services
                     afterMove.SetPiece(destRank, destFile, promotionPiece);
                 }
 
+                // Check if the moving piece gives check and will be immediately recaptured
+                // If so, most threats are "phantom" - they won't materialize
+                bool pieceWillBeRecaptured = IsPieceImmediatelyRecapturable(afterMove, destRank, destFile, movingPiece, movingPlayerIsWhite);
+
                 // Detect various threats AFTER our move
-                DetectCheckThreats(afterMove, destRank, destFile, movingPlayerIsWhite, threatsAfter);
-                DetectRealHangingPieces(afterMove, movingPlayerIsWhite, threatsAfter);
-                DetectForks(afterMove, destRank, destFile, movingPlayerIsWhite, threatsAfter);
+                // Pass pieceWillBeRecaptured to skip phantom threats
+                DetectCheckThreats(afterMove, destRank, destFile, movingPlayerIsWhite, threatsAfter, pieceWillBeRecaptured);
+
+                // Skip phantom threats if piece gives check and will be recaptured
+                // These threats won't materialize because opponent MUST recapture to escape check
+                if (!pieceWillBeRecaptured)
+                {
+                    DetectRealHangingPieces(afterMove, movingPlayerIsWhite, threatsAfter);
+                    DetectForks(afterMove, destRank, destFile, movingPlayerIsWhite, threatsAfter);
+                }
+
                 DetectPins(afterMove, movingPlayerIsWhite, threatsAfter);
                 DetectPromotionThreats(afterMove, movingPlayerIsWhite, threatsAfter);
-                DetectTrappedPieces(afterMove, movingPlayerIsWhite, threatsAfter);
+
+                // Skip trapped piece detection if our piece will be recaptured
+                if (!pieceWillBeRecaptured)
+                {
+                    DetectTrappedPieces(afterMove, movingPlayerIsWhite, threatsAfter);
+                }
 
                 // Detect if we have an en passant capture available (using the EP square from the FEN)
                 DetectEnPassantThreat(board, enPassantSquare, movingPlayerIsWhite, threatsAfter);
@@ -162,10 +179,96 @@ namespace ChessDroid.Services
         #region Our Threat Detection Methods
 
         /// <summary>
+        /// Checks if the moving piece gives check AND will be immediately recaptured.
+        /// In such cases, tactical threats (skewers, forks, mate threats) are "phantom" - they don't survive.
+        /// </summary>
+        private static bool IsPieceImmediatelyRecapturable(ChessBoard board, int pieceRow, int pieceCol, char piece, bool isWhite)
+        {
+            // Check if we're giving check
+            bool givesCheck = false;
+            char enemyKing = isWhite ? 'k' : 'K';
+            int kingRow = -1, kingCol = -1;
+
+            for (int r = 0; r < 8; r++)
+            {
+                for (int c = 0; c < 8; c++)
+                {
+                    if (board.GetPiece(r, c) == enemyKing)
+                    {
+                        kingRow = r;
+                        kingCol = c;
+                        break;
+                    }
+                }
+                if (kingRow >= 0) break;
+            }
+
+            if (kingRow >= 0)
+            {
+                givesCheck = ChessUtilities.CanAttackSquare(board, pieceRow, pieceCol, piece, kingRow, kingCol);
+            }
+
+            if (!givesCheck) return false;
+
+            // Check if our piece can be captured by the opponent
+            bool canBeRecaptured = ChessUtilities.IsSquareDefended(board, pieceRow, pieceCol, !isWhite);
+            if (!canBeRecaptured) return false;
+
+            // When we give check and can be recaptured, the opponent MUST deal with check.
+            // If the only way to deal with check is to capture our piece, then our piece
+            // doesn't survive to execute any further threats
+
+            // Check if king can escape to a safe square (not capturing our piece)
+            for (int dr = -1; dr <= 1; dr++)
+            {
+                for (int dc = -1; dc <= 1; dc++)
+                {
+                    if (dr == 0 && dc == 0) continue;
+                    int newRow = kingRow + dr;
+                    int newCol = kingCol + dc;
+                    if (newRow < 0 || newRow >= 8 || newCol < 0 || newCol >= 8) continue;
+
+                    // Skip if this is our piece's square (that would be capturing, not escaping)
+                    if (newRow == pieceRow && newCol == pieceCol) continue;
+
+                    char targetSquare = board.GetPiece(newRow, newCol);
+                    // Can't move to square with own piece
+                    if (targetSquare != '.' && char.IsUpper(targetSquare) == !isWhite) continue;
+
+                    // Check if square is safe (simulate king move)
+                    ChessBoard tempBoard = new ChessBoard(board.GetArray());
+                    tempBoard.SetPiece(kingRow, kingCol, '.');
+                    tempBoard.SetPiece(newRow, newCol, enemyKing);
+
+                    if (!ChessUtilities.IsSquareAttackedBy(tempBoard, newRow, newCol, isWhite))
+                    {
+                        // King has an escape square - our piece might survive
+                        return false;
+                    }
+                }
+            }
+
+            // Check if check can be blocked (only matters for sliding pieces)
+            PieceType pieceType = PieceHelper.GetPieceType(piece);
+            if (pieceType == PieceType.Bishop || pieceType == PieceType.Rook || pieceType == PieceType.Queen)
+            {
+                // Can a piece block between our piece and their king?
+                if (ChessUtilities.CanBlockSlidingAttack(board, kingRow, kingCol, !isWhite))
+                {
+                    // Check can be blocked - our piece might survive
+                    return false;
+                }
+            }
+
+            // King can't escape and can't block - must capture our piece
+            return true;
+        }
+
+        /// <summary>
         /// Detect if the move gives check or threatens mate
         /// </summary>
         private static void DetectCheckThreats(ChessBoard board, int pieceRow, int pieceCol,
-            bool movingPlayerIsWhite, List<Threat> threats)
+            bool movingPlayerIsWhite, List<Threat> threats, bool pieceWillBeRecaptured = false)
         {
             char piece = board.GetPiece(pieceRow, pieceCol);
 
@@ -201,16 +304,20 @@ namespace ChessDroid.Services
                 });
 
                 // Check if it could be checkmate threat (king has few escape squares)
-                int escapeSquares = CountKingEscapeSquares(board, kingRow, kingCol, !movingPlayerIsWhite);
-                if (escapeSquares <= 1)
+                // Skip if piece will be recaptured - no real mate threat
+                if (!pieceWillBeRecaptured)
                 {
-                    threats.Add(new Threat
+                    int escapeSquares = CountKingEscapeSquares(board, kingRow, kingCol, !movingPlayerIsWhite);
+                    if (escapeSquares <= 1)
                     {
-                        Description = "threatens checkmate",
-                        Type = ThreatType.CheckmateThreat,
-                        Severity = 5,
-                        Square = GetSquareName(kingRow, kingCol)
-                    });
+                        threats.Add(new Threat
+                        {
+                            Description = "threatens checkmate",
+                            Type = ThreatType.CheckmateThreat,
+                            Severity = 5,
+                            Square = GetSquareName(kingRow, kingCol)
+                        });
+                    }
                 }
             }
         }
