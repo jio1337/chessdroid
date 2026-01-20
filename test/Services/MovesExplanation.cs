@@ -728,119 +728,9 @@ namespace ChessDroid.Services
             return (false, "", evalDrop, whiteBlundered);
         }
 
-        /// <summary>
-        /// Checks if the moving piece gives check AND will be immediately recaptured.
-        /// In such cases, tactical threats (skewers, forks) are "phantom" - they don't survive.
-        /// Example: Qxd8+ where the queen captures the opponent's queen with check,
-        /// but the queen will be recaptured by king or rook - no skewer/fork materializes.
-        /// Example: Bxc6+ where a pawn can simply recapture - fork on king+knight is phantom.
-        /// </summary>
+        // Delegate to ChessUtilities
         private static bool IsPieceImmediatelyRecapturable(ChessBoard board, int pieceRow, int pieceCol, char piece, bool isWhite)
-        {
-            // Check if we're giving check
-            bool givesCheck = IsGivingCheck(board, pieceRow, pieceCol, piece, isWhite);
-            if (!givesCheck) return false;
-
-            // Check if our piece can be captured by the opponent
-            bool canBeRecaptured = ChessUtilities.IsSquareDefended(board, pieceRow, pieceCol, !isWhite);
-            if (!canBeRecaptured) return false;
-
-            // IMPORTANT: If a PAWN can recapture, it's almost always going to happen.
-            // Pawn recapture is "free" - opponent wins material AND escapes check.
-            // This covers cases like Bxc6+ bxc6 where the "fork" is phantom.
-            char enemyPawn = isWhite ? 'p' : 'P';
-            // Black pawns (capturing white pieces) are ABOVE our piece (lower row index) and capture downward
-            // White pawns (capturing black pieces) are BELOW our piece (higher row index) and capture upward
-            int pawnCaptureDir = isWhite ? -1 : 1; // Where enemy pawn would be relative to our piece
-
-            // Check if an enemy pawn can capture our piece
-            int pawnRow = pieceRow + pawnCaptureDir;
-            if (pawnRow >= 0 && pawnRow < 8)
-            {
-                // Check both diagonal squares where a pawn could be
-                for (int dc = -1; dc <= 1; dc += 2)
-                {
-                    int pawnCol = pieceCol + dc;
-                    if (pawnCol >= 0 && pawnCol < 8)
-                    {
-                        if (board.GetPiece(pawnRow, pawnCol) == enemyPawn)
-                        {
-                            // A pawn can recapture - this is a phantom threat
-                            return true;
-                        }
-                    }
-                }
-            }
-
-            // When we give check and can be recaptured, the opponent MUST deal with check.
-            // If the only way to deal with check is to capture our piece, then our piece
-            // doesn't survive to execute any further threats (skewers, forks, etc.)
-
-            // Find enemy king
-            char enemyKing = isWhite ? 'k' : 'K';
-            int kingRow = -1, kingCol = -1;
-            for (int r = 0; r < 8; r++)
-            {
-                for (int c = 0; c < 8; c++)
-                {
-                    if (board.GetPiece(r, c) == enemyKing)
-                    {
-                        kingRow = r;
-                        kingCol = c;
-                        break;
-                    }
-                }
-                if (kingRow >= 0) break;
-            }
-
-            if (kingRow < 0) return false;
-
-            // Check if king can escape to a safe square (not capturing our piece)
-            for (int dr = -1; dr <= 1; dr++)
-            {
-                for (int dc = -1; dc <= 1; dc++)
-                {
-                    if (dr == 0 && dc == 0) continue;
-                    int newRow = kingRow + dr;
-                    int newCol = kingCol + dc;
-                    if (newRow < 0 || newRow >= 8 || newCol < 0 || newCol >= 8) continue;
-
-                    // Skip if this is our piece's square (that would be capturing, not escaping)
-                    if (newRow == pieceRow && newCol == pieceCol) continue;
-
-                    char targetSquare = board.GetPiece(newRow, newCol);
-                    // Can't move to square with own piece
-                    if (targetSquare != '.' && char.IsUpper(targetSquare) == !isWhite) continue;
-
-                    // Check if square is safe (simulate king move)
-                    ChessBoard tempBoard = new ChessBoard(board.GetArray());
-                    tempBoard.SetPiece(kingRow, kingCol, '.');
-                    tempBoard.SetPiece(newRow, newCol, enemyKing);
-
-                    if (!ChessUtilities.IsSquareAttackedBy(tempBoard, newRow, newCol, isWhite))
-                    {
-                        // King has an escape square - our piece might survive
-                        return false;
-                    }
-                }
-            }
-
-            // Check if check can be blocked (only matters for sliding pieces)
-            PieceType pieceType = PieceHelper.GetPieceType(piece);
-            if (pieceType == PieceType.Bishop || pieceType == PieceType.Rook || pieceType == PieceType.Queen)
-            {
-                // Can a piece block between our piece and their king?
-                if (ChessUtilities.CanBlockSlidingAttack(board, kingRow, kingCol, !isWhite))
-                {
-                    // Check can be blocked - our piece might survive
-                    return false;
-                }
-            }
-
-            // King can't escape and can't block - must capture our piece
-            // Our piece is definitely getting recaptured, so phantom threats don't materialize
-            return true;
-        }
+            => ChessUtilities.IsPieceImmediatelyRecapturable(board, pieceRow, pieceCol, piece, isWhite);
 
         // Detect tactical patterns like forks, pins, skewers, discovered attacks
         private static string? DetectTacticalPattern(ChessBoard originalBoard, ChessBoard board, int srcRow, int srcCol, int pieceRow, int pieceCol, char piece, PieceType pieceType, bool isWhite)
@@ -1393,31 +1283,9 @@ namespace ChessDroid.Services
         }
 
         // Check if this piece is giving check to enemy king
+        // Delegate to ChessUtilities
         private static bool IsGivingCheck(ChessBoard board, int pieceRow, int pieceCol, char piece, bool isWhite)
-        {
-            try
-            {
-                // Find enemy king
-                char enemyKing = isWhite ? 'k' : 'K';
-
-                for (int r = 0; r < 8; r++)
-                {
-                    for (int c = 0; c < 8; c++)
-                    {
-                        if (board.GetPiece(r, c) == enemyKing)
-                        {
-                            return ChessUtilities.CanAttackSquare(board, pieceRow, pieceCol, piece, r, c);
-                        }
-                    }
-                }
-
-                return false;
-            }
-            catch
-            {
-                return false;
-            }
-        }
+            => ChessUtilities.IsGivingCheck(board, pieceRow, pieceCol, piece, isWhite);
 
         // Detect discovered attack: when moving a piece reveals an attack from another piece
         private static string? DetectDiscoveredAttack(ChessBoard originalBoard, ChessBoard newBoard, int srcRow, int srcCol, int destRow, int destCol, char movedPiece, bool isWhite)
@@ -2844,6 +2712,6 @@ namespace ChessDroid.Services
 
         // Helper: Count how many pieces of a given color defend a square
         private static int CountDefenders(ChessBoard board, int row, int col, bool byWhite)
-            => ChessUtilities.CountAttackers(board, row, col, byWhite); // CountAttackers works as CountDefenders
+            => ChessUtilities.CountDefenders(board, row, col, byWhite);
     }
 }

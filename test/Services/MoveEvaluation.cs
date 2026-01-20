@@ -353,29 +353,8 @@ namespace ChessDroid.Services
         // HELPER METHODS
         // =============================
 
+        // Delegate to ChessUtilities
         private static bool IsGivingCheck(ChessBoard board, int pieceRow, int pieceCol, char piece, bool isWhite)
-        {
-            try
-            {
-                char enemyKing = isWhite ? 'k' : 'K';
-
-                for (int r = 0; r < 8; r++)
-                {
-                    for (int c = 0; c < 8; c++)
-                    {
-                        if (board.GetPiece(r, c) == enemyKing)
-                        {
-                            return ChessUtilities.CanAttackSquare(board, pieceRow, pieceCol, piece, r, c);
-                        }
-                    }
-                }
-
-                return false;
-            }
-            catch
-            {
-                return false;
-            }
-        }
+            => ChessUtilities.IsGivingCheck(board, pieceRow, pieceCol, piece, isWhite);
     }
 }
