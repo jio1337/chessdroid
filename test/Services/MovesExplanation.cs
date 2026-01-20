@@ -868,7 +868,8 @@ namespace ChessDroid.Services
                     }
 
                     // Regular fork: Attack multiple valuable pieces
-                    // Only report if we can actually win material
+                    // A REAL fork means we GUARANTEE winning at least one piece
+                    // This requires: at least one target is undefended, OR one target MUST move (exposing the other)
                     var valuableTargets = attackedPieces
                         .Where(p => ChessUtilities.GetPieceValue(p.type) >= 3) // Knights, bishops, rooks, queens, king
                         .OrderByDescending(p => ChessUtilities.GetPieceValue(p.type))
@@ -877,67 +878,67 @@ namespace ChessDroid.Services
 
                     if (valuableTargets.Count >= 2)
                     {
-                        // Check if at least one of the forked pieces can be profitably captured
                         int forkingPieceValue = ChessUtilities.GetPieceValue(pieceType);
-                        bool canWinMaterial = false;
+
+                        // Check each target to see if it's "winnable"
+                        // A piece is winnable if:
+                        // 1. It's undefended (free capture)
+                        // 2. It's defended but worth MORE than our forking piece (profitable trade)
+                        // 3. It's the king (must move, can't be traded)
+                        var winnableTargets = new List<(int row, int col, PieceType type)>();
 
                         foreach (var target in valuableTargets)
                         {
-                            // If one of the targets is a king, it must move (guaranteed win of the other piece)
                             if (target.type == PieceType.King)
                             {
-                                canWinMaterial = true;
-                                break;
+                                // King is always "winnable" in the sense that it MUST move
+                                winnableTargets.Add(target);
+                                continue;
                             }
 
-                            // Check if the forked piece can recapture our forking piece
-                            bool targetCanRecapture = ChessUtilities.CanAttackSquare(board, target.row, target.col,
-                                board.GetPiece(target.row, target.col), pieceRow, pieceCol);
+                            bool isDefended = ChessUtilities.IsSquareDefended(board, target.row, target.col, !isWhite);
+                            int targetValue = ChessUtilities.GetPieceValue(target.type);
 
-                            // If target can recapture our forking piece, we need the trade to be profitable
-                            if (targetCanRecapture)
+                            if (!isDefended)
                             {
-                                // Only valid if target is worth more than our forking piece (profitable trade)
-                                if (ChessUtilities.GetPieceValue(target.type) > forkingPieceValue)
-                                {
-                                    // But also check: is there another forked piece that can't recapture?
-                                    // If so, we can capture that one instead
-                                    var otherTargets = valuableTargets.Where(t => t.row != target.row || t.col != target.col);
-                                    foreach (var other in otherTargets)
-                                    {
-                                        bool otherCanRecapture = ChessUtilities.CanAttackSquare(board, other.row, other.col,
-                                            board.GetPiece(other.row, other.col), pieceRow, pieceCol);
-
-                                        if (!otherCanRecapture)
-                                        {
-                                            // This piece can't recapture, so we can win it for free
-                                            canWinMaterial = true;
-                                            break;
-                                        }
-                                    }
-                                }
+                                // Undefended - we can capture it for free
+                                winnableTargets.Add(target);
                             }
-                            else
+                            else if (targetValue > forkingPieceValue)
                             {
-                                // Target can't recapture - check if it's defended by another piece
-                                bool isDefended = ChessUtilities.IsSquareDefended(board, target.row, target.col, !isWhite);
-
-                                // Can win material if:
-                                // 1. Target is undefended (free capture), OR
-                                // 2. Target is defended but worth more than the forking piece (profitable trade)
-                                if (!isDefended || ChessUtilities.GetPieceValue(target.type) > forkingPieceValue)
-                                {
-                                    canWinMaterial = true;
-                                    break;
-                                }
+                                // Defended but worth more - profitable trade
+                                winnableTargets.Add(target);
                             }
-
-                            if (canWinMaterial) break;
+                            // If defended by equal/lower value, it's NOT winnable - they just trade back
                         }
 
-                        if (canWinMaterial)
+                        // A real fork requires:
+                        // - If king is forked: at least one OTHER winnable piece (king moves, we take the other)
+                        // - If no king: at least TWO winnable pieces (they can only save one)
+                        bool hasKingTarget = winnableTargets.Any(t => t.type == PieceType.King);
+                        var nonKingWinnable = winnableTargets.Where(t => t.type != PieceType.King).ToList();
+
+                        bool isRealFork = false;
+                        if (hasKingTarget && nonKingWinnable.Count >= 1)
                         {
-                            string pieces = string.Join(" and ", valuableTargets.Select(p => ChessUtilities.GetPieceName(p.type)));
+                            // King + at least one winnable piece = real fork
+                            isRealFork = true;
+                        }
+                        else if (!hasKingTarget && winnableTargets.Count >= 2)
+                        {
+                            // Two or more winnable pieces (no king) = real fork
+                            // They can only save one, we get the other
+                            isRealFork = true;
+                        }
+
+                        if (isRealFork)
+                        {
+                            // Report the fork with the actual winnable pieces
+                            var piecesToReport = hasKingTarget
+                                ? new[] { winnableTargets.First(t => t.type == PieceType.King) }.Concat(nonKingWinnable.Take(1))
+                                : winnableTargets.Take(2);
+
+                            string pieces = string.Join(" and ", piecesToReport.Select(p => ChessUtilities.GetPieceName(p.type)));
                             return $"forks {pieces}";
                         }
                     }
@@ -1236,13 +1237,52 @@ namespace ChessDroid.Services
 
                                     if (isSkewerPattern)
                                     {
-                                        // Check if the piece behind is undefended (will be won)
-                                        // OR if even when defended, capturing it wins material
+                                        // CRITICAL: A skewer only works if the front piece is FORCED to move
+                                        // - King: Always forced to move (absolute skewer)
+                                        // - Other pieces: Must be undefended OR attacked by lower-value piece
+                                        bool frontPieceForcedToMove = false;
+
+                                        if (frontPieceType == PieceType.King)
+                                        {
+                                            // King is always forced to move when attacked
+                                            frontPieceForcedToMove = true;
+                                        }
+                                        else
+                                        {
+                                            // Check if front piece is defended
+                                            bool frontDefended = ChessUtilities.IsSquareDefended(board, frontRow, frontCol, !isWhite);
+
+                                            if (!frontDefended)
+                                            {
+                                                // Undefended - must move or be captured
+                                                frontPieceForcedToMove = true;
+                                            }
+                                            else
+                                            {
+                                                // Defended - only forced if our attacker is worth less
+                                                // (e.g., queen attacked by rook - queen should move)
+                                                int attackerValue = ChessUtilities.GetPieceValue(pieceType);
+                                                if (attackerValue < frontValue)
+                                                {
+                                                    // Attacking with lower-value piece, front piece should move
+                                                    frontPieceForcedToMove = true;
+                                                }
+                                                // If defended by equal or lower value piece, front piece can just stay
+                                            }
+                                        }
+
+                                        if (!frontPieceForcedToMove)
+                                        {
+                                            // Front piece is not forced to move - not a real skewer
+                                            break;
+                                        }
+
+                                        // Front piece IS forced to move - check if we can win the piece behind
                                         bool behindDefended = ChessUtilities.IsSquareDefended(board, r, c, !isWhite);
 
                                         if (!behindDefended)
                                         {
-                                            // Undefended - clean skewer
+                                            // Undefended - clean skewer, guaranteed win
                                             if (frontPieceType == PieceType.King)
                                                 return $"skewers king, winning {ChessUtilities.GetPieceName(behindPieceType)}";
                                             else
@@ -1250,12 +1290,12 @@ namespace ChessDroid.Services
                                         }
                                         else
                                         {
-                                            // Defended - check if we still win material after trade
-                                            // (This happens when front piece moves and we can favorably capture behind)
-                                            int defenders = CountDefenders(board, r, c, !isWhite);
+                                            // Behind piece is defended - check if we still win material
+                                            int attackerValue = ChessUtilities.GetPieceValue(pieceType);
 
-                                            // If only defended once and behind piece value >= 3, still report
-                                            if (defenders == 1 && behindValue >= 3)
+                                            // Only report if capturing behind piece is profitable
+                                            // (our piece value < behind piece value)
+                                            if (attackerValue < behindValue)
                                             {
                                                 if (frontPieceType == PieceType.King)
                                                     return $"skewers king, wins material";
