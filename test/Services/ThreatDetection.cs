@@ -83,9 +83,10 @@ namespace ChessDroid.Services
                     afterMove.SetPiece(destRank, destFile, promotionPiece);
                 }
 
-                // Check if the moving piece gives check and will be immediately recaptured
+                // Check if the moving piece will be immediately recaptured
+                // This covers: 1) gives check and must be captured, 2) captured on defended square
                 // If so, most threats are "phantom" - they won't materialize
-                bool pieceWillBeRecaptured = IsPieceImmediatelyRecapturable(afterMove, destRank, destFile, movingPiece, movingPlayerIsWhite);
+                bool pieceWillBeRecaptured = IsPieceImmediatelyRecapturable(afterMove, destRank, destFile, movingPiece, movingPlayerIsWhite, board);
 
                 // Detect various threats AFTER our move
                 // Pass pieceWillBeRecaptured to skip phantom threats
@@ -179,8 +180,8 @@ namespace ChessDroid.Services
         #region Our Threat Detection Methods
 
         // Delegate to ChessUtilities
-        private static bool IsPieceImmediatelyRecapturable(ChessBoard board, int pieceRow, int pieceCol, char piece, bool isWhite)
-            => ChessUtilities.IsPieceImmediatelyRecapturable(board, pieceRow, pieceCol, piece, isWhite);
+        private static bool IsPieceImmediatelyRecapturable(ChessBoard board, int pieceRow, int pieceCol, char piece, bool isWhite, ChessBoard? originalBoard = null)
+            => ChessUtilities.IsPieceImmediatelyRecapturable(board, pieceRow, pieceCol, piece, isWhite, originalBoard);
 
         /// <summary>
         /// Detect if the move gives check or threatens mate

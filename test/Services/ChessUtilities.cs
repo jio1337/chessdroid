@@ -539,20 +539,66 @@ namespace ChessDroid.Services
         // =============================
 
         /// <summary>
-        /// Checks if the moving piece gives check AND will be immediately recaptured.
-        /// In such cases, tactical threats (skewers, forks, mate threats) are "phantom" - they don't survive.
-        /// Example: Qxd8+ where the queen captures with check but will be recaptured.
-        /// Example: Bxc6+ where a pawn can simply recapture - fork on king+knight is phantom.
+        /// Checks if the moving piece will be immediately recaptured, making tactical threats "phantom".
+        /// Two scenarios trigger this:
+        /// 1. Piece gives check AND will be recaptured (opponent must deal with check)
+        /// 2. Piece captures on a defended square (opponent will recapture to regain material)
+        ///
+        /// Examples:
+        /// - Qxd8+ where queen captures with check but will be recaptured
+        /// - Bxc6+ where a pawn can simply recapture - fork on king+knight is phantom
+        /// - Bxf3 where bishop captures defended knight - queen/bishop will recapture
         /// </summary>
-        public static bool IsPieceImmediatelyRecapturable(ChessBoard board, int pieceRow, int pieceCol, char piece, bool isWhite)
+        public static bool IsPieceImmediatelyRecapturable(ChessBoard board, int pieceRow, int pieceCol, char piece, bool isWhite, ChessBoard? originalBoard = null)
         {
-            // Check if we're giving check
-            bool givesCheck = IsGivingCheck(board, pieceRow, pieceCol, piece, isWhite);
-            if (!givesCheck) return false;
-
             // Check if our piece can be captured by the opponent
             bool canBeRecaptured = IsSquareDefended(board, pieceRow, pieceCol, !isWhite);
             if (!canBeRecaptured) return false;
+
+            // SCENARIO 1: Check if we're giving check
+            bool givesCheck = IsGivingCheck(board, pieceRow, pieceCol, piece, isWhite);
+
+            // SCENARIO 2: Check if we just made a capture on a defended square
+            // If originalBoard is provided, check if there was a piece on the destination
+            bool madeCapture = false;
+            if (originalBoard != null)
+            {
+                char originalPiece = originalBoard.GetPiece(pieceRow, pieceCol);
+                // There was an enemy piece on this square that we captured
+                madeCapture = originalPiece != '.' && char.IsUpper(originalPiece) != isWhite;
+            }
+
+            // If neither giving check nor made a capture, piece might not be recaptured
+            // (e.g., moving to a defended square without capturing - opponent might not want to trade)
+            if (!givesCheck && !madeCapture) return false;
+
+            // For captures on defended squares (without check), opponent will almost certainly recapture
+            // Exception: if our piece is worth much more than theirs, they might not want to trade
+            if (madeCapture && !givesCheck)
+            {
+                // Get the value of our piece
+                int ourPieceValue = GetPieceValue(PieceHelper.GetPieceType(piece));
+
+                // Get the lowest value attacker (recapturer)
+                int lowestRecapturerValue = GetLowestAttackerValue(board, pieceRow, pieceCol, !isWhite);
+
+                // If they can recapture with equal or lower value piece, they will definitely do it
+                // e.g., Bishop (3) captured knight, queen (9) or bishop (3) can recapture - they will
+                if (lowestRecapturerValue <= ourPieceValue)
+                {
+                    return true; // Piece will be recaptured - threats are phantom
+                }
+
+                // If recapturer is worth more than our piece, they might still recapture
+                // but it's less certain. For now, assume they will if it's a minor piece capturing
+                // and they have any defender (tactical complexity often forces recapture)
+                // Actually, let's be conservative: if ANY piece can recapture, assume they will
+                // because leaving our piece there is usually worse
+                return true;
+            }
+
+            // From here on, we're giving check - use the more sophisticated logic
+            // to determine if opponent MUST recapture (no other way to escape check)
 
             // IMPORTANT: If a PAWN can recapture, it's almost always going to happen.
             // Pawn recapture is "free" - opponent wins material AND escapes check.

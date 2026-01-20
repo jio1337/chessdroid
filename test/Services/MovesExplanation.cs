@@ -268,6 +268,22 @@ namespace ChessDroid.Services
                 PieceType pieceType = PieceHelper.GetPieceType(piece);
                 bool isWhite = char.IsUpper(piece);
 
+                // CASTLING DETECTION: King moving 2+ squares from e-file is castling
+                // UCI formats: e1g1/e8g8 (O-O standard), e1h1/e8h8 (O-O edge case),
+                //              e1c1/e8c8 (O-O-O standard), e1a1/e8a8 (O-O-O edge case)
+                // The king is NOT capturing the rook - clear targetPiece to prevent false "wins rook"
+                bool isCastling = false;
+                if (pieceType == PieceType.King && srcFile == 4) // King on e-file
+                {
+                    int fileDiff = Math.Abs(destFile - srcFile);
+                    // Standard castling (2 squares) or edge case (to rook square: a or h file)
+                    if (fileDiff >= 2 || destFile == 0 || destFile == 7)
+                    {
+                        isCastling = true;
+                        targetPiece = '.'; // Not a capture!
+                    }
+                }
+
                 List<string> reasons = new List<string>();
 
                 // Create a temporary board with the move applied to check for tactics
@@ -275,9 +291,24 @@ namespace ChessDroid.Services
                 tempBoard.SetPiece(destRank, destFile, piece);
                 tempBoard.SetPiece(srcRank, srcFile, '.');
 
-                // Check if piece gives check and will be immediately recaptured
+                // Handle castling: also move the rook on tempBoard
+                if (isCastling)
+                {
+                    // Determine rook positions based on castling type
+                    bool isKingside = destFile > srcFile || destFile == 7;
+                    int rookSrcFile = isKingside ? 7 : 0;  // h-file or a-file
+                    int rookDestFile = isKingside ? 5 : 3; // f-file or d-file
+                    char rook = isWhite ? 'R' : 'r';
+                    tempBoard.SetPiece(srcRank, rookSrcFile, '.');
+                    tempBoard.SetPiece(srcRank, rookDestFile, rook);
+
+                    // For castling, return early with simple explanation
+                    return isKingside ? "castles kingside for safety" : "castles queenside for safety";
+                }
+
+                // Check if piece will be immediately recaptured (gives check OR captures on defended square)
                 // If so, most threats are "phantom" - they won't materialize
-                bool pieceWillBeRecaptured = IsPieceImmediatelyRecapturable(tempBoard, destRank, destFile, piece, isWhite);
+                bool pieceWillBeRecaptured = IsPieceImmediatelyRecapturable(tempBoard, destRank, destFile, piece, isWhite, board);
 
                 // =============================
                 // STOCKFISH FEATURES - PRIORITY 1
@@ -468,6 +499,16 @@ namespace ChessDroid.Services
                     }
                     // Don't show "exposes king" - if it's the best move, the tradeoff is worth it
                     // and showing this message confuses users into thinking the move is bad
+                }
+
+                // TEMPO ATTACK DETECTION
+                // Report attacks on equal/higher value pieces when our piece improves its position
+                // Example: Nc4 attacks Bb6 - the knight centralizes AND threatens the bishop
+                if (reasons.Count < 2 && !pieceWillBeRecaptured)
+                {
+                    string? tempoAttack = DetectTempoAttack(board, tempBoard, srcRank, srcFile, destRank, destFile, piece, pieceType, isWhite);
+                    if (!string.IsNullOrEmpty(tempoAttack))
+                        reasons.Add(tempoAttack);
                 }
 
                 // BASIC POSITIONAL CONSIDERATIONS (fallback if still no reasons)
@@ -729,8 +770,8 @@ namespace ChessDroid.Services
         }
 
         // Delegate to ChessUtilities
-        private static bool IsPieceImmediatelyRecapturable(ChessBoard board, int pieceRow, int pieceCol, char piece, bool isWhite)
-            => ChessUtilities.IsPieceImmediatelyRecapturable(board, pieceRow, pieceCol, piece, isWhite);
+        private static bool IsPieceImmediatelyRecapturable(ChessBoard board, int pieceRow, int pieceCol, char piece, bool isWhite, ChessBoard? originalBoard = null)
+            => ChessUtilities.IsPieceImmediatelyRecapturable(board, pieceRow, pieceCol, piece, isWhite, originalBoard);
 
         // Detect tactical patterns like forks, pins, skewers, discovered attacks
         private static string? DetectTacticalPattern(ChessBoard originalBoard, ChessBoard board, int srcRow, int srcCol, int pieceRow, int pieceCol, char piece, PieceType pieceType, bool isWhite)
@@ -741,10 +782,10 @@ namespace ChessDroid.Services
                 if (pieceRow < 0 || pieceRow >= 8 || pieceCol < 0 || pieceCol >= 8)
                     return null;
 
-                // CRITICAL: Check if piece gives check and will be immediately recaptured
-                // If so, skip tactics that require the piece to survive (skewers, forks)
-                // because they are "phantom threats" that won't materialize
-                bool pieceWillBeRecaptured = IsPieceImmediatelyRecapturable(board, pieceRow, pieceCol, piece, isWhite);
+                // CRITICAL: Check if piece will be immediately recaptured
+                // This covers: 1) gives check and must be captured, 2) captured on defended square
+                // Skip tactics that require the piece to survive (skewers, forks) as they're "phantom"
+                bool pieceWillBeRecaptured = IsPieceImmediatelyRecapturable(board, pieceRow, pieceCol, piece, isWhite, originalBoard);
 
                 List<(int row, int col, PieceType type)> attackedPieces = new List<(int, int, PieceType)>();
 
@@ -1936,6 +1977,112 @@ namespace ChessDroid.Services
                     if (board.GetPiece(nextRow, pieceCol) == '.')
                     {
                         return "advances passed pawn";
+                    }
+                }
+
+                return null;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        // TEMPO ATTACK - Piece moves to a better square while attacking an equal/higher value piece
+        // This creates "tempo" because the opponent must respond to the threat
+        // Example: Nc4 attacks Bb6 - knight centralizes AND threatens the bishop
+        private static string? DetectTempoAttack(ChessBoard originalBoard, ChessBoard newBoard,
+            int srcRow, int srcCol, int destRow, int destCol, char piece, PieceType pieceType, bool isWhite)
+        {
+            try
+            {
+                int ourPieceValue = ChessUtilities.GetPieceValue(pieceType);
+
+                // Find the highest value enemy piece we're now attacking (that we weren't attacking before)
+                (int row, int col, PieceType type, int value) bestTarget = (-1, -1, PieceType.Pawn, 0);
+
+                for (int r = 0; r < 8; r++)
+                {
+                    for (int c = 0; c < 8; c++)
+                    {
+                        char targetPiece = newBoard.GetPiece(r, c);
+                        if (targetPiece == '.' || char.IsWhiteSpace(targetPiece)) continue;
+                        bool targetIsWhite = char.IsUpper(targetPiece);
+                        if (targetIsWhite == isWhite) continue; // Skip own pieces
+
+                        PieceType targetType = PieceHelper.GetPieceType(targetPiece);
+                        int targetValue = ChessUtilities.GetPieceValue(targetType);
+
+                        // Skip pawns - attacking a pawn is rarely exciting enough to report
+                        if (targetType == PieceType.Pawn) continue;
+
+                        // Skip kings - check is already reported separately
+                        if (targetType == PieceType.King) continue;
+
+                        // Only consider attacks on pieces of EQUAL or GREATER value
+                        // Knight (3) attacking bishop (3) = yes
+                        // Knight (3) attacking rook (5) = yes
+                        // Knight (3) attacking pawn (1) = no (already skipped)
+                        if (targetValue < ourPieceValue) continue;
+
+                        // Check if we're now attacking this piece
+                        if (!ChessUtilities.CanAttackSquare(newBoard, destRow, destCol, piece, r, c))
+                            continue;
+
+                        // Check if we were ALREADY attacking it before the move (from original position)
+                        // If so, this isn't a NEW threat
+                        if (ChessUtilities.CanAttackSquare(originalBoard, srcRow, srcCol, piece, r, c))
+                            continue;
+
+                        // Track the highest value target
+                        if (targetValue > bestTarget.value)
+                        {
+                            bestTarget = (r, c, targetType, targetValue);
+                        }
+                    }
+                }
+
+                // If we found a valid target, check if our piece improved its position
+                if (bestTarget.value > 0)
+                {
+                    bool positionImproved = false;
+
+                    // Check 1: Did we centralize? (moved closer to center)
+                    int oldCenterDist = Math.Abs(srcRow - 3) + Math.Abs(srcCol - 3); // Distance from d4/d5
+                    int newCenterDist = Math.Abs(destRow - 3) + Math.Abs(destCol - 3);
+                    if (newCenterDist < oldCenterDist)
+                        positionImproved = true;
+
+                    // Check 2: Did we move to a strong central square? (c3-f3 to c6-f6)
+                    if (destCol >= 2 && destCol <= 5 && destRow >= 2 && destRow <= 5)
+                        positionImproved = true;
+
+                    // Check 3: Did we develop from back rank?
+                    if ((srcRow == 0 || srcRow == 7) && (pieceType == PieceType.Knight || pieceType == PieceType.Bishop))
+                        positionImproved = true;
+
+                    // Check 4: Rook to open file or 7th rank
+                    if (pieceType == PieceType.Rook)
+                    {
+                        // Check if moving to 7th rank (2nd rank for black, row index 1; 7th rank for white, row index 6)
+                        int seventhRank = isWhite ? 1 : 6;
+                        if (destRow == seventhRank)
+                            positionImproved = true;
+                    }
+
+                    // Check 5: Knight/Bishop to outpost or good square
+                    if (pieceType == PieceType.Knight || pieceType == PieceType.Bishop)
+                    {
+                        // Always consider it an improvement if we're attacking something valuable
+                        // from a reasonable square (not the back rank)
+                        if (destRow != 0 && destRow != 7)
+                            positionImproved = true;
+                    }
+
+                    if (positionImproved)
+                    {
+                        string targetName = ChessUtilities.GetPieceName(bestTarget.type);
+                        return $"attacks {targetName}";
                     }
                 }
 
