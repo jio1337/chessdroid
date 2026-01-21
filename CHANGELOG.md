@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.2.2] - 2026-01-21
+
+### Fixed
+- **CRITICAL: Multi-PV evaluation display from Black's perspective** - UCI evaluations are always from White's perspective; now properly negated when Black to move
+- **CRITICAL: Multi-PV line sorting** - Lines now correctly sorted by evaluation (best to worst) regardless of engine update order
+- **Locale-dependent number formatting bug** - Fixed evaluation parsing on systems with comma decimal separator (European locales)
+
+### Technical Details
+- Before: Playing Black showed -0.60 as "best" and -0.38 as "second best" (backwards!)
+- After: Correctly shows +0.60 > +0.43 > +0.41 from current player's perspective
+- InvariantCulture now used for all evaluation formatting/parsing to ensure consistent behavior across locales
+- Previous releases deleted as they contained this critical bug affecting move recommendation accuracy
+
+---
+
+## [2.2.1] - 2026-01-21
+
+### Added
+- **Minimum Analysis Time setting** - Configure how long the engine thinks (0-5000ms, default 500ms)
+  - When set > 0: Uses time-based search for deeper analysis on complex positions
+  - When set to 0: Uses depth-based search for fast, consistent analysis
+  - Added numeric control to Settings form
+
+### Fixed
+- UCI protocol usage - Now correctly uses either `go movetime X` OR `go depth X`, not both (they have OR logic)
+- Engine timeout handling improved to accommodate longer analysis times
+
+---
+
 ## [2.2.0] - 2026-01-19
 
 ### Added
