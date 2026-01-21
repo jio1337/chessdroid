@@ -2,6 +2,18 @@ using System.Diagnostics;
 
 namespace ChessDroid.Services
 {
+    /// <summary>
+    /// Engine state machine states (SCID-inspired)
+    /// </summary>
+    public enum EngineState
+    {
+        Uninitialized,  // Engine not started
+        Starting,       // Engine process started, waiting for uciok
+        Ready,          // Engine ready, can accept commands
+        Analyzing,      // Engine analyzing position
+        Error           // Engine in error state, needs restart
+    }
+
     public class ChessEngineService
     {
         private Process? engineProcess;
@@ -9,6 +21,8 @@ namespace ChessDroid.Services
         private StreamReader? engineOutput;
         private readonly AppConfig config;
         private string? lastEnginePath;
+        private EngineState state = EngineState.Uninitialized;
+        private readonly object stateLock = new object();
 
         // UCI Protocol Commands
         private const string UCI_CMD_UCI = "uci";
@@ -32,11 +46,78 @@ namespace ChessDroid.Services
         }
 
         /// <summary>
+        /// Get current engine state
+        /// </summary>
+        public EngineState State
+        {
+            get { lock (stateLock) return state; }
+            private set { lock (stateLock) state = value; }
+        }
+
+        /// <summary>
         /// Check if engine process is alive and ready
         /// </summary>
         public bool IsEngineAlive()
         {
             return engineProcess != null && !engineProcess.HasExited && engineInput != null && engineOutput != null;
+        }
+
+        /// <summary>
+        /// Synchronizes with the engine using isready/readyok protocol.
+        /// This ensures all previous commands have been processed before continuing.
+        /// SCID-inspired pattern for reliable engine communication.
+        /// </summary>
+        /// <param name="timeoutMs">Timeout in milliseconds (default 3000ms)</param>
+        /// <returns>True if engine responded with readyok, false otherwise</returns>
+        private async Task<bool> SyncWithEngineAsync(int timeoutMs = 3000)
+        {
+            try
+            {
+                if (!IsEngineAlive())
+                {
+                    Debug.WriteLine("SyncWithEngine: Engine not alive");
+                    State = EngineState.Error;
+                    return false;
+                }
+
+                if (!await SafeWriteLineAsync("isready"))
+                {
+                    Debug.WriteLine("SyncWithEngine: Failed to send isready");
+                    State = EngineState.Error;
+                    return false;
+                }
+
+                using var cts = new CancellationTokenSource(timeoutMs);
+                while (IsEngineAlive())
+                {
+                    try
+                    {
+                        string? line = await engineOutput!.ReadLineAsync().WaitAsync(cts.Token);
+                        if (line != null && line.StartsWith("readyok"))
+                        {
+                            Debug.WriteLine("SyncWithEngine: Received readyok - engine synchronized");
+                            State = EngineState.Ready;
+                            return true;
+                        }
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        Debug.WriteLine($"SyncWithEngine: Timeout after {timeoutMs}ms waiting for readyok");
+                        State = EngineState.Error;
+                        return false;
+                    }
+                }
+
+                Debug.WriteLine("SyncWithEngine: Engine died while waiting for readyok");
+                State = EngineState.Error;
+                return false;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"SyncWithEngine: Error - {ex.Message}");
+                State = EngineState.Error;
+                return false;
+            }
         }
 
         /// <summary>
@@ -74,6 +155,7 @@ namespace ChessDroid.Services
             {
                 // Store path for restart capability
                 lastEnginePath = enginePath;
+                State = EngineState.Starting;
 
                 // Clean up any existing process
                 CleanupProcess();
@@ -169,11 +251,22 @@ namespace ChessDroid.Services
                     }
                 }
 
-                Debug.WriteLine($"Engine initialized: uciok={receivedUciOk}, readyok={receivedReadyOk}, alive={IsEngineAlive()}");
+                // Set state based on initialization result
+                if (receivedUciOk && receivedReadyOk && IsEngineAlive())
+                {
+                    State = EngineState.Ready;
+                }
+                else
+                {
+                    State = EngineState.Error;
+                }
+
+                Debug.WriteLine($"Engine initialized: uciok={receivedUciOk}, readyok={receivedReadyOk}, alive={IsEngineAlive()}, state={State}");
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"Error starting engine: {ex.Message}");
+                State = EngineState.Error;
                 CleanupProcess();
                 throw;
             }
@@ -206,6 +299,14 @@ namespace ChessDroid.Services
 
                 try
                 {
+                    // Sync with engine before sending commands (SCID-inspired)
+                    // This ensures the engine is ready and previous commands are processed
+                    if (!await SyncWithEngineAsync())
+                    {
+                        Debug.WriteLine("Engine sync failed before analysis");
+                        throw new IOException("Engine sync failed");
+                    }
+
                     // Configure MultiPV
                     if (!await SafeWriteLineAsync($"{UCI_CMD_SETOPTION} MultiPV value {multiPV}"))
                     {
@@ -223,6 +324,9 @@ namespace ChessDroid.Services
                     {
                         throw new IOException("Failed to set position");
                     }
+
+                    // Update state to analyzing
+                    State = EngineState.Analyzing;
 
                     // Start analysis
                     if (!await SafeWriteLineAsync($"{UCI_CMD_GO_DEPTH} {depth}"))
@@ -313,22 +417,26 @@ namespace ChessDroid.Services
 
                     if (!string.IsNullOrEmpty(bestMove))
                     {
+                        State = EngineState.Ready; // Analysis complete, back to ready
                         break; // Success - exit retry loop
                     }
                 }
                 catch (OperationCanceledException)
                 {
                     Debug.WriteLine($"Engine response timeout (attempt {retryCount + 1}/{config.MaxEngineRetries})");
+                    State = EngineState.Error;
                 }
                 catch (IOException ex)
                 {
                     Debug.WriteLine($"Engine IO error: {ex.Message}");
+                    State = EngineState.Error;
                     // IO error likely means pipe is broken - force restart
                     CleanupProcess();
                 }
                 catch (Exception ex)
                 {
                     Debug.WriteLine($"Engine communication error: {ex.Message}");
+                    State = EngineState.Error;
                 }
 
                 retryCount++;
@@ -367,6 +475,8 @@ namespace ChessDroid.Services
         {
             try
             {
+                State = EngineState.Uninitialized;
+
                 if (engineInput != null)
                 {
                     try { engineInput.Close(); } catch { }

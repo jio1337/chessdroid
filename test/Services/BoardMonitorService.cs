@@ -46,20 +46,24 @@ namespace ChessDroid.Services
         private ChessBoard? lastDetectedBoard;
         private string? lastFEN; // FEN of last stable position (for reliable move detection)
         private string? lastExpandedFEN; // Cached expanded FEN for faster comparison
+        private ulong lastZobristHash; // Zobrist hash for O(1) position comparison
         private bool isMonitoring = false;
         private bool userIsWhite = true;
         private bool isUserTurn = true;
 
         // Debouncing: Track candidate position before committing to it
         private string? candidateFEN = null;
+        private ulong candidateZobristHash = 0; // Zobrist hash for fast candidate comparison
         private DateTime candidateFENFirstSeen = DateTime.MinValue;
         private int candidateConfirmations = 0; // Number of consecutive scans with same candidate
+        private long lastProcessedTime = 0; // Timestamp for throttling (SCID-inspired)
 
         // Adaptive timing: Faster scanning when waiting for opponent's move
         private const int SCAN_INTERVAL_IDLE = 800; // Normal: 800ms when it's user's turn
         private const int SCAN_INTERVAL_WAITING = 400; // Fast: 400ms when waiting for opponent
-        private const int DEBOUNCE_MS = 250; // Wait 250ms for position to stabilize (reduced from 350)
+        private const int DEBOUNCE_MS = 250; // Wait 250ms for position to stabilize
         private const int REQUIRED_CONFIRMATIONS = 2; // Require 2 consecutive scans with same FEN
+        private const int MIN_PROCESS_INTERVAL_MS = 100; // Minimum time between processing (throttle)
 
         // Invalid board tracking
         private int consecutiveInvalidBoards = 0;
@@ -203,6 +207,7 @@ namespace ChessDroid.Services
                 lastDetectedBoard = currentBoard;
                 lastFEN = currentBoard.ToFEN(); // Store FEN for comparison
                 lastExpandedFEN = ExpandFEN(lastFEN.Split(' ')[0]); // Cache expanded for faster comparison
+                lastZobristHash = currentBoard.GetZobristHash(); // O(1) hash for fast comparison
 
                 // 7. After immediate analysis, next detected move will be USER's move
                 //    Set isUserTurn = true so that when user makes their move:
@@ -284,8 +289,16 @@ namespace ChessDroid.Services
                 consecutiveInvalidBoards = 0;
                 boardDetectionService.ConfirmCache(); // Tell cache this location is valid, keep using it
 
-                // 6. FEN-based move detection with debouncing (prevents flicker false positives)
-                string currentFEN = currentBoard.ToFEN(); // Convert board to FEN for comparison
+                // 6. Position change detection using Zobrist hash (O(1) comparison)
+                ulong currentHash = currentBoard.GetZobristHash();
+                string currentFEN = currentBoard.ToFEN(); // Still need FEN for move validation
+
+                // Throttle processing (SCID-inspired) - prevent CPU overload
+                long currentTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                if (currentTime - lastProcessedTime < MIN_PROCESS_INTERVAL_MS)
+                {
+                    return; // Skip this scan, too soon since last processing
+                }
 
                 if (lastFEN == null)
                 {
@@ -293,13 +306,15 @@ namespace ChessDroid.Services
                     lastDetectedBoard = currentBoard;
                     lastFEN = currentFEN;
                     lastExpandedFEN = ExpandFEN(currentFEN.Split(' ')[0]);
-                    candidateFEN = null; // Clear any pending candidate
-                    Debug.WriteLine($"BoardMonitorService: Initial board captured (FEN: {currentFEN})");
+                    lastZobristHash = currentHash;
+                    candidateFEN = null;
+                    lastProcessedTime = currentTime;
+                    Debug.WriteLine($"BoardMonitorService: Initial board captured (Hash: {currentHash:X16})");
                     return;
                 }
 
-                // Compare FENs - if same as last confirmed position, reset candidate
-                if (currentFEN == lastFEN)
+                // Fast O(1) hash comparison instead of string comparison
+                if (currentHash == lastZobristHash)
                 {
                     sameFENScans++;
 
@@ -308,22 +323,25 @@ namespace ChessDroid.Services
                     {
                         Debug.WriteLine($"BoardMonitorService: Position reverted to previous (flicker cancelled)");
                         candidateFEN = null;
+                        candidateZobristHash = 0;
                         candidateConfirmations = 0;
                     }
 
-                    // DEBUG: Every 5th scan with same FEN, log it to help diagnose stuck scans
-                    if (sameFENScans % 5 == 0)
+                    // DEBUG: Every 10th scan with same position, log it
+                    if (sameFENScans % 10 == 0)
                     {
-                        Debug.WriteLine($"BoardMonitorService: [DEBUG] Same FEN for {sameFENScans} scans");
+                        Debug.WriteLine($"BoardMonitorService: [DEBUG] Same position for {sameFENScans} scans");
                     }
                     return;
                 }
 
-                // FEN changed - reset same-scan counter
+                // Position changed - reset same-scan counter
                 sameFENScans = 0;
+                lastProcessedTime = currentTime;
 
                 // New position detected - start/continue debouncing
-                if (candidateFEN == null || candidateFEN != currentFEN)
+                // Use hash for fast comparison of candidate
+                if (candidateFEN == null || candidateZobristHash != currentHash)
                 {
                     // First time seeing this new position - validate it's a legal transition
                     if (!IsValidMoveTransition(lastFEN, currentFEN))
@@ -334,13 +352,14 @@ namespace ChessDroid.Services
 
                     // Start debounce timer
                     candidateFEN = currentFEN;
+                    candidateZobristHash = currentHash;
                     candidateFENFirstSeen = DateTime.Now;
                     candidateConfirmations = 1;
-                    Debug.WriteLine($"BoardMonitorService: New position detected, waiting for confirmation...");
+                    Debug.WriteLine($"BoardMonitorService: New position detected (Hash: {currentHash:X16}), waiting for confirmation...");
                     return;
                 }
 
-                // Same candidate position - increment confirmation counter
+                // Same candidate position (hash matches) - increment confirmation counter
                 candidateConfirmations++;
                 Debug.WriteLine($"BoardMonitorService: Candidate confirmed {candidateConfirmations}/{REQUIRED_CONFIRMATIONS} times");
 
@@ -393,6 +412,7 @@ namespace ChessDroid.Services
                     lastDetectedBoard = currentBoard;
                     lastFEN = currentFEN;
                     lastExpandedFEN = ExpandFEN(currentFEN.Split(' ')[0]);
+                    lastZobristHash = currentHash; // Update hash for O(1) comparison
                     isUserTurn = false; // Now waiting for opponent
 
                     // Switch to faster scanning while waiting for opponent
@@ -412,6 +432,7 @@ namespace ChessDroid.Services
                     lastDetectedBoard = currentBoard;
                     lastFEN = currentFEN;
                     lastExpandedFEN = ExpandFEN(currentFEN.Split(' ')[0]);
+                    lastZobristHash = currentHash; // Update hash for O(1) comparison
 
                     // Now it's user's turn - trigger analysis
                     isUserTurn = true;
@@ -440,6 +461,7 @@ namespace ChessDroid.Services
                     lastDetectedBoard = currentBoard;
                     lastFEN = currentFEN;
                     lastExpandedFEN = ExpandFEN(currentFEN.Split(' ')[0]);
+                    lastZobristHash = currentHash; // Update hash for O(1) comparison
                 }
             }
             catch (Exception ex)
