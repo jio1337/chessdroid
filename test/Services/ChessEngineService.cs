@@ -282,6 +282,11 @@ namespace ChessDroid.Services
             WDLInfo? wdlInfo = null;
             int retryCount = 0;
 
+            // Determine whose turn it is from FEN (for evaluation perspective)
+            // UCI evaluations are always from White's perspective
+            string[] fenParts = fen.Split(' ');
+            bool whiteToMove = fenParts.Length > 1 && fenParts[1] == "w";
+
             while (retryCount < config.MaxEngineRetries)
             {
                 // Check engine health before each attempt
@@ -380,9 +385,19 @@ namespace ChessDroid.Services
                                     if (tokens[i] == UCI_TOKEN_SCORE && i + 2 < tokens.Length)
                                     {
                                         if (tokens[i + 1] == UCI_TOKEN_CP && double.TryParse(tokens[i + 2], out double cp))
-                                            evalStr = (cp / 100.0 >= 0 ? "+" : "") + (cp / 100.0).ToString("F2");
+                                        {
+                                            // UCI scores are always from White's perspective
+                                            // If Black to move, negate the score for correct display from Black's perspective
+                                            double displayCp = whiteToMove ? cp : -cp;
+                                            evalStr = (displayCp / 100.0 >= 0 ? "+" : "") + (displayCp / 100.0).ToString("F2");
+                                        }
                                         else if (tokens[i + 1] == UCI_TOKEN_MATE)
-                                            evalStr = "Mate in " + tokens[i + 2];
+                                        {
+                                            int mateIn = int.Parse(tokens[i + 2]);
+                                            // Negate mate distance for Black too
+                                            int displayMate = whiteToMove ? mateIn : -mateIn;
+                                            evalStr = "Mate in " + displayMate;
+                                        }
                                     }
 
                                     // Parse WDL (Win/Draw/Loss) data - format: "wdl W D L" (per mille values)
@@ -477,6 +492,28 @@ namespace ChessDroid.Services
                 evaluations = evaluations.Take(multiPV).ToList();
             }
 
+            // Sort PV lines by evaluation (best to worst)
+            // This ensures consistent ordering even if engine sends updates out of order
+            if (pvs.Count > 1 && evaluations.Count == pvs.Count)
+            {
+                var combined = pvs.Zip(evaluations, (pv, eval) => new { Pv = pv, Eval = eval }).ToList();
+
+                // Sort by evaluation (descending = best first)
+                combined.Sort((a, b) =>
+                {
+                    double evalA = ParseEvaluationForSorting(a.Eval);
+                    double evalB = ParseEvaluationForSorting(b.Eval);
+                    return evalB.CompareTo(evalA); // Descending order (best first)
+                });
+
+                pvs = combined.Select(x => x.Pv).ToList();
+                evaluations = combined.Select(x => x.Eval).ToList();
+
+                // Update main evaluation to be the best one after sorting
+                if (evaluations.Count > 0)
+                    evaluation = evaluations[0];
+            }
+
             // If engine didn't provide WDL, estimate from centipawns
             if (wdlInfo == null && !string.IsNullOrEmpty(evaluation) && !evaluation.StartsWith("Mate"))
             {
@@ -490,6 +527,38 @@ namespace ChessDroid.Services
             }
 
             return (bestMove, evaluation, pvs, evaluations, wdlInfo);
+        }
+
+        /// <summary>
+        /// Parse evaluation string for sorting purposes
+        /// Returns a numeric value where higher = better
+        /// </summary>
+        private static double ParseEvaluationForSorting(string evalStr)
+        {
+            if (string.IsNullOrEmpty(evalStr))
+                return double.MinValue;
+
+            // Handle mate scores - mate is always best
+            if (evalStr.StartsWith("Mate in "))
+            {
+                string mateStr = evalStr.Replace("Mate in ", "").Trim();
+                if (int.TryParse(mateStr, out int mateIn))
+                {
+                    // Positive mate = we have mate (best)
+                    // Negative mate = opponent has mate (worst)
+                    // Shorter mate is better: mate in 2 > mate in 5
+                    if (mateIn > 0)
+                        return 10000.0 - mateIn; // Positive = good for us, shorter is better
+                    else
+                        return -10000.0 - Math.Abs(mateIn); // Negative = bad for us
+                }
+            }
+
+            // Handle centipawn scores
+            if (double.TryParse(evalStr.Replace("+", ""), out double eval))
+                return eval;
+
+            return double.MinValue;
         }
 
         private void CleanupProcess()
