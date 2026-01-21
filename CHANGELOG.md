@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.2.3] - 2026-01-21
+
+### Fixed
+- **CRITICAL: Blunder detection false positives** - Fixed culture parsing mismatch causing massive false positive eval swings (e.g., "124 pawns" blunder on normal moves)
+- Evaluation parsing in MovesExplanation, ChessEngineService, and MoveSharpnessAnalyzer now all use InvariantCulture
+- Root cause: v2.2.2 changed formatting to InvariantCulture but parsing still used system culture
+
+### Technical Details
+- Before: Evaluations formatted as "+1.87" (period) but parsed expecting "+1,87" (comma) → parse failure → null/0 → false blunder
+- After: All parsing uses InvariantCulture to match formatting
+- This completed the InvariantCulture migration started in v2.2.2
+
+---
+
 ## [2.2.2] - 2026-01-21
 
 ### Fixed
