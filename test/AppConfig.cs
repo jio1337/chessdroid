@@ -14,6 +14,7 @@ namespace ChessDroid
         public int EngineResponseTimeoutMs { get; set; } = 10000;
         public int MaxEngineRetries { get; set; } = 3;
         public int EngineDepth { get; set; } = 15; // Default depth for engine analysis (1-20)
+        public int MinAnalysisTimeMs { get; set; } = 500; // Minimum analysis time in milliseconds (0 = no minimum)
         public string Theme { get; set; } = "Dark"; // "Dark" or "Light"
         public bool ShowDebugCells { get; set; } = false; // Show cell recognition popup
 
@@ -130,6 +131,7 @@ namespace ChessDroid
             EngineResponseTimeoutMs = other.EngineResponseTimeoutMs;
             MaxEngineRetries = other.MaxEngineRetries;
             EngineDepth = other.EngineDepth;
+            MinAnalysisTimeMs = other.MinAnalysisTimeMs;
             Theme = other.Theme;
             ShowDebugCells = other.ShowDebugCells;
             SelectedEngine = other.SelectedEngine;

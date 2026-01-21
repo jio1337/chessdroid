@@ -41,6 +41,8 @@ namespace ChessDroid
             lblMatchThreshold = new Label();
             grpEngine = new GroupBox();
             cmbEngineDepth = new ComboBox();
+            numMinAnalysisTime = new NumericUpDown();
+            lblMinAnalysisTime = new Label();
             numMoveTimeout = new NumericUpDown();
             numMaxRetries = new NumericUpDown();
             numEngineTimeout = new NumericUpDown();
@@ -90,6 +92,7 @@ namespace ChessDroid
             ((System.ComponentModel.ISupportInitialize)numCannyLow).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numMatchThreshold).BeginInit();
             grpEngine.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)numMinAnalysisTime).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numMoveTimeout).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numMaxRetries).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numEngineTimeout).BeginInit();
@@ -218,6 +221,8 @@ namespace ChessDroid
             // grpEngine
             // 
             grpEngine.Controls.Add(cmbEngineDepth);
+            grpEngine.Controls.Add(numMinAnalysisTime);
+            grpEngine.Controls.Add(lblMinAnalysisTime);
             grpEngine.Controls.Add(numMoveTimeout);
             grpEngine.Controls.Add(numMaxRetries);
             grpEngine.Controls.Add(numEngineTimeout);
@@ -228,7 +233,7 @@ namespace ChessDroid
             grpEngine.ForeColor = Color.White;
             grpEngine.Location = new Point(12, 191);
             grpEngine.Name = "grpEngine";
-            grpEngine.Size = new Size(298, 153);
+            grpEngine.Size = new Size(298, 185);
             grpEngine.TabIndex = 1;
             grpEngine.TabStop = false;
             grpEngine.Text = "Chess Engine";
@@ -242,6 +247,26 @@ namespace ChessDroid
             cmbEngineDepth.Size = new Size(100, 22);
             cmbEngineDepth.TabIndex = 6;
             toolTip1.SetToolTip(cmbEngineDepth, "Analysis depth (1-20). Higher = stronger but slower.");
+            // 
+            // numMinAnalysisTime
+            // 
+            numMinAnalysisTime.Increment = new decimal(new int[] { 100, 0, 0, 0 });
+            numMinAnalysisTime.Location = new Point(182, 150);
+            numMinAnalysisTime.Maximum = new decimal(new int[] { 10000, 0, 0, 0 });
+            numMinAnalysisTime.Name = "numMinAnalysisTime";
+            numMinAnalysisTime.Size = new Size(100, 20);
+            numMinAnalysisTime.TabIndex = 8;
+            toolTip1.SetToolTip(numMinAnalysisTime, "Minimum analysis time in ms (0 = no minimum). Ensures engine thinks for at least this long.");
+            numMinAnalysisTime.Value = new decimal(new int[] { 500, 0, 0, 0 });
+            // 
+            // lblMinAnalysisTime
+            // 
+            lblMinAnalysisTime.Location = new Point(10, 152);
+            lblMinAnalysisTime.Name = "lblMinAnalysisTime";
+            lblMinAnalysisTime.Size = new Size(170, 19);
+            lblMinAnalysisTime.TabIndex = 7;
+            lblMinAnalysisTime.Text = "Min Analysis Time (ms):";
+            toolTip1.SetToolTip(lblMinAnalysisTime, "Minimum analysis time in ms (0 = no minimum). Ensures engine thinks for at least this long.");
             // 
             // numMoveTimeout
             // 
@@ -327,7 +352,7 @@ namespace ChessDroid
             grpDisplay.Controls.Add(chkShowBest);
             grpDisplay.Controls.Add(lblBest);
             grpDisplay.ForeColor = Color.White;
-            grpDisplay.Location = new Point(12, 350);
+            grpDisplay.Location = new Point(12, 382);
             grpDisplay.Name = "grpDisplay";
             grpDisplay.Size = new Size(298, 146);
             grpDisplay.TabIndex = 2;
@@ -681,7 +706,7 @@ namespace ChessDroid
             // 
             btnSave.FlatStyle = FlatStyle.Popup;
             btnSave.ForeColor = SystemColors.ControlLightLight;
-            btnSave.Location = new Point(36, 502);
+            btnSave.Location = new Point(36, 536);
             btnSave.Name = "btnSave";
             btnSave.Size = new Size(100, 28);
             btnSave.TabIndex = 4;
@@ -693,7 +718,7 @@ namespace ChessDroid
             // 
             btnReset.FlatStyle = FlatStyle.Popup;
             btnReset.ForeColor = SystemColors.ControlLightLight;
-            btnReset.Location = new Point(248, 502);
+            btnReset.Location = new Point(248, 536);
             btnReset.Name = "btnReset";
             btnReset.Size = new Size(100, 28);
             btnReset.TabIndex = 5;
@@ -705,7 +730,7 @@ namespace ChessDroid
             // 
             btnHelp.FlatStyle = FlatStyle.Popup;
             btnHelp.ForeColor = SystemColors.ControlLightLight;
-            btnHelp.Location = new Point(142, 502);
+            btnHelp.Location = new Point(142, 536);
             btnHelp.Name = "btnHelp";
             btnHelp.Size = new Size(100, 28);
             btnHelp.TabIndex = 6;
@@ -718,7 +743,7 @@ namespace ChessDroid
             btnCancel.DialogResult = DialogResult.Cancel;
             btnCancel.FlatStyle = FlatStyle.Popup;
             btnCancel.ForeColor = SystemColors.ControlLightLight;
-            btnCancel.Location = new Point(354, 502);
+            btnCancel.Location = new Point(354, 536);
             btnCancel.Name = "btnCancel";
             btnCancel.Size = new Size(100, 28);
             btnCancel.TabIndex = 7;
@@ -732,7 +757,7 @@ namespace ChessDroid
             chkDarkMode.Checked = true;
             chkDarkMode.CheckState = CheckState.Checked;
             chkDarkMode.ForeColor = Color.White;
-            chkDarkMode.Location = new Point(460, 508);
+            chkDarkMode.Location = new Point(460, 542);
             chkDarkMode.Name = "chkDarkMode";
             chkDarkMode.Size = new Size(89, 18);
             chkDarkMode.TabIndex = 8;
@@ -748,7 +773,7 @@ namespace ChessDroid
             AutoSizeMode = AutoSizeMode.GrowAndShrink;
             BackColor = Color.FromArgb(45, 45, 48);
             CancelButton = btnCancel;
-            ClientSize = new Size(585, 542);
+            ClientSize = new Size(585, 580);
             Controls.Add(chkDarkMode);
             Controls.Add(btnCancel);
             Controls.Add(btnHelp);
@@ -773,6 +798,7 @@ namespace ChessDroid
             ((System.ComponentModel.ISupportInitialize)numCannyLow).EndInit();
             ((System.ComponentModel.ISupportInitialize)numMatchThreshold).EndInit();
             grpEngine.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)numMinAnalysisTime).EndInit();
             ((System.ComponentModel.ISupportInitialize)numMoveTimeout).EndInit();
             ((System.ComponentModel.ISupportInitialize)numMaxRetries).EndInit();
             ((System.ComponentModel.ISupportInitialize)numEngineTimeout).EndInit();
@@ -801,6 +827,8 @@ namespace ChessDroid
         private System.Windows.Forms.Label lblMatchThreshold;
         private System.Windows.Forms.GroupBox grpEngine;
         private System.Windows.Forms.ComboBox cmbEngineDepth;
+        private System.Windows.Forms.NumericUpDown numMinAnalysisTime;
+        private System.Windows.Forms.Label lblMinAnalysisTime;
         private System.Windows.Forms.NumericUpDown numMoveTimeout;
         private System.Windows.Forms.NumericUpDown numMaxRetries;
         private System.Windows.Forms.NumericUpDown numEngineTimeout;

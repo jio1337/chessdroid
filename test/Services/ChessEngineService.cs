@@ -329,13 +329,34 @@ namespace ChessDroid.Services
                     State = EngineState.Analyzing;
 
                     // Start analysis
-                    if (!await SafeWriteLineAsync($"{UCI_CMD_GO_DEPTH} {depth}"))
+                    // If MinAnalysisTimeMs > 0: use time-based search (reaches deeper on complex positions)
+                    // If MinAnalysisTimeMs = 0: use depth-based search (fast, consistent depth)
+                    string goCommand;
+                    int effectiveTimeout;
+
+                    if (config.MinAnalysisTimeMs > 0)
+                    {
+                        // Time-based search: engine searches for X milliseconds, reaching whatever depth it can
+                        // This gives better results on complex positions where depth 15 isn't enough
+                        goCommand = $"go movetime {config.MinAnalysisTimeMs}";
+                        effectiveTimeout = config.MinAnalysisTimeMs + 2000; // Add buffer for response
+                        Debug.WriteLine($"Engine: Time-based search for {config.MinAnalysisTimeMs}ms");
+                    }
+                    else
+                    {
+                        // Depth-based search: fast, reaches exact depth
+                        goCommand = $"{UCI_CMD_GO_DEPTH} {depth}";
+                        effectiveTimeout = config.EngineResponseTimeoutMs;
+                        Debug.WriteLine($"Engine: Depth-based search to depth {depth}");
+                    }
+
+                    if (!await SafeWriteLineAsync(goCommand))
                     {
                         throw new IOException("Failed to start analysis");
                     }
 
                     // Read analysis results
-                    using (var cts = new CancellationTokenSource(config.EngineResponseTimeoutMs))
+                    using (var cts = new CancellationTokenSource(effectiveTimeout))
                     {
                         while (IsEngineAlive())
                         {

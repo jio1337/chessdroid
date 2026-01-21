@@ -87,6 +87,9 @@ namespace ChessDroid
                 cmbEngineDepth.SelectedItem = 15; // Default
             }
 
+            // Min analysis time
+            numMinAnalysisTime.Value = config.MinAnalysisTimeMs;
+
             // Display options
             PopulateEnginesComboBox();
 
@@ -153,6 +156,7 @@ namespace ChessDroid
             config.CannyThresholdHigh = (int)numCannyHigh.Value;
             config.MinBoardArea = (int)numMinBoardArea.Value;
             config.EngineDepth = (int)cmbEngineDepth.SelectedItem;
+            config.MinAnalysisTimeMs = (int)numMinAnalysisTime.Value;
             config.Theme = chkDarkMode.Checked ? "Dark" : "Light";
             config.ShowDebugCells = chkDebugCells.Checked;
 
