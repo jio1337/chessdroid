@@ -430,8 +430,9 @@ namespace ChessDroid.Services
                 return evalStr.Contains("-") ? -100.0 : 100.0;
             }
 
-            // Parse numeric evaluation
-            if (double.TryParse(evalStr.TrimStart('+'), out double eval))
+            // Parse numeric evaluation - use InvariantCulture to match formatting
+            if (double.TryParse(evalStr.TrimStart('+'), System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture, out double eval))
             {
                 return eval;
             }

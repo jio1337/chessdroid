@@ -374,9 +374,10 @@ namespace ChessDroid.Services
                 return null;
             }
 
-            // Parse centipawn evaluation
+            // Parse centipawn evaluation - use InvariantCulture to match formatting
             string cleanEval = eval.Replace("+", "").Trim();
-            if (double.TryParse(cleanEval, out double value))
+            if (double.TryParse(cleanEval, System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture, out double value))
                 return value;
 
             return null;

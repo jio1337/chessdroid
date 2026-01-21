@@ -519,7 +519,8 @@ namespace ChessDroid.Services
             if (wdlInfo == null && !string.IsNullOrEmpty(evaluation) && !evaluation.StartsWith("Mate"))
             {
                 // Parse centipawns from evaluation string (e.g., "+1.50" or "-0.75")
-                if (double.TryParse(evaluation.Replace("+", ""), out double evalPawns))
+                if (double.TryParse(evaluation.Replace("+", ""), System.Globalization.NumberStyles.Float,
+                    System.Globalization.CultureInfo.InvariantCulture, out double evalPawns))
                 {
                     double centipawns = evalPawns * 100;
                     wdlInfo = WDLUtilities.EstimateWDLFromCentipawns(centipawns);
