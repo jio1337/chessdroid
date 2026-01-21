@@ -3,221 +3,18 @@ using System.Diagnostics;
 
 namespace ChessDroid.Services
 {
+    /// <summary>
+    /// Chess move explanation engine with tactical and positional analysis.
+    ///
+    /// Implemented tactics: Fork, Pin, Skewer, Discovered Attack, Double Check,
+    /// Hanging Piece, Trapped Piece, Removal of Defender, Double Attack, Deflection,
+    /// Decoy, Overloading, X-Ray Attack, Back Rank Mate, Smothered Mate,
+    /// Promotion Tactics, Perpetual Check, Tempo Attack.
+    ///
+    /// Also includes: SEE for captures, positional evaluation, endgame analysis.
+    /// </summary>
     public class MovesExplanation
     {
-        // =============================
-        // CHESS MOVE EXPLANATION ENGINE
-        // Comprehensive tactical and positional analysis system
-        // =============================
-        //
-        // ADVANCED FEATURES (Ethereal-inspired):
-        // - Static Exchange Evaluation (SEE) for captures
-        // - Move interestingness scoring (forcing vs quiet)
-        // - Positional evaluation (pawn structure, piece activity, king safety)
-        // - Improving/worsening position detection
-        //
-        // =============================
-        // CHESS TACTICAL MOTIFS REFERENCE
-        // Comprehensive guide to recognizing and executing chess tactics
-        // =============================
-        //
-        // BASIC TACTICS (Foundations - Learn these first)
-        // ------------------------------------------------
-        //
-        // 1. FORK ✓ [IMPLEMENTED]
-        //    One piece attacks two or more enemy pieces simultaneously. The opponent can only save one.
-        //    Example: Knight on e5 attacking queen on c6 and rook on g6 (royal fork)
-        //    Common perpetrators: Knights (can't be blocked), Queens, Pawns
-        //    Detection: Royal fork (K+Q), Family fork (K+Q+R), or any 2+ valuable pieces
-        //
-        // 2. PIN ✓ [IMPLEMENTED]
-        //    A piece cannot move without exposing a more valuable piece behind it.
-        //    - Absolute Pin: Moving exposes king (illegal move)
-        //    - Relative Pin: Moving loses material (legal but costly)
-        //    Example: Bishop pins knight to queen on same diagonal
-        //    Only sliding pieces (Bishop, Rook, Queen) can create pins
-        //
-        // 3. SKEWER ✓ [IMPLEMENTED]
-        //    Reverse pin: Attack valuable piece forcing it to move, then capture less valuable piece behind.
-        //    Example: Rook attacks king on e-file, king moves, rook captures rook behind
-        //    Think of it as: "Attack the big fish, eat the small fish"
-        //
-        // 4. DISCOVERED ATTACK ✓ [IMPLEMENTED]
-        //    Moving one piece reveals attack from another piece that was blocked.
-        //    Example: Bishop on b2 attacks rook on g7, pawn on e5 moves revealing the attack
-        //    Most dangerous when the moving piece also creates a threat (discovered check)
-        //
-        // 5. DOUBLE CHECK ✓ [IMPLEMENTED]
-        //    Two pieces give check simultaneously (usually via discovered check).
-        //    Example: Moving piece gives check AND reveals check from piece behind
-        //    Devastating because opponent MUST move king (can't block or capture both)
-        //
-        // 6. HANGING PIECE ✓ [IMPLEMENTED]
-        //    An undefended piece that can be captured for free.
-        //    Example: Knight on f6 with no defenders, opponent's bishop takes it
-        //    Most common tactical mistake. Always check: "Is this piece defended?"
-        //
-        // 7. TRAPPED PIECE ✓ [IMPLEMENTED]
-        //    A piece with no safe squares to move to.
-        //    Example: Bishop on h6 surrounded by pawns, king on g8, attacked by knight
-        //    Common victims: Bishops in corners, knights on rim, advanced rooks
-        //
-        // 8. REMOVAL OF DEFENDER ✓ [IMPLEMENTED]
-        //    Eliminate the piece protecting a key square or piece.
-        //    Example: Rook defends knight. Capture rook, then capture now-undefended knight
-        //    Two-step tactic: Remove guardian → Capture treasure
-        //
-        // INTERMEDIATE TACTICS (More complex patterns)
-        // ---------------------------------------------
-        //
-        // 9. DOUBLE ATTACK ✓ [IMPLEMENTED]
-        //    Any move creating two separate threats at once. Fork is a subtype.
-        //    Example: Queen moves to attack both an undefended rook and threaten mate
-        //    Opponent can only address one threat
-        //
-        // 10. DEFLECTION ✓ [IMPLEMENTED]
-        //     Force a defending piece away from its critical duty.
-        //     Example: Rook sacrifice forces king away from protecting queen
-        //     Similar to removal, but the defender moves rather than dies
-        //
-        // 11. DECOY ✓ [IMPLEMENTED]
-        //     Lure a piece to a bad square using a sacrifice.
-        //     Example: Queen sacrifice on h7 forces king to h7, then knight delivers mate
-        //     The sacrifice must force the opponent's hand
-        //
-        // 12. OVERLOADING ✓ [IMPLEMENTED]
-        //     One piece trying to defend multiple things—something must fall.
-        //     Example: Rook defending both back rank and a knight. Attack both.
-        //     Find the piece with too many jobs
-        //
-        // 13. INTERFERENCE
-        //     Block the line between two enemy pieces (usually defenders).
-        //     Example: Knight jumps between defending rook and queen
-        //     Cuts communication lines
-        //
-        // 14. CLEARANCE
-        //     Vacate a square/line so another piece can use it.
-        //     Example: Rook moves to allow queen access to back rank
-        //     "Get out of the way, I'm delivering mate"
-        //
-        // 15. ZWISCHENZUG (In-Between Move)
-        //     Instead of obvious recapture, insert a forcing move first.
-        //     Example: After Qxe5, instead of recapturing, play check first
-        //     The move your opponent didn't calculate
-        //
-        // 16. X-RAY ATTACK ✓ [IMPLEMENTED]
-        //     A piece attacks through another piece (defender or attacker).
-        //     Example: Queen x-rays through enemy knight to attack rook behind
-        //     Looks harmless until the front piece moves
-        //
-        // SACRIFICIAL TACTICS (Material for attack)
-        // ------------------------------------------
-        //
-        // 17. SACRIFICE
-        //     Intentional material loss for concrete advantage (attack, mate, promotion).
-        //     Rule: Must have a forced continuation. No hope = blunder, not sacrifice.
-        //     Common types: Greek Gift, Exchange Sacrifice, Queen Sacrifice
-        //
-        // 18. GREEK GIFT SACRIFICE
-        //     Classic Bxh7+ (or Bxh2+ for Black) to expose king.
-        //     Conditions needed: King on g8, h7 pawn present, no defenders, follow-up ready
-        //     If you don't know the theory, don't do it
-        //
-        // 19. EXCHANGE SACRIFICE
-        //     Give rook for bishop/knight to gain positional compensation.
-        //     Example: Rxc3 demolishing pawn structure or opening lines
-        //     Engines love these. Humans panic. Trust the position, not the material.
-        //
-        // CHECKMATE PATTERNS
-        // ------------------
-        //
-        // 20. BACK RANK MATE ✓ [IMPLEMENTED]
-        //     King trapped on back rank by own pawns, enemy rook delivers mate.
-        //     Prevention: Create luft (pawn move like h3/h6)
-        //     Still claims victims at all levels
-        //
-        // 21. SMOTHERED MATE ✓ [IMPLEMENTED]
-        //     King completely surrounded by own pieces, knight delivers mate.
-        //     Classic pattern: Knight on f7/f2 with king on h8/h1
-        //     Beautiful, rare, unforgettable
-        //
-        // 22. MATING NET
-        //     Coordinated piece setup making mate unstoppable within 2-3 moves.
-        //     Example: Queen + Knight + Rook closing in on exposed king
-        //     Not one move, but a tightening noose
-        //
-        // ENDGAME TACTICS
-        // ---------------
-        //
-        // 23. PROMOTION TACTICS ✓ [IMPLEMENTED]
-        //     Sacrifices/deflections forcing pawn to queen.
-        //     Example: Rook sacrifice clearing path for passed pawn
-        //     Pawns are future queens—never underestimate them
-        //
-        // 24. PASSED PAWN BREAKTHROUGH
-        //     Pawn sacrifices creating unstoppable passed pawn.
-        //     Example: Three connected pawns, sacrifice two to push one through
-        //     Endgame violence
-        //
-        // 25. OPPOSITION
-        //     Kings directly facing each other; whoever moves loses ground.
-        //     Example: Ke5 vs Ke7, whoever moves first loses the square
-        //     Pawn endgame fundamental
-        //
-        // 26. TRIANGULATION
-        //     King "loses a tempo" to gain opposition.
-        //     Example: Kf5-e5-f6 while enemy king stuck
-        //     Counterintuitive tempo loss that wins
-        //
-        // 27. ZUGZWANG
-        //     Any move worsens the position. "Your turn." "I die."
-        //     Example: All moves lose material or allow mate
-        //     Common in endgames, rare in middlegames
-        //
-        // SPECIAL/DEFENSIVE TACTICS
-        // --------------------------
-        //
-        // 28. PERPETUAL CHECK ✓ [IMPLEMENTED]
-        //     Endless checks forcing a draw when losing.
-        //     Example: Queen checking king repeatedly with no escape
-        //     Last resort survival tactic when down material
-        //
-        // 29. STALEMATE TRAP
-        //     Force draw by leaving opponent no legal moves (but not in check).
-        //     Example: King in corner with no moves, all pieces blocked
-        //     Refuge of the hopeless and the clever
-        //
-        // 30. EN PASSANT TACTICS [DISABLED - Too many false positives]
-        //     Rare pawn capture where advancing 2 squares doesn't escape attack.
-        //     Example: Pawn on e5, opponent plays f7-f5, you capture exf6 e.p.
-        //     Requires move history tracking - cannot detect from notation alone
-        //
-        // 31. WINDMILL
-        //     Repeated discovered checks winning massive material.
-        //     Example: Rook on h7, bishop gives discovered check, king moves, rook captures piece, repeat
-        //     If you fall for this, uninstall chess
-        //
-        // POSITIONAL/STRATEGIC WEAKNESSES
-        // --------------------------------
-        //
-        // 32. WEAK BACK RANK [DISABLED - Too many false positives]
-        //     No escape squares for king on back rank (no luft).
-        //     Sets up back rank mates and tactics
-        //     Needs more sophisticated detection (actual threats, not just position)
-        //
-        // 33. WEAK COLOR COMPLEX
-        //     Squares of one color are chronically weak (usually from bishop trade/absence).
-        //     Example: All dark squares weak after losing dark-squared bishop
-        //     Knights dominate weak color complexes
-        //
-        // 34. LOOSE PIECES DROP OFF (LPDO) [DISABLED - Redundant]
-        //     Undefended or poorly defended pieces eventually get captured.
-        //     Already covered by "Hanging Piece" detection (#6)
-        //     Tarrasch's principle: "The threat is stronger than the execution"
-        //
-        // =============================
-        // NOTE: Tactics marked with ✓ are actively detected by this engine
-        // =============================
 
         // Get material value of a piece (standard chess values)
         // Helper methods moved to ChessUtilities for code reuse
@@ -227,8 +24,7 @@ namespace ChessDroid.Services
         {
             try
             {
-                // FORCED MATE: When there's a forced checkmate FOR US, no other explanation needed
-                // "Mate in X" = we have mate, "Mate in -X" = opponent has mate against us
+                // Forced mate detection
                 if (!string.IsNullOrEmpty(evaluation) && evaluation.StartsWith("Mate in ") && !evaluation.Contains("-"))
                 {
                     return $"forced checkmate ({evaluation.ToLower()})";
@@ -268,12 +64,9 @@ namespace ChessDroid.Services
                 PieceType pieceType = PieceHelper.GetPieceType(piece);
                 bool isWhite = char.IsUpper(piece);
 
-                // CASTLING DETECTION: King moving 2+ squares from e-file is castling
-                // UCI formats: e1g1/e8g8 (O-O standard), e1h1/e8h8 (O-O edge case),
-                //              e1c1/e8c8 (O-O-O standard), e1a1/e8a8 (O-O-O edge case)
-                // The king is NOT capturing the rook - clear targetPiece to prevent false "wins rook"
+                // Castling detection (prevent false "wins rook")
                 bool isCastling = false;
-                if (pieceType == PieceType.King && srcFile == 4) // King on e-file
+                if (pieceType == PieceType.King && srcFile == 4)
                 {
                     int fileDiff = Math.Abs(destFile - srcFile);
                     // Standard castling (2 squares) or edge case (to rook square: a or h file)
@@ -310,12 +103,7 @@ namespace ChessDroid.Services
                 // If so, most threats are "phantom" - they won't materialize
                 bool pieceWillBeRecaptured = IsPieceImmediatelyRecapturable(tempBoard, destRank, destFile, piece, isWhite, board);
 
-                // =============================
-                // STOCKFISH FEATURES - PRIORITY 1
-                // Singular move and threat detection
-                // =============================
-
-                // SINGULAR MOVE DETECTION (only good move available)
+                // Singular move detection
                 bool isSingular = false;
                 if (pvs != null && pvs.Count >= 2 && !string.IsNullOrEmpty(evaluation))
                 {
@@ -327,13 +115,11 @@ namespace ChessDroid.Services
                         reasons.Add("only good move");
                 }
 
-                // FORCED MOVE DETECTION (in check with one legal move)
                 bool isForced = StockfishFeatures.IsForcedMove(board, isWhite);
                 if (isForced && reasons.Count < 2)
                     reasons.Add("forced move");
 
-                // THREAT CREATION (attacking valuable piece with lower-value piece)
-                // Skip if piece will be recaptured - the threat is phantom
+                // Threat creation (skip if piece will be recaptured)
                 if (reasons.Count < 2 && !pieceWillBeRecaptured)
                 {
                     string? threatCreation = StockfishFeatures.DetectThreatCreation(
@@ -351,7 +137,7 @@ namespace ChessDroid.Services
                     reasons.Add(tacticalPattern);
                 }
 
-                // PERPETUAL CHECK: Detect from PV lines
+                // Perpetual check detection
                 if (pvs != null)
                 {
                     string? perpetualCheckInfo = DetectPerpetualCheck(pvs);
@@ -361,8 +147,7 @@ namespace ChessDroid.Services
                     }
                 }
 
-                // SACRIFICE DETECTION: Check BEFORE regular capture detection
-                // Exchange Sacrifice (Rook for minor piece)
+                // Sacrifice detection
                 string? exchangeSacInfo = DetectExchangeSacrifice(tempBoard, destRank, destFile, piece, targetPiece, evaluation);
                 if (!string.IsNullOrEmpty(exchangeSacInfo))
                 {
@@ -376,10 +161,7 @@ namespace ChessDroid.Services
                     reasons.Add(sacrificeInfo);
                 }
 
-                // =============================
-                // CAPTURE EVALUATION with SEE (Static Exchange Evaluation)
-                // Inspired by Ethereal's movepicker.c
-                // =============================
+                // Capture evaluation with SEE
                 if (targetPiece != '.' && reasons.Count < 2)
                 {
                     // Use SEE to determine if capture wins material
@@ -414,41 +196,27 @@ namespace ChessDroid.Services
                     }
                 }
 
-                // =============================
-                // POSITIONAL EVALUATION (Ethereal-inspired)
-                // Analyze pawn structure, piece activity, king safety
-                // =============================
-
-                // PAWN STRUCTURE ANALYSIS
+                // Pawn structure analysis
                 if (pieceType == PieceType.Pawn && reasons.Count < 2)
                 {
-                    // Passed pawn detection (highest priority)
                     string? passedPawnInfo = PositionalEvaluation.DetectPassedPawn(tempBoard, destRank, destFile, isWhite);
                     if (!string.IsNullOrEmpty(passedPawnInfo))
                         reasons.Add(passedPawnInfo);
 
-                    // Connected pawns (strength)
                     string? connectedInfo = PositionalEvaluation.DetectConnectedPawns(tempBoard, destRank, destFile, isWhite);
                     if (!string.IsNullOrEmpty(connectedInfo) && reasons.Count < 2)
                         reasons.Add(connectedInfo);
-
-                    // NOTE: We do NOT show pawn structure weaknesses (isolated, doubled, backward) for our OWN pawns
-                    // If the engine recommends a move that creates these weaknesses for us, it's still the best move
-                    // and showing "creates doubled pawns" would confuse the user.
-                    // Instead, we check for OPPONENT weaknesses when we capture (see below).
                 }
 
-                // Check if our capture creates pawn structure weaknesses for the OPPONENT
-                // This is a positive - we're damaging their pawn structure!
+                // Check if capture creates pawn weaknesses for opponent
                 if (targetPiece != '.' && reasons.Count < 2)
                 {
-                    // Check if removing this piece leaves opponent with isolated/doubled pawns
                     string? opponentWeakness = DetectOpponentPawnWeakness(tempBoard, destRank, destFile, !isWhite);
                     if (!string.IsNullOrEmpty(opponentWeakness))
                         reasons.Add(opponentWeakness);
                 }
 
-                // PIECE ACTIVITY ANALYSIS (Knights, Bishops, Rooks, Queens)
+                // Piece activity analysis
                 if (reasons.Count < 2 && (pieceType == PieceType.Knight || pieceType == PieceType.Bishop ||
                                           pieceType == PieceType.Rook || pieceType == PieceType.Queen))
                 {
@@ -482,28 +250,16 @@ namespace ChessDroid.Services
                     }
                 }
 
-                // KING SAFETY ANALYSIS
-                // Only report POSITIVE king safety changes (improvements)
-                // Negative messages like "exposes king" are confusing on best moves -
-                // the engine already factored this in, showing it makes users think it's bad
+                // King safety analysis (only report improvements)
                 if (pieceType == PieceType.King && reasons.Count < 2)
                 {
-                    // Compare shelter BEFORE and AFTER the move
                     int beforeShelter = CountPawnShield(board, srcRank, srcFile, isWhite);
                     int afterShelter = CountPawnShield(tempBoard, destRank, destFile, isWhite);
-
-                    // Only show POSITIVE messages for king moves
                     if (afterShelter > beforeShelter)
-                    {
                         reasons.Add("improves king safety");
-                    }
-                    // Don't show "exposes king" - if it's the best move, the tradeoff is worth it
-                    // and showing this message confuses users into thinking the move is bad
                 }
 
-                // TEMPO ATTACK DETECTION
-                // Report attacks on equal/higher value pieces when our piece improves its position
-                // Example: Nc4 attacks Bb6 - the knight centralizes AND threatens the bishop
+                // Tempo attack detection
                 if (reasons.Count < 2 && !pieceWillBeRecaptured)
                 {
                     string? tempoAttack = DetectTempoAttack(board, tempBoard, srcRank, srcFile, destRank, destFile, piece, pieceType, isWhite);
@@ -511,10 +267,9 @@ namespace ChessDroid.Services
                         reasons.Add(tempoAttack);
                 }
 
-                // BASIC POSITIONAL CONSIDERATIONS (fallback if still no reasons)
+                // Basic positional considerations (fallback)
                 if (reasons.Count < 2)
                 {
-                    // Check if moving to center (basic centralization)
                     if (pieceType == PieceType.Knight || pieceType == PieceType.Bishop)
                     {
                         if (destFile >= 2 && destFile <= 5 && destRank >= 2 && destRank <= 5)
@@ -537,13 +292,9 @@ namespace ChessDroid.Services
                     reasons.Add(destFile > srcFile ? "castles kingside for safety" : "castles queenside");
                 }
 
-                // =============================
-                // ENDGAME-SPECIFIC ANALYSIS (Ethereal-inspired)
-                // Detect special endgame patterns and characteristics
-                // =============================
+                // Endgame analysis
                 if (reasons.Count < 2)
                 {
-                    // Detect specific endgame types
                     string? kpvk = EndgameAnalysis.DetectKPvK(tempBoard, isWhite);
                     if (!string.IsNullOrEmpty(kpvk))
                         reasons.Add(kpvk);
@@ -564,7 +315,6 @@ namespace ChessDroid.Services
                     if (!string.IsNullOrEmpty(bareKing) && reasons.Count < 2)
                         reasons.Add(bareKing);
 
-                    // Material imbalance detection
                     string? materialImbalance = EndgameAnalysis.DetectMaterialImbalance(tempBoard);
                     if (!string.IsNullOrEmpty(materialImbalance) && reasons.Count < 2)
                         reasons.Add(materialImbalance);
@@ -573,11 +323,9 @@ namespace ChessDroid.Services
                     if (!string.IsNullOrEmpty(qualityImbalance) && reasons.Count < 2)
                         reasons.Add(qualityImbalance);
 
-                    // Zugzwang detection (only if no other explanation)
                     if (reasons.Count == 0 && EndgameAnalysis.IsPotentialZugzwang(tempBoard, isWhite))
                         reasons.Add("zugzwang position (any move worsens position)");
 
-                    // TABLEBASE INTEGRATION (Advanced endgame knowledge)
                     if (reasons.Count < 2)
                     {
                         string? tablebaseInfo = AdvancedAnalysis.GetTablebaseExplanation(tempBoard, isWhite);
@@ -586,23 +334,16 @@ namespace ChessDroid.Services
                     }
                 }
 
-                // =============================
-                // OPENING MOVE ANALYSIS
-                // Low-ply history tracking for opening-specific patterns
-                // =============================
+                // Opening move analysis
                 if (reasons.Count < 2)
                 {
-                    // Estimate current ply from FEN (simplified - count material changes)
-                    int estimatedPly = 2; // Default to early game
+                    int estimatedPly = 2;
                     string? openingInfo = AdvancedAnalysis.GetOpeningMoveDescription(bestMove, estimatedPly);
                     if (!string.IsNullOrEmpty(openingInfo))
                         reasons.Add(openingInfo);
                 }
 
-                // =============================
-                // EVALUATION CONTEXT (Game phase aware + Win Rate Model)
-                // Inspired by Ethereal's phase-based evaluation + Stockfish's WDL
-                // =============================
+                // Evaluation context fallback
                 if (reasons.Count == 0)
                 {
                     double? eval = ParseEvaluation(evaluation);
@@ -782,9 +523,7 @@ namespace ChessDroid.Services
                 if (pieceRow < 0 || pieceRow >= 8 || pieceCol < 0 || pieceCol >= 8)
                     return null;
 
-                // CRITICAL: Check if piece will be immediately recaptured
-                // This covers: 1) gives check and must be captured, 2) captured on defended square
-                // Skip tactics that require the piece to survive (skewers, forks) as they're "phantom"
+                // Check if piece will be recaptured (phantom threat detection)
                 bool pieceWillBeRecaptured = IsPieceImmediatelyRecapturable(board, pieceRow, pieceCol, piece, isWhite, originalBoard);
 
                 List<(int row, int col, PieceType type)> attackedPieces = new List<(int, int, PieceType)>();
@@ -806,31 +545,24 @@ namespace ChessDroid.Services
                     }
                 }
 
-                // DOUBLE CHECK: Check if moving this piece reveals a check from another piece
                 var doubleCheckInfo = DetectDoubleCheck(board, pieceRow, pieceCol, piece, isWhite);
                 if (!string.IsNullOrEmpty(doubleCheckInfo))
                 {
                     return doubleCheckInfo;
                 }
 
-                // DISCOVERED ATTACK: Check if this piece reveals an attack from another piece
-                // Use ORIGINAL board to check if piece was blocking, and NEW board to see what's revealed
                 var discoveredAttackInfo = DetectDiscoveredAttack(originalBoard, board, srcRow, srcCol, pieceRow, pieceCol, piece, isWhite);
                 if (!string.IsNullOrEmpty(discoveredAttackInfo))
                 {
                     return discoveredAttackInfo;
                 }
 
-                // PIN: Check if this piece pins an enemy piece (highest priority after discovered checks)
-                // Pins can still work even if piece is recaptured (the pin exists during check)
                 var pinInfo = DetectPin(board, pieceRow, pieceCol, piece, isWhite);
                 if (!string.IsNullOrEmpty(pinInfo))
                 {
                     return pinInfo;
                 }
 
-                // SKEWER: Check if this piece skewers an enemy piece
-                // Skip if piece will be recaptured - skewer won't materialize
                 if (!pieceWillBeRecaptured)
                 {
                     var skewerInfo = DetectSkewer(board, pieceRow, pieceCol, piece, isWhite);
@@ -840,67 +572,35 @@ namespace ChessDroid.Services
                     }
                 }
 
-                // FORK: One piece attacks two or more enemy pieces at once
-                // Skip if piece will be recaptured - fork won't materialize
+                // Fork detection
                 if (attackedPieces.Count >= 2 && !pieceWillBeRecaptured)
                 {
                     bool hasKing = attackedPieces.Any(p => p.type == PieceType.King);
 
-                    // Royal fork: Knight forks king and queen/rook/bishop/knight
-                    // King must move when in check, so we can guarantee capturing the other piece
+                    // Royal fork: Knight forks king and valuable piece
                     if (hasKing && pieceType == PieceType.Knight)
                     {
                         var otherPieces = attackedPieces.Where(p => p.type != PieceType.King).ToList();
-
-                        // Check if we can actually win material from the other piece
                         foreach (var other in otherPieces)
                         {
-                            int otherValue = ChessUtilities.GetPieceValue(other.type);
-                            int forkingPieceValue = ChessUtilities.GetPieceValue(pieceType); // Knight = 3
-
                             if (other.type == PieceType.Queen)
-                            {
-                                // Queen is always worth winning, even if defended (9 for 3 = +6)
                                 return "royal fork (king and queen)";
-                            }
-                            else if (other.type == PieceType.Rook)
-                            {
-                                // Rook (5) for Knight (3) = +2 material - always good
+                            if (other.type == PieceType.Rook)
                                 return "forks king and rook";
-                            }
-                            else if (other.type == PieceType.Bishop || other.type == PieceType.Knight)
+                            if (other.type == PieceType.Bishop || other.type == PieceType.Knight)
                             {
-                                // Bishop/Knight (3) for Knight (3) = equal trade
-                                // Only report as fork if:
-                                // 1. Target is UNDEFENDED (free piece), OR
-                                // 2. Target has NO SAFE ESCAPE SQUARES (trapped by fork)
                                 bool isDefended = ChessUtilities.IsSquareDefended(board, other.row, other.col, !isWhite);
-
                                 if (!isDefended)
-                                {
                                     return $"forks king and {ChessUtilities.GetPieceName(other.type)}";
-                                }
-
-                                // If defended, check if it has escape squares
-                                // King must move from check, so forked piece must decide: stay and die, or run
-                                if (isDefended)
-                                {
-                                    int safeSquares = CountSafeSquaresForPiece(board, other.row, other.col,
-                                        board.GetPiece(other.row, other.col), !isWhite);
-
-                                    // If piece has no safe squares to escape to, it's still a winning fork
-                                    if (safeSquares == 0)
-                                    {
-                                        return $"forks king and {ChessUtilities.GetPieceName(other.type)}";
-                                    }
-                                }
-                                // If defended AND has escape squares, it's just an equal trade, not a fork
+                                int safeSquares = CountSafeSquaresForPiece(board, other.row, other.col,
+                                    board.GetPiece(other.row, other.col), !isWhite);
+                                if (safeSquares == 0)
+                                    return $"forks king and {ChessUtilities.GetPieceName(other.type)}";
                             }
                         }
                     }
 
-                    // Family fork: Attacks king, queen, and rook
-                    // King must move, so we can guarantee capturing queen or rook
+                    // Family fork
                     if (attackedPieces.Count >= 3 && hasKing &&
                         attackedPieces.Any(p => p.type == PieceType.Queen) &&
                         attackedPieces.Any(p => p.type == PieceType.Rook))
@@ -908,11 +608,9 @@ namespace ChessDroid.Services
                         return "family fork (king, queen, and rook)";
                     }
 
-                    // Regular fork: Attack multiple valuable pieces
-                    // A REAL fork means we GUARANTEE winning at least one piece
-                    // This requires: at least one target is undefended, OR one target MUST move (exposing the other)
+                    // Regular fork: winnable pieces (undefended or worth more than attacker)
                     var valuableTargets = attackedPieces
-                        .Where(p => ChessUtilities.GetPieceValue(p.type) >= 3) // Knights, bishops, rooks, queens, king
+                        .Where(p => ChessUtilities.GetPieceValue(p.type) >= 3)
                         .OrderByDescending(p => ChessUtilities.GetPieceValue(p.type))
                         .Take(2)
                         .ToList();
@@ -920,165 +618,93 @@ namespace ChessDroid.Services
                     if (valuableTargets.Count >= 2)
                     {
                         int forkingPieceValue = ChessUtilities.GetPieceValue(pieceType);
-
-                        // Check each target to see if it's "winnable"
-                        // A piece is winnable if:
-                        // 1. It's undefended (free capture)
-                        // 2. It's defended but worth MORE than our forking piece (profitable trade)
-                        // 3. It's the king (must move, can't be traded)
                         var winnableTargets = new List<(int row, int col, PieceType type)>();
 
                         foreach (var target in valuableTargets)
                         {
                             if (target.type == PieceType.King)
                             {
-                                // King is always "winnable" in the sense that it MUST move
                                 winnableTargets.Add(target);
                                 continue;
                             }
-
                             bool isDefended = ChessUtilities.IsSquareDefended(board, target.row, target.col, !isWhite);
                             int targetValue = ChessUtilities.GetPieceValue(target.type);
-
-                            if (!isDefended)
-                            {
-                                // Undefended - we can capture it for free
+                            if (!isDefended || targetValue > forkingPieceValue)
                                 winnableTargets.Add(target);
-                            }
-                            else if (targetValue > forkingPieceValue)
-                            {
-                                // Defended but worth more - profitable trade
-                                winnableTargets.Add(target);
-                            }
-                            // If defended by equal/lower value, it's NOT winnable - they just trade back
                         }
 
-                        // A real fork requires:
-                        // - If king is forked: at least one OTHER winnable piece (king moves, we take the other)
-                        // - If no king: at least TWO winnable pieces (they can only save one)
                         bool hasKingTarget = winnableTargets.Any(t => t.type == PieceType.King);
                         var nonKingWinnable = winnableTargets.Where(t => t.type != PieceType.King).ToList();
-
-                        bool isRealFork = false;
-                        if (hasKingTarget && nonKingWinnable.Count >= 1)
-                        {
-                            // King + at least one winnable piece = real fork
-                            isRealFork = true;
-                        }
-                        else if (!hasKingTarget && winnableTargets.Count >= 2)
-                        {
-                            // Two or more winnable pieces (no king) = real fork
-                            // They can only save one, we get the other
-                            isRealFork = true;
-                        }
+                        bool isRealFork = (hasKingTarget && nonKingWinnable.Count >= 1) ||
+                                          (!hasKingTarget && winnableTargets.Count >= 2);
 
                         if (isRealFork)
                         {
-                            // Report the fork with the actual winnable pieces
                             var piecesToReport = hasKingTarget
                                 ? new[] { winnableTargets.First(t => t.type == PieceType.King) }.Concat(nonKingWinnable.Take(1))
                                 : winnableTargets.Take(2);
-
                             string pieces = string.Join(" and ", piecesToReport.Select(p => ChessUtilities.GetPieceName(p.type)));
                             return $"forks {pieces}";
                         }
                     }
                 }
 
-                // REMOVAL OF DEFENDER: Check if capturing this piece removes a key defender
                 var removalInfo = DetectRemovalOfDefender(board, pieceRow, pieceCol, isWhite);
                 if (!string.IsNullOrEmpty(removalInfo))
-                {
                     return removalInfo;
-                }
 
-                // Skip phantom threats if piece will be recaptured - they won't materialize
-                // These tactics require the piece to survive to be relevant
+                // Skip phantom threats if piece will be recaptured
                 if (!pieceWillBeRecaptured)
                 {
-                    // TRAPPED PIECE: Check if this move traps an enemy piece
                     var trappedInfo = DetectTrappedPiece(board, pieceRow, pieceCol, isWhite);
                     if (!string.IsNullOrEmpty(trappedInfo))
-                    {
                         return trappedInfo;
-                    }
 
-                    // HANGING PIECE: Winning an undefended piece
                     var hangingInfo = DetectHangingPiece(attackedPieces, board, isWhite, pieceType, pieceRow, pieceCol);
                     if (!string.IsNullOrEmpty(hangingInfo))
-                    {
                         return hangingInfo;
-                    }
 
-                    // OVERLOADING: Check if this move exploits an overloaded defender
                     var overloadInfo = DetectOverloading(board, pieceRow, pieceCol, isWhite);
                     if (!string.IsNullOrEmpty(overloadInfo))
-                    {
                         return overloadInfo;
-                    }
 
-                    // BACK RANK WEAKNESS: Check if this threatens back rank mate
                     var backRankInfo = DetectBackRankThreat(board, pieceRow, pieceCol, piece, isWhite);
                     if (!string.IsNullOrEmpty(backRankInfo))
-                    {
                         return backRankInfo;
-                    }
                 }
 
-                // DEFLECTION: Check if capturing this piece deflects a key defender
                 var deflectionInfo = DetectDeflection(board, pieceRow, pieceCol, isWhite);
                 if (!string.IsNullOrEmpty(deflectionInfo))
-                {
                     return deflectionInfo;
-                }
 
-                // PROMOTION THREAT: Check if pawn is close to promoting
                 var promotionInfo = DetectPromotionThreat(board, pieceRow, pieceCol, piece, isWhite);
                 if (!string.IsNullOrEmpty(promotionInfo))
-                {
                     return promotionInfo;
-                }
 
-                // SMOTHERED MATE: Knight delivers mate to smothered king
                 var smotheredMateInfo = DetectSmotheredMate(board, pieceRow, pieceCol, piece, isWhite);
                 if (!string.IsNullOrEmpty(smotheredMateInfo))
-                {
                     return smotheredMateInfo;
-                }
 
-                // Skip these if piece will be recaptured - they are phantom threats
                 if (!pieceWillBeRecaptured)
                 {
-                    // DOUBLE ATTACK: Attack two pieces with different threats
                     var doubleAttackInfo = DetectDoubleAttack(board, pieceRow, pieceCol, piece, isWhite);
                     if (!string.IsNullOrEmpty(doubleAttackInfo))
-                    {
                         return doubleAttackInfo;
-                    }
 
-                    // X-RAY ATTACK: Attack through another piece
                     var xrayInfo = DetectXRayAttack(board, pieceRow, pieceCol, piece, isWhite);
                     if (!string.IsNullOrEmpty(xrayInfo))
-                    {
                         return xrayInfo;
-                    }
 
-                    // DECOY: Sacrifice to lure piece to bad square
                     var decoyInfo = DetectDecoy(board, pieceRow, pieceCol, isWhite);
                     if (!string.IsNullOrEmpty(decoyInfo))
-                    {
                         return decoyInfo;
-                    }
                 }
 
-                // Check for check - always show this, it's not a phantom threat
+                // Check detection
                 if (IsGivingCheck(board, pieceRow, pieceCol, piece, isWhite))
                 {
-                    // Don't claim "check with attack" if piece will be recaptured - it's misleading
                     if (attackedPieces.Count >= 1 && !pieceWillBeRecaptured)
-                    {
-                        return "check with attack"; // Check + attacking another piece
-                    }
+                        return "check with attack";
                     return "gives check";
                 }
 
@@ -1091,10 +717,7 @@ namespace ChessDroid.Services
             }
         }
 
-        // Detect if this piece is pinning an enemy piece
-        // PIN: "A pin is a tactic where a long-range piece attacks an opponent's piece, preventing it
-        // from moving because it would expose a more valuable piece or the king behind it."
-        // IMPORTANT: If the piece behind is defended and equal/lesser value trade, it's not exploitable
+        /// <summary>Detect if this piece is pinning an enemy piece to a more valuable piece behind.</summary>
         private static string? DetectPin(ChessBoard board, int pieceRow, int pieceCol, char piece, bool isWhite)
         {
             try

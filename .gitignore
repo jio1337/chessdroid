@@ -117,3 +117,4 @@ temp.html
 # Publishing/Release artifacts (use GitHub Releases instead)
 publish/
 *.zip
+release_build/
