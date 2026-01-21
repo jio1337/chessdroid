@@ -250,29 +250,35 @@ namespace ChessDroid.Services
         /// Displays WDL (Win/Draw/Loss) information with sharpness indicator
         /// Inspired by Leela Chess Zero's evaluation model
         /// </summary>
-        private void DisplayWDLInfo(WDLInfo wdl)
+        private void DisplayWDLInfo(WDLInfo wdl, bool whiteToMove)
         {
+            // WDL values are always from White's perspective
+            // When Black is to move, swap W and L to show from Black's perspective
+            double winPercent = whiteToMove ? wdl.WinPercent : wdl.LossPercent;
+            double lossPercent = whiteToMove ? wdl.LossPercent : wdl.WinPercent;
+            double drawPercent = wdl.DrawPercent;
+
             // WDL header
             richTextBox.SelectionColor = Color.Gray;
             richTextBox.AppendText("Position: ");
 
             // Win percentage - green shade based on value
-            Color winColor = wdl.WinPercent > 60 ? Color.LimeGreen :
-                            wdl.WinPercent > 40 ? Color.MediumSeaGreen : Color.DarkSeaGreen;
+            Color winColor = winPercent > 60 ? Color.LimeGreen :
+                            winPercent > 40 ? Color.MediumSeaGreen : Color.DarkSeaGreen;
             richTextBox.SelectionColor = winColor;
-            richTextBox.AppendText($"W:{wdl.WinPercent:F0}% ");
+            richTextBox.AppendText($"W:{winPercent:F0}% ");
 
             // Draw percentage - neutral color
             richTextBox.SelectionColor = Color.Gold;
-            richTextBox.AppendText($"D:{wdl.DrawPercent:F0}% ");
+            richTextBox.AppendText($"D:{drawPercent:F0}% ");
 
             // Loss percentage - red shade based on value
-            Color lossColor = wdl.LossPercent > 60 ? Color.Crimson :
-                             wdl.LossPercent > 40 ? Color.IndianRed : Color.RosyBrown;
+            Color lossColor = lossPercent > 60 ? Color.Crimson :
+                             lossPercent > 40 ? Color.IndianRed : Color.RosyBrown;
             richTextBox.SelectionColor = lossColor;
-            richTextBox.AppendText($"L:{wdl.LossPercent:F0}% ");
+            richTextBox.AppendText($"L:{lossPercent:F0}% ");
 
-            // Sharpness indicator
+            // Sharpness indicator (same from both perspectives)
             string character = wdl.GetPositionCharacter();
             Color sharpnessColor = WDLUtilities.GetSharpnessColor(wdl.Sharpness);
             richTextBox.SelectionColor = sharpnessColor;
@@ -352,13 +358,17 @@ namespace ChessDroid.Services
                 }
             }
 
+            // Extract whose turn it is from FEN for WDL display
+            string[] fenPartsForWdl = fen.Split(' ');
+            bool whiteToMoveForWdl = fenPartsForWdl.Length > 1 && fenPartsForWdl[1] == "w";
+
             // Display WDL information if available and enabled
             if (config?.ShowWDL == true)
             {
                 if (wdl != null)
                 {
                     System.Diagnostics.Debug.WriteLine($"WDL data received: W={wdl.Win} D={wdl.Draw} L={wdl.Loss}");
-                    DisplayWDLInfo(wdl);
+                    DisplayWDLInfo(wdl, whiteToMoveForWdl);
                 }
                 else
                 {
@@ -422,13 +432,15 @@ namespace ChessDroid.Services
             // Best line - always show threats
             string bestSanFull = ConvertPvToSan(pvs, 0, bestMove, fen);
             string formattedEval = FormatEvaluation(evaluation);
+            // Use pvs[0] not bestMove - after Multi-PV sorting, bestMove may not match pvs[0]
+            string firstMove = pvs.Count > 0 ? pvs[0].Split(' ')[0] : bestMove;
             DisplayMoveLine(
                 "Best line",
                 bestSanFull,
                 formattedEval,
                 fen,
                 pvs,
-                bestMove,
+                firstMove,
                 Color.MediumSeaGreen,
                 Color.PaleGreen,
                 showThreats: true);

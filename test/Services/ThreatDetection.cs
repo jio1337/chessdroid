@@ -70,8 +70,9 @@ namespace ChessDroid.Services
                 DetectPromotionThreats(board, movingPlayerIsWhite, threatsBefore);
                 // Note: Don't include check/forks before - we want to show those created by the move
 
-                // Create board after the move
-                ChessBoard afterMove = new ChessBoard(board.GetArray());
+                // Create board after the move (using pooling)
+                using var pooled = BoardPool.Rent(board);
+                ChessBoard afterMove = pooled.Board;
                 char movingPiece = afterMove.GetPiece(srcRank, srcFile);
                 afterMove.SetPiece(destRank, destFile, movingPiece);
                 afterMove.SetPiece(srcRank, srcFile, '.');
@@ -555,7 +556,8 @@ namespace ChessDroid.Services
                                     {
                                         // Check if we could actually capture the piece behind profitably
                                         // Create a temp board where the pinned piece is removed
-                                        ChessBoard tempBoard = new ChessBoard(board.GetArray());
+                                        using var pooledTemp = BoardPool.Rent(board);
+                                        ChessBoard tempBoard = pooledTemp.Board;
                                         tempBoard.SetPiece(firstRow, firstCol, '.'); // Remove pinned piece
 
                                         // Check if the piece behind would be defended after we capture
@@ -1210,22 +1212,8 @@ namespace ChessDroid.Services
         /// </summary>
         private static bool CanPieceEscape(ChessBoard board, int pieceRow, int pieceCol, char piece, bool pieceIsWhite)
         {
-            var possibleMoves = GetPossibleMoves(board, pieceRow, pieceCol, piece, pieceIsWhite);
-
-            foreach (var (newRow, newCol) in possibleMoves)
-            {
-                // Check if this square would be safe
-                ChessBoard tempBoard = new ChessBoard(board.GetArray());
-                tempBoard.SetPiece(pieceRow, pieceCol, '.');
-                tempBoard.SetPiece(newRow, newCol, piece);
-
-                if (!IsSquareAttackedBy(tempBoard, newRow, newCol, !pieceIsWhite))
-                {
-                    return true; // Found at least one safe square
-                }
-            }
-
-            return false;
+            // Delegate to consolidated implementation in ChessUtilities
+            return ChessUtilities.CanPieceEscape(board, pieceRow, pieceCol, piece, pieceIsWhite);
         }
 
         private static int CountKingEscapeSquares(ChessBoard board, int kingRow, int kingCol, bool kingIsWhite)
@@ -1251,7 +1239,8 @@ namespace ChessDroid.Services
 
                     // Check if square is attacked by opponent
                     // Temporarily remove king to check attacks
-                    ChessBoard tempBoard = new ChessBoard(board.GetArray());
+                    using var pooledKing = BoardPool.Rent(board);
+                    ChessBoard tempBoard = pooledKing.Board;
                     tempBoard.SetPiece(kingRow, kingCol, '.');
                     tempBoard.SetPiece(newRow, newCol, king);
 
@@ -1265,105 +1254,6 @@ namespace ChessDroid.Services
             return escapeSquares;
         }
 
-        private static List<(int row, int col)> GetPossibleMoves(ChessBoard board, int row, int col,
-            char piece, bool isWhite)
-        {
-            var moves = new List<(int, int)>();
-            PieceType pieceType = PieceHelper.GetPieceType(piece);
-
-            switch (pieceType)
-            {
-                case PieceType.Pawn:
-                    // Pawns can move forward or capture diagonally
-                    int direction = isWhite ? -1 : 1;
-                    int newRow = row + direction;
-                    if (newRow >= 0 && newRow < 8)
-                    {
-                        // Forward move
-                        if (board.GetPiece(newRow, col) == '.')
-                            moves.Add((newRow, col));
-
-                        // Captures
-                        for (int dc = -1; dc <= 1; dc += 2)
-                        {
-                            int nc = col + dc;
-                            if (nc >= 0 && nc < 8)
-                            {
-                                char target = board.GetPiece(newRow, nc);
-                                if (target != '.' && char.IsUpper(target) != isWhite)
-                                    moves.Add((newRow, nc));
-                            }
-                        }
-                    }
-                    break;
-
-                case PieceType.Knight:
-                    int[][] knightMoves = { new[] { -2, -1 }, new[] { -2, 1 }, new[] { -1, -2 }, new[] { -1, 2 },
-                                            new[] { 1, -2 }, new[] { 1, 2 }, new[] { 2, -1 }, new[] { 2, 1 } };
-                    foreach (var km in knightMoves)
-                    {
-                        int nr = row + km[0], nc = col + km[1];
-                        if (nr >= 0 && nr < 8 && nc >= 0 && nc < 8)
-                        {
-                            char target = board.GetPiece(nr, nc);
-                            if (target == '.' || char.IsUpper(target) != isWhite)
-                                moves.Add((nr, nc));
-                        }
-                    }
-                    break;
-
-                case PieceType.King:
-                    for (int dr = -1; dr <= 1; dr++)
-                    {
-                        for (int dc = -1; dc <= 1; dc++)
-                        {
-                            if (dr == 0 && dc == 0) continue;
-                            int nr = row + dr, nc = col + dc;
-                            if (nr >= 0 && nr < 8 && nc >= 0 && nc < 8)
-                            {
-                                char target = board.GetPiece(nr, nc);
-                                if (target == '.' || char.IsUpper(target) != isWhite)
-                                    moves.Add((nr, nc));
-                            }
-                        }
-                    }
-                    break;
-
-                case PieceType.Bishop:
-                case PieceType.Rook:
-                case PieceType.Queen:
-                    int[][] dirs = pieceType == PieceType.Bishop
-                        ? new[] { new[] { 1, 1 }, new[] { 1, -1 }, new[] { -1, 1 }, new[] { -1, -1 } }
-                        : pieceType == PieceType.Rook
-                            ? new[] { new[] { 0, 1 }, new[] { 0, -1 }, new[] { 1, 0 }, new[] { -1, 0 } }
-                            : new[] { new[] { 1, 1 }, new[] { 1, -1 }, new[] { -1, 1 }, new[] { -1, -1 },
-                                      new[] { 0, 1 }, new[] { 0, -1 }, new[] { 1, 0 }, new[] { -1, 0 } };
-
-                    foreach (var d in dirs)
-                    {
-                        int nr = row + d[0], nc = col + d[1];
-                        while (nr >= 0 && nr < 8 && nc >= 0 && nc < 8)
-                        {
-                            char target = board.GetPiece(nr, nc);
-                            if (target == '.')
-                            {
-                                moves.Add((nr, nc));
-                            }
-                            else
-                            {
-                                if (char.IsUpper(target) != isWhite)
-                                    moves.Add((nr, nc));
-                                break;
-                            }
-                            nr += d[0];
-                            nc += d[1];
-                        }
-                    }
-                    break;
-            }
-
-            return moves;
-        }
 
         #endregion Helper Methods
     }

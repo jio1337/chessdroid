@@ -79,8 +79,9 @@ namespace ChessDroid.Services
 
                 List<string> reasons = new List<string>();
 
-                // Create a temporary board with the move applied to check for tactics
-                ChessBoard tempBoard = new ChessBoard(board.GetArray());
+                // Create a temporary board with the move applied to check for tactics (using pooling)
+                using var pooled = BoardPool.Rent(board);
+                ChessBoard tempBoard = pooled.Board;
                 tempBoard.SetPiece(destRank, destFile, piece);
                 tempBoard.SetPiece(srcRank, srcFile, '.');
 
@@ -361,10 +362,14 @@ namespace ChessDroid.Services
                         // Position complexity
                         string? complexityDesc = AdvancedAnalysis.GetComplexityDescription(tempBoard, eval.Value);
 
+                        // Determine if this move is good for the side to move
+                        // eval.Value is from White's perspective: positive = good for White, negative = good for Black
+                        bool moveIsGood = (isWhite && eval.Value > 0) || (!isWhite && eval.Value < 0);
+
                         // Decisive advantage (>= 3 pawns)
                         if (Math.Abs(eval.Value) >= 3.0)
                         {
-                            if (eval.Value > 0)
+                            if (moveIsGood)
                             {
                                 if (complexityDesc != null)
                                     reasons.Add($"{winningChanceDesc} ({complexityDesc})");
@@ -379,7 +384,7 @@ namespace ChessDroid.Services
                         // Significant advantage (1.5-3 pawns)
                         else if (Math.Abs(eval.Value) >= 1.5)
                         {
-                            if (eval.Value > 0)
+                            if (moveIsGood)
                                 reasons.Add(isEndgame ? "better endgame" : winningChanceDesc);
                             else
                                 reasons.Add(isEndgame ? "holds endgame" : "reduces disadvantage");
@@ -387,7 +392,7 @@ namespace ChessDroid.Services
                         // Small advantage (0.5-1.5 pawns)
                         else if (Math.Abs(eval.Value) >= 0.5)
                         {
-                            if (eval.Value > 0)
+                            if (moveIsGood)
                                 reasons.Add(winningChanceDesc);
                             else
                                 reasons.Add("equalizes");
@@ -1806,8 +1811,9 @@ namespace ChessDroid.Services
                 // 1. They move to our square
                 // 2. That square becomes vulnerable to a follow-up tactic
 
-                // Create a hypothetical board where enemy captured our piece
-                ChessBoard tempBoard = new ChessBoard(board.GetArray());
+                // Create a hypothetical board where enemy captured our piece (using pooling)
+                using var pooledDecoy = BoardPool.Rent(board);
+                ChessBoard tempBoard = pooledDecoy.Board;
                 char capturer = '.';
                 int capturerRow = -1, capturerCol = -1;
 
@@ -1977,8 +1983,9 @@ namespace ChessDroid.Services
 
                                 if (firstPieceAttacked && firstValue <= secondValue)
                                 {
-                                    // Create a temp board to see if we'd win the second piece
-                                    ChessBoard tempBoard = new ChessBoard(board.GetArray());
+                                    // Create a temp board to see if we'd win the second piece (using pooling)
+                                    using var pooledXray = BoardPool.Rent(board);
+                                    ChessBoard tempBoard = pooledXray.Board;
                                     tempBoard.SetPiece(firstPieceRow, firstPieceCol, '.'); // Remove blocking piece
 
                                     // Check if the second piece would be defended after blocking piece moves
@@ -2171,8 +2178,9 @@ namespace ChessDroid.Services
                     return null;
                 }
 
-                // Create board after capture to check SEE
-                ChessBoard tempBoard = new ChessBoard(board.GetArray());
+                // Create board after capture to check SEE (using pooling)
+                using var pooledSac = BoardPool.Rent(board);
+                ChessBoard tempBoard = pooledSac.Board;
                 tempBoard.SetPiece(destRow, destCol, piece);
 
                 // Use SEE to check if we're actually losing material
@@ -2239,8 +2247,9 @@ namespace ChessDroid.Services
                 }
 
                 // USE SEE to determine if we actually LOSE material
-                // Create temp board after our capture
-                ChessBoard tempBoard = new ChessBoard(board.GetArray());
+                // Create temp board after our capture (using pooling)
+                using var pooledExchSac = BoardPool.Rent(board);
+                ChessBoard tempBoard = pooledExchSac.Board;
                 tempBoard.SetPiece(destRow, destCol, piece);
 
                 int seeValue = MoveEvaluation.StaticExchangeEvaluation(tempBoard, destRow, destCol, piece, isWhite);
