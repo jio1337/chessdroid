@@ -389,7 +389,8 @@ namespace ChessDroid.Services
                                             // UCI scores are always from White's perspective
                                             // If Black to move, negate the score for correct display from Black's perspective
                                             double displayCp = whiteToMove ? cp : -cp;
-                                            evalStr = (displayCp / 100.0 >= 0 ? "+" : "") + (displayCp / 100.0).ToString("F2");
+                                            // Use InvariantCulture to ensure consistent decimal formatting (period not comma)
+                                            evalStr = (displayCp / 100.0 >= 0 ? "+" : "") + (displayCp / 100.0).ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
                                         }
                                         else if (tokens[i + 1] == UCI_TOKEN_MATE)
                                         {
@@ -555,7 +556,8 @@ namespace ChessDroid.Services
             }
 
             // Handle centipawn scores
-            if (double.TryParse(evalStr.Replace("+", ""), out double eval))
+            // Use InvariantCulture to parse period as decimal separator
+            if (double.TryParse(evalStr.Replace("+", ""), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double eval))
                 return eval;
 
             return double.MinValue;
