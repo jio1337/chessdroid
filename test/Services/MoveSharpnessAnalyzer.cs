@@ -203,7 +203,7 @@ namespace ChessDroid.Services
         /// <summary>
         /// Selects the best move from candidates based on aggressiveness preference.
         /// </summary>
-        /// <param name="candidates">List of (move, evaluation, pvLine, sharpness) tuples, sorted by engine preference</param>
+        /// <param name="candidates">List of (move, evaluation, pvLine, sharpness) tuples, sorted by Multi-PV (best first for current player)</param>
         /// <param name="aggressiveness">User's aggressiveness setting 0-100</param>
         /// <param name="evalTolerance">Max eval loss to accept for style preference (in pawns)</param>
         /// <returns>Index of selected move in candidates list</returns>
@@ -219,11 +219,15 @@ namespace ChessDroid.Services
                 return 0;
 
             // Parse best move's evaluation as baseline
+            // NOTE: Candidates are already sorted by Multi-PV (best for current player first)
+            // So candidates[0] has the best eval from the current player's perspective
             double? bestEval = ParseEvaluation(candidates[0].evaluation);
             if (!bestEval.HasValue)
-                return 0; // Can't compare, return engine's choice
+                return 0; // Can't compare, return sorted best
 
             // Filter candidates within evaluation tolerance
+            // Since candidates are sorted best-first, we compare each move's eval to the best
+            // The tolerance is the maximum eval degradation we'll accept for style
             var acceptable = new List<(int index, string move, double eval, int sharpness)>();
 
             for (int i = 0; i < candidates.Count; i++)
@@ -231,11 +235,10 @@ namespace ChessDroid.Services
                 double? eval = ParseEvaluation(candidates[i].evaluation);
                 if (!eval.HasValue) continue;
 
-                double evalDiff = bestEval.Value - eval.Value;
-
-                // For losing positions, invert the comparison
-                if (bestEval.Value < 0)
-                    evalDiff = -evalDiff;
+                // Calculate absolute eval difference from the best move
+                // Since candidates are sorted best-first, later candidates are worse
+                // We use absolute difference to measure how much worse a move is
+                double evalDiff = Math.Abs(bestEval.Value - eval.Value);
 
                 // Accept if within tolerance
                 if (evalDiff <= evalTolerance)
