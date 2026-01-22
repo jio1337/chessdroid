@@ -22,7 +22,6 @@ chessdroid is a desktop application built for focused chess study. Analyze posit
 - **Threat Detection** - Shows NEW threats created by each move (pins, forks, attacks)
 - **Defense Detection** - Shows defensive aspects of moves (protecting pieces, blocking attacks)
 - **Move Quality Colors** - 6 levels from Brilliant (!!) to Blunder (??) with color coding
-- **Win Percentage** - Side-aware win probability using Stockfish evaluation model
 
 ### Lc0-Inspired Features (v2.2.0)
 - **WDL Display** - Win/Draw/Loss probabilities from engine analysis
