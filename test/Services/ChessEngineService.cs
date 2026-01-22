@@ -531,13 +531,28 @@ namespace ChessDroid.Services
                 pvs = combined.Select(x => x.Pv).ToList();
                 evaluations = combined.Select(x => x.Eval).ToList();
 
-                // Update main evaluation to be the best one after sorting
+                // Update bestMove and evaluation to match the sorted best line
+                if (pvs.Count > 0 && !string.IsNullOrEmpty(pvs[0]))
+                {
+                    // Extract the first move from the best PV line
+                    string firstMove = pvs[0].Split(' ')[0];
+                    if (!string.IsNullOrEmpty(firstMove))
+                    {
+                        bestMove = firstMove;
+                    }
+                }
                 if (evaluations.Count > 0)
                     evaluation = evaluations[0];
+
+                // WDL was captured for the engine's raw multipv 1, but after sorting
+                // the best move may have changed. Recalculate WDL from sorted best eval.
+                // This ensures WDL matches the displayed best move.
+                wdlInfo = null; // Clear old WDL, will be recalculated below
             }
 
-            // If engine didn't provide WDL, estimate from centipawns
-            if (wdlInfo == null && !string.IsNullOrEmpty(evaluation) && !evaluation.StartsWith("Mate"))
+            // Estimate WDL from the (sorted) best evaluation
+            // This ensures WDL always matches the displayed best move
+            if (!string.IsNullOrEmpty(evaluation) && !evaluation.StartsWith("Mate"))
             {
                 // Parse centipawns from evaluation string (e.g., "+1.50" or "-0.75")
                 if (double.TryParse(evaluation.Replace("+", ""), System.Globalization.NumberStyles.Float,
@@ -545,7 +560,7 @@ namespace ChessDroid.Services
                 {
                     double centipawns = evalPawns * 100;
                     wdlInfo = WDLUtilities.EstimateWDLFromCentipawns(centipawns);
-                    Debug.WriteLine($"WDL estimated from eval {evaluation}: {wdlInfo}");
+                    Debug.WriteLine($"WDL estimated from sorted best eval {evaluation}: {wdlInfo}");
                 }
             }
 
