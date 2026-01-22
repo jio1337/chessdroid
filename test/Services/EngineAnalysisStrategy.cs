@@ -110,6 +110,8 @@ namespace ChessDroid.Services
             }
 
             // Build candidate list with sharpness scores
+            // NOTE: pvs and evals are already sorted by Multi-PV (best to worst for current player)
+            // So candidates[0] is the actual best move, NOT result.bestMove which is the raw engine output
             var candidates = new List<(string move, string evaluation, string pvLine, int sharpness)>();
 
             for (int i = 0; i < pvs.Count && i < evals.Count; i++)
@@ -155,8 +157,8 @@ namespace ChessDroid.Services
 
             if (selectedIndex <= 0)
             {
-                // Keep engine's choice
-                Debug.WriteLine($"[Aggressiveness] Keeping engine's choice: {result.bestMove}");
+                // Keep sorted best move (candidates[0] is already the best from Multi-PV sorting)
+                Debug.WriteLine($"[Aggressiveness] Keeping sorted best move: {candidates[0].move}");
                 return result;
             }
 
