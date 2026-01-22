@@ -40,7 +40,7 @@ After fix:
 
 ---
 
-## [2.3.0] - 2026-01-21
+## [Unreleased] - 2026-01-21
 
 ### Performance
 - **3-5x faster analysis** through comprehensive performance optimizations
