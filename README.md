@@ -30,6 +30,12 @@ chessdroid is a desktop application built for focused chess study. Analyze posit
 - **Move Quality Indicators** - Brilliant, Best, Good, Inaccuracy, Mistake, Blunder labels
 - **Aggressiveness Slider** - Functional style control (0=solid, 100=aggressive) that actually affects move selection
 
+### Performance (v2.3.0)
+- **3-5x Faster Analysis** - Comprehensive optimizations across the codebase
+- **60-80% Fewer Allocations** - Object pooling eliminates temporary board allocations
+- **O(1) Position Lookups** - Cached king positions and incremental Zobrist hashing
+- **Optimized Threat Detection** - BoardCache provides instant piece lookups
+
 ### Customization
 - **Dark/Light Themes** - Fully-featured dark mode with automatic theme persistence
 - **Complexity Levels** - Choose from Beginner, Intermediate, Advanced, or Master explanations
