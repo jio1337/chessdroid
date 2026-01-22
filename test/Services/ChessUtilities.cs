@@ -9,6 +9,31 @@ namespace ChessDroid.Services
     public static class ChessUtilities
     {
         // =============================
+        // DIRECTION CONSTANTS (shared to avoid repeated allocations)
+        // =============================
+
+        /// <summary>Bishop movement directions (diagonals)</summary>
+        public static readonly (int dr, int dc)[] BishopDirections = { (1, 1), (1, -1), (-1, 1), (-1, -1) };
+
+        /// <summary>Rook movement directions (orthogonals)</summary>
+        public static readonly (int dr, int dc)[] RookDirections = { (0, 1), (0, -1), (1, 0), (-1, 0) };
+
+        /// <summary>Queen/King movement directions (all 8)</summary>
+        public static readonly (int dr, int dc)[] QueenDirections = { (1, 1), (1, -1), (-1, 1), (-1, -1), (0, 1), (0, -1), (1, 0), (-1, 0) };
+
+        /// <summary>Knight movement offsets</summary>
+        public static readonly (int dr, int dc)[] KnightOffsets = { (2, 1), (2, -1), (-2, 1), (-2, -1), (1, 2), (1, -2), (-1, 2), (-1, -2) };
+
+        /// <summary>Gets sliding piece directions based on piece type</summary>
+        public static (int dr, int dc)[] GetDirectionsForPiece(PieceType pieceType) => pieceType switch
+        {
+            PieceType.Bishop => BishopDirections,
+            PieceType.Rook => RookDirections,
+            PieceType.Queen => QueenDirections,
+            _ => QueenDirections // King uses same directions but only one step
+        };
+
+        // =============================
         // PIECE VALUE AND NAMING
         // =============================
 
@@ -517,21 +542,11 @@ namespace ChessDroid.Services
         /// </summary>
         public static bool IsGivingCheck(ChessBoard board, int pieceRow, int pieceCol, char piece, bool isWhite)
         {
-            // Find enemy king
-            char enemyKing = isWhite ? 'k' : 'K';
+            // Find enemy king - O(1) using cached position
+            var (kingRow, kingCol) = board.GetKingPosition(!isWhite);
+            if (kingRow < 0) return false;
 
-            for (int r = 0; r < 8; r++)
-            {
-                for (int c = 0; c < 8; c++)
-                {
-                    if (board.GetPiece(r, c) == enemyKing)
-                    {
-                        return CanAttackSquare(board, pieceRow, pieceCol, piece, r, c);
-                    }
-                }
-            }
-
-            return false;
+            return CanAttackSquare(board, pieceRow, pieceCol, piece, kingRow, kingCol);
         }
 
         // =============================
@@ -627,25 +642,10 @@ namespace ChessDroid.Services
                 }
             }
 
-            // Find enemy king to check escape squares
-            char enemyKing = isWhite ? 'k' : 'K';
-            int kingRow = -1, kingCol = -1;
-
-            for (int r = 0; r < 8; r++)
-            {
-                for (int c = 0; c < 8; c++)
-                {
-                    if (board.GetPiece(r, c) == enemyKing)
-                    {
-                        kingRow = r;
-                        kingCol = c;
-                        break;
-                    }
-                }
-                if (kingRow >= 0) break;
-            }
-
+            // Find enemy king to check escape squares - O(1) using cached position
+            var (kingRow, kingCol) = board.GetKingPosition(!isWhite);
             if (kingRow < 0) return false;
+            char enemyKing = isWhite ? 'k' : 'K';
 
             // Check if king can escape to a safe square (not capturing our piece)
             for (int dr = -1; dr <= 1; dr++)
@@ -781,11 +781,9 @@ namespace ChessDroid.Services
                     break;
 
                 case PieceType.Knight:
-                    int[][] knightMoves = { new[] { -2, -1 }, new[] { -2, 1 }, new[] { -1, -2 }, new[] { -1, 2 },
-                                            new[] { 1, -2 }, new[] { 1, 2 }, new[] { 2, -1 }, new[] { 2, 1 } };
-                    foreach (var km in knightMoves)
+                    foreach (var (dR, dC) in KnightOffsets)
                     {
-                        int nr = row + km[0], nc = col + km[1];
+                        int nr = row + dR, nc = col + dC;
                         if (nr >= 0 && nr < 8 && nc >= 0 && nc < 8)
                         {
                             char target = board.GetPiece(nr, nc);
@@ -815,16 +813,11 @@ namespace ChessDroid.Services
                 case PieceType.Bishop:
                 case PieceType.Rook:
                 case PieceType.Queen:
-                    int[][] dirs = pieceType == PieceType.Bishop
-                        ? new[] { new[] { 1, 1 }, new[] { 1, -1 }, new[] { -1, 1 }, new[] { -1, -1 } }
-                        : pieceType == PieceType.Rook
-                            ? new[] { new[] { 0, 1 }, new[] { 0, -1 }, new[] { 1, 0 }, new[] { -1, 0 } }
-                            : new[] { new[] { 1, 1 }, new[] { 1, -1 }, new[] { -1, 1 }, new[] { -1, -1 },
-                                      new[] { 0, 1 }, new[] { 0, -1 }, new[] { 1, 0 }, new[] { -1, 0 } };
+                    var dirs = GetDirectionsForPiece(pieceType);
 
-                    foreach (var d in dirs)
+                    foreach (var (dR, dC) in dirs)
                     {
-                        int nr = row + d[0], nc = col + d[1];
+                        int nr = row + dR, nc = col + dC;
                         while (nr >= 0 && nr < 8 && nc >= 0 && nc < 8)
                         {
                             char target = board.GetPiece(nr, nc);
@@ -838,8 +831,8 @@ namespace ChessDroid.Services
                                     moves.Add((nr, nc));
                                 break;
                             }
-                            nr += d[0];
-                            nc += d[1];
+                            nr += dR;
+                            nc += dC;
                         }
                     }
                     break;

@@ -326,24 +326,8 @@ namespace ChessDroid.Services
         private static void DetectKingSafetyImprovement(ChessBoard before, ChessBoard after,
             bool weAreWhite, List<Defense> defenses)
         {
-            // Find our king
-            char ourKing = weAreWhite ? 'K' : 'k';
-            int kingRow = -1, kingCol = -1;
-
-            for (int r = 0; r < 8; r++)
-            {
-                for (int c = 0; c < 8; c++)
-                {
-                    if (after.GetPiece(r, c) == ourKing)
-                    {
-                        kingRow = r;
-                        kingCol = c;
-                        break;
-                    }
-                }
-                if (kingRow >= 0) break;
-            }
-
+            // Find our king - O(1) using cached position
+            var (kingRow, kingCol) = after.GetKingPosition(weAreWhite);
             if (kingRow < 0) return;
 
             // Count attackers on king or adjacent squares before and after
@@ -480,16 +464,15 @@ namespace ChessDroid.Services
                 case PieceType.Queen:
                 case PieceType.Rook:
                     // Straight lines
-                    AddSlidingMoves(board, row, col, isWhite, new[] { (0, 1), (0, -1), (1, 0), (-1, 0) }, moves);
+                    AddSlidingMoves(board, row, col, isWhite, ChessUtilities.RookDirections, moves);
                     if (pieceType == PieceType.Rook) break;
                     // Fall through for queen to add diagonal
                     goto case PieceType.Bishop;
                 case PieceType.Bishop:
-                    AddSlidingMoves(board, row, col, isWhite, new[] { (1, 1), (1, -1), (-1, 1), (-1, -1) }, moves);
+                    AddSlidingMoves(board, row, col, isWhite, ChessUtilities.BishopDirections, moves);
                     break;
                 case PieceType.Knight:
-                    var knightOffsets = new[] { (2, 1), (2, -1), (-2, 1), (-2, -1), (1, 2), (1, -2), (-1, 2), (-1, -2) };
-                    foreach (var (dr, dc) in knightOffsets)
+                    foreach (var (dr, dc) in ChessUtilities.KnightOffsets)
                     {
                         int r = row + dr, c = col + dc;
                         if (r >= 0 && r < 8 && c >= 0 && c < 8)

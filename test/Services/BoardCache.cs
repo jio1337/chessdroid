@@ -127,6 +127,22 @@ namespace ChessDroid.Services
         }
 
         /// <summary>
+        /// Get all sliding pieces (Bishop, Rook, Queen) for a color - O(n) where n is piece count (~8)
+        /// Used for pin detection optimization (replaces O(64) board scan)
+        /// </summary>
+        public IEnumerable<(int row, int col, char piece)> GetSlidingPieces(bool isWhite)
+        {
+            var pieces = isWhite ? whitePieces : blackPieces;
+
+            foreach (var (row, col, piece) in pieces)
+            {
+                PieceType type = PieceHelper.GetPieceType(piece);
+                if (type == PieceType.Bishop || type == PieceType.Rook || type == PieceType.Queen)
+                    yield return (row, col, piece);
+            }
+        }
+
+        /// <summary>
         /// Check if a square is attacked by a specific color (O(1) lookup)
         /// </summary>
         public bool IsSquareAttacked(int row, int col, bool byWhite)

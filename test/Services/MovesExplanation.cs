@@ -586,8 +586,7 @@ namespace ChessDroid.Services
                     // Royal fork: Knight forks king and valuable piece
                     if (hasKing && pieceType == PieceType.Knight)
                     {
-                        var otherPieces = attackedPieces.Where(p => p.type != PieceType.King).ToList();
-                        foreach (var other in otherPieces)
+                        foreach (var other in attackedPieces.Where(p => p.type != PieceType.King))
                         {
                             if (other.type == PieceType.Queen)
                                 return "royal fork (king and queen)";
@@ -735,15 +734,11 @@ namespace ChessDroid.Services
                 if (pieceType != PieceType.Bishop && pieceType != PieceType.Rook && pieceType != PieceType.Queen)
                     return null;
 
-                // Check all 8 directions
-                int[][] directions = pieceType == PieceType.Bishop ? new[] { new[] { 1, 1 }, new[] { 1, -1 }, new[] { -1, 1 }, new[] { -1, -1 } } :
-                                     pieceType == PieceType.Rook ? new[] { new[] { 0, 1 }, new[] { 0, -1 }, new[] { 1, 0 }, new[] { -1, 0 } } :
-                                     new[] { new[] { 1, 1 }, new[] { 1, -1 }, new[] { -1, 1 }, new[] { -1, -1 }, new[] { 0, 1 }, new[] { 0, -1 }, new[] { 1, 0 }, new[] { -1, 0 } };
+                // Check all directions for this piece type
+                var directions = ChessUtilities.GetDirectionsForPiece(pieceType);
 
-                foreach (var dir in directions)
+                foreach (var (dR, dF) in directions)
                 {
-                    int dR = dir[0];
-                    int dF = dir[1];
                     int r = pieceRow + dR;
                     int c = pieceCol + dF;
 
@@ -845,15 +840,11 @@ namespace ChessDroid.Services
                 if (pieceType != PieceType.Bishop && pieceType != PieceType.Rook && pieceType != PieceType.Queen)
                     return null;
 
-                // Check all 8 directions
-                int[][] directions = pieceType == PieceType.Bishop ? new[] { new[] { 1, 1 }, new[] { 1, -1 }, new[] { -1, 1 }, new[] { -1, -1 } } :
-                                     pieceType == PieceType.Rook ? new[] { new[] { 0, 1 }, new[] { 0, -1 }, new[] { 1, 0 }, new[] { -1, 0 } } :
-                                     new[] { new[] { 1, 1 }, new[] { 1, -1 }, new[] { -1, 1 }, new[] { -1, -1 }, new[] { 0, 1 }, new[] { 0, -1 }, new[] { 1, 0 }, new[] { -1, 0 } };
+                // Check all directions for this piece type
+                var directions = ChessUtilities.GetDirectionsForPiece(pieceType);
 
-                foreach (var dir in directions)
+                foreach (var (dR, dF) in directions)
                 {
-                    int dR = dir[0];
-                    int dF = dir[1];
                     int r = pieceRow + dR;
                     int c = pieceCol + dF;
 
@@ -1116,25 +1107,9 @@ namespace ChessDroid.Services
                     return null;
 
                 // Now check if there's also a discovered check
-                char enemyKing = isWhite ? 'k' : 'K';
-                int kingR = -1, kingC = -1;
-
-                // Find enemy king
-                for (int r = 0; r < 8; r++)
-                {
-                    for (int c = 0; c < 8; c++)
-                    {
-                        if (board.GetPiece(r, c) == enemyKing)
-                        {
-                            kingR = r;
-                            kingC = c;
-                            break;
-                        }
-                    }
-                    if (kingR != -1) break;
-                }
-
-                if (kingR == -1) return null;
+                // Find enemy king - O(1) using cached position
+                var (kingR, kingC) = board.GetKingPosition(!isWhite);
+                if (kingR < 0) return null;
 
                 // Check if any other friendly piece is also giving check
                 for (int r = 0; r < 8; r++)
@@ -1476,21 +1451,9 @@ namespace ChessDroid.Services
                 if (pieceRow != enemyBackRank)
                     return null;
 
-                // Find enemy king
-                char enemyKing = isWhite ? 'k' : 'K';
-                int kingRow = -1, kingCol = -1;
-
-                for (int c = 0; c < 8; c++)
-                {
-                    if (board.GetPiece(enemyBackRank, c) == enemyKing)
-                    {
-                        kingRow = enemyBackRank;
-                        kingCol = c;
-                        break;
-                    }
-                }
-
-                if (kingRow == -1) return null;
+                // Find enemy king - O(1) using cached position
+                var (kingRow, kingCol) = board.GetKingPosition(!isWhite);
+                if (kingRow != enemyBackRank) return null; // King must be on back rank
 
                 // Check if king is trapped (no escape squares on rank 2/7)
                 int escapeRank = isWhite ? 1 : 6;
@@ -1539,35 +1502,28 @@ namespace ChessDroid.Services
 
                 // Very similar to removal of defender, but specifically when capturing forces the piece away
                 // Check if this piece is defending the king or a critical square
-                char enemyKing = isWhite ? 'k' : 'K';
+                // Find enemy king - O(1) using cached position
+                var (kingR, kingC) = board.GetKingPosition(!isWhite);
+                if (kingR < 0) return null;
 
-                for (int r = 0; r < 8; r++)
+                // Check if target piece defends a square around the king
+                for (int dr = -1; dr <= 1; dr++)
                 {
-                    for (int c = 0; c < 8; c++)
+                    for (int dc = -1; dc <= 1; dc++)
                     {
-                        char piece = board.GetPiece(r, c);
-                        if (piece != enemyKing) continue;
+                        if (dr == 0 && dc == 0) continue;
+                        int defRow = kingR + dr;
+                        int defCol = kingC + dc;
 
-                        // Check if target piece defends a square around the king
-                        for (int dr = -1; dr <= 1; dr++)
+                        if (defRow < 0 || defRow >= 8 || defCol < 0 || defCol >= 8) continue;
+
+                        // Check if target defends this square near the king
+                        if (ChessUtilities.CanAttackSquare(board, pieceRow, pieceCol, targetPiece, defRow, defCol))
                         {
-                            for (int dc = -1; dc <= 1; dc++)
+                            // Check if we're attacking that same square
+                            if (ChessUtilities.IsSquareDefended(board, defRow, defCol, isWhite))
                             {
-                                if (dr == 0 && dc == 0) continue;
-                                int defRow = r + dr;
-                                int defCol = c + dc;
-
-                                if (defRow < 0 || defRow >= 8 || defCol < 0 || defCol >= 8) continue;
-
-                                // Check if target defends this square near the king
-                                if (ChessUtilities.CanAttackSquare(board, pieceRow, pieceCol, targetPiece, defRow, defCol))
-                                {
-                                    // Check if we're attacking that same square
-                                    if (ChessUtilities.IsSquareDefended(board, defRow, defCol, isWhite))
-                                    {
-                                        return "deflects key defender";
-                                    }
-                                }
+                                return "deflects key defender";
                             }
                         }
                     }
@@ -1761,8 +1717,7 @@ namespace ChessDroid.Services
                     }
 
                     // Two valuable pieces attacked
-                    var valuableTargets = attackedPieces.Where(p => ChessUtilities.GetPieceValue(p.type) >= 3).ToList();
-                    if (valuableTargets.Count >= 2)
+                    if (attackedPieces.Count(p => ChessUtilities.GetPieceValue(p.type) >= 3) >= 2)
                     {
                         return "double attack on multiple pieces";
                     }
@@ -1903,16 +1858,9 @@ namespace ChessDroid.Services
                     return null;
 
                 // Check all directions this piece can move
-                int[][] directions = pieceType switch
-                {
-                    PieceType.Rook => new[] { new[] { 1, 0 }, new[] { -1, 0 }, new[] { 0, 1 }, new[] { 0, -1 } },
-                    PieceType.Bishop => new[] { new[] { 1, 1 }, new[] { 1, -1 }, new[] { -1, 1 }, new[] { -1, -1 } },
-                    PieceType.Queen => new[] { new[] { 1, 0 }, new[] { -1, 0 }, new[] { 0, 1 }, new[] { 0, -1 },
-                                              new[] { 1, 1 }, new[] { 1, -1 }, new[] { -1, 1 }, new[] { -1, -1 } },
-                    _ => Array.Empty<int[]>()
-                };
+                var directions = ChessUtilities.GetDirectionsForPiece(pieceType);
 
-                foreach (var dir in directions)
+                foreach (var (dR, dF) in directions)
                 {
                     int firstPieceRow = -1, firstPieceCol = -1;
                     int secondPieceRow = -1, secondPieceCol = -1;
@@ -1921,8 +1869,8 @@ namespace ChessDroid.Services
                     // Scan along the line
                     for (int step = 1; step < 8; step++)
                     {
-                        int r = pieceRow + dir[0] * step;
-                        int c = pieceCol + dir[1] * step;
+                        int r = pieceRow + dR * step;
+                        int c = pieceCol + dF * step;
                         if (r < 0 || r >= 8 || c < 0 || c >= 8) break;
 
                         char targetPiece = board.GetPiece(r, c);
@@ -2030,49 +1978,42 @@ namespace ChessDroid.Services
                 PieceType pieceType = PieceHelper.GetPieceType(piece);
                 if (pieceType != PieceType.Knight) return null;
 
-                // Find enemy king
-                char enemyKing = isWhite ? 'k' : 'K';
-                for (int r = 0; r < 8; r++)
+                // Find enemy king - O(1) using cached position
+                var (kingR, kingC) = board.GetKingPosition(!isWhite);
+                if (kingR >= 0)
                 {
-                    for (int c = 0; c < 8; c++)
+                    // Check if knight attacks king
+                    if (ChessUtilities.CanAttackSquare(board, pieceRow, pieceCol, piece, kingR, kingC))
                     {
-                        if (board.GetPiece(r, c) == enemyKing)
+                        // Check if king is smothered (all squares blocked by own pieces)
+                        var safeSquares = GetKingSafeSquares(board, kingR, kingC, !isWhite);
+
+                        if (safeSquares.Count == 0)
                         {
-                            // Check if knight attacks king
-                            if (ChessUtilities.CanAttackSquare(board, pieceRow, pieceCol, piece, r, c))
+                            // Check if all surrounding squares occupied by own pieces
+                            int ownPiecesSurrounding = 0;
+                            for (int dr = -1; dr <= 1; dr++)
                             {
-                                // Check if king is smothered (all squares blocked by own pieces)
-                                var safeSquares = GetKingSafeSquares(board, r, c, !isWhite);
-
-                                if (safeSquares.Count == 0)
+                                for (int dc = -1; dc <= 1; dc++)
                                 {
-                                    // Check if all surrounding squares occupied by own pieces
-                                    int ownPiecesSurrounding = 0;
-                                    for (int dr = -1; dr <= 1; dr++)
-                                    {
-                                        for (int dc = -1; dc <= 1; dc++)
-                                        {
-                                            if (dr == 0 && dc == 0) continue;
-                                            int nr = r + dr, nc = c + dc;
-                                            if (nr < 0 || nr >= 8 || nc < 0 || nc >= 8) continue;
+                                    if (dr == 0 && dc == 0) continue;
+                                    int nr = kingR + dr, nc = kingC + dc;
+                                    if (nr < 0 || nr >= 8 || nc < 0 || nc >= 8) continue;
 
-                                            char p = board.GetPiece(nr, nc);
-                                            if (p != '.' && !char.IsWhiteSpace(p))
-                                            {
-                                                bool pIsWhite = char.IsUpper(p);
-                                                if (pIsWhite == !isWhite) // King's own pieces
-                                                    ownPiecesSurrounding++;
-                                            }
-                                        }
-                                    }
-
-                                    if (ownPiecesSurrounding >= 6) // Heavily smothered
+                                    char p = board.GetPiece(nr, nc);
+                                    if (p != '.' && !char.IsWhiteSpace(p))
                                     {
-                                        return "smothered mate";
+                                        bool pIsWhite = char.IsUpper(p);
+                                        if (pIsWhite == !isWhite) // King's own pieces
+                                            ownPiecesSurrounding++;
                                     }
                                 }
                             }
-                            break;
+
+                            if (ownPiecesSurrounding >= 6) // Heavily smothered
+                            {
+                                return "smothered mate";
+                            }
                         }
                     }
                 }

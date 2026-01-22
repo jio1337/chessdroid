@@ -89,6 +89,9 @@ namespace ChessDroid.Services
                 // If so, most threats are "phantom" - they won't materialize
                 bool pieceWillBeRecaptured = IsPieceImmediatelyRecapturable(afterMove, destRank, destFile, movingPiece, movingPlayerIsWhite, board);
 
+                // Create BoardCache for afterMove board - O(n) once instead of O(64) per detection method
+                var afterMoveCache = new BoardCache(afterMove);
+
                 // Detect various threats AFTER our move
                 // Pass pieceWillBeRecaptured to skip phantom threats
                 DetectCheckThreats(afterMove, destRank, destFile, movingPlayerIsWhite, threatsAfter, pieceWillBeRecaptured);
@@ -101,7 +104,7 @@ namespace ChessDroid.Services
                     DetectForks(afterMove, destRank, destFile, movingPlayerIsWhite, threatsAfter);
                 }
 
-                DetectPins(afterMove, movingPlayerIsWhite, threatsAfter);
+                DetectPins(afterMove, movingPlayerIsWhite, threatsAfter, afterMoveCache);
                 DetectPromotionThreats(afterMove, movingPlayerIsWhite, threatsAfter);
 
                 // Skip trapped piece detection if our piece will be recaptured
@@ -147,6 +150,9 @@ namespace ChessDroid.Services
             {
                 bool opponentIsWhite = !weAreWhite;
 
+                // Create BoardCache once - O(n) instead of multiple O(64) scans
+                var cache = new BoardCache(board);
+
                 // Check if our king is in check
                 DetectCheckThreatsAgainstUs(board, weAreWhite, threats);
 
@@ -159,8 +165,8 @@ namespace ChessDroid.Services
                 // Check for opponent promotion threats
                 DetectOpponentPromotionThreats(board, opponentIsWhite, threats);
 
-                // Check for pins against us
-                DetectPinsAgainstUs(board, weAreWhite, threats);
+                // Check for pins against us - use cache for O(n) sliding piece lookup
+                DetectPinsAgainstUs(board, weAreWhite, threats, cache);
 
                 // Check if opponent can capture our pawn en passant
                 DetectOpponentEnPassantThreat(board, enPassantSquare, weAreWhite, threats);
@@ -192,24 +198,8 @@ namespace ChessDroid.Services
         {
             char piece = board.GetPiece(pieceRow, pieceCol);
 
-            // Find opponent's king
-            char opponentKing = movingPlayerIsWhite ? 'k' : 'K';
-            int kingRow = -1, kingCol = -1;
-
-            for (int r = 0; r < 8; r++)
-            {
-                for (int c = 0; c < 8; c++)
-                {
-                    if (board.GetPiece(r, c) == opponentKing)
-                    {
-                        kingRow = r;
-                        kingCol = c;
-                        break;
-                    }
-                }
-                if (kingRow >= 0) break;
-            }
-
+            // Find opponent's king - O(1) using cached position
+            var (kingRow, kingCol) = board.GetKingPosition(!movingPlayerIsWhite);
             if (kingRow < 0) return;
 
             // Check if we're giving check
@@ -380,28 +370,38 @@ namespace ChessDroid.Services
         /// <summary>
         /// Detect pins (piece pinned to a more valuable piece or king)
         /// </summary>
-        private static void DetectPins(ChessBoard board, bool attackerIsWhite, List<Threat> threats)
+        private static void DetectPins(ChessBoard board, bool attackerIsWhite, List<Threat> threats, BoardCache? cache = null)
         {
-            // Find all our sliding pieces (bishops, rooks, queens)
-            for (int r = 0; r < 8; r++)
+            // Use BoardCache for O(n) sliding piece lookup instead of O(64) board scan
+            if (cache != null)
             {
-                for (int c = 0; c < 8; c++)
+                foreach (var (r, c, piece) in cache.GetSlidingPieces(attackerIsWhite))
                 {
-                    char piece = board.GetPiece(r, c);
-                    if (piece == '.') continue;
-
-                    bool pieceIsWhite = char.IsUpper(piece);
-                    if (pieceIsWhite != attackerIsWhite) continue;
-
-                    PieceType pieceType = PieceHelper.GetPieceType(piece);
-                    if (pieceType != PieceType.Bishop && pieceType != PieceType.Rook && pieceType != PieceType.Queen)
-                        continue;
-
-                    // Check for pins in each direction
                     var pin = DetectPinFromPiece(board, r, c, piece, attackerIsWhite);
                     if (pin != null)
-                    {
                         threats.Add(pin);
+                }
+            }
+            else
+            {
+                // Fallback: O(64) board scan when no cache provided
+                for (int r = 0; r < 8; r++)
+                {
+                    for (int c = 0; c < 8; c++)
+                    {
+                        char piece = board.GetPiece(r, c);
+                        if (piece == '.') continue;
+
+                        bool pieceIsWhite = char.IsUpper(piece);
+                        if (pieceIsWhite != attackerIsWhite) continue;
+
+                        PieceType pieceType = PieceHelper.GetPieceType(piece);
+                        if (pieceType != PieceType.Bishop && pieceType != PieceType.Rook && pieceType != PieceType.Queen)
+                            continue;
+
+                        var pin = DetectPinFromPiece(board, r, c, piece, attackerIsWhite);
+                        if (pin != null)
+                            threats.Add(pin);
                     }
                 }
             }
@@ -413,16 +413,10 @@ namespace ChessDroid.Services
             PieceType pieceType = PieceHelper.GetPieceType(piece);
             int attackerValue = ChessUtilities.GetPieceValue(pieceType);
 
-            int[][] directions = pieceType == PieceType.Bishop
-                ? new[] { new[] { 1, 1 }, new[] { 1, -1 }, new[] { -1, 1 }, new[] { -1, -1 } }
-                : pieceType == PieceType.Rook
-                    ? new[] { new[] { 0, 1 }, new[] { 0, -1 }, new[] { 1, 0 }, new[] { -1, 0 } }
-                    : new[] { new[] { 1, 1 }, new[] { 1, -1 }, new[] { -1, 1 }, new[] { -1, -1 },
-                              new[] { 0, 1 }, new[] { 0, -1 }, new[] { 1, 0 }, new[] { -1, 0 } };
+            var directions = ChessUtilities.GetDirectionsForPiece(pieceType);
 
-            foreach (var dir in directions)
+            foreach (var (dR, dF) in directions)
             {
-                int dR = dir[0], dF = dir[1];
                 int r = pieceRow + dR, c = pieceCol + dF;
                 char? firstPiece = null;
                 int firstRow = -1, firstCol = -1;
@@ -765,24 +759,8 @@ namespace ChessDroid.Services
         /// </summary>
         private static void DetectCheckThreatsAgainstUs(ChessBoard board, bool weAreWhite, List<Threat> threats)
         {
-            // Find our king
-            char ourKing = weAreWhite ? 'K' : 'k';
-            int kingRow = -1, kingCol = -1;
-
-            for (int r = 0; r < 8; r++)
-            {
-                for (int c = 0; c < 8; c++)
-                {
-                    if (board.GetPiece(r, c) == ourKing)
-                    {
-                        kingRow = r;
-                        kingCol = c;
-                        break;
-                    }
-                }
-                if (kingRow >= 0) break;
-            }
-
+            // Find our king - O(1) using cached position
+            var (kingRow, kingCol) = board.GetKingPosition(weAreWhite);
             if (kingRow < 0) return;
 
             // Check if our king is in check
@@ -992,30 +970,40 @@ namespace ChessDroid.Services
         /// <summary>
         /// Detect pins against our pieces by opponent sliding pieces
         /// </summary>
-        private static void DetectPinsAgainstUs(ChessBoard board, bool weAreWhite, List<Threat> threats)
+        private static void DetectPinsAgainstUs(ChessBoard board, bool weAreWhite, List<Threat> threats, BoardCache? cache = null)
         {
             bool opponentIsWhite = !weAreWhite;
 
-            // Find opponent's sliding pieces
-            for (int r = 0; r < 8; r++)
+            // Use BoardCache for O(n) sliding piece lookup instead of O(64) board scan
+            if (cache != null)
             {
-                for (int c = 0; c < 8; c++)
+                foreach (var (r, c, piece) in cache.GetSlidingPieces(opponentIsWhite))
                 {
-                    char piece = board.GetPiece(r, c);
-                    if (piece == '.') continue;
-
-                    bool pieceIsWhite = char.IsUpper(piece);
-                    if (pieceIsWhite != opponentIsWhite) continue;
-
-                    PieceType pieceType = PieceHelper.GetPieceType(piece);
-                    if (pieceType != PieceType.Bishop && pieceType != PieceType.Rook && pieceType != PieceType.Queen)
-                        continue;
-
-                    // Check for pins in each direction (opponent's perspective)
                     var pin = DetectPinAgainstUs(board, r, c, piece, opponentIsWhite);
                     if (pin != null)
-                    {
                         threats.Add(pin);
+                }
+            }
+            else
+            {
+                // Fallback: O(64) board scan when no cache provided
+                for (int r = 0; r < 8; r++)
+                {
+                    for (int c = 0; c < 8; c++)
+                    {
+                        char piece = board.GetPiece(r, c);
+                        if (piece == '.') continue;
+
+                        bool pieceIsWhite = char.IsUpper(piece);
+                        if (pieceIsWhite != opponentIsWhite) continue;
+
+                        PieceType pieceType = PieceHelper.GetPieceType(piece);
+                        if (pieceType != PieceType.Bishop && pieceType != PieceType.Rook && pieceType != PieceType.Queen)
+                            continue;
+
+                        var pin = DetectPinAgainstUs(board, r, c, piece, opponentIsWhite);
+                        if (pin != null)
+                            threats.Add(pin);
                     }
                 }
             }
@@ -1026,16 +1014,10 @@ namespace ChessDroid.Services
         {
             PieceType pieceType = PieceHelper.GetPieceType(piece);
 
-            int[][] directions = pieceType == PieceType.Bishop
-                ? new[] { new[] { 1, 1 }, new[] { 1, -1 }, new[] { -1, 1 }, new[] { -1, -1 } }
-                : pieceType == PieceType.Rook
-                    ? new[] { new[] { 0, 1 }, new[] { 0, -1 }, new[] { 1, 0 }, new[] { -1, 0 } }
-                    : new[] { new[] { 1, 1 }, new[] { 1, -1 }, new[] { -1, 1 }, new[] { -1, -1 },
-                              new[] { 0, 1 }, new[] { 0, -1 }, new[] { 1, 0 }, new[] { -1, 0 } };
+            var directions = ChessUtilities.GetDirectionsForPiece(pieceType);
 
-            foreach (var dir in directions)
+            foreach (var (dR, dF) in directions)
             {
-                int dR = dir[0], dF = dir[1];
                 int r = pieceRow + dR, c = pieceCol + dF;
                 char? firstPiece = null;
                 int firstRow = -1, firstCol = -1;

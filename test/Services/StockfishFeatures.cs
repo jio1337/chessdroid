@@ -255,26 +255,9 @@ namespace ChessDroid.Services
         {
             try
             {
-                // Check if in check
-                char king = isWhite ? 'K' : 'k';
-                int kingRow = -1, kingCol = -1;
-
-                // Find king
-                for (int r = 0; r < 8; r++)
-                {
-                    for (int c = 0; c < 8; c++)
-                    {
-                        if (board.GetPiece(r, c) == king)
-                        {
-                            kingRow = r;
-                            kingCol = c;
-                            break;
-                        }
-                    }
-                    if (kingRow != -1) break;
-                }
-
-                if (kingRow == -1) return false;
+                // Check if in check - find king using O(1) cached position
+                var (kingRow, kingCol) = board.GetKingPosition(isWhite);
+                if (kingRow < 0) return false;
 
                 // Check if king is under attack
                 bool inCheck = ChessUtilities.IsSquareDefended(board, kingRow, kingCol, !isWhite);

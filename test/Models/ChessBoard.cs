@@ -12,6 +12,10 @@ namespace ChessDroid.Models
         private static readonly Dictionary<char, int> PieceIndex;
         private ulong? cachedHash = null;
 
+        // Cached king positions for O(1) lookup (eliminates 20+ O(n²) scans)
+        private int whiteKingRow = -1, whiteKingCol = -1;
+        private int blackKingRow = -1, blackKingCol = -1;
+
         static ChessBoard()
         {
             // Initialize Zobrist random numbers (12 piece types * 64 squares)
@@ -47,6 +51,8 @@ namespace ChessDroid.Models
         {
             board = new char[BOARD_SIZE, BOARD_SIZE];
             Array.Copy(existingBoard, board, existingBoard.Length);
+            // Scan for kings since we're copying raw array without position info
+            ScanForKings();
         }
 
         public char this[int row, int col]
@@ -60,6 +66,9 @@ namespace ChessDroid.Models
                     if (oldPiece == value) return; // No change
 
                     board[row, col] = value;
+
+                    // Update cached king positions
+                    UpdateKingCache(row, col, oldPiece, value);
 
                     // Incremental Zobrist hash update (O(1) instead of O(64))
                     if (cachedHash.HasValue)
@@ -180,6 +189,9 @@ namespace ChessDroid.Models
 
                 board[row, col] = piece;
 
+                // Update cached king positions
+                UpdateKingCache(row, col, oldPiece, piece);
+
                 // Incremental Zobrist hash update (O(1) instead of O(64))
                 if (cachedHash.HasValue)
                 {
@@ -204,6 +216,85 @@ namespace ChessDroid.Models
         }
 
         public bool IsEmpty(int row, int col) => GetPiece(row, col) == '.';
+
+        /// <summary>
+        /// Updates the cached king position when a piece is placed or removed.
+        /// Called by SetPiece and indexer setter.
+        /// </summary>
+        private void UpdateKingCache(int row, int col, char oldPiece, char newPiece)
+        {
+            // If a king was removed from this square
+            if (oldPiece == 'K')
+            {
+                whiteKingRow = -1;
+                whiteKingCol = -1;
+            }
+            else if (oldPiece == 'k')
+            {
+                blackKingRow = -1;
+                blackKingCol = -1;
+            }
+
+            // If a king was placed on this square
+            if (newPiece == 'K')
+            {
+                whiteKingRow = row;
+                whiteKingCol = col;
+            }
+            else if (newPiece == 'k')
+            {
+                blackKingRow = row;
+                blackKingCol = col;
+            }
+        }
+
+        /// <summary>
+        /// Gets the king position for the specified color in O(1) time.
+        /// Returns (-1, -1) if king is not found (shouldn't happen in valid positions).
+        /// </summary>
+        /// <param name="isWhite">True for white king, false for black king</param>
+        /// <returns>Tuple of (row, col) or (-1, -1) if not found</returns>
+        public (int row, int col) GetKingPosition(bool isWhite)
+        {
+            if (isWhite)
+            {
+                // If not cached, scan to find it (fallback for boards created without tracking)
+                if (whiteKingRow < 0)
+                    ScanForKings();
+                return (whiteKingRow, whiteKingCol);
+            }
+            else
+            {
+                if (blackKingRow < 0)
+                    ScanForKings();
+                return (blackKingRow, blackKingCol);
+            }
+        }
+
+        /// <summary>
+        /// Scans the board to find and cache king positions.
+        /// Called lazily when GetKingPosition is called and cache is empty.
+        /// </summary>
+        private void ScanForKings()
+        {
+            for (int r = 0; r < BOARD_SIZE; r++)
+            {
+                for (int c = 0; c < BOARD_SIZE; c++)
+                {
+                    char piece = board[r, c];
+                    if (piece == 'K')
+                    {
+                        whiteKingRow = r;
+                        whiteKingCol = c;
+                    }
+                    else if (piece == 'k')
+                    {
+                        blackKingRow = r;
+                        blackKingCol = c;
+                    }
+                }
+            }
+        }
 
         public override string ToString() => ToFEN();
 

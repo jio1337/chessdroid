@@ -498,11 +498,11 @@ namespace ChessDroid.Services
                 }
             }
 
-            // Trim to requested count
+            // Trim to requested count using GetRange (faster than LINQ Take.ToList)
             if (pvs.Count > multiPV)
             {
-                pvs = pvs.Take(multiPV).ToList();
-                evaluations = evaluations.Take(multiPV).ToList();
+                pvs = pvs.GetRange(0, multiPV);
+                evaluations = evaluations.GetRange(0, multiPV);
             }
 
             // Sort PV lines by evaluation (best to worst for current player)

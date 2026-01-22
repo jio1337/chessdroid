@@ -78,9 +78,13 @@ namespace ChessDroid.Services
                     result = ApplyAggressivenessFilter(fen, result, aggressiveness);
                 }
 
-                // Trim to requested count for display
-                var trimmedPVs = result.pvs?.Take(multiPVCount).ToList() ?? new List<string>();
-                var trimmedEvals = result.evaluations?.Take(multiPVCount).ToList() ?? new List<string>();
+                // Trim to requested count for display (use GetRange for efficiency)
+                var trimmedPVs = result.pvs != null && result.pvs.Count > 0
+                    ? result.pvs.GetRange(0, Math.Min(result.pvs.Count, multiPVCount))
+                    : new List<string>();
+                var trimmedEvals = result.evaluations != null && result.evaluations.Count > 0
+                    ? result.evaluations.GetRange(0, Math.Min(result.evaluations.Count, multiPVCount))
+                    : new List<string>();
 
                 return (result.bestMove, result.evaluation, trimmedPVs, trimmedEvals, result.wdl);
             }
