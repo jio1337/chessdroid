@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.2.4] - 2026-01-22
+
+### Fixed
+- **CRITICAL: UCI evaluation perspective bug** - Evaluations are from side-to-move perspective, not White's perspective
+- **Wrong move recommendations for Black** - Best moves were incorrectly sorted (worst shown as best)
+- **Inverted evaluation signs** - Black winning positions showed positive evals instead of negative
+- **bestMove not updated after Multi-PV sorting** - Displayed move didn't match the sorted best evaluation
+- **WDL mismatch** - Win/Draw/Loss was calculated for wrong move after sorting
+- **Aggressiveness filter ignoring sorting** - Filter compared against unsorted engine output
+- **Eval tolerance calculation** - Used signed difference instead of absolute difference
+
+### Technical Details
+- UCI protocol returns evaluations from the **side-to-move's perspective** (+ = good for current player)
+- Chess standard displays evaluations from **White's perspective** (+ = good for White, - = good for Black)
+- Fix: Negate centipawn and mate scores when Black is to move, converting to White's perspective
+- Fix: Update bestMove from sorted pvs[0] after Multi-PV sorting
+- Fix: Recalculate WDL from sorted best evaluation
+- Fix: Use Math.Abs() for eval tolerance comparison
+
+### Example (Before vs After)
+**Position: Black to move, Qe3+ is the winning move**
+
+Before fix:
+- Engine returns: g5e3 (+282), e4d5 (-114), c8a8 (-275)
+- Displayed: "Best line: Rca8" with -2.75 ❌ (WRONG!)
+
+After fix:
+- Engine returns: g5e3 (+282), e4d5 (-114), c8a8 (-275)
+- After negation: g5e3 (-2.82), e4d5 (+1.14), c8a8 (+2.75)
+- Displayed: "Best line: Qe3" with -2.82 ✓ (CORRECT!)
+
+---
+
 ## [2.3.0] - 2026-01-21
 
 ### Performance
