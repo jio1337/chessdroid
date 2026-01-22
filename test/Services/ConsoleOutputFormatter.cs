@@ -205,6 +205,18 @@ namespace ChessDroid.Services
         /// </summary>
         public string FormatEvaluation(string evaluation)
         {
+            // Format mate scores to be more readable
+            if (!string.IsNullOrEmpty(evaluation) && evaluation.StartsWith("Mate in "))
+            {
+                string mateStr = evaluation.Replace("Mate in ", "").Trim();
+                if (int.TryParse(mateStr, out int mateIn))
+                {
+                    if (mateIn > 0)
+                        return $"Mate in {mateIn}"; // White mates
+                    else if (mateIn < 0)
+                        return $"Mate in {mateIn}"; // Black mates (keep negative)
+                }
+            }
             return evaluation;
         }
 

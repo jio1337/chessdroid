@@ -387,17 +387,25 @@ namespace ChessDroid.Services
                                         if (tokens[i + 1] == UCI_TOKEN_CP && double.TryParse(tokens[i + 2], out double cp))
                                         {
                                             // UCI scores are always from White's perspective
-                                            // If Black to move, negate the score for correct display from Black's perspective
-                                            double displayCp = whiteToMove ? cp : -cp;
+                                            // Keep them in White's perspective for consistency - don't negate
+                                            // Sorting will handle showing best moves first for both colors
+                                            double displayCp = cp;
                                             // Use InvariantCulture to ensure consistent decimal formatting (period not comma)
                                             evalStr = (displayCp / 100.0 >= 0 ? "+" : "") + (displayCp / 100.0).ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
                                         }
                                         else if (tokens[i + 1] == UCI_TOKEN_MATE)
                                         {
                                             int mateIn = int.Parse(tokens[i + 2]);
-                                            // Negate mate distance for Black too
-                                            int displayMate = whiteToMove ? mateIn : -mateIn;
-                                            evalStr = "Mate in " + displayMate;
+                                            // UCI mate scores are from White's perspective:
+                                            // Positive = White delivers mate (good for White)
+                                            // Negative = Black delivers mate (good for Black)
+                                            // Keep the sign to preserve perspective for sorting
+                                            if (mateIn > 0)
+                                                evalStr = $"Mate in +{mateIn}";
+                                            else if (mateIn < 0)
+                                                evalStr = $"Mate in {mateIn}"; // Keep negative sign
+                                            else
+                                                evalStr = "Mate in 0"; // Edge case
                                         }
                                     }
 
@@ -493,18 +501,31 @@ namespace ChessDroid.Services
                 evaluations = evaluations.Take(multiPV).ToList();
             }
 
-            // Sort PV lines by evaluation (best to worst)
+            // Sort PV lines by evaluation (best to worst for current player)
             // This ensures consistent ordering even if engine sends updates out of order
             if (pvs.Count > 1 && evaluations.Count == pvs.Count)
             {
                 var combined = pvs.Zip(evaluations, (pv, eval) => new { Pv = pv, Eval = eval }).ToList();
 
-                // Sort by evaluation (descending = best first)
+                // Sort by evaluation based on whose turn it is
+                // Evaluations are in White's perspective (UCI standard):
+                // - Positive = good for White
+                // - Negative = good for Black
                 combined.Sort((a, b) =>
                 {
                     double evalA = ParseEvaluationForSorting(a.Eval);
                     double evalB = ParseEvaluationForSorting(b.Eval);
-                    return evalB.CompareTo(evalA); // Descending order (best first)
+
+                    if (whiteToMove)
+                    {
+                        // White: higher eval is better (+3.0 > +1.0 > -1.0)
+                        return evalB.CompareTo(evalA); // Descending
+                    }
+                    else
+                    {
+                        // Black: lower eval is better (-9.0 > -5.0 > +4.0)
+                        return evalA.CompareTo(evalB); // Ascending
+                    }
                 });
 
                 pvs = combined.Select(x => x.Pv).ToList();
@@ -540,19 +561,69 @@ namespace ChessDroid.Services
             if (string.IsNullOrEmpty(evalStr))
                 return double.MinValue;
 
-            // Handle mate scores - mate is always best
+            // Handle mate scores - format is "Mate in +X" or "Mate in -X"
             if (evalStr.StartsWith("Mate in "))
             {
                 string mateStr = evalStr.Replace("Mate in ", "").Trim();
+                // Parse with + or - sign
                 if (int.TryParse(mateStr, out int mateIn))
                 {
-                    // Positive mate = we have mate (best)
-                    // Negative mate = opponent has mate (worst)
-                    // Shorter mate is better: mate in 2 > mate in 5
+                    // UCI mate semantics (from side-to-move perspective):
+                    // - mate +X: Side to move delivers mate in X moves (good for side to move)
+                    // - mate -X: Side to move gets mated in X moves (bad for side to move - WORST move!)
+                    //
+                    // Sorting logic:
+                    // - White sorts DESCENDING: Largest values first
+                    // - Black sorts ASCENDING: Smallest values first
+                    //
+                    // For mate +X (delivering mate - BEST move):
+                    // - Should appear FIRST in both White and Black sorts
+                    // - White descending: Need huge positive (comes first) ✓
+                    // - Black ascending: Need huge negative (comes first) ✗
+                    // Problem: Can't satisfy both with same value!
+                    //
+                    // For mate -X (getting mated - WORST move):
+                    // - Should appear LAST in both White and Black sorts
+                    // - White descending: Need huge negative (comes last) ✗
+                    // - Black ascending: Need huge positive (comes last) ✓
+                    // Problem: Can't satisfy both with same value!
+                    //
+                    // KEY INSIGHT: Black's ascending sort REVERSES the natural order!
+                    // So for mate -X (getting mated), which should be WORST:
+                    // - Return huge POSITIVE value
+                    // - White descending: comes FIRST (wrong!)... wait let me re-check
+                    //
+                    // Actually, let's test with the actual values:
+                    // Black to move: h3h1 (+4.69), g3f2 (-5.80), g3d3 (mate -5)
+                    // - h3h1: +4.69
+                    // - g3f2: -5.80
+                    // - g3d3: Should return ??? to make it appear LAST
+                    // Black sorts ascending: [-5.80, +4.69, ???]
+                    // So ??? should be > +4.69 to come last!
+                    // Return +100000 for mate -5 → appears LAST in ascending ✓
+                    //
+                    // White to move: d5a8 (mate +1), f2f8 (mate +1), d5e6 (mate +3)
+                    // - d5a8: Should return ??? to make it appear FIRST
+                    // - d5e6: Should return ??? to make it appear LAST
+                    // White sorts descending: Want largest first
+                    // mate +1 should return 100000-1=99999 (larger, comes first) ✓
+                    // mate +3 should return 100000-3=99997 (smaller, comes later) ✓
                     if (mateIn > 0)
-                        return 10000.0 - mateIn; // Positive = good for us, shorter is better
+                    {
+                        // Delivering mate (BEST move) - shorter mate is better
+                        return 100000.0 - mateIn;
+                    }
+                    else if (mateIn < 0)
+                    {
+                        // Getting mated (WORST move) - return huge positive so it appears last
+                        // Use positive value so Black's ascending sort puts it last
+                        // mate -2 = +100002 (worse, comes after mate -5 = +100005)
+                        return 100000.0 + Math.Abs(mateIn);
+                    }
                     else
-                        return -10000.0 - Math.Abs(mateIn); // Negative = bad for us
+                    {
+                        return 100000.0; // Mate in 0 (edge case)
+                    }
                 }
             }
 

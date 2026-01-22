@@ -63,8 +63,9 @@ namespace ChessDroid.Services
 
                 char movingPiece = board.GetPiece(srcRank, srcFile);
 
-                // Create board after the move
-                ChessBoard afterMove = new ChessBoard(board.GetArray());
+                // Create board after the move (using pooling)
+                using var pooled = BoardPool.Rent(board);
+                ChessBoard afterMove = pooled.Board;
                 afterMove.SetPiece(destRank, destFile, movingPiece);
                 afterMove.SetPiece(srcRank, srcFile, '.');
 
@@ -444,7 +445,8 @@ namespace ChessDroid.Services
             foreach (var (destRow, destCol) in possibleMoves)
             {
                 // Simulate the move
-                ChessBoard tempBoard = new ChessBoard(board.GetArray());
+                using var pooledCheck = BoardPool.Rent(board);
+                ChessBoard tempBoard = pooledCheck.Board;
                 tempBoard.SetPiece(destRow, destCol, piece);
                 tempBoard.SetPiece(pieceRow, pieceCol, '.');
 
@@ -555,7 +557,8 @@ namespace ChessDroid.Services
                     if (sq != '.' && char.IsUpper(sq) == weAreWhite) continue;
 
                     // Simulate king move
-                    ChessBoard tempBoard = new ChessBoard(board.GetArray());
+                    using var pooledKingEscape = BoardPool.Rent(board);
+                    ChessBoard tempBoard = pooledKingEscape.Board;
                     char king = weAreWhite ? 'K' : 'k';
                     tempBoard.SetPiece(r, c, king);
                     tempBoard.SetPiece(kingRow, kingCol, '.');

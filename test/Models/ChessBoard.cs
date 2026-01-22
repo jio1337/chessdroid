@@ -52,7 +52,37 @@ namespace ChessDroid.Models
         public char this[int row, int col]
         {
             get => board[row, col];
-            set => board[row, col] = value;
+            set
+            {
+                if (row >= 0 && row < BOARD_SIZE && col >= 0 && col < BOARD_SIZE)
+                {
+                    char oldPiece = board[row, col];
+                    if (oldPiece == value) return; // No change
+
+                    board[row, col] = value;
+
+                    // Incremental Zobrist hash update (O(1) instead of O(64))
+                    if (cachedHash.HasValue)
+                    {
+                        ulong hash = cachedHash.Value;
+                        int square = row * 8 + col;
+
+                        // XOR out old piece
+                        if (oldPiece != '.' && PieceIndex.TryGetValue(oldPiece, out int oldIdx))
+                            hash ^= ZobristTable[oldIdx, square];
+
+                        // XOR in new piece
+                        if (value != '.' && PieceIndex.TryGetValue(value, out int newIdx))
+                            hash ^= ZobristTable[newIdx, square];
+
+                        cachedHash = hash;
+                    }
+                    else
+                    {
+                        cachedHash = null; // Invalidate hash cache when board changes
+                    }
+                }
+            }
         }
 
         public char[,] GetArray() => (char[,])board.Clone();
@@ -145,8 +175,31 @@ namespace ChessDroid.Models
         {
             if (row >= 0 && row < BOARD_SIZE && col >= 0 && col < BOARD_SIZE)
             {
+                char oldPiece = board[row, col];
+                if (oldPiece == piece) return; // No change
+
                 board[row, col] = piece;
-                cachedHash = null; // Invalidate hash cache when board changes
+
+                // Incremental Zobrist hash update (O(1) instead of O(64))
+                if (cachedHash.HasValue)
+                {
+                    ulong hash = cachedHash.Value;
+                    int square = row * 8 + col;
+
+                    // XOR out old piece
+                    if (oldPiece != '.' && PieceIndex.TryGetValue(oldPiece, out int oldIdx))
+                        hash ^= ZobristTable[oldIdx, square];
+
+                    // XOR in new piece
+                    if (piece != '.' && PieceIndex.TryGetValue(piece, out int newIdx))
+                        hash ^= ZobristTable[newIdx, square];
+
+                    cachedHash = hash;
+                }
+                else
+                {
+                    cachedHash = null; // Invalidate hash cache when board changes
+                }
             }
         }
 

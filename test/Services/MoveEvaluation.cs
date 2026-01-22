@@ -41,8 +41,9 @@ namespace ChessDroid.Services
                 // Initial capture value
                 int gain = victimValue;
 
-                // Create temporary board to simulate exchanges
-                ChessBoard tempBoard = new ChessBoard(board.GetArray());
+                // Create temporary board to simulate exchanges (using pooling)
+                using var pooled = BoardPool.Rent(board);
+                ChessBoard tempBoard = pooled.Board;
 
                 // Find all attackers to this square (both sides)
                 List<(int row, int col, char piece, int value)> attackers = GetAllAttackers(tempBoard, targetRow, targetCol);
@@ -132,8 +133,9 @@ namespace ChessDroid.Services
                 int movingValue = ChessUtilities.GetPieceValue(movingType);
                 int capturedValue = ChessUtilities.GetPieceValue(capturedType);
 
-                // Create board after capture
-                ChessBoard tempBoard = new ChessBoard(board.GetArray());
+                // Create board after capture (using pooling)
+                using var pooledCapture = BoardPool.Rent(board);
+                ChessBoard tempBoard = pooledCapture.Board;
                 tempBoard.SetPiece(destRow, destCol, movingPiece);
                 tempBoard.SetPiece(srcRow, srcCol, '.');
 
@@ -220,7 +222,8 @@ namespace ChessDroid.Services
                 bool isCapture = targetPiece != '.';
 
                 // CHECKS (very forcing) - Priority 1
-                ChessBoard tempBoard = new ChessBoard(board.GetArray());
+                using var pooledCheck = BoardPool.Rent(board);
+                ChessBoard tempBoard = pooledCheck.Board;
                 tempBoard.SetPiece(destRow, destCol, piece);
                 tempBoard.SetPiece(srcRow, srcCol, '.');
 
@@ -291,7 +294,8 @@ namespace ChessDroid.Services
                 PieceType pieceType = PieceHelper.GetPieceType(piece);
                 bool isPromotion = (pieceType == PieceType.Pawn && (destRow == 0 || destRow == 7));
 
-                ChessBoard tempBoard = new ChessBoard(board.GetArray());
+                using var pooledNoisy = BoardPool.Rent(board);
+                ChessBoard tempBoard = pooledNoisy.Board;
                 tempBoard.SetPiece(destRow, destCol, piece);
                 tempBoard.SetPiece(srcRow, srcCol, '.');
                 bool isCheck = IsGivingCheck(tempBoard, destRow, destCol, piece, isWhite);

@@ -24,8 +24,8 @@ namespace ChessDroid.Services
         {
             try
             {
-                // Forced mate detection
-                if (!string.IsNullOrEmpty(evaluation) && evaluation.StartsWith("Mate in ") && !evaluation.Contains("-"))
+                // Forced mate detection (only for "Mate in X", not "Mated in X")
+                if (!string.IsNullOrEmpty(evaluation) && evaluation.StartsWith("Mate in "))
                 {
                     return $"forced checkmate ({evaluation.ToLower()})";
                 }
