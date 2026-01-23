@@ -201,6 +201,12 @@ A: No. Using analysis tools during live games violates most chess platform terms
 **Q: How does the Aggressiveness slider work?**
 A: The slider (0-100) affects which moves are recommended. At 0 (solid), ChessDroid prefers safe, quiet moves. At 100 (aggressive), it prefers sharp, tactical moves. The engine still calculates all moves, but the selection is filtered based on "sharpness" metrics within acceptable evaluation tolerance.
 
+## Support
+
+Chessdroid is free and always will be. If it's helped you improve your chess, consider supporting the project:
+
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/chessdroid)
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
@@ -212,6 +218,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [Stockfish](https://stockfishchess.org/) - World's strongest chess engine, inspiration for move evaluation features
 - [Ethereal](https://github.com/AndyGrant/Ethereal) - High-performance chess engine, inspiration for positional evaluation
 - [Lc0](https://lczero.org/) - Leela Chess Zero, inspiration for WDL display and aggressiveness features
+- [Claude](https://claude.ai/) - AI assistant by Anthropic, instrumental in developing chessdroid's architecture, analysis features, and codebase
 
 ## Disclaimer
 
@@ -219,4 +226,6 @@ chessdroid is an independent project and is not affiliated with, endorsed by, or
 
 ---
 
-**Made with chess by the chessdroid team**
+**Made with ♟️ by the chessdroid team**
+
+*There would be no chessdroid without [Claude](https://claude.ai/) — from architecture design to tactical pattern detection, Claude has been the co-pilot behind every feature.*
