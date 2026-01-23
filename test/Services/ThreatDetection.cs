@@ -205,21 +205,15 @@ namespace ChessDroid.Services
             // Check if we're giving check
             if (ChessUtilities.CanAttackSquare(board, pieceRow, pieceCol, piece, kingRow, kingCol))
             {
-                threats.Add(new Threat
-                {
-                    Description = "gives check",
-                    Type = ThreatType.Check,
-                    Severity = 4,
-                    Square = GetSquareName(kingRow, kingCol)
-                });
-
                 // Check if it could be checkmate threat (king has few escape squares)
                 // Skip if piece will be recaptured - no real mate threat
+                bool isCheckmateThreat = false;
                 if (!pieceWillBeRecaptured)
                 {
                     int escapeSquares = CountKingEscapeSquares(board, kingRow, kingCol, !movingPlayerIsWhite);
                     if (escapeSquares <= 1)
                     {
+                        isCheckmateThreat = true;
                         threats.Add(new Threat
                         {
                             Description = "threatens checkmate",
@@ -228,6 +222,18 @@ namespace ChessDroid.Services
                             Square = GetSquareName(kingRow, kingCol)
                         });
                     }
+                }
+
+                // Only add "gives check" if it's NOT a checkmate threat (avoid redundancy)
+                if (!isCheckmateThreat)
+                {
+                    threats.Add(new Threat
+                    {
+                        Description = "gives check",
+                        Type = ThreatType.Check,
+                        Severity = 4,
+                        Square = GetSquareName(kingRow, kingCol)
+                    });
                 }
             }
         }

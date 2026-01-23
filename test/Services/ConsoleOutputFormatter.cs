@@ -99,10 +99,27 @@ namespace ChessDroid.Services
                         qualitySymbol = qualitySymbol + " ";
                 }
 
-                // Build the explanation line
-                if (!string.IsNullOrEmpty(explanation))
+                // Remove redundant phrases from explanation
+                string cleanedExplanation = explanation;
+
+                // Remove redundant check-related phrases if they're in threats
+                if (!string.IsNullOrEmpty(threatsText))
                 {
-                    AppendTextWithFormat($"  → {qualitySymbol}{explanation}",
+                    bool threatsHasCheck = threatsText.Contains("check", StringComparison.OrdinalIgnoreCase) ||
+                                           threatsText.Contains("checkmate", StringComparison.OrdinalIgnoreCase);
+                    if (threatsHasCheck)
+                    {
+                        cleanedExplanation = RemoveRedundantCheckPhrases(cleanedExplanation);
+                    }
+                }
+
+                // Remove redundant passed pawn phrases (always check, internal redundancy)
+                cleanedExplanation = RemoveRedundantPassedPawnPhrases(cleanedExplanation);
+
+                // Build the explanation line
+                if (!string.IsNullOrEmpty(cleanedExplanation))
+                {
+                    AppendTextWithFormat($"  → {qualitySymbol}{cleanedExplanation}",
                         richTextBox.BackColor, explanationColor, FontStyle.Italic);
 
                     // Add defenses on same line if present (before threats)
@@ -238,6 +255,79 @@ namespace ChessDroid.Services
         private void ResetBackground()
         {
             richTextBox.SelectionBackColor = richTextBox.BackColor;
+        }
+
+        /// <summary>
+        /// Removes redundant check-related phrases from explanation when they're already in threats
+        /// </summary>
+        private static string RemoveRedundantCheckPhrases(string explanation)
+        {
+            if (string.IsNullOrEmpty(explanation))
+                return explanation;
+
+            // Phrases to remove (they'll be covered by the threats section)
+            string[] redundantPhrases = new[]
+            {
+                "check with attack",
+                "gives check",
+                "creates threat on king",
+                ", check",
+                "check, "
+            };
+
+            string result = explanation;
+            foreach (var phrase in redundantPhrases)
+            {
+                result = result.Replace(phrase, "", StringComparison.OrdinalIgnoreCase);
+            }
+
+            // Clean up any resulting artifacts (double commas, trailing commas, etc.)
+            result = CleanupExplanationArtifacts(result);
+
+            return result;
+        }
+
+        /// <summary>
+        /// Removes redundant passed pawn phrases (keeps the more specific one)
+        /// </summary>
+        private static string RemoveRedundantPassedPawnPhrases(string explanation)
+        {
+            if (string.IsNullOrEmpty(explanation))
+                return explanation;
+
+            // If we have both "advances passed pawn" and "creates (dangerous) passed pawn", keep only one
+            bool hasAdvances = explanation.Contains("advances passed pawn", StringComparison.OrdinalIgnoreCase);
+            bool hasCreates = explanation.Contains("creates dangerous passed pawn", StringComparison.OrdinalIgnoreCase) ||
+                              explanation.Contains("creates passed pawn", StringComparison.OrdinalIgnoreCase);
+
+            if (hasAdvances && hasCreates)
+            {
+                // Keep "creates dangerous passed pawn" as it's more specific, remove "advances passed pawn"
+                string result = explanation.Replace("advances passed pawn", "", StringComparison.OrdinalIgnoreCase);
+                return CleanupExplanationArtifacts(result);
+            }
+
+            return explanation;
+        }
+
+        /// <summary>
+        /// Cleans up artifacts from phrase removal (double commas, etc.)
+        /// </summary>
+        private static string CleanupExplanationArtifacts(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+                return text;
+
+            string result = text;
+            result = System.Text.RegularExpressions.Regex.Replace(result, @",\s*,", ",");
+            result = System.Text.RegularExpressions.Regex.Replace(result, @"^\s*,\s*", "");
+            result = System.Text.RegularExpressions.Regex.Replace(result, @",\s*$", "");
+            result = System.Text.RegularExpressions.Regex.Replace(result, @"\|\s*\|", "|");
+            result = System.Text.RegularExpressions.Regex.Replace(result, @"^\s*\|\s*", "");
+            result = System.Text.RegularExpressions.Regex.Replace(result, @"\s*\|\s*$", "");
+            result = result.Trim();
+
+            return result;
         }
 
         /// <summary>
