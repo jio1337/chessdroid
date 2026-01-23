@@ -594,7 +594,92 @@ namespace ChessDroid.Services
                 DisplayOpponentThreats(fen);
             }
 
+            // Display endgame insights if in endgame and enabled
+            if (config?.ShowEndgameAnalysis == true)
+            {
+                DisplayEndgameInsights(fen);
+            }
+
             ResetFormatting();
+        }
+
+        /// <summary>
+        /// Displays endgame-specific insights (rule of the square, opposition, etc.)
+        /// Inspired by Stockfish, Ethereal, and Lc0 endgame evaluation
+        /// </summary>
+        private void DisplayEndgameInsights(string completeFen)
+        {
+            try
+            {
+                ChessBoard board = ChessBoard.FromFEN(completeFen);
+
+                // Only show insights in endgame positions
+                if (!EndgameAnalysis.IsEndgame(board))
+                    return;
+
+                string[] fenParts = completeFen.Split(' ');
+                bool whiteToMove = fenParts.Length > 1 && fenParts[1] == "w";
+
+                var insights = EndgameAnalysis.GetEndgameInsights(board, whiteToMove);
+
+                if (insights.Count > 0)
+                {
+                    richTextBox.AppendText(Environment.NewLine);
+
+                    // Game phase header
+                    string phase = EndgameAnalysis.GetGamePhase(board);
+                    AppendTextWithFormat($"♟ Endgame Analysis ({phase}):{Environment.NewLine}",
+                        richTextBox.BackColor, Color.Cyan, FontStyle.Bold);
+
+                    foreach (var insight in insights)
+                    {
+                        // Color-code based on insight type
+                        Color insightColor = GetInsightColor(insight);
+                        AppendTextWithFormat($"  • {insight}{Environment.NewLine}",
+                            richTextBox.BackColor, insightColor, FontStyle.Regular);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error displaying endgame insights: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Get color for endgame insight based on content
+        /// </summary>
+        private static Color GetInsightColor(string insight)
+        {
+            string lower = insight.ToLower();
+
+            // Critical advantages
+            if (lower.Contains("unstoppable") || lower.Contains("forced checkmate"))
+                return Color.LimeGreen;
+
+            // Drawing indicators
+            if (lower.Contains("draw") || lower.Contains("insufficient") ||
+                lower.Contains("fortress") || lower.Contains("wrong color"))
+                return Color.Gold;
+
+            // Opposition and key squares
+            if (lower.Contains("opposition"))
+                return Color.MediumOrchid;
+
+            // King activity
+            if (lower.Contains("active king") || lower.Contains("centralization"))
+                return Color.PaleGreen;
+
+            // Passed pawn insights
+            if (lower.Contains("passed pawn"))
+                return Color.Orange;
+
+            // Zugzwang
+            if (lower.Contains("zugzwang"))
+                return Color.Coral;
+
+            // Default
+            return Color.LightGray;
         }
 
         /// <summary>

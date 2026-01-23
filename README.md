@@ -38,13 +38,13 @@ chessdroid is a desktop application built for focused chess study. Analyze posit
 ### Customization
 - **Dark/Light Themes** - Fully-featured dark mode with automatic theme persistence
 - **Complexity Levels** - Choose from Beginner, Intermediate, Advanced, or Master explanations
-- **Feature Toggles** - 11+ toggles to customize analysis (Tactical, Positional, Endgame, Opening, Win%, Tablebase, SEE, WDL, etc.)
+- **Feature Toggles** - 11+ toggles to customize analysis (Tactical, Positional, Endgame, Opening, Win%, SEE, WDL, etc.)
 - **Flexible Settings** - Customize engine depth, match threshold, and display preferences
 
 ### User Experience
 - **Global Hotkeys** - `Alt+X` to analyze, `Alt+K` to toggle auto-monitor (works even when minimized)
 - **Debug Mode** - Optional cell visualization for troubleshooting piece recognition
-- **Tablebase-Aware** - Endgame-specific analysis for positions with 7 or fewer pieces
+- **Endgame Heuristics** - Advanced endgame analysis inspired by Stockfish/Ethereal (opposition, rule of square, king activity)
 - **Config Hot-Reload** - Settings changes take effect immediately without restart
 
 ## Supported Chess Websites

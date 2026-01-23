@@ -324,8 +324,8 @@ namespace ChessDroid.Services
                     if (!string.IsNullOrEmpty(qualityImbalance) && reasons.Count < 2)
                         reasons.Add(qualityImbalance);
 
-                    if (reasons.Count == 0 && EndgameAnalysis.IsPotentialZugzwang(tempBoard, isWhite))
-                        reasons.Add("zugzwang position (any move worsens position)");
+                    // Removed incorrect zugzwang explanation - zugzwang is a position
+                    // characteristic that should be shown in endgame insights, not per-move
 
                     if (reasons.Count < 2)
                     {

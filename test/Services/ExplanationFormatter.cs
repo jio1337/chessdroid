@@ -86,7 +86,7 @@ namespace ChessDroid.Services
                 .Replace("creates passed pawn", "advances pawn")
                 .Replace("creates dangerous passed pawn", "dangerous pawn")
                 .Replace("opposite-colored bishops (drawish)", "bishops make it hard to win")
-                .Replace("zugzwang position", "forced to make bad move")
+                .Replace("zugzwang-prone", "careful")
                 .Replace("tablebase", "endgame theory")
                 .Replace("sharp tactical position", "complicated position")
                 .Replace("technical endgame", "careful endgame");
@@ -97,7 +97,7 @@ namespace ChessDroid.Services
             // Keep most terms but simplify very technical ones
             return explanation
                 .Replace("opposite-colored bishops (drawish)", "opposite-colored bishops")
-                .Replace("zugzwang position (any move worsens position)", "zugzwang");
+                .Replace("zugzwang-prone position", "zugzwang territory");
         }
 
         private static string EnhanceForMaster(string explanation)
@@ -402,9 +402,9 @@ namespace ChessDroid.Services
                 {
                     "ShowTacticalAnalysis" => "Detect pins, forks, skewers, and other tactical patterns",
                     "ShowPositionalAnalysis" => "Analyze pawn structure, piece activity, and king safety",
-                    "ShowEndgameAnalysis" => "Identify endgame patterns and zugzwang positions",
+                    "ShowEndgameAnalysis" => "Advanced endgame analysis (rule of square, opposition, king activity)",
                     "ShowOpeningPrinciples" => "Show opening principles for the first 20 moves",
-                    "ShowTablebaseInfo" => "Show perfect endgame moves from tablebase knowledge",
+                    "ShowTablebaseInfo" => "Show endgame pattern insights (passed pawns, fortresses, draws)",
                     "ShowMoveQualityColor" => "Color-code moves by quality (green=good, red=bad)",
                     "ShowSEEValues" => "Show Static Exchange Evaluation for captures",
                     _ => ""
