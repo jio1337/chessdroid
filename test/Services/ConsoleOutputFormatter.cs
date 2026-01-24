@@ -58,7 +58,8 @@ namespace ChessDroid.Services
             Color defaultExplanationColor,
             bool showThreats = false,
             bool isOnlyWinningMove = false,
-            (string label, string symbol, Color color)? classification = null)
+            (string label, string symbol, Color color)? classification = null,
+            string? overrideExplanation = null)
         {
             // Display header with foreground color only (no background highlight)
             // Include classification symbol if provided (e.g., "??" for Blunder)
@@ -71,7 +72,10 @@ namespace ChessDroid.Services
                 richTextBox.BackColor, headerForeColor, FontStyle.Bold);
 
             // Generate and display explanation
-            string explanation = generateExplanation(firstMove, completeFen, pvs, evaluation);
+            // Use override explanation (e.g., for Brilliant moves) if provided, otherwise generate normally
+            string explanation = !string.IsNullOrEmpty(overrideExplanation)
+                ? overrideExplanation
+                : generateExplanation(firstMove, completeFen, pvs, evaluation);
 
             // Get threats for this specific move if enabled
             // Skip threats/defenses when WE have forced mate - they don't matter
@@ -92,20 +96,8 @@ namespace ChessDroid.Services
             {
                 ResetBackground();
 
-                // Determine quality and color if move quality coloring is enabled
+                // Use default explanation color (new v2.5 classification handles quality indicators)
                 Color explanationColor = defaultExplanationColor;
-                string qualitySymbol = "";
-
-                if (config?.ShowMoveQualityColor == true && !string.IsNullOrEmpty(explanation))
-                {
-                    var quality = ExplanationFormatter.DetermineQualityFromEvaluation(explanation, evaluation);
-                    explanationColor = ExplanationFormatter.GetQualityColor(quality);
-                    qualitySymbol = ExplanationFormatter.GetQualitySymbol(quality);
-
-                    // Add space after symbol if present
-                    if (!string.IsNullOrEmpty(qualitySymbol))
-                        qualitySymbol = qualitySymbol + " ";
-                }
 
                 // Remove redundant phrases from explanation
                 string cleanedExplanation = explanation;
@@ -143,7 +135,7 @@ namespace ChessDroid.Services
                     }
                     else
                     {
-                        AppendTextWithFormat($"  → {qualitySymbol}{criticalPrefix}{cleanedExplanation}",
+                        AppendTextWithFormat($"  → {criticalPrefix}{cleanedExplanation}",
                             richTextBox.BackColor, explanationColor, FontStyle.Italic);
                     }
 
@@ -314,7 +306,6 @@ namespace ChessDroid.Services
             {
                 "check with attack",
                 "gives check",
-                "creates threat on king",
                 ", check",
                 "check, "
             };
@@ -438,8 +429,8 @@ namespace ChessDroid.Services
         /// <param name="uciMove">The move in UCI notation (e.g., "e2e4")</param>
         /// <param name="evalAfter">Evaluation after the move (in pawns)</param>
         /// <param name="evalBefore">Evaluation before the move (in pawns), can be null</param>
-        /// <returns>True if the move qualifies as Brilliant</returns>
-        private static bool IsBrilliantMove(string fen, string uciMove, double evalAfter, double? evalBefore)
+        /// <returns>Tuple of (isBrilliant, explanation) - explanation describes the sacrifice</returns>
+        private static (bool isBrilliant, string? explanation) IsBrilliantMove(string fen, string uciMove, double evalAfter, double? evalBefore)
         {
             try
             {
@@ -451,18 +442,18 @@ namespace ChessDroid.Services
                 // If we were already +2.0 or better, it's not brilliant - we were winning anyway
                 if (evalBefore.HasValue)
                 {
-                    if (whiteToMove && evalBefore.Value >= 2.0) return false;
-                    if (!whiteToMove && evalBefore.Value <= -2.0) return false;
+                    if (whiteToMove && evalBefore.Value >= 2.0) return (false, null);
+                    if (!whiteToMove && evalBefore.Value <= -2.0) return (false, null);
                 }
 
                 // Condition 2: Not in a bad position after the move
                 // "Bad position" = clearly losing (< -0.70 for White, > +0.70 for Black)
-                if (whiteToMove && evalAfter < -0.70) return false;
-                if (!whiteToMove && evalAfter > 0.70) return false;
+                if (whiteToMove && evalAfter < -0.70) return (false, null);
+                if (!whiteToMove && evalAfter > 0.70) return (false, null);
 
                 // Condition 1: Must be a PIECE sacrifice (not pawn)
                 // Parse the move to check if it's a capture with negative SEE
-                if (uciMove.Length < 4) return false;
+                if (uciMove.Length < 4) return (false, null);
 
                 int srcCol = uciMove[0] - 'a';
                 int srcRow = 8 - (uciMove[1] - '0');
@@ -474,7 +465,7 @@ namespace ChessDroid.Services
                 char targetPiece = board.GetPiece(destRow, destCol);
 
                 // Must be a capture
-                if (targetPiece == '.') return false;
+                if (targetPiece == '.') return (false, null);
 
                 // The SACRIFICED piece must be a minor piece or better (value >= 3)
                 // This means WE give up a piece worth >= 3 points
@@ -482,14 +473,14 @@ namespace ChessDroid.Services
                 int movingValue = ChessUtilities.GetPieceValue(movingType);
 
                 // Pawn sacrifices don't count as "Brilliant"
-                if (movingValue < 3) return false;
+                if (movingValue < 3) return (false, null);
 
                 // CRITICAL: If we're capturing a piece worth MORE OR EQUAL to our piece,
                 // it's NOT a sacrifice - it's a winning or even trade!
                 // Example: Bishop takes Queen = winning material, not a sacrifice
                 PieceType capturedType = PieceHelper.GetPieceType(targetPiece);
                 int capturedValue = ChessUtilities.GetPieceValue(capturedType);
-                if (capturedValue >= movingValue) return false;
+                if (capturedValue >= movingValue) return (false, null);
 
                 // CRITICAL: Check if enemy can PROFITABLY recapture our piece
                 // A sacrifice means we lose material. If enemy has a pawn that can recapture,
@@ -505,25 +496,49 @@ namespace ChessDroid.Services
                 // Check if enemy has a PAWN that can recapture
                 // Pawns are always worth less than minor pieces, so pawn recapture = not a sacrifice
                 bool enemyPawnCanRecapture = CanEnemyPawnCapture(afterCapture, destRow, destCol, whiteToMove);
-                if (enemyPawnCanRecapture) return false;
+                if (enemyPawnCanRecapture) return (false, null);
 
                 // Also check if our piece is defended - if so, any recapture loses material for enemy
                 bool ourPieceDefended = ChessUtilities.IsSquareDefended(afterCapture, destRow, destCol, whiteToMove);
-                if (ourPieceDefended) return false;
+                if (ourPieceDefended) return (false, null);
 
                 // Finally check SEE - must lose material for it to be a sacrifice
                 int seeValue = MoveEvaluation.StaticExchangeEvaluation(
                     board, destRow, destCol, movingPiece, whiteToMove, srcRow, srcCol);
 
                 // Must be a sacrifice (SEE < 0 means we lose material in the exchange)
-                if (seeValue >= 0) return false;
+                if (seeValue >= 0) return (false, null);
 
                 // All conditions met - it's a Brilliant move!
-                return true;
+                // Generate meaningful explanation based on the sacrifice
+                string pieceName = movingType switch
+                {
+                    PieceType.Queen => "queen",
+                    PieceType.Rook => "rook",
+                    PieceType.Bishop => "bishop",
+                    PieceType.Knight => "knight",
+                    _ => "piece"
+                };
+
+                // Describe the compensation based on position evaluation
+                string compensation;
+                double evalAdvantage = whiteToMove ? evalAfter : -evalAfter;
+
+                if (evalAdvantage >= 1.5)
+                    compensation = "decisive advantage";
+                else if (evalAdvantage >= 0.5)
+                    compensation = "strong initiative";
+                else if (evalAdvantage >= 0.0)
+                    compensation = "lasting compensation";
+                else
+                    compensation = "dynamic counterplay";
+
+                string explanation = $"sacrifices {pieceName} for {compensation}";
+                return (true, explanation);
             }
             catch
             {
-                return false;
+                return (false, null);
             }
         }
 
@@ -824,12 +839,15 @@ namespace ChessDroid.Services
 
             // Check for Brilliant move (piece sacrifice that works)
             (string label, string symbol, Color color)? bestMoveClassification = null;
+            string? brilliantExplanation = null;
             double? evalForBrilliant = MovesExplanation.ParseEvaluation(evaluation);
             if (evalForBrilliant.HasValue)
             {
-                if (IsBrilliantMove(fen, firstMove, evalForBrilliant.Value, previousEvaluation))
+                var (isBrilliant, explanation) = IsBrilliantMove(fen, firstMove, evalForBrilliant.Value, previousEvaluation);
+                if (isBrilliant)
                 {
                     bestMoveClassification = ("Brilliant", "!!", Color.Cyan);
+                    brilliantExplanation = explanation;
                 }
             }
 
@@ -844,7 +862,8 @@ namespace ChessDroid.Services
                 isDarkMode ? Color.LightGreen : Color.ForestGreen,
                 showThreats: true,
                 isOnlyWinningMove: isOnlyWinningMove,
-                classification: bestMoveClassification);
+                classification: bestMoveClassification,
+                overrideExplanation: brilliantExplanation);
 
             // Second best - show threats if enabled
             if (showSecondLine && pvs.Count >= 2)

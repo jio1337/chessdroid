@@ -120,6 +120,10 @@ namespace ChessDroid.Services
                         if (char.IsUpper(targetPiece) == isWhite) continue; // Skip own pieces
 
                         PieceType targetType = PieceHelper.GetPieceType(targetPiece);
+
+                        // Skip the King - attacking the king is "check", handled separately
+                        if (targetType == PieceType.King) continue;
+
                         int targetValue = ChessUtilities.GetPieceValue(targetType);
 
                         // Only report if we're attacking something more valuable

@@ -728,18 +728,18 @@ namespace ChessDroid.Services
                         return decoyInfo;
                 }
 
-                // Check detection
+                // Check detection - only return specific tactical patterns, not generic "gives check"
+                // ThreatDetection already handles "gives check" and "attacks X" in the threats section
                 if (IsGivingCheck(board, pieceRow, pieceCol, piece, isWhite))
                 {
-                    // Check for Greek Gift Sacrifice (Bxh7+ or Bxh2+)
+                    // Check for Greek Gift Sacrifice (Bxh7+ or Bxh2+) - this is a specific named tactic
                     char capturedPiece = originalBoard.GetPiece(pieceRow, pieceCol);
                     var greekGiftInfo = DetectGreekGiftSacrifice(board, pieceRow, pieceCol, piece, isWhite, capturedPiece);
                     if (!string.IsNullOrEmpty(greekGiftInfo))
                         return greekGiftInfo;
 
-                    if (attackedPieces.Count >= 1 && !pieceWillBeRecaptured)
-                        return "check with attack";
-                    return "gives check";
+                    // Don't return generic "gives check" or "check with attack"
+                    // These are shown by ThreatDetection in the threats section
                 }
 
                 return null;
@@ -2202,13 +2202,22 @@ namespace ChessDroid.Services
                 // If we're capturing something of equal or greater value, never a sacrifice
                 if (pieceValue <= targetValue) return null;
 
-                // CRITICAL: For it to be a sacrifice, the target should be defended
+                // CRITICAL: For it to be a sacrifice, the target should be defended by enemy
                 // If undefended, we're just winning material (not a sacrifice)
                 bool targetIsDefended = ChessUtilities.IsSquareDefended(board, destRow, destCol, !isWhite);
 
                 if (!targetIsDefended)
                 {
                     // Not a sacrifice - just winning a free piece
+                    return null;
+                }
+
+                // CRITICAL: If OUR piece is defended after we move there, it's NOT a sacrifice!
+                // e.g., Rxa7 where our pawn on b6 defends the rook - enemy recapture just trades
+                bool ourPieceIsDefended = ChessUtilities.IsSquareDefended(board, destRow, destCol, isWhite);
+                if (ourPieceIsDefended)
+                {
+                    // Our piece is defended - enemy recapturing would be an even trade, not a sacrifice
                     return null;
                 }
 

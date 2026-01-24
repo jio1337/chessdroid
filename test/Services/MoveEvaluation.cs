@@ -282,6 +282,105 @@ namespace ChessDroid.Services
         }
 
         /// <summary>
+        /// Check if after making a move, we leave a high-value piece vulnerable to profitable capture.
+        /// Returns the value of the most valuable vulnerable piece, or 0 if none.
+        /// A piece is "vulnerable" if any attacker worth LESS than the piece can capture it.
+        /// Even with defenders, we still lose material (e.g., bishop takes queen, rook recaptures = we lost 6 points).
+        /// </summary>
+        private static int GetHangingPieceValueAfterMove(ChessBoard board, int srcRow, int srcCol,
+            int destRow, int destCol, char movingPiece, bool isWhite)
+        {
+            try
+            {
+                // Simulate the move
+                using var pooled = BoardPool.Rent(board);
+                ChessBoard afterMove = pooled.Board;
+                afterMove.SetPiece(destRow, destCol, movingPiece);
+                afterMove.SetPiece(srcRow, srcCol, '.');
+
+                int maxVulnerableValue = 0;
+
+                // Check all our pieces to see if any high-value ones are now vulnerable
+                for (int r = 0; r < 8; r++)
+                {
+                    for (int c = 0; c < 8; c++)
+                    {
+                        char piece = afterMove.GetPiece(r, c);
+                        if (piece == '.') continue;
+
+                        bool isPieceWhite = char.IsUpper(piece);
+                        if (isPieceWhite != isWhite) continue; // Not our piece
+
+                        // Skip the piece we just moved (it's already accounted for in SEE)
+                        if (r == destRow && c == destCol) continue;
+
+                        // Only care about high-value pieces (queen = 9, rook = 5)
+                        PieceType pieceType = PieceHelper.GetPieceType(piece);
+                        int pieceValue = ChessUtilities.GetPieceValue(pieceType);
+                        if (pieceValue < 5) continue; // Skip minor pieces and pawns
+
+                        // Find the cheapest enemy attacker on this square
+                        int cheapestAttackerValue = GetCheapestAttackerValue(afterMove, r, c, !isWhite);
+
+                        // If no attacker, or attacker is worth at least as much as our piece, skip
+                        // (They wouldn't want to trade equal/up material)
+                        if (cheapestAttackerValue == 0 || cheapestAttackerValue >= pieceValue) continue;
+
+                        // Our piece is attacked by something worth LESS than it
+                        // This is a losing situation regardless of defenders!
+                        // Example: Bishop (3) attacks Queen (9) - even if we recapture, we lose 6 points
+                        if (pieceValue > maxVulnerableValue)
+                        {
+                            maxVulnerableValue = pieceValue;
+                        }
+                    }
+                }
+
+                return maxVulnerableValue;
+            }
+            catch
+            {
+                return 0;
+            }
+        }
+
+        /// <summary>
+        /// Find the value of the cheapest enemy piece attacking a square.
+        /// Returns 0 if no attacker found.
+        /// </summary>
+        private static int GetCheapestAttackerValue(ChessBoard board, int targetRow, int targetCol, bool attackerIsWhite)
+        {
+            int cheapestValue = int.MaxValue;
+            bool foundAttacker = false;
+
+            for (int r = 0; r < 8; r++)
+            {
+                for (int c = 0; c < 8; c++)
+                {
+                    char piece = board.GetPiece(r, c);
+                    if (piece == '.') continue;
+
+                    bool isPieceWhite = char.IsUpper(piece);
+                    if (isPieceWhite != attackerIsWhite) continue;
+
+                    // Check if this piece can attack the target square
+                    if (ChessUtilities.CanAttackSquare(board, r, c, piece, targetRow, targetCol))
+                    {
+                        PieceType pieceType = PieceHelper.GetPieceType(piece);
+                        int pieceValue = ChessUtilities.GetPieceValue(pieceType);
+                        if (pieceValue < cheapestValue)
+                        {
+                            cheapestValue = pieceValue;
+                            foundAttacker = true;
+                        }
+                    }
+                }
+            }
+
+            return foundAttacker ? cheapestValue : 0;
+        }
+
+        /// <summary>
         /// Detect if a capture wins material using SEE
         /// Inspired by Ethereal's move picker filtering
         /// </summary>
@@ -330,6 +429,19 @@ namespace ChessDroid.Services
                     }
                     else
                     {
+                        // CRITICAL: Check if we're leaving a valuable piece hanging
+                        // SEE only evaluates this square - we might be exposing our queen elsewhere!
+                        int hangingValue = GetHangingPieceValueAfterMove(
+                            board, srcRow, srcCol, destRow, destCol, movingPiece, isWhite);
+
+                        if (hangingValue >= seeValue)
+                        {
+                            // We're leaving a piece hanging worth at least what we're gaining
+                            // Example: Rxc7 "wins" queen (SEE +9) but leaves our queen on b1 hanging (-9)
+                            // Net is 0 or worse - don't say "wins"
+                            return $"captures {ChessUtilities.GetPieceName(capturedType)}";
+                        }
+
                         // Actually winning material
                         string seeInfo = showSEE ? $" (SEE +{seeValue})" : "";
                         return $"wins {ChessUtilities.GetPieceName(capturedType)}{seeInfo}";

@@ -33,7 +33,6 @@ namespace ChessDroid
         public bool ShowPositionalAnalysis { get; set; } = true; // Show positional evaluation
         public bool ShowEndgameAnalysis { get; set; } = true; // Show endgame patterns
         public bool ShowOpeningPrinciples { get; set; } = true; // Show opening principles
-        public bool ShowMoveQualityColor { get; set; } = true; // Color-coded moves
         public bool ShowSEEValues { get; set; } = true; // Static Exchange Evaluation
         public bool ShowThreats { get; set; } = true; // Show threats analysis
         public bool ShowWDL { get; set; } = true; // Show Win/Draw/Loss probabilities (Lc0-inspired)
@@ -143,7 +142,6 @@ namespace ChessDroid
             ShowPositionalAnalysis = other.ShowPositionalAnalysis;
             ShowEndgameAnalysis = other.ShowEndgameAnalysis;
             ShowOpeningPrinciples = other.ShowOpeningPrinciples;
-            ShowMoveQualityColor = other.ShowMoveQualityColor;
             ShowSEEValues = other.ShowSEEValues;
             ShowThreats = other.ShowThreats;
             ShowWDL = other.ShowWDL;

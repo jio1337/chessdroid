@@ -119,10 +119,6 @@ Controls how detailed explanations are:
   ♟ Opening Principles
     Opening move descriptions and principles
 
-  ♟ Color-Coded Moves
-    Visual quality indicators: !! (brilliant) to ?? (blunder)
-    Green = good, Yellow = dubious, Red = bad
-
   ♟ SEE Values
     Static Exchange Evaluation - shows material won/lost
     after all captures on a square
@@ -193,8 +189,7 @@ Wrong pieces detected → Increase Match Threshold (0.70-0.80)
 Board not found → Adjust Canny Thresholds (try 60/180)
 Engine timeout → Reduce Depth or increase Timeout
 No endgame insights → Enable 'Endgame Analysis' toggle
-Explanations too verbose → Lower Complexity level
-Colors hard to read → Disable 'Color-Coded Moves'";
+Explanations too verbose → Lower Complexity level";
 
             txtHelp.Text = helpText;
             txtHelp.SelectionStart = 0;
