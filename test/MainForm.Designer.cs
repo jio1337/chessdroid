@@ -39,6 +39,7 @@ namespace ChessDroid
             //
             // buttonAnalyze
             //
+            buttonAnalyze.Anchor = AnchorStyles.Top | AnchorStyles.Left;
             buttonAnalyze.BackColor = Color.Lavender;
             buttonAnalyze.Cursor = Cursors.Hand;
             buttonAnalyze.FlatStyle = FlatStyle.Popup;
@@ -51,9 +52,10 @@ namespace ChessDroid
             buttonAnalyze.Text = "Show Lines";
             buttonAnalyze.UseVisualStyleBackColor = false;
             buttonAnalyze.Click += buttonAnalyze_Click;
-            // 
+            //
             // buttonReset
-            // 
+            //
+            buttonReset.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             buttonReset.BackColor = Color.MistyRose;
             buttonReset.Cursor = Cursors.Hand;
             buttonReset.FlatStyle = FlatStyle.Popup;
@@ -66,9 +68,10 @@ namespace ChessDroid
             buttonReset.Text = "Reset App";
             buttonReset.UseVisualStyleBackColor = false;
             buttonReset.Click += buttonReset_Click;
-            // 
+            //
             // buttonSettings
-            // 
+            //
+            buttonSettings.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             buttonSettings.BackColor = Color.LightYellow;
             buttonSettings.Cursor = Cursors.Hand;
             buttonSettings.FlatStyle = FlatStyle.Popup;
@@ -81,9 +84,10 @@ namespace ChessDroid
             buttonSettings.Text = "⚙ Settings";
             buttonSettings.UseVisualStyleBackColor = false;
             buttonSettings.Click += buttonSettings_Click;
-            // 
+            //
             // richTextBoxConsole
-            // 
+            //
+            richTextBoxConsole.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             richTextBoxConsole.BackColor = Color.AliceBlue;
             richTextBoxConsole.Font = new Font("Courier New", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 0);
             richTextBoxConsole.ForeColor = Color.Black;
@@ -94,9 +98,10 @@ namespace ChessDroid
             richTextBoxConsole.Size = new Size(360, 225);
             richTextBoxConsole.TabIndex = 2;
             richTextBoxConsole.Text = "chessdroid://waiting";
-            // 
+            //
             // labelStatus
-            // 
+            //
+            labelStatus.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             labelStatus.AutoSize = true;
             labelStatus.BackColor = Color.Transparent;
             labelStatus.Font = new Font("Courier New", 7.5F);
@@ -106,9 +111,10 @@ namespace ChessDroid
             labelStatus.Size = new Size(35, 12);
             labelStatus.TabIndex = 4;
             labelStatus.Text = "Ready";
-            // 
+            //
             // chkWhiteTurn
-            // 
+            //
+            chkWhiteTurn.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
             chkWhiteTurn.AutoSize = true;
             chkWhiteTurn.BackColor = Color.WhiteSmoke;
             chkWhiteTurn.Checked = true;
@@ -122,12 +128,11 @@ namespace ChessDroid
             chkWhiteTurn.Text = "White to move";
             chkWhiteTurn.UseVisualStyleBackColor = false;
             chkWhiteTurn.CheckedChanged += chkWhiteTurn_CheckedChanged;
-            // 
+            //
             // MainForm
-            // 
+            //
             AutoScaleDimensions = new SizeF(7F, 14F);
             AutoScaleMode = AutoScaleMode.Font;
-            AutoSizeMode = AutoSizeMode.GrowAndShrink;
             BackColor = Color.WhiteSmoke;
             ClientSize = new Size(385, 360);
             Controls.Add(chkWhiteTurn);
@@ -142,6 +147,7 @@ namespace ChessDroid
             KeyPreview = true;
             MaximizeBox = false;
             MinimizeBox = false;
+            MinimumSize = new Size(350, 300);
             Name = "MainForm";
             StartPosition = FormStartPosition.CenterScreen;
             Text = "chessdroid v2.4.0";
