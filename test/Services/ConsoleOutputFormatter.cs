@@ -54,13 +54,13 @@ namespace ChessDroid.Services
             string completeFen,
             List<string> pvs,
             string firstMove,
-            Color headerBackColor,
+            Color headerForeColor,
             Color defaultExplanationColor,
             bool showThreats = false)
         {
-            // Display header with background color
+            // Display header with foreground color only (no background highlight)
             AppendTextWithFormat($"{label}: {sanMove} {evaluation}{Environment.NewLine}",
-                headerBackColor, Color.Black, FontStyle.Regular);
+                richTextBox.BackColor, headerForeColor, FontStyle.Bold);
 
             // Generate and display explanation
             string explanation = generateExplanation(firstMove, completeFen, pvs, evaluation);
@@ -531,6 +531,9 @@ namespace ChessDroid.Services
                 ResetFormatting();
             }
 
+            // Determine if dark mode is enabled for color selection
+            bool isDarkMode = config?.Theme == "Dark";
+
             // Best line - always show threats
             string bestSanFull = ConvertPvToSan(pvs, 0, bestMove, fen);
             string formattedEval = FormatEvaluation(evaluation);
@@ -543,8 +546,8 @@ namespace ChessDroid.Services
                 fen,
                 pvs,
                 firstMove,
-                Color.MediumSeaGreen,
-                Color.PaleGreen,
+                isDarkMode ? Color.PaleGreen : Color.Green,
+                isDarkMode ? Color.LightGreen : Color.ForestGreen,
                 showThreats: true);
 
             // Second best - show threats if enabled
@@ -563,8 +566,8 @@ namespace ChessDroid.Services
                     fen,
                     pvs,
                     secondMove,
-                    Color.Yellow,
-                    Color.DarkGoldenrod,
+                    isDarkMode ? Color.Khaki : Color.Goldenrod,
+                    isDarkMode ? Color.LightGoldenrodYellow : Color.DarkGoldenrod,
                     showThreats: true);
             }
 
@@ -583,8 +586,8 @@ namespace ChessDroid.Services
                     fen,
                     pvs,
                     thirdMove,
-                    Color.Red,
-                    Color.DarkRed,
+                    isDarkMode ? Color.LightCoral : Color.Firebrick,
+                    isDarkMode ? Color.Salmon : Color.DarkRed,
                     showThreats: true);
             }
 
