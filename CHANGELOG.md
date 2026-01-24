@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.5.0] - 2026-01-24
+
+### Added
+- **Chess.com-style move classification** - Second/third best moves now show classification labels when best move is the "only winning move":
+  - **BLUNDER (??)** - Win probability drop ≥ 20%
+  - **MISTAKE (?)** - Win probability drop 10-20%
+  - **INACCURACY (?!)** - Win probability drop 5-10%
+- **Brilliant move detection (!!)** - Identifies piece sacrifices that work, following Chess.com criteria:
+  - Must be a true sacrifice (give up more material than captured)
+  - Piece not defended and no pawn can recapture
+  - Position still good after the move
+  - Wasn't already completely winning before
+- **Greek Gift sacrifice detection** - Recognizes the classic Bxh7+/Bxh2+ bishop sacrifice pattern
+- **Win probability calculation** - Uses standard logistic function (same as Chess.com/Lichess) to convert centipawn evaluation to win percentage
+
+### Improved
+- **Static Exchange Evaluation (SEE)** - Major enhancements:
+  - Now check-aware: filters out attackers that can't recapture while dealing with check
+  - Now pin-aware: filters out pinned pieces that can't legally capture
+  - Fixed bug where SEE was called on post-capture board instead of original position
+  - Added source square parameter for accurate attacker removal
+- **"Only winning move" detection** - More accurate triggering based on evaluation swing thresholds
+- **Move explanations** - Removed misleading "(loses exchange)" suffix from best moves
+
+### Fixed
+- **False "wins pawn" for king captures** - SEE no longer shows incorrect values when king captures a piece
+- **Brilliant false positives** - Multiple safeguards prevent mislabeling normal captures as brilliant:
+  - Capturing equal or higher value piece is not a sacrifice
+  - Piece defended after capture is not a sacrifice
+  - Pawn can recapture = not a sacrifice
+
+---
+
 ## [2.4.1] - 2026-01-24
 
 ### Fixed

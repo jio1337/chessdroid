@@ -364,41 +364,66 @@ namespace ChessDroid.Services
                         // eval.Value is from White's perspective: positive = good for White, negative = good for Black
                         bool moveIsGood = (isWhite && eval.Value > 0) || (!isWhite && eval.Value < 0);
 
-                        // Decisive advantage (>= 3 pawns)
-                        if (Math.Abs(eval.Value) >= 3.0)
+                        // Standard chess evaluation ranges (based on chessify.me/Stockfish conventions):
+                        // |eval| > 1.50: Decisive advantage (+- or -+)
+                        // |eval| 0.70-1.50: Clear advantage (+/- or -/+)
+                        // |eval| 0.27-0.70: Slight advantage (+/= or =/+)
+                        // |eval| < 0.27: Equal (=)
+                        // With sub-ranges for more precise descriptions
+
+                        double absEval = Math.Abs(eval.Value);
+
+                        // Decisive advantage (> 1.50 pawns)
+                        if (absEval > 1.50)
                         {
                             if (moveIsGood)
                             {
-                                if (complexityDesc != null)
+                                if (absEval > 3.0)
+                                    reasons.Add(isEndgame ? "winning endgame" : "winning position");
+                                else if (complexityDesc != null)
                                     reasons.Add($"{winningChanceDesc} ({complexityDesc})");
                                 else
-                                    reasons.Add(isEndgame ? "winning endgame" : winningChanceDesc);
+                                    reasons.Add(isEndgame ? "winning endgame" : "decisive advantage");
                             }
                             else
                             {
                                 reasons.Add(isEndgame ? "defensive endgame play" : "fights back in difficult position");
                             }
                         }
-                        // Significant advantage (1.5-3 pawns)
-                        else if (Math.Abs(eval.Value) >= 1.5)
+                        // Clear advantage (0.70-1.50 pawns) - split into upper/lower
+                        else if (absEval >= 0.70)
                         {
                             if (moveIsGood)
-                                reasons.Add(isEndgame ? "better endgame" : winningChanceDesc);
+                            {
+                                if (absEval >= 1.10)
+                                    reasons.Add(isEndgame ? "much better endgame" : "strong advantage");
+                                else
+                                    reasons.Add(isEndgame ? "better endgame" : "clear advantage");
+                            }
                             else
+                            {
                                 reasons.Add(isEndgame ? "holds endgame" : "reduces disadvantage");
+                            }
                         }
-                        // Small advantage (0.5-1.5 pawns)
-                        else if (Math.Abs(eval.Value) >= 0.5)
+                        // Slight advantage (0.27-0.70 pawns) - split into upper/lower
+                        else if (absEval >= 0.27)
                         {
                             if (moveIsGood)
-                                reasons.Add(winningChanceDesc);
+                            {
+                                if (absEval >= 0.50)
+                                    reasons.Add(isEndgame ? "slightly better endgame" : "comfortable edge");
+                                else
+                                    reasons.Add(isEndgame ? "small edge in endgame" : "slight edge");
+                            }
                             else
+                            {
                                 reasons.Add(isEndgame ? "slight disadvantage" : "under slight pressure");
+                            }
                         }
-                        // Balanced position (<0.5 pawns)
-                        else if (Math.Abs(eval.Value) < 0.5)
+                        // Equal position (< 0.27 pawns)
+                        else
                         {
-                            reasons.Add(isEndgame ? "balanced endgame" : "maintains balance");
+                            reasons.Add(isEndgame ? "equal endgame" : "equal position");
                         }
                     }
                 }
@@ -706,6 +731,12 @@ namespace ChessDroid.Services
                 // Check detection
                 if (IsGivingCheck(board, pieceRow, pieceCol, piece, isWhite))
                 {
+                    // Check for Greek Gift Sacrifice (Bxh7+ or Bxh2+)
+                    char capturedPiece = originalBoard.GetPiece(pieceRow, pieceCol);
+                    var greekGiftInfo = DetectGreekGiftSacrifice(board, pieceRow, pieceCol, piece, isWhite, capturedPiece);
+                    if (!string.IsNullOrEmpty(greekGiftInfo))
+                        return greekGiftInfo;
+
                     if (attackedPieces.Count >= 1 && !pieceWillBeRecaptured)
                         return "check with attack";
                     return "gives check";
@@ -2117,14 +2148,10 @@ namespace ChessDroid.Services
                     return null;
                 }
 
-                // Create board after capture to check SEE (using pooling)
-                using var pooledSac = BoardPool.Rent(board);
-                ChessBoard tempBoard = pooledSac.Board;
-                tempBoard.SetPiece(destRow, destCol, piece);
-
-                // Use SEE to check if we're actually losing material
+                // Use SEE on ORIGINAL board to check if we're actually losing material
+                // SEE needs to see the target piece on the square to calculate its value
                 // If SEE is positive or neutral, it's NOT a sacrifice (we're trading or winning)
-                int seeValue = MoveEvaluation.StaticExchangeEvaluation(tempBoard, destRow, destCol, piece, isWhite);
+                int seeValue = MoveEvaluation.StaticExchangeEvaluation(board, destRow, destCol, piece, isWhite);
 
                 // CRITICAL: If SEE shows we win or trade evenly, this is NOT a sacrifice
                 // This catches the recapture case: even though Rook > Knight in value,
@@ -2185,13 +2212,9 @@ namespace ChessDroid.Services
                     return null;
                 }
 
-                // USE SEE to determine if we actually LOSE material
-                // Create temp board after our capture (using pooling)
-                using var pooledExchSac = BoardPool.Rent(board);
-                ChessBoard tempBoard = pooledExchSac.Board;
-                tempBoard.SetPiece(destRow, destCol, piece);
-
-                int seeValue = MoveEvaluation.StaticExchangeEvaluation(tempBoard, destRow, destCol, piece, isWhite);
+                // USE SEE on ORIGINAL board to determine if we actually LOSE material
+                // SEE needs to see the target piece on the square to calculate its value
+                int seeValue = MoveEvaluation.StaticExchangeEvaluation(board, destRow, destCol, piece, isWhite);
 
                 // If SEE is >= 0, we don't lose material, so it's NOT a sacrifice
                 // A sacrifice means we intentionally lose material for positional compensation
@@ -2472,5 +2495,57 @@ namespace ChessDroid.Services
         // Helper: Count how many pieces of a given color defend a square
         private static int CountDefenders(ChessBoard board, int row, int col, bool byWhite)
             => ChessUtilities.CountDefenders(board, row, col, byWhite);
+
+        /// <summary>
+        /// Detect the Greek Gift Sacrifice (classical bishop sacrifice on h7/h2).
+        /// One of the most famous attacking patterns in chess, dating back centuries.
+        /// Pattern: Bishop captures h-pawn with check, king forced to take, followed by Qh4/Qh5 + Ng5.
+        /// </summary>
+        private static string? DetectGreekGiftSacrifice(ChessBoard board, int pieceRow, int pieceCol, char piece, bool isWhite, char capturedPiece)
+        {
+            try
+            {
+                PieceType pieceType = PieceHelper.GetPieceType(piece);
+
+                // Must be a bishop
+                if (pieceType != PieceType.Bishop) return null;
+
+                // Must be capturing a pawn
+                PieceType capturedType = PieceHelper.GetPieceType(capturedPiece);
+                if (capturedType != PieceType.Pawn) return null;
+
+                // Must be giving check (already verified by caller typically)
+                if (!IsGivingCheck(board, pieceRow, pieceCol, piece, isWhite)) return null;
+
+                if (isWhite)
+                {
+                    // White's Greek Gift: Bxh7+ with Black king on g8
+                    // Bishop lands on h7 (row 1 in 0-indexed, col 7)
+                    if (pieceRow != 1 || pieceCol != 7) return null;
+
+                    // Black king should be on g8 (castled kingside)
+                    char blackKing = board.GetPiece(0, 6); // g8
+                    if (blackKing != 'k') return null;
+
+                    return "Greek Gift sacrifice (Bxh7+)";
+                }
+                else
+                {
+                    // Black's Greek Gift: Bxh2+ with White king on g1
+                    // Bishop lands on h2 (row 6 in 0-indexed, col 7)
+                    if (pieceRow != 6 || pieceCol != 7) return null;
+
+                    // White king should be on g1 (castled kingside)
+                    char whiteKing = board.GetPiece(7, 6); // g1
+                    if (whiteKing != 'K') return null;
+
+                    return "Greek Gift sacrifice (Bxh2+)";
+                }
+            }
+            catch
+            {
+                return null;
+            }
+        }
     }
 }

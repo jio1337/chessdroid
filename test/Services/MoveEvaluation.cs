@@ -22,8 +22,10 @@ namespace ChessDroid.Services
         /// <summary>
         /// Evaluate static exchange on a square
         /// Returns the material gain/loss after all captures are resolved
+        /// Uses negamax-style SEE algorithm with proper alternating sides
+        /// ENHANCED: Now check-aware and pin-aware for more accurate evaluation
         /// </summary>
-        public static int StaticExchangeEvaluation(ChessBoard board, int targetRow, int targetCol, char attackingPiece, bool isWhite)
+        public static int StaticExchangeEvaluation(ChessBoard board, int targetRow, int targetCol, char attackingPiece, bool isWhite, int srcRow = -1, int srcCol = -1)
         {
             try
             {
@@ -38,23 +40,48 @@ namespace ChessDroid.Services
                 int attackerValue = ChessUtilities.GetPieceValue(attackerType);
                 int victimValue = ChessUtilities.GetPieceValue(victimType);
 
-                // Initial capture value
-                int gain = victimValue;
+                // Build gain array for each capture depth
+                // gain[d] = material balance after d captures
+                List<int> gains = new List<int>(16);
+                gains.Add(victimValue); // Initial capture gains the victim
 
-                // Create temporary board to simulate exchanges (using pooling)
+                // Create temporary board to simulate the initial capture
                 using var pooled = BoardPool.Rent(board);
                 ChessBoard tempBoard = pooled.Board;
 
-                // Find all attackers to this square (both sides)
+                // Simulate the initial capture - remove attacker from source, put on target
+                if (srcRow >= 0 && srcCol >= 0)
+                {
+                    tempBoard.SetPiece(srcRow, srcCol, '.'); // Remove from source
+                }
+                tempBoard.SetPiece(targetRow, targetCol, attackingPiece);
+
+                // CHECK-AWARE SEE: If the initial capture gives check, opponent may not be able to recapture
+                bool captureGivesCheck = ChessUtilities.IsGivingCheck(tempBoard, targetRow, targetCol, attackingPiece, isWhite);
+
+                // Find all attackers to this square AFTER the initial capture
                 List<(int row, int col, char piece, int value)> attackers = GetAllAttackers(tempBoard, targetRow, targetCol);
 
-                // Simulate captures alternating between sides
-                bool currentSideIsWhite = isWhite;
-                int currentAttackerValue = attackerValue;
+                // PIN-AWARE SEE: Filter out pinned pieces that can't legally recapture
+                attackers = FilterPinnedAttackers(tempBoard, attackers, targetRow, targetCol);
 
+                // If capture gives check, filter out attackers that can't deal with check while recapturing
+                if (captureGivesCheck)
+                {
+                    attackers = FilterAttackersInCheck(tempBoard, attackers, targetRow, targetCol, !isWhite);
+                }
+
+                // Start with opponent's turn (they can recapture)
+                bool currentSideIsWhite = !isWhite;
+                int pieceOnTarget = attackerValue; // Our piece is now on the target
+                char pieceCharOnTarget = attackingPiece;
+
+                int depth = 0;
                 while (attackers.Any(a => char.IsUpper(a.piece) == currentSideIsWhite))
                 {
-                    // Find least valuable attacker of current side
+                    depth++;
+
+                    // Find least valuable attacker of current side that can legally capture
                     var nextAttacker = attackers
                         .Where(a => char.IsUpper(a.piece) == currentSideIsWhite)
                         .OrderBy(a => a.value)
@@ -62,32 +89,169 @@ namespace ChessDroid.Services
 
                     if (nextAttacker.piece == default) break;
 
-                    // Simulate capture
-                    if (currentSideIsWhite)
-                        gain += currentAttackerValue; // We lose our piece
-                    else
-                        gain -= currentAttackerValue; // Opponent loses their piece
+                    // Calculate gain at this depth: capture the piece on target, minus accumulated gain
+                    gains.Add(pieceOnTarget - gains[depth - 1]);
 
-                    // Remove this attacker
+                    // Simulate this capture on the temp board
+                    tempBoard.SetPiece(nextAttacker.row, nextAttacker.col, '.');
+                    tempBoard.SetPiece(targetRow, targetCol, nextAttacker.piece);
+
+                    // The capturing piece is now on the target
+                    pieceOnTarget = nextAttacker.value;
+                    pieceCharOnTarget = nextAttacker.piece;
+
+                    // Remove this attacker from the list
                     attackers.Remove(nextAttacker);
 
-                    // Next attacker value becomes the current one
-                    currentAttackerValue = nextAttacker.value;
+                    // CHECK-AWARE: Does this recapture give check?
+                    bool thisRecaptureGivesCheck = ChessUtilities.IsGivingCheck(tempBoard, targetRow, targetCol, pieceCharOnTarget, currentSideIsWhite);
 
                     // Switch sides
                     currentSideIsWhite = !currentSideIsWhite;
 
-                    // If gain is already decided (side to move won't capture), stop
-                    if (currentSideIsWhite && gain < 0) break;  // We're losing, stop
-                    if (!currentSideIsWhite && gain > 0) break; // Opponent is losing, they stop
+                    // If this recapture gives check, filter remaining attackers
+                    if (thisRecaptureGivesCheck)
+                    {
+                        attackers = FilterAttackersInCheck(tempBoard, attackers, targetRow, targetCol, currentSideIsWhite);
+                    }
+
+                    // Re-filter for pins after board state changed
+                    attackers = FilterPinnedAttackers(tempBoard, attackers, targetRow, targetCol);
+
+                    // Alpha-beta style pruning: if the side to move is already ahead,
+                    // they might not want to continue the exchange
+                    if (Math.Max(-gains[depth], gains[depth - 1]) < 0)
+                        break;
                 }
 
-                return gain;
+                // Propagate back: each side chooses the best outcome
+                // gains[d-1] = -max(-gains[d], gains[d-1])
+                // Simplified: gains[d-1] = min(-gains[d], gains[d-1])
+                for (int d = depth; d >= 1; d--)
+                {
+                    gains[d - 1] = -Math.Max(-gains[d], gains[d - 1]);
+                }
+
+                return gains[0];
             }
             catch
             {
                 return 0; // If error, assume neutral
             }
+        }
+
+        /// <summary>
+        /// Filter out attackers that are pinned to their king and can't legally capture
+        /// </summary>
+        private static List<(int row, int col, char piece, int value)> FilterPinnedAttackers(
+            ChessBoard board,
+            List<(int row, int col, char piece, int value)> attackers,
+            int targetRow, int targetCol)
+        {
+            var legalAttackers = new List<(int row, int col, char piece, int value)>();
+
+            foreach (var attacker in attackers)
+            {
+                // Check if this piece is pinned
+                if (!IsPiecePinnedToKing(board, attacker.row, attacker.col, attacker.piece, targetRow, targetCol))
+                {
+                    legalAttackers.Add(attacker);
+                }
+            }
+
+            return legalAttackers;
+        }
+
+        /// <summary>
+        /// Filter out attackers whose side is in check and can't recapture while dealing with check
+        /// </summary>
+        private static List<(int row, int col, char piece, int value)> FilterAttackersInCheck(
+            ChessBoard board,
+            List<(int row, int col, char piece, int value)> attackers,
+            int targetRow, int targetCol,
+            bool sideInCheckIsWhite)
+        {
+            // Find the king position for the side in check
+            char king = sideInCheckIsWhite ? 'K' : 'k';
+            int kingRow = -1, kingCol = -1;
+
+            for (int r = 0; r < 8 && kingRow < 0; r++)
+            {
+                for (int c = 0; c < 8; c++)
+                {
+                    if (board.GetPiece(r, c) == king)
+                    {
+                        kingRow = r;
+                        kingCol = c;
+                        break;
+                    }
+                }
+            }
+
+            if (kingRow < 0) return attackers; // King not found, return all
+
+            var legalAttackers = new List<(int row, int col, char piece, int value)>();
+
+            foreach (var attacker in attackers)
+            {
+                // Only filter attackers of the side in check
+                bool attackerIsWhite = char.IsUpper(attacker.piece);
+                if (attackerIsWhite != sideInCheckIsWhite)
+                {
+                    legalAttackers.Add(attacker);
+                    continue;
+                }
+
+                // Simulate the recapture and check if king is still in check
+                using var pooled = BoardPool.Rent(board);
+                ChessBoard testBoard = pooled.Board;
+                testBoard.SetPiece(attacker.row, attacker.col, '.');
+                testBoard.SetPiece(targetRow, targetCol, attacker.piece);
+
+                // Is the king still attacked after this recapture?
+                if (!ChessUtilities.IsSquareAttackedBy(testBoard, kingRow, kingCol, !sideInCheckIsWhite))
+                {
+                    // This recapture also deals with the check - it's legal
+                    legalAttackers.Add(attacker);
+                }
+            }
+
+            return legalAttackers;
+        }
+
+        /// <summary>
+        /// Check if a piece is pinned to its king and can't move to the target square
+        /// </summary>
+        private static bool IsPiecePinnedToKing(ChessBoard board, int pieceRow, int pieceCol, char piece, int targetRow, int targetCol)
+        {
+            bool isWhite = char.IsUpper(piece);
+            char king = isWhite ? 'K' : 'k';
+
+            // Find our king
+            int kingRow = -1, kingCol = -1;
+            for (int r = 0; r < 8 && kingRow < 0; r++)
+            {
+                for (int c = 0; c < 8; c++)
+                {
+                    if (board.GetPiece(r, c) == king)
+                    {
+                        kingRow = r;
+                        kingCol = c;
+                        break;
+                    }
+                }
+            }
+
+            if (kingRow < 0) return false; // King not found
+
+            // Simulate moving this piece to the target
+            using var pooled = BoardPool.Rent(board);
+            ChessBoard testBoard = pooled.Board;
+            testBoard.SetPiece(pieceRow, pieceCol, '.');
+            testBoard.SetPiece(targetRow, targetCol, piece);
+
+            // Check if our king is now attacked (would be illegal)
+            return ChessUtilities.IsSquareAttackedBy(testBoard, kingRow, kingCol, !isWhite);
         }
 
         /// <summary>
@@ -139,11 +303,13 @@ namespace ChessDroid.Services
                 tempBoard.SetPiece(destRow, destCol, movingPiece);
                 tempBoard.SetPiece(srcRow, srcCol, '.');
 
-                // Check if destination square is defended by enemy
+                // Check if destination square is defended by enemy (on post-capture board)
                 bool squareDefended = ChessUtilities.IsSquareDefended(tempBoard, destRow, destCol, !isWhite);
 
-                // Evaluate full exchange sequence
-                int seeValue = StaticExchangeEvaluation(tempBoard, destRow, destCol, movingPiece, isWhite);
+                // Evaluate full exchange sequence on ORIGINAL board
+                // (SEE needs to see the target piece on the square to calculate its value)
+                // Pass source position so SEE can remove the attacker from its source
+                int seeValue = StaticExchangeEvaluation(board, destRow, destCol, movingPiece, isWhite, srcRow, srcCol);
 
                 // CRITICAL FIX: Distinguish between trades and wins
                 // Without move history, we can't know if this is a recapture
@@ -185,8 +351,10 @@ namespace ChessDroid.Services
                 }
                 else // seeValue < 0
                 {
-                    string seeInfo = showSEE ? " (loses exchange)" : "";
-                    return $"captures {ChessUtilities.GetPieceName(capturedType)}{seeInfo}";
+                    // Don't say "loses exchange" - it's misleading for best moves
+                    // SEE doesn't account for checks, tactics, or strategic compensation
+                    // The engine evaluation already tells the full story
+                    return $"captures {ChessUtilities.GetPieceName(capturedType)}";
                 }
             }
             catch
@@ -243,8 +411,8 @@ namespace ChessDroid.Services
                     // Prefer capturing valuable pieces with cheap pieces
                     score += (victimValue * 10) - attackerValue;
 
-                    // SEE adjustment
-                    int seeValue = StaticExchangeEvaluation(tempBoard, destRow, destCol, piece, isWhite);
+                    // SEE adjustment - use original board so SEE can see the target piece
+                    int seeValue = StaticExchangeEvaluation(board, destRow, destCol, piece, isWhite, srcRow, srcCol);
                     if (seeValue > 0)
                         score += 1000; // Good capture
                     else if (seeValue < 0)

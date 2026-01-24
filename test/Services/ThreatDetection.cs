@@ -278,7 +278,21 @@ namespace ChessDroid.Services
                         // Also check if the attack can be blocked (for sliding piece attacks)
                         bool canBlock = ChessUtilities.CanBlockSlidingAttack(board, r, c, !attackerIsWhite);
 
-                        if (!canEscape && !canBlock)
+                        // PAWN SPECIAL CASE: Pawns that can push forward are NOT "won" even if
+                        // the new square is attacked. The opponent must spend a tempo to capture.
+                        // Only report "wins pawn" if pawn is truly blocked and can't move at all.
+                        bool pawnCanMove = false;
+                        if (pieceType == PieceType.Pawn)
+                        {
+                            int direction = !attackerIsWhite ? -1 : 1; // Pawn's direction (pieceIsWhite = !attackerIsWhite)
+                            int newRow = r + direction;
+                            if (newRow >= 0 && newRow < 8 && board.GetPiece(newRow, c) == '.')
+                            {
+                                pawnCanMove = true; // Pawn can push forward - not truly trapped
+                            }
+                        }
+
+                        if (!canEscape && !canBlock && !pawnCanMove)
                         {
                             // Truly hanging - can't escape and can't be blocked!
                             threats.Add(new Threat
