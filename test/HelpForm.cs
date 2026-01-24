@@ -14,7 +14,7 @@ namespace ChessDroid
         private void InitializeComponent()
         {
             this.Text = "chessdroid://help";
-            this.Size = new Size(700, 650);
+            this.Size = new Size(700, 750);
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
             this.MinimizeBox = false;
@@ -24,7 +24,7 @@ namespace ChessDroid
             txtHelp = new RichTextBox
             {
                 Location = new Point(10, 10),
-                Size = new Size(665, 550),
+                Size = new Size(665, 650),
                 ReadOnly = true,
                 BackColor = Color.White,
                 Font = new Font("Courier New", 9F, FontStyle.Regular),
@@ -37,7 +37,7 @@ namespace ChessDroid
             btnClose = new Button
             {
                 Text = "Close",
-                Location = new Point(300, 570),
+                Location = new Point(300, 670),
                 Size = new Size(85, 30),
                 DialogResult = DialogResult.OK
             };
@@ -50,7 +50,7 @@ namespace ChessDroid
 
         private void LoadHelpText()
         {
-            string helpText = @"CHESSDROID SETTINGS GUIDE
+            string helpText = @"CHESSDROID v2.4.0 SETTINGS GUIDE
 
 ═══════════════════════════════════════════════════════════════════
 📊 BOARD DETECTION
@@ -60,116 +60,143 @@ namespace ChessDroid
 Controls how similar a piece must look to be recognized.
 
   • 0.55-0.75 (Recommended): Balanced accuracy
-    ✓ Works for most boards and lighting conditions
-    ✓ Minimizes false positives
-
-  • 0.40-0.54 (Relaxed): More forgiving
-    ✓ Use if pieces aren't being detected
-    ✓ Better for unusual piece sets
-    ⚠ May detect wrong pieces occasionally
-
-  • 0.75-1.0 (Strict): Very precise
-    ✓ Eliminates almost all errors
-    ⚠ May miss pieces like Neo on Chess.com
-    ⚠ Requires perfect templates (Classic sets are recommended)
+  • 0.40-0.54 (Relaxed): Use if pieces aren't detected
+  • 0.75-1.0 (Strict): Very precise, may miss unusual pieces
 
 📐 Canny Thresholds (Edge Detection)
-Controls board outline detection for finding the chess board.
+Controls board outline detection.
 
-  • Low Threshold: Starting point for edge detection
-  • High Threshold: Strong edge confirmation (should be 2-3x low value)
+  • Low/High should be 1:2 or 1:3 ratio (e.g., 50/150)
+  • Increase both: If too many edges confuse detection
+  • Decrease both: If board edges aren't found
 
-  • Default (50/150): Works for most boards
-  • Increase both: If board not detected (too many edges confusing it)
-  • Decrease both: If board detection misses squares
-
-📏 Min Board Area (pixels²)
-Minimum size to consider as a chess board.
-
-  • Increase: If detecting wrong rectangular objects
-  • Decrease: If your board appears too small on screen
-  • Default (5000): Good for standard screen sizes
+📏 Min Board Area - Minimum pixel area to detect as board
+🔍 Debug Cells - Show detected squares for troubleshooting
 
 ═══════════════════════════════════════════════════════════════════
 🤖 CHESS ENGINE
 ═══════════════════════════════════════════════════════════════════
 
-⏱ Response Timeout (ms)
-Maximum time to wait for the engine to analyze a position.
-
-  • 3000-5000ms: quick suggestions
-  • 8000-15000ms: better analysis
-  • 20000ms+: Deep analysis for complex positions
-  • Default (10000ms): Good for most use cases
-
-🔄 Max Retries
-How many times to retry if the engine fails or times out.
-
-  • 3 (Recommended): Standard retry behavior
-  • Higher values: More resilient but slower recovery
-  • Lower values: Faster failure, less waiting
-
-⏳ Move Timeout (ms)
-Maximum time for the entire move analysis sequence:
-(board detection → position analysis → engine evaluation)
-
-  • Increase: If you frequently see timeout errors
-  • Default (30000ms): Usually sufficient for normal play
-  • Lower: For faster detection cycles
-
 🧠 Engine Depth (1-20)
-Controls how deeply the engine analyzes each position.
+  • 10-15 (Recommended): Good balance of speed and strength
+  • 16-20: Maximum strength but slower
 
-  • 1-8: Lightning fast, basic analysis
-    ⚠ May miss tactical nuances
+⏱ Response Timeout - Max wait time for engine analysis
+🔄 Max Retries - Retry attempts on engine failure
+⏳ Move Timeout - Total time for full analysis cycle
+⏱ Min Analysis Time - Minimum analysis time (prevents rushed moves)
 
-  • 10-15 (Recommended): Balanced strength
-    ✓ Solid tactical awareness
-    ✓ Default (15): Sweet spot for most games
-
-  • 16-20: Maximum strength, slower
-    ✓ Deep positional understanding
-    ⚠ Analysis takes longer
-    ⚠ May timeout
+🎮 Engine Selection - Choose from engines in /Engines folder
+🌐 Site Selection - Lichess or Chess.com (affects piece templates)
 
 ═══════════════════════════════════════════════════════════════════
-💡 TROUBLESHOOTING TIPS
+📝 EXPLANATION SETTINGS
 ═══════════════════════════════════════════════════════════════════
 
-Problem: Pieces not being detected
-→ Solution: Lower Match Threshold to 0.50-0.60
+📚 Complexity Level
+Controls how detailed explanations are:
 
-Problem: Wrong pieces detected
-→ Solution: Increase Match Threshold to 0.70-0.80
+  • Beginner: Simple terms, basic concepts
+  • Intermediate: Standard chess terminology
+  • Advanced: Full technical details
+  • Master: Complete analysis with all metrics
 
-Problem: Board outline not found
-→ Solution: Adjust Canny Thresholds (try 60/180 or 40/120)
+🎯 Feature Toggles (all independently controllable):
 
-Problem: Detecting wrong objects as board
-→ Solution: Increase Min Board Area to 8000-15000
+  ♟ Tactical Analysis
+    Pins, forks, skewers, discovered attacks, sacrifices,
+    tempo attacks, perpetual check detection
 
-Problem: Engine timeout errors
-→ Solution: Reduce Engine Depth or increase Response Timeout
+  ♟ Positional Analysis
+    Pawn structure, outposts, piece mobility, king safety,
+    central control, development advice
 
-Problem: Analysis too slow
-→ Solution: Decrease Engine Depth to 10-12 or reduce Response Timeout
+  ♟ Endgame Analysis
+    Opposition detection, rule of the square, king activity,
+    insufficient material, fortress detection, zugzwang,
+    passed pawn evaluation, mop-up technique
 
-Problem: Weak move suggestions
-→ Solution: Increase Engine Depth to 16-18 for stronger analysis
+  ♟ Opening Principles
+    Opening move descriptions and principles
+
+  ♟ Color-Coded Moves
+    Visual quality indicators: !! (brilliant) to ?? (blunder)
+    Green = good, Yellow = dubious, Red = bad
+
+  ♟ SEE Values
+    Static Exchange Evaluation - shows material won/lost
+    after all captures on a square
+
+  ♟ Threats Analysis
+    Shows threats created by your move (⚔) and
+    defenses against opponent threats (🛡)
+
+  ♟ WDL & Sharpness
+    Win/Draw/Loss percentages and position sharpness
+    Inspired by Lc0's probability-based evaluation
 
 ═══════════════════════════════════════════════════════════════════
-🚀 QUICK START
+🎛 LC0-INSPIRED FEATURES
 ═══════════════════════════════════════════════════════════════════
 
-1. Start with default settings (click 'Defaults' button if needed)
-2. Set Engine Depth based on your needs
-3. If pieces aren't detected → Adjust Match Threshold
-4. If board outline is wrong → Adjust Canny Thresholds
-5. If you see timeout errors → Reduce Engine Depth or increase timeouts
-6. Click 'Save & Apply' when done
+⚔ Aggressiveness Slider (0-100)
+Filters move suggestions based on playing style:
 
-chessdroid displays analysis in the console/moves list. All lines
-and evaluations are shown";
+  • 0-20 (Very Solid): Prefer safe, defensive moves
+  • 21-40 (Solid): Slightly conservative
+  • 41-60 (Balanced): No filtering, show all moves
+  • 61-80 (Aggressive): Prefer active, dynamic moves
+  • 81-100 (Very Aggressive): Maximum attacking chances
+
+📖 Show Opening Name
+Displays the detected opening name (e.g., 'Sicilian Defense')
+
+⭐ Show Move Quality
+Shows quality labels: Brilliant (!!) Best (!) Good Inaccuracy (?!)
+Mistake (?) Blunder (??)
+
+═══════════════════════════════════════════════════════════════════
+📺 DISPLAY OPTIONS
+═══════════════════════════════════════════════════════════════════
+
+Show Best Line - Always shows the #1 recommended move
+Show Second Line - Shows 2nd best alternative
+Show Third Line - Shows 3rd best alternative
+
+Comparing multiple lines helps understand why one move is better!
+
+═══════════════════════════════════════════════════════════════════
+🔄 AUTO-MONITOR (BETA)
+═══════════════════════════════════════════════════════════════════
+
+Automatically analyzes the board when it's your turn.
+Toggle with Alt+K hotkey or checkbox in settings.
+
+⚠ Known limitations:
+  • May miss very fast opponent moves (<200ms)
+  • Occasional issues with rapid position changes
+  • Disabled by default for stability
+
+═══════════════════════════════════════════════════════════════════
+⌨ KEYBOARD SHORTCUTS
+═══════════════════════════════════════════════════════════════════
+
+  Alt+A     Analyze current position
+  Alt+K     Toggle Auto-Monitor on/off
+  Alt+S     Open Settings
+  Escape    Stop current analysis
+
+═══════════════════════════════════════════════════════════════════
+💡 TROUBLESHOOTING
+═══════════════════════════════════════════════════════════════════
+
+Pieces not detected → Lower Match Threshold (0.50-0.60)
+Wrong pieces detected → Increase Match Threshold (0.70-0.80)
+Board not found → Adjust Canny Thresholds (try 60/180)
+Engine timeout → Reduce Depth or increase Timeout
+No endgame insights → Enable 'Endgame Analysis' toggle
+Explanations too verbose → Lower Complexity level
+Colors hard to read → Disable 'Color-Coded Moves'";
 
             txtHelp.Text = helpText;
             txtHelp.SelectionStart = 0;
