@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.5.1] - 2026-01-24
+
+### Fixed
+- **SEE explanation bug** - Fixed incorrect "wins X (SEE +Y)" when our pieces become vulnerable after the move
+  - Added `GetHangingPieceValueAfterMove` to detect exposed pieces
+  - Now checks if any attacker is worth less than our piece (vulnerable even if defended)
+- **False "rook sacrifice" detection** - No longer shows "rook sacrifice" when piece is defended after capture
+- **Redundant check phrases** - Removed "gives check", "check with attack" from explanations (shown in threats section)
+- **"Creates threat on king"** - Removed ambiguous phrase, now properly handled by threat detection as "gives check"
+
+### Improved
+- **Brilliant move explanations** - Now shows meaningful context like "sacrifices rook for decisive advantage" instead of generic threat descriptions
+
+### Removed
+- **Color-Coded Moves setting** - Obsolete feature replaced by v2.5 Chess.com-style classification
+
+---
+
 ## [2.5.0] - 2026-01-24
 
 ### Added
