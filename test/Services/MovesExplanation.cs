@@ -393,7 +393,7 @@ namespace ChessDroid.Services
                             if (moveIsGood)
                                 reasons.Add(winningChanceDesc);
                             else
-                                reasons.Add("equalizes");
+                                reasons.Add(isEndgame ? "slight disadvantage" : "under slight pressure");
                         }
                         // Balanced position (<0.5 pawns)
                         else if (Math.Abs(eval.Value) < 0.5)

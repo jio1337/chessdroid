@@ -181,10 +181,8 @@ Toggle with Alt+K hotkey or checkbox in settings.
 ⌨ KEYBOARD SHORTCUTS
 ═══════════════════════════════════════════════════════════════════
 
-  Alt+A     Analyze current position
+  Alt+X     Analyze current position
   Alt+K     Toggle Auto-Monitor on/off
-  Alt+S     Open Settings
-  Escape    Stop current analysis
 
 ═══════════════════════════════════════════════════════════════════
 💡 TROUBLESHOOTING
