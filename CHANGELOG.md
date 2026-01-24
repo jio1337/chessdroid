@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.4.1] - 2026-01-24
+
+### Fixed
+- **Misleading "equalizes" description** - Moves leaving you at a disadvantage (0.5-1.5 pawns behind) now correctly show "under slight pressure" instead of "equalizes"
+- **Incorrect keyboard shortcuts in documentation** - Help popup and website now show correct hotkeys: Alt+X (analyze) and Alt+K (auto-monitor); removed non-existent Alt+A, Alt+S, and Escape shortcuts
+
+### Improved
+- **Responsive MainForm** - Window can now be freely resized; console area expands/shrinks with window, buttons stay anchored to their corners; added minimum size (350x300) to prevent layout issues
+- **Cleaner console output** - Removed colored background highlights from move line headers; headers now use bold foreground text only for a cleaner look
+- **Dark mode readability** - Best lines now use lighter, more readable colors in dark mode (PaleGreen, Khaki, LightCoral) instead of darker variants that were hard to see
+
+---
+
 ## [2.4.0] - 2026-01-23
 
 ### Fixed
