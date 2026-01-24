@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.4.0] - 2026-01-23
+
+### Fixed
+- **Feature toggles now actually work** - Tactical Analysis, Positional Analysis, and Opening Principles toggles were being saved but never read to filter output
+- **Zugzwang explanation on winning moves** - Fixed bug where winning moves were incorrectly marked with "?" and "zugzwang position (any move worsens position)" explanation
+- Zugzwang is now properly treated as a position characteristic shown in endgame insights, not as a per-move explanation
+
+### Changed
+- **Tactical Analysis toggle** now properly controls pins, forks, skewers, sacrifices, and tempo attacks in move explanations
+- **Positional Analysis toggle** now properly controls pawn structure, outposts, mobility, king safety, and development advice
+- **Opening Principles toggle** now properly controls opening move descriptions
+- **Endgame Analysis toggle** now consolidates all endgame insights (opposition, rule of square, king activity, drawing patterns, zugzwang)
+
+### Removed
+- **Fake Tablebase feature** - Removed misleading "Tablebase Info" toggle that was not using real tablebases (just duplicated existing endgame analysis)
+- Cleaned up ~160 lines of redundant tablebase simulation code from AdvancedAnalysis.cs
+
+### Added
+- **Advanced endgame heuristics** inspired by Stockfish/Ethereal:
+  - Rule of the Square (unstoppable pawn detection)
+  - King centralization scoring with lookup tables
+  - Opposition detection (direct and distant)
+  - Wrong color bishop + rook pawn draw detection
+  - Insufficient material detection (FIDE rules)
+  - Mop-up evaluation (push enemy king to corner)
+  - Passed pawn advancement bonuses
+  - King tropism to passed pawns
+  - Fortress detection
+
+---
+
 ## [2.3.0] - 2026-01-22
 
 ### Performance
