@@ -243,7 +243,6 @@ Customize which analysis features you want to see:
 - **Endgame Analysis** - Zugzwang, patterns, endgame techniques
 - **Opening Principles** - Center control, development
 - **Win Percentage** - Show winning chances
-- **Tablebase Info** - Endgame position analysis
 - **Color-Coded Moves** - Visual quality indicators
 - **SEE Values** - Static Exchange Evaluation
 - **Show Threats** - Display threat and defense information
@@ -337,7 +336,7 @@ Click the "Settings" button in the main window to customize ChessDroid's behavio
 - Complexity: Beginner
 - Aggressiveness: 50 (Balanced)
 - Enable: Tactical Analysis, Opening Principles
-- Disable: SEE Values, Tablebase Info
+- Disable: SEE Values
 - Win Percentage: ON
 
 **Intermediate (1200-1800 rating):**
@@ -352,7 +351,6 @@ Click the "Settings" button in the main window to customize ChessDroid's behavio
 - Aggressiveness: Adjust to your style
 - Enable: All features
 - SEE Values: ON
-- Tablebase Info: ON
 
 **Expert (2200+ rating):**
 - Complexity: Master
@@ -375,8 +373,8 @@ Blue = acceptable alternative
 ### **Tip 3: Compare Multiple Lines**
 ChessDroid shows explanations for 1st, 2nd, and 3rd best moves. Compare to understand why one is better.
 
-### **Tip 4: Study Endgames with Tablebase-Aware Analysis**
-In positions with 7 or fewer pieces, ChessDroid provides endgame-specific analysis.
+### **Tip 4: Study Endgames with Advanced Analysis**
+In endgame positions, ChessDroid provides specialized analysis including opposition detection, rule of the square, and king activity evaluation.
 
 ### **Tip 5: Use Aggressiveness to Match Your Style**
 Playing a must-win game? Set to 80-100.
@@ -384,7 +382,7 @@ Need a safe draw? Set to 0-20.
 
 ### **Tip 6: Adjust for Position Type**
 - Tactical puzzle? Enable only Tactical Analysis
-- Endgame study? Enable only Endgame Analysis + Tablebase
+- Endgame study? Enable only Endgame Analysis
 - General study? Enable everything
 
 ### **Tip 7: Check WDL for Close Decisions**
@@ -415,8 +413,8 @@ Pay attention to the opening name display - it helps you understand what opening
 
 ### **Endgame Mastery**
 
-1. Load an endgame (7 or fewer pieces)
-2. Enable Tablebase Info for endgame-specific analysis
+1. Load an endgame position
+2. Enable Endgame Analysis for specialized insights
 3. Study the engine's recommended moves
 4. Learn the winning technique
 5. Practice until it's second nature
@@ -448,7 +446,7 @@ Pay attention to the opening name display - it helps you understand what opening
 **Solution:** Disable some feature toggles (e.g., turn off SEE Values)
 
 ### **Problem: Not seeing endgame-specific analysis**
-**Solution:** Ensure Tablebase Info is enabled and position has 7 or fewer pieces
+**Solution:** Ensure Endgame Analysis is enabled in settings
 
 ### **Problem: Colors make text hard to read**
 **Solution:** Disable Color-Coded Moves in settings
@@ -470,7 +468,7 @@ Pay attention to the opening name display - it helps you understand what opening
 
 **WDL (Win/Draw/Loss)** - Probabilities for each game outcome based on engine evaluation
 
-**Tablebase-Aware Analysis** - Endgame-specific analysis for positions with 7 or fewer pieces using pattern recognition
+**Endgame Analysis** - Specialized endgame analysis including opposition detection, rule of the square, king activity, and drawing patterns
 
 **Zugzwang** - Position where any move worsens your position
 
@@ -524,8 +522,7 @@ ChessDroid supports global hotkeys (work even when window is minimized):
 1. Enable all feature toggles
 2. Use Master complexity level
 3. Enable SEE Values
-4. Enable Tablebase Info
-5. Enable WDL
+4. Enable WDL
 
 ---
 

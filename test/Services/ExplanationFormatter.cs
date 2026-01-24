@@ -41,7 +41,6 @@ namespace ChessDroid.Services
             Features.ShowPositionalAnalysis = config.ShowPositionalAnalysis;
             Features.ShowEndgameAnalysis = config.ShowEndgameAnalysis;
             Features.ShowOpeningPrinciples = config.ShowOpeningPrinciples;
-            Features.ShowTablebaseInfo = config.ShowTablebaseInfo;
             Features.ShowMoveQualityColor = config.ShowMoveQualityColor;
             Features.ShowSEEValues = config.ShowSEEValues;
         }
@@ -389,7 +388,6 @@ namespace ChessDroid.Services
             public bool ShowPositionalAnalysis { get; set; } = true;
             public bool ShowEndgameAnalysis { get; set; } = true;
             public bool ShowOpeningPrinciples { get; set; } = true;
-            public bool ShowTablebaseInfo { get; set; } = true;
             public bool ShowMoveQualityColor { get; set; } = true;
             public bool ShowSEEValues { get; set; } = true;
 
@@ -404,7 +402,6 @@ namespace ChessDroid.Services
                     "ShowPositionalAnalysis" => "Analyze pawn structure, piece activity, and king safety",
                     "ShowEndgameAnalysis" => "Advanced endgame analysis (rule of square, opposition, king activity)",
                     "ShowOpeningPrinciples" => "Show opening principles for the first 20 moves",
-                    "ShowTablebaseInfo" => "Show endgame pattern insights (passed pawns, fortresses, draws)",
                     "ShowMoveQualityColor" => "Color-code moves by quality (green=good, red=bad)",
                     "ShowSEEValues" => "Show Static Exchange Evaluation for captures",
                     _ => ""

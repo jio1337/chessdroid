@@ -68,7 +68,6 @@ namespace ChessDroid
             chkPositional = new CheckBox();
             chkEndgame = new CheckBox();
             chkOpening = new CheckBox();
-            chkTablebase = new CheckBox();
             chkColorCoding = new CheckBox();
             chkSEE = new CheckBox();
             chkThreats = new CheckBox();
@@ -459,7 +458,6 @@ namespace ChessDroid
             grpExplanations.Controls.Add(chkPositional);
             grpExplanations.Controls.Add(chkEndgame);
             grpExplanations.Controls.Add(chkOpening);
-            grpExplanations.Controls.Add(chkTablebase);
             grpExplanations.Controls.Add(chkColorCoding);
             grpExplanations.Controls.Add(chkSEE);
             grpExplanations.Controls.Add(chkThreats);
@@ -547,28 +545,14 @@ namespace ChessDroid
             chkOpening.Text = "Opening Principles";
             toolTip1.SetToolTip(chkOpening, "Show center control, development");
             chkOpening.UseVisualStyleBackColor = true;
-            // 
-            // chkTablebase
-            // 
-            chkTablebase.AutoSize = true;
-            chkTablebase.Checked = true;
-            chkTablebase.CheckState = CheckState.Checked;
-            chkTablebase.ForeColor = Color.White;
-            chkTablebase.Location = new Point(10, 155);
-            chkTablebase.Name = "chkTablebase";
-            chkTablebase.Size = new Size(124, 18);
-            chkTablebase.TabIndex = 6;
-            chkTablebase.Text = "Tablebase Info";
-            toolTip1.SetToolTip(chkTablebase, "Show perfect endgame moves");
-            chkTablebase.UseVisualStyleBackColor = true;
-            // 
+            //
             // chkColorCoding
-            // 
+            //
             chkColorCoding.AutoSize = true;
             chkColorCoding.Checked = true;
             chkColorCoding.CheckState = CheckState.Checked;
             chkColorCoding.ForeColor = Color.White;
-            chkColorCoding.Location = new Point(10, 180);
+            chkColorCoding.Location = new Point(10, 155);
             chkColorCoding.Name = "chkColorCoding";
             chkColorCoding.Size = new Size(145, 18);
             chkColorCoding.TabIndex = 7;
@@ -582,7 +566,7 @@ namespace ChessDroid
             chkSEE.Checked = true;
             chkSEE.CheckState = CheckState.Checked;
             chkSEE.ForeColor = Color.White;
-            chkSEE.Location = new Point(10, 205);
+            chkSEE.Location = new Point(10, 180);
             chkSEE.Name = "chkSEE";
             chkSEE.Size = new Size(96, 18);
             chkSEE.TabIndex = 8;
@@ -596,7 +580,7 @@ namespace ChessDroid
             chkThreats.Checked = true;
             chkThreats.CheckState = CheckState.Checked;
             chkThreats.ForeColor = Color.White;
-            chkThreats.Location = new Point(10, 230);
+            chkThreats.Location = new Point(10, 205);
             chkThreats.Name = "chkThreats";
             chkThreats.Size = new Size(138, 18);
             chkThreats.TabIndex = 9;
@@ -610,7 +594,7 @@ namespace ChessDroid
             chkWDL.Checked = true;
             chkWDL.CheckState = CheckState.Checked;
             chkWDL.ForeColor = Color.White;
-            chkWDL.Location = new Point(10, 255);
+            chkWDL.Location = new Point(10, 230);
             chkWDL.Name = "chkWDL";
             chkWDL.Size = new Size(166, 18);
             chkWDL.TabIndex = 10;
@@ -622,7 +606,7 @@ namespace ChessDroid
             // 
             chkAutoMonitor.AutoSize = true;
             chkAutoMonitor.ForeColor = Color.LightGreen;
-            chkAutoMonitor.Location = new Point(10, 280);
+            chkAutoMonitor.Location = new Point(10, 255);
             chkAutoMonitor.Name = "chkAutoMonitor";
             chkAutoMonitor.Size = new Size(152, 18);
             chkAutoMonitor.TabIndex = 11;
@@ -861,7 +845,6 @@ namespace ChessDroid
         private System.Windows.Forms.CheckBox chkPositional;
         private System.Windows.Forms.CheckBox chkEndgame;
         private System.Windows.Forms.CheckBox chkOpening;
-        private System.Windows.Forms.CheckBox chkTablebase;
         private System.Windows.Forms.CheckBox chkColorCoding;
         private System.Windows.Forms.CheckBox chkSEE;
         private System.Windows.Forms.CheckBox chkThreats;

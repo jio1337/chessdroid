@@ -120,46 +120,50 @@ namespace ChessDroid.Services
                 if (isForced && reasons.Count < 2)
                     reasons.Add("forced move");
 
-                // Threat creation (skip if piece will be recaptured)
-                if (reasons.Count < 2 && !pieceWillBeRecaptured)
+                // TACTICAL ANALYSIS (controlled by ShowTacticalAnalysis toggle)
+                if (ExplanationFormatter.Features.ShowTacticalAnalysis)
                 {
-                    string? threatCreation = StockfishFeatures.DetectThreatCreation(
-                        board, tempBoard, destRank, destFile, piece, isWhite);
-
-                    if (!string.IsNullOrEmpty(threatCreation))
-                        reasons.Add(threatCreation);
-                }
-
-                // Check for tactical patterns SECOND (after singular/threat detection)
-                // Pass both original board and temp board for discovered attack detection
-                string? tacticalPattern = DetectTacticalPattern(board, tempBoard, srcRank, srcFile, destRank, destFile, piece, pieceType, isWhite);
-                if (!string.IsNullOrEmpty(tacticalPattern))
-                {
-                    reasons.Add(tacticalPattern);
-                }
-
-                // Perpetual check detection
-                if (pvs != null)
-                {
-                    string? perpetualCheckInfo = DetectPerpetualCheck(pvs);
-                    if (!string.IsNullOrEmpty(perpetualCheckInfo))
+                    // Threat creation (skip if piece will be recaptured)
+                    if (reasons.Count < 2 && !pieceWillBeRecaptured)
                     {
-                        reasons.Add(perpetualCheckInfo);
+                        string? threatCreation = StockfishFeatures.DetectThreatCreation(
+                            board, tempBoard, destRank, destFile, piece, isWhite);
+
+                        if (!string.IsNullOrEmpty(threatCreation))
+                            reasons.Add(threatCreation);
                     }
-                }
 
-                // Sacrifice detection
-                string? exchangeSacInfo = DetectExchangeSacrifice(tempBoard, destRank, destFile, piece, targetPiece, evaluation);
-                if (!string.IsNullOrEmpty(exchangeSacInfo))
-                {
-                    reasons.Add(exchangeSacInfo);
-                }
+                    // Check for tactical patterns SECOND (after singular/threat detection)
+                    // Pass both original board and temp board for discovered attack detection
+                    string? tacticalPattern = DetectTacticalPattern(board, tempBoard, srcRank, srcFile, destRank, destFile, piece, pieceType, isWhite);
+                    if (!string.IsNullOrEmpty(tacticalPattern))
+                    {
+                        reasons.Add(tacticalPattern);
+                    }
 
-                // General Sacrifice (material for compensation)
-                string? sacrificeInfo = DetectSacrifice(tempBoard, destRank, destFile, piece, targetPiece, isWhite, evaluation);
-                if (!string.IsNullOrEmpty(sacrificeInfo))
-                {
-                    reasons.Add(sacrificeInfo);
+                    // Perpetual check detection
+                    if (pvs != null)
+                    {
+                        string? perpetualCheckInfo = DetectPerpetualCheck(pvs);
+                        if (!string.IsNullOrEmpty(perpetualCheckInfo))
+                        {
+                            reasons.Add(perpetualCheckInfo);
+                        }
+                    }
+
+                    // Sacrifice detection
+                    string? exchangeSacInfo = DetectExchangeSacrifice(tempBoard, destRank, destFile, piece, targetPiece, evaluation);
+                    if (!string.IsNullOrEmpty(exchangeSacInfo))
+                    {
+                        reasons.Add(exchangeSacInfo);
+                    }
+
+                    // General Sacrifice (material for compensation)
+                    string? sacrificeInfo = DetectSacrifice(tempBoard, destRank, destFile, piece, targetPiece, isWhite, evaluation);
+                    if (!string.IsNullOrEmpty(sacrificeInfo))
+                    {
+                        reasons.Add(sacrificeInfo);
+                    }
                 }
 
                 // Capture evaluation with SEE
@@ -197,79 +201,83 @@ namespace ChessDroid.Services
                     }
                 }
 
-                // Pawn structure analysis
-                if (pieceType == PieceType.Pawn && reasons.Count < 2)
+                // POSITIONAL ANALYSIS (controlled by ShowPositionalAnalysis toggle)
+                if (ExplanationFormatter.Features.ShowPositionalAnalysis)
                 {
-                    string? passedPawnInfo = PositionalEvaluation.DetectPassedPawn(tempBoard, destRank, destFile, isWhite);
-                    if (!string.IsNullOrEmpty(passedPawnInfo))
-                        reasons.Add(passedPawnInfo);
-
-                    string? connectedInfo = PositionalEvaluation.DetectConnectedPawns(tempBoard, destRank, destFile, isWhite);
-                    if (!string.IsNullOrEmpty(connectedInfo) && reasons.Count < 2)
-                        reasons.Add(connectedInfo);
-                }
-
-                // Check if capture creates pawn weaknesses for opponent
-                if (targetPiece != '.' && reasons.Count < 2)
-                {
-                    string? opponentWeakness = DetectOpponentPawnWeakness(tempBoard, destRank, destFile, !isWhite);
-                    if (!string.IsNullOrEmpty(opponentWeakness))
-                        reasons.Add(opponentWeakness);
-                }
-
-                // Piece activity analysis
-                if (reasons.Count < 2 && (pieceType == PieceType.Knight || pieceType == PieceType.Bishop ||
-                                          pieceType == PieceType.Rook || pieceType == PieceType.Queen))
-                {
-                    // Outpost detection (very strong positional feature)
-                    string? outpostInfo = PositionalEvaluation.DetectOutpost(tempBoard, destRank, destFile, piece, isWhite);
-                    if (!string.IsNullOrEmpty(outpostInfo))
-                        reasons.Add(outpostInfo);
-
-                    // Long diagonal control (bishops)
-                    if (pieceType == PieceType.Bishop && reasons.Count < 2)
+                    // Pawn structure analysis
+                    if (pieceType == PieceType.Pawn && reasons.Count < 2)
                     {
-                        string? diagonalInfo = PositionalEvaluation.DetectLongDiagonalControl(tempBoard, destRank, destFile, piece, isWhite);
-                        if (!string.IsNullOrEmpty(diagonalInfo))
-                            reasons.Add(diagonalInfo);
+                        string? passedPawnInfo = PositionalEvaluation.DetectPassedPawn(tempBoard, destRank, destFile, isWhite);
+                        if (!string.IsNullOrEmpty(passedPawnInfo))
+                            reasons.Add(passedPawnInfo);
+
+                        string? connectedInfo = PositionalEvaluation.DetectConnectedPawns(tempBoard, destRank, destFile, isWhite);
+                        if (!string.IsNullOrEmpty(connectedInfo) && reasons.Count < 2)
+                            reasons.Add(connectedInfo);
                     }
 
-                    // High mobility (active pieces)
-                    if (reasons.Count < 2)
+                    // Check if capture creates pawn weaknesses for opponent
+                    if (targetPiece != '.' && reasons.Count < 2)
                     {
-                        string? mobilityInfo = PositionalEvaluation.DetectHighMobility(tempBoard, destRank, destFile, piece, isWhite);
-                        if (!string.IsNullOrEmpty(mobilityInfo))
-                            reasons.Add(mobilityInfo);
+                        string? opponentWeakness = DetectOpponentPawnWeakness(tempBoard, destRank, destFile, !isWhite);
+                        if (!string.IsNullOrEmpty(opponentWeakness))
+                            reasons.Add(opponentWeakness);
                     }
 
-                    // Central control
-                    if (reasons.Count < 2)
+                    // Piece activity analysis
+                    if (reasons.Count < 2 && (pieceType == PieceType.Knight || pieceType == PieceType.Bishop ||
+                                              pieceType == PieceType.Rook || pieceType == PieceType.Queen))
                     {
-                        string? centralInfo = PositionalEvaluation.DetectCentralControl(tempBoard, destRank, destFile, piece, isWhite);
-                        if (!string.IsNullOrEmpty(centralInfo))
-                            reasons.Add(centralInfo);
+                        // Outpost detection (very strong positional feature)
+                        string? outpostInfo = PositionalEvaluation.DetectOutpost(tempBoard, destRank, destFile, piece, isWhite);
+                        if (!string.IsNullOrEmpty(outpostInfo))
+                            reasons.Add(outpostInfo);
+
+                        // Long diagonal control (bishops)
+                        if (pieceType == PieceType.Bishop && reasons.Count < 2)
+                        {
+                            string? diagonalInfo = PositionalEvaluation.DetectLongDiagonalControl(tempBoard, destRank, destFile, piece, isWhite);
+                            if (!string.IsNullOrEmpty(diagonalInfo))
+                                reasons.Add(diagonalInfo);
+                        }
+
+                        // High mobility (active pieces)
+                        if (reasons.Count < 2)
+                        {
+                            string? mobilityInfo = PositionalEvaluation.DetectHighMobility(tempBoard, destRank, destFile, piece, isWhite);
+                            if (!string.IsNullOrEmpty(mobilityInfo))
+                                reasons.Add(mobilityInfo);
+                        }
+
+                        // Central control
+                        if (reasons.Count < 2)
+                        {
+                            string? centralInfo = PositionalEvaluation.DetectCentralControl(tempBoard, destRank, destFile, piece, isWhite);
+                            if (!string.IsNullOrEmpty(centralInfo))
+                                reasons.Add(centralInfo);
+                        }
+                    }
+
+                    // King safety analysis (only report improvements)
+                    if (pieceType == PieceType.King && reasons.Count < 2)
+                    {
+                        int beforeShelter = CountPawnShield(board, srcRank, srcFile, isWhite);
+                        int afterShelter = CountPawnShield(tempBoard, destRank, destFile, isWhite);
+                        if (afterShelter > beforeShelter)
+                            reasons.Add("improves king safety");
                     }
                 }
 
-                // King safety analysis (only report improvements)
-                if (pieceType == PieceType.King && reasons.Count < 2)
-                {
-                    int beforeShelter = CountPawnShield(board, srcRank, srcFile, isWhite);
-                    int afterShelter = CountPawnShield(tempBoard, destRank, destFile, isWhite);
-                    if (afterShelter > beforeShelter)
-                        reasons.Add("improves king safety");
-                }
-
-                // Tempo attack detection
-                if (reasons.Count < 2 && !pieceWillBeRecaptured)
+                // Tempo attack detection (tactical)
+                if (ExplanationFormatter.Features.ShowTacticalAnalysis && reasons.Count < 2 && !pieceWillBeRecaptured)
                 {
                     string? tempoAttack = DetectTempoAttack(board, tempBoard, srcRank, srcFile, destRank, destFile, piece, pieceType, isWhite);
                     if (!string.IsNullOrEmpty(tempoAttack))
                         reasons.Add(tempoAttack);
                 }
 
-                // Basic positional considerations (fallback)
-                if (reasons.Count < 2)
+                // Basic positional considerations (fallback) - controlled by ShowPositionalAnalysis
+                if (ExplanationFormatter.Features.ShowPositionalAnalysis && reasons.Count < 2)
                 {
                     if (pieceType == PieceType.Knight || pieceType == PieceType.Bishop)
                     {
@@ -280,8 +288,8 @@ namespace ChessDroid.Services
                     }
                 }
 
-                // Development moves
-                if (reasons.Count < 2 && (srcRank == 0 || srcRank == 7) &&
+                // Development moves - controlled by ShowPositionalAnalysis
+                if (ExplanationFormatter.Features.ShowPositionalAnalysis && reasons.Count < 2 && (srcRank == 0 || srcRank == 7) &&
                     (pieceType == PieceType.Knight || pieceType == PieceType.Bishop))
                 {
                     reasons.Add("develops piece");
@@ -293,8 +301,8 @@ namespace ChessDroid.Services
                     reasons.Add(destFile > srcFile ? "castles kingside for safety" : "castles queenside");
                 }
 
-                // Endgame analysis
-                if (reasons.Count < 2)
+                // ENDGAME ANALYSIS (controlled by ShowEndgameAnalysis toggle)
+                if (ExplanationFormatter.Features.ShowEndgameAnalysis && reasons.Count < 2)
                 {
                     string? kpvk = EndgameAnalysis.DetectKPvK(tempBoard, isWhite);
                     if (!string.IsNullOrEmpty(kpvk))
@@ -323,20 +331,10 @@ namespace ChessDroid.Services
                     string? qualityImbalance = EndgameAnalysis.DetectQualityImbalance(tempBoard);
                     if (!string.IsNullOrEmpty(qualityImbalance) && reasons.Count < 2)
                         reasons.Add(qualityImbalance);
-
-                    // Removed incorrect zugzwang explanation - zugzwang is a position
-                    // characteristic that should be shown in endgame insights, not per-move
-
-                    if (reasons.Count < 2)
-                    {
-                        string? tablebaseInfo = AdvancedAnalysis.GetTablebaseExplanation(tempBoard, isWhite);
-                        if (!string.IsNullOrEmpty(tablebaseInfo))
-                            reasons.Add(tablebaseInfo);
-                    }
                 }
 
-                // Opening move analysis
-                if (reasons.Count < 2)
+                // OPENING ANALYSIS (controlled by ShowOpeningPrinciples toggle)
+                if (ExplanationFormatter.Features.ShowOpeningPrinciples && reasons.Count < 2)
                 {
                     int estimatedPly = 2;
                     string? openingInfo = AdvancedAnalysis.GetOpeningMoveDescription(bestMove, estimatedPly);

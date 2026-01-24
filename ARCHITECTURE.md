@@ -88,9 +88,8 @@ ChessDroid is an advanced chess analysis tool that combines tactical pattern rec
 8. Piece activity evaluation
 9. Endgame patterns
 10. Opening principles
-11. Tablebase knowledge
-12. Win rate evaluation
-13. Generic positional improvement
+11. Win rate evaluation
+12. Generic positional improvement
 ```
 
 **Performance:** O(n) where n = number of pieces on board
@@ -185,7 +184,7 @@ Result: SEE = +11 (winning capture)
 **Game Phase Detection:**
 ```
 Piece Count    Phase
-0-5           Late Endgame (tablebase territory)
+0-5           Late Endgame (basic endgames)
 6-7           Endgame
 8-11          Transition
 12+           Middlegame/Opening
@@ -299,16 +298,6 @@ Eval +0.5 → 55% win probability → "slight edge"
 e2e4, d2d4 → "controls center"
 Nf3, Nc3  → "develops piece to good square"
 ```
-
-#### **Advanced Tablebase Integration:**
-- Detects positions with ≤7 pieces
-- Simulates DTZ (Distance to Zeroing)
-- Provides move ranking: "fastest winning move"
-
-**Supported Endgames:**
-- K+P vs K → "tablebase win in ~20 moves"
-- Opposite bishops → "tablebase draw"
-- Bare king → "tablebase win in ~10 moves"
 
 #### **Position Complexity:**
 - `IsSharpPosition()` - Many pieces + material imbalance
@@ -823,13 +812,12 @@ public enum ComplexityLevel
 }
 ```
 
-**Feature Toggles (11 total):**
+**Feature Toggles (10 total):**
 - ShowTacticalAnalysis
 - ShowPositionalAnalysis
 - ShowEndgameAnalysis
 - ShowOpeningPrinciples
 - ShowWinPercentage
-- ShowTablebaseInfo
 - ShowMoveQualityColor
 - ShowSEEValues
 - ShowBestLine (always enabled)
@@ -876,7 +864,6 @@ public enum ComplexityLevel
    ├─→ PositionalEvaluation.DetectPassedPawn()
    ├─→ PositionalEvaluation.DetectOutpost()
    ├─→ EndgameAnalysis.DetectKPvK()
-   ├─→ AdvancedAnalysis.GetTablebaseExplanation()
    ├─→ AdvancedAnalysis.GetWinningChanceDescription()
    └─→ Generic fallback
    ↓
@@ -1034,17 +1021,12 @@ public static string GetMyEvaluation(double eval, ...)
    - Opening statistics
 
 ### Medium Priority:
-4. **Full Tablebase Integration**
-   - Link with Syzygy/Gaviota libraries
-   - Real DTZ calculation
-   - 7-piece endgame coverage
-
-5. **Multi-threading**
+4. **Multi-threading**
    - Parallel analysis of multiple lines
    - Async feature detection
    - Background caching
 
-6. **Machine Learning**
+5. **Machine Learning**
    - Learn from user feedback
    - Adaptive explanation complexity
    - Personalized explanation style
@@ -1098,7 +1080,7 @@ public static string GetMyEvaluation(double eval, ...)
 **v1.5.0** - Advanced Features
 - Win rate model
 - Opening history tracking
-- Tablebase integration
+- Endgame heuristics
 
 **v1.6.0** - Optimization & Polish
 - **ChessUtilities:** Eliminated 410+ lines of duplicate code

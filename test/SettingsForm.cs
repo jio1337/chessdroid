@@ -111,7 +111,6 @@ namespace ChessDroid
             chkPositional.Checked = config.ShowPositionalAnalysis;
             chkEndgame.Checked = config.ShowEndgameAnalysis;
             chkOpening.Checked = config.ShowOpeningPrinciples;
-            chkTablebase.Checked = config.ShowTablebaseInfo;
             chkColorCoding.Checked = config.ShowMoveQualityColor;
             chkSEE.Checked = config.ShowSEEValues;
             chkThreats.Checked = config.ShowThreats;
@@ -173,7 +172,6 @@ namespace ChessDroid
             config.ShowPositionalAnalysis = chkPositional.Checked;
             config.ShowEndgameAnalysis = chkEndgame.Checked;
             config.ShowOpeningPrinciples = chkOpening.Checked;
-            config.ShowTablebaseInfo = chkTablebase.Checked;
             config.ShowMoveQualityColor = chkColorCoding.Checked;
             config.ShowSEEValues = chkSEE.Checked;
             config.ShowThreats = chkThreats.Checked;

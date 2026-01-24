@@ -33,7 +33,6 @@ namespace ChessDroid
         public bool ShowPositionalAnalysis { get; set; } = true; // Show positional evaluation
         public bool ShowEndgameAnalysis { get; set; } = true; // Show endgame patterns
         public bool ShowOpeningPrinciples { get; set; } = true; // Show opening principles
-        public bool ShowTablebaseInfo { get; set; } = true; // Show tablebase information
         public bool ShowMoveQualityColor { get; set; } = true; // Color-coded moves
         public bool ShowSEEValues { get; set; } = true; // Static Exchange Evaluation
         public bool ShowThreats { get; set; } = true; // Show threats analysis
@@ -144,7 +143,6 @@ namespace ChessDroid
             ShowPositionalAnalysis = other.ShowPositionalAnalysis;
             ShowEndgameAnalysis = other.ShowEndgameAnalysis;
             ShowOpeningPrinciples = other.ShowOpeningPrinciples;
-            ShowTablebaseInfo = other.ShowTablebaseInfo;
             ShowMoveQualityColor = other.ShowMoveQualityColor;
             ShowSEEValues = other.ShowSEEValues;
             ShowThreats = other.ShowThreats;
