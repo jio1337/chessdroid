@@ -6,7 +6,7 @@ ChessDroid is an advanced chess analysis tool that combines tactical pattern rec
 
 ---
 
-## System Architecture (v2.0.0)
+## System Architecture (v2.5.1)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -812,13 +812,12 @@ public enum ComplexityLevel
 }
 ```
 
-**Feature Toggles (10 total):**
+**Feature Toggles (9 total):**
 - ShowTacticalAnalysis
 - ShowPositionalAnalysis
 - ShowEndgameAnalysis
 - ShowOpeningPrinciples
 - ShowWinPercentage
-- ShowMoveQualityColor
 - ShowSEEValues
 - ShowBestLine (always enabled)
 - ShowSecondLine
@@ -1043,7 +1042,19 @@ public static string GetMyEvaluation(double eval, ...)
 
 **Stockfish Chess Engine** by Stockfish Team
 - GitHub: https://github.com/official-stockfish/Stockfish
-- Features used: Threat detection, singular moves, win rate model
+- Features used: Threat detection, singular moves, win rate model, WDL probabilities
+
+**Leela Chess Zero (Lc0)** by Lc0 Team
+- GitHub: https://github.com/LeelaChessZero/lc0
+- Features used: WDL display, position sharpness, neural network evaluation concepts
+
+**Chess.com**
+- URL: https://www.chess.com/
+- Features used: Move classification system (Brilliant !!, Blunder ??, Mistake ?, Inaccuracy ?!), win probability calculations
+
+**Arena Chess GUI**
+- URL: http://www.playwitharena.de/
+- Features used: ABK opening book format support
 
 **Chess Programming Wiki**
 - URL: https://www.chessprogramming.org/
@@ -1113,13 +1124,36 @@ public static string GetMyEvaluation(double eval, ...)
 - **ConsoleOutputFormatter:** Integrated defense display with shield icon
 - **Auto-Monitoring (BETA):** Automatic opponent move detection
 
-**v2.2.0** - Lc0-Inspired Features (Current)
+**v2.2.0** - Lc0-Inspired Features
 - **WDL Display:** Win/Draw/Loss probabilities from engine analysis
 - **Opening Book (BETA):** 565+ opening positions with ECO codes
 - **Move Quality Indicators:** Brilliant, Best, Good, Inaccuracy, Mistake, Blunder
 - **Functional Aggressiveness:** Slider actually affects move selection (0=solid, 100=aggressive)
 - **MoveSharpnessAnalyzer:** Evaluates move "sharpness" for style-based filtering
 - **Config Hot-Reload:** Settings changes update all services immediately
+
+**v2.5.0** - Chess.com-Style Classification
+- **Brilliant Move Detection (!!):** Detects piece sacrifices that maintain good position
+  - Validates sacrifice with SEE (must lose material)
+  - Checks position wasn't already winning
+  - Identifies Greek Gift sacrifices and tactical brilliancies
+- **Move Classification System:** Chess.com-style ratings for alternative moves
+  - Uses win probability calculations (logistic function)
+  - Blunder (??) - 20%+ win probability drop
+  - Mistake (?) - 10-20% win probability drop
+  - Inaccuracy (?!) - 5-10% win probability drop
+- **"Only Winning Move" Detection:** Highlights critical moves where alternatives lose advantage
+- **ABK Opening Book Support:** Arena Chess GUI book format integration
+
+**v2.5.1** - SEE, Explanations, and Redundancy Fixes (Current)
+- **SEE Explanation Bug Fix:** Fixed incorrect values when pieces become vulnerable after move
+  - Added `GetHangingPieceValueAfterMove()` to detect exposed pieces
+  - Checks if cheapest attacker < piece value (vulnerable even if defended)
+- **Better Brilliant Explanations:** Shows context like "sacrifices rook for decisive advantage"
+- **False Sacrifice Fix:** No longer shows "rook sacrifice" when piece is defended after capture
+- **Redundant Check Phrases Removed:** "gives check" handled by threats section only
+- **"Creates threat on king" Removed:** Ambiguous phrase replaced by proper check detection
+- **Color-Coded Moves Feature Removed:** Obsolete, replaced by Chess.com-style classification
 
 ---
 
@@ -1134,5 +1168,5 @@ https://github.com/jio1337/chessdroid/issues
 
 ---
 
-**Last Updated:** 2026-01-19
-**Document Version:** 2.3 (Lc0-Inspired Features)
+**Last Updated:** 2026-01-25
+**Document Version:** 2.5.1 (Chess.com-Style Classification)

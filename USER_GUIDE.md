@@ -1,16 +1,16 @@
-## ChessDroid v2.2 - User Guide
+## ChessDroid v2.5.1 - User Guide
 
 ### Welcome to ChessDroid!
 
-ChessDroid is the most advanced open-source chess analysis tool, combining world-class engine insights with human-readable explanations.
+ChessDroid is the most advanced open-source chess analysis tool, combining world-class engine insights with human-readable explanations. Inspired by Chess.com, Stockfish, Ethereal, and Leela Chess Zero.
 
 ---
 
 ## Quick Start
 
 1. **Load a position** - Enter FEN or set up pieces on board
-2. **Click Analyze** - ChessDroid will show the best moves
-3. **Read explanations** - Color-coded, clear explanations for each move
+2. **Click Analyze** - ChessDroid will show the best moves with explanations
+3. **Read move classifications** - See Brilliant (!!), Blunder (??), Mistake (?), Inaccuracy (?!) labels
 4. **Adjust settings** - Customize complexity level and features
 5. **Try Auto-Monitoring** - Enable in Settings for automatic opponent move detection (BETA)
 
@@ -18,20 +18,36 @@ ChessDroid is the most advanced open-source chess analysis tool, combining world
 
 ## Key Features
 
-### **1. Color-Coded Move Quality**
+### **1. Move Classification**
 
-Moves are now color-coded by quality:
+ChessDroid uses Chess.com-inspired move classification based on win probability calculations:
 
-- **Dark Green (!!)** - Brilliant/Excellent move
-- **Green (!)** - Good, solid move
-- **Blue** - Neutral, acceptable move
-- **Orange (?!)** - Questionable/Dubious move
-- **Red Orange (?)** - Mistake
-- **Dark Red (??)** - Blunder
+**For the Best Move:**
+- **Brilliant (!!)** - Piece sacrifice that maintains good position
+  - Must sacrifice a piece (knight, bishop, rook, or queen)
+  - Can't be recaptured by a pawn
+  - Position remains good after the sacrifice
+  - Shows explanation like "sacrifices rook for decisive advantage"
+
+**For Alternative Moves (2nd/3rd best):**
+- **Blunder (??)** - Loses 20%+ win probability (Crimson)
+- **Mistake (?)** - Loses 10-20% win probability (Orange Red)
+- **Inaccuracy (?!)** - Loses 5-10% win probability (Orange)
 
 **Example:**
 ```
-Nf3 !! creates threat on undefended queen, only good move
+Best line: Rxe7 Kb8 Rb7 Kxb7 +2.17 !!
+  → BRILLIANT | sacrifices rook for decisive advantage
+
+Second best: Qe2 a5 Bd2 +0.30 ??
+  → BLUNDER | controls center
+```
+
+**"Only Winning Move" Detection:**
+When the best move maintains a winning position but alternatives throw away the advantage, ChessDroid highlights this:
+```
+Best line: Nf6+ Kh8 Qg8 +5.20
+  → ⚡ only winning move, fork on king and queen
 ```
 
 ---
@@ -54,22 +70,23 @@ This shows 72% chance to win, 20% chance to draw, 8% chance to lose.
 
 ---
 
-### **3. Win Percentage Display**
+### **3. Position Character**
 
-Alternative to WDL - shows winning chances at a glance!
+ChessDroid shows the nature of the position alongside WDL:
 
-**How to read:**
-- **90%+** - Winning position (dark green)
-- **70-90%** - Clearly better (green)
-- **55-70%** - Advantage (light blue)
-- **45-55%** - Balanced (gray)
-- **30-45%** - Disadvantage (orange)
-- **Below 30%** - Losing (red)
+**Position Types:**
+- **Decisive** - One side is winning (W% > 80% or L% > 80%)
+- **Clear advantage** - Significant edge (65-80% range)
+- **Slight edge** - Small advantage (55-65% range)
+- **Balanced** - Equal position (45-55% range)
+- **Sharp** - High win AND lose chances, low draw chance
 
 **Example:**
 ```
-+2.5 (White: 82% win chance)
+Position: W:78% D:8% L:14% (decisive)
 ```
+
+This shows White has a decisive advantage with 78% win probability.
 
 ---
 
@@ -242,13 +259,12 @@ Customize which analysis features you want to see:
 - **Positional Analysis** - Pawn structure, outposts, mobility
 - **Endgame Analysis** - Zugzwang, patterns, endgame techniques
 - **Opening Principles** - Center control, development
-- **Win Percentage** - Show winning chances
-- **Color-Coded Moves** - Visual quality indicators
 - **SEE Values** - Static Exchange Evaluation
 - **Show Threats** - Display threat and defense information
 - **Show WDL** - Win/Draw/Loss probabilities
-- **Show Opening Name** - Display detected opening (BETA)
-- **Show Move Quality** - Brilliant/Best/Good/etc. labels
+- **Show Opening Name** - Display detected opening
+- **Show Book Moves** - Display ABK opening book suggestions
+- **Show Move Quality** - Brilliant/Blunder/Mistake/Inaccuracy labels
 
 ---
 
@@ -337,14 +353,14 @@ Click the "Settings" button in the main window to customize ChessDroid's behavio
 - Aggressiveness: 50 (Balanced)
 - Enable: Tactical Analysis, Opening Principles
 - Disable: SEE Values
-- Win Percentage: ON
+- WDL Display: ON
 
 **Intermediate (1200-1800 rating):**
 - Complexity: Intermediate (Default)
 - Aggressiveness: 50 (Balanced)
 - Enable: All tactical and positional features
-- Win Percentage: ON
-- Color Coding: ON
+- WDL Display: ON
+- Move Quality: ON
 
 **Advanced (1800-2200 rating):**
 - Complexity: Advanced
@@ -365,10 +381,12 @@ Click the "Settings" button in the main window to customize ChessDroid's behavio
 ### **Tip 1: Start with Beginner Mode**
 Even strong players benefit from simple explanations. Start simple, increase complexity as needed.
 
-### **Tip 2: Use Color Coding for Quick Scanning**
-Green = consider this move
-Red = avoid this move
-Blue = acceptable alternative
+### **Tip 2: Use Move Classification for Quick Scanning**
+- **!!** (Brilliant) = exceptional sacrifice move
+- **No symbol** = best or good move
+- **?!** (Inaccuracy) = slightly suboptimal
+- **?** (Mistake) = loses advantage
+- **??** (Blunder) = major error
 
 ### **Tip 3: Compare Multiple Lines**
 ChessDroid shows explanations for 1st, 2nd, and 3rd best moves. Compare to understand why one is better.
@@ -447,9 +465,6 @@ Pay attention to the opening name display - it helps you understand what opening
 
 ### **Problem: Not seeing endgame-specific analysis**
 **Solution:** Ensure Endgame Analysis is enabled in settings
-
-### **Problem: Colors make text hard to read**
-**Solution:** Disable Color-Coded Moves in settings
 
 ### **Problem: Want more detail in explanations**
 **Solution:** Switch to Advanced or Master complexity level
@@ -542,10 +557,23 @@ ChessDroid supports global hotkeys (work even when window is minimized):
 
 ## Version History
 
-**v2.2.0** - Lc0-Inspired Features (Current)
+**v2.5.1** - SEE, Explanations, and Redundancy Fixes (Current)
+- Fixed SEE explanation bug when pieces become vulnerable after move
+- Better Brilliant move explanations ("sacrifices rook for decisive advantage")
+- Fixed false "rook sacrifice" when piece is defended after capture
+- Removed redundant check phrases (handled by threats section)
+- Removed obsolete Color-Coded Moves feature
+
+**v2.5.0** - Chess.com-Style Classification
+- Brilliant Move Detection (!!) - Piece sacrifices that maintain good position
+- Move Classification System - Blunder (??), Mistake (?), Inaccuracy (?!)
+- Win probability calculations using logistic function
+- "Only Winning Move" detection
+- ABK Opening Book support (Arena format)
+
+**v2.2.0** - Lc0-Inspired Features
 - WDL Display - Win/Draw/Loss probabilities
-- Opening Book (BETA) - 565+ openings with ECO codes
-- Move Quality Indicators - Brilliant, Best, Good, Inaccuracy, Mistake, Blunder
+- Opening Book - 565+ openings with ECO codes
 - Functional Aggressiveness - Slider actually affects move selection
 - Config Hot-Reload - Settings changes take effect immediately
 
@@ -556,10 +584,9 @@ ChessDroid supports global hotkeys (work even when window is minimized):
 - Pin/X-ray fixes - Only reports when material would actually be won
 
 **v2.0.0** - Major UX Update
-- Color-coded move quality (6 levels with thematic colors)
 - Win percentage display (side-aware with Stockfish model)
 - Complexity levels (Beginner to Master)
-- Feature toggles (11 toggles)
+- Feature toggles
 - Dark mode theme (fully integrated)
 - Global keyboard shortcuts (Alt+X, Alt+K)
 - Refactored architecture (73.4% reduction in MainForm)
@@ -580,9 +607,11 @@ ChessDroid supports global hotkeys (work even when window is minimized):
 **ChessDroid** - Created by jio1337
 
 **Inspired by:**
-- Ethereal Chess Engine by Andy Grant
-- Stockfish Chess Engine by Stockfish Team
-- Lc0 (Leela Chess Zero) for WDL and style concepts
+- Ethereal Chess Engine by Andy Grant - Positional evaluation, pawn structure, SEE
+- Stockfish Chess Engine by Stockfish Team - Threat detection, win rate model, WDL
+- Leela Chess Zero (Lc0) - WDL display, position sharpness concepts
+- Chess.com - Move classification system (Brilliant, Blunder, Mistake, Inaccuracy)
+- Arena Chess GUI - ABK opening book format support
 
 **Special Thanks:**
 - Chess community for feedback
@@ -600,5 +629,5 @@ Free and open-source forever!
 
 **Enjoy analyzing with ChessDroid!**
 
-*Last Updated: 2026-01-19*
-*Version: 2.2.0 (Lc0-Inspired Features)*
+*Last Updated: 2026-01-25*
+*Version: 2.5.1 (Chess.com-Style Classification)*
