@@ -78,6 +78,7 @@ namespace ChessDroid
             lblAggressivenessValue = new Label();
             chkOpeningName = new CheckBox();
             chkMoveQuality = new CheckBox();
+            chkBookMoves = new CheckBox();
             btnSave = new Button();
             btnReset = new Button();
             btnHelp = new Button();
@@ -464,7 +465,7 @@ namespace ChessDroid
             grpExplanations.ForeColor = Color.White;
             grpExplanations.Location = new Point(316, 12);
             grpExplanations.Name = "grpExplanations";
-            grpExplanations.Size = new Size(255, 285);
+            grpExplanations.Size = new Size(255, 310);
             grpExplanations.TabIndex = 3;
             grpExplanations.TabStop = false;
             grpExplanations.Text = "Explanation Settings";
@@ -571,9 +572,9 @@ namespace ChessDroid
             chkThreats.Text = "Threats Analysis";
             toolTip1.SetToolTip(chkThreats, "Show threats we create and opponent threats against us");
             chkThreats.UseVisualStyleBackColor = true;
-            // 
+            //
             // chkWDL
-            // 
+            //
             chkWDL.AutoSize = true;
             chkWDL.Checked = true;
             chkWDL.CheckState = CheckState.Checked;
@@ -585,9 +586,9 @@ namespace ChessDroid
             chkWDL.Text = "WDL & Sharpness (Lc0)";
             toolTip1.SetToolTip(chkWDL, "Show Win/Draw/Loss probabilities and position sharpness (Lc0-inspired)");
             chkWDL.UseVisualStyleBackColor = true;
-            // 
+            //
             // chkAutoMonitor
-            // 
+            //
             chkAutoMonitor.AutoSize = true;
             chkAutoMonitor.ForeColor = Color.LightGreen;
             chkAutoMonitor.Location = new Point(10, 230);
@@ -605,10 +606,11 @@ namespace ChessDroid
             grpLc0Features.Controls.Add(lblAggressivenessValue);
             grpLc0Features.Controls.Add(chkOpeningName);
             grpLc0Features.Controls.Add(chkMoveQuality);
+            grpLc0Features.Controls.Add(chkBookMoves);
             grpLc0Features.ForeColor = Color.White;
-            grpLc0Features.Location = new Point(316, 308);
+            grpLc0Features.Location = new Point(316, 328);
             grpLc0Features.Name = "grpLc0Features";
-            grpLc0Features.Size = new Size(255, 158);
+            grpLc0Features.Size = new Size(255, 163);
             grpLc0Features.TabIndex = 9;
             grpLc0Features.TabStop = false;
             grpLc0Features.Text = "Lc0-Inspired Features";
@@ -655,26 +657,40 @@ namespace ChessDroid
             chkOpeningName.Text = "Show Opening Name";
             toolTip1.SetToolTip(chkOpeningName, "Display opening name when in known theory (ECO codes)");
             chkOpeningName.UseVisualStyleBackColor = true;
-            // 
+            //
             // chkMoveQuality
-            // 
+            //
             chkMoveQuality.AutoSize = true;
             chkMoveQuality.Checked = true;
             chkMoveQuality.CheckState = CheckState.Checked;
             chkMoveQuality.ForeColor = Color.White;
-            chkMoveQuality.Location = new Point(10, 121);
+            chkMoveQuality.Location = new Point(10, 116);
             chkMoveQuality.Name = "chkMoveQuality";
             chkMoveQuality.Size = new Size(229, 18);
             chkMoveQuality.TabIndex = 4;
             chkMoveQuality.Text = "Move Quality (Brilliant/Best)";
             toolTip1.SetToolTip(chkMoveQuality, "Show move quality indicators like chess.com (!!, !, ?!, ?, ??)");
             chkMoveQuality.UseVisualStyleBackColor = true;
-            // 
+            //
+            // chkBookMoves
+            //
+            chkBookMoves.AutoSize = true;
+            chkBookMoves.Checked = true;
+            chkBookMoves.CheckState = CheckState.Checked;
+            chkBookMoves.ForeColor = Color.White;
+            chkBookMoves.Location = new Point(10, 139);
+            chkBookMoves.Name = "chkBookMoves";
+            chkBookMoves.Size = new Size(180, 18);
+            chkBookMoves.TabIndex = 5;
+            chkBookMoves.Text = "Show Book Moves";
+            toolTip1.SetToolTip(chkBookMoves, "Show opening book move suggestions from Polyglot books");
+            chkBookMoves.UseVisualStyleBackColor = true;
+            //
             // btnSave
             // 
             btnSave.FlatStyle = FlatStyle.Popup;
             btnSave.ForeColor = SystemColors.ControlLightLight;
-            btnSave.Location = new Point(322, 476);
+            btnSave.Location = new Point(322, 501);
             btnSave.Name = "btnSave";
             btnSave.Size = new Size(100, 28);
             btnSave.TabIndex = 4;
@@ -686,7 +702,7 @@ namespace ChessDroid
             // 
             btnReset.FlatStyle = FlatStyle.Popup;
             btnReset.ForeColor = SystemColors.ControlLightLight;
-            btnReset.Location = new Point(322, 516);
+            btnReset.Location = new Point(322, 541);
             btnReset.Name = "btnReset";
             btnReset.Size = new Size(100, 28);
             btnReset.TabIndex = 5;
@@ -698,7 +714,7 @@ namespace ChessDroid
             // 
             btnHelp.FlatStyle = FlatStyle.Popup;
             btnHelp.ForeColor = SystemColors.ControlLightLight;
-            btnHelp.Location = new Point(471, 476);
+            btnHelp.Location = new Point(471, 501);
             btnHelp.Name = "btnHelp";
             btnHelp.Size = new Size(100, 28);
             btnHelp.TabIndex = 6;
@@ -711,7 +727,7 @@ namespace ChessDroid
             btnCancel.DialogResult = DialogResult.Cancel;
             btnCancel.FlatStyle = FlatStyle.Popup;
             btnCancel.ForeColor = SystemColors.ControlLightLight;
-            btnCancel.Location = new Point(471, 516);
+            btnCancel.Location = new Point(471, 541);
             btnCancel.Name = "btnCancel";
             btnCancel.Size = new Size(100, 28);
             btnCancel.TabIndex = 7;
@@ -725,7 +741,7 @@ namespace ChessDroid
             chkDarkMode.Checked = true;
             chkDarkMode.CheckState = CheckState.Checked;
             chkDarkMode.ForeColor = Color.White;
-            chkDarkMode.Location = new Point(12, 534);
+            chkDarkMode.Location = new Point(12, 559);
             chkDarkMode.Name = "chkDarkMode";
             chkDarkMode.Size = new Size(89, 18);
             chkDarkMode.TabIndex = 8;
@@ -741,7 +757,7 @@ namespace ChessDroid
             AutoSizeMode = AutoSizeMode.GrowAndShrink;
             BackColor = Color.FromArgb(45, 45, 48);
             CancelButton = btnCancel;
-            ClientSize = new Size(585, 560);
+            ClientSize = new Size(585, 585);
             Controls.Add(chkDarkMode);
             Controls.Add(btnCancel);
             Controls.Add(btnHelp);
@@ -839,5 +855,6 @@ namespace ChessDroid
         private System.Windows.Forms.Label lblAggressivenessValue;
         private System.Windows.Forms.CheckBox chkOpeningName;
         private System.Windows.Forms.CheckBox chkMoveQuality;
+        private System.Windows.Forms.CheckBox chkBookMoves;
     }
 }

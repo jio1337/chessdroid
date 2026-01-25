@@ -121,6 +121,7 @@ namespace ChessDroid
             UpdateAggressivenessLabel();
             chkOpeningName.Checked = config.ShowOpeningName;
             chkMoveQuality.Checked = config.ShowMoveQuality;
+            chkBookMoves.Checked = config.ShowBookMoves;
 
             // Load theme preference
             chkDarkMode.Checked = config.Theme == "Dark";
@@ -180,6 +181,7 @@ namespace ChessDroid
             config.Aggressiveness = trkAggressiveness.Value;
             config.ShowOpeningName = chkOpeningName.Checked;
             config.ShowMoveQuality = chkMoveQuality.Checked;
+            config.ShowBookMoves = chkBookMoves.Checked;
 
             config.Save();
 

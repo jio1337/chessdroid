@@ -60,4 +60,11 @@
     <None Remove="nul" />
   </ItemGroup>
 
+  <!-- Copy Books folder to output -->
+  <ItemGroup>
+    <None Include="Books\**\*.*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

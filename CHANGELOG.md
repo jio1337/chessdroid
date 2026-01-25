@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.6.0] - 2026-01-25
+
+### Added
+- **Polyglot Opening Book Support** - Full support for industry-standard Polyglot `.bin` format
+  - Ships with `codekiddy.bin` (~1M positions, 16MB)
+  - Displays book moves with weights and percentages
+  - Multi-book support (loads all `.bin` files from Books folder)
+  - "Show Book Moves" toggle in Settings
+- **Comprehensive ECO Opening Database** - 12,379 opening positions with names
+  - Data sourced from [hayatbiralem/eco.json](https://github.com/hayatbiralem/eco.json)
+  - Shows opening name with ECO code (e.g., "B01: Scandinavian Defense")
+  - Loads from `ecoA.json` through `ecoE.json` in Books folder
+  - Falls back to built-in 500+ position database if files missing
+- **New OpeningDatabase Service** - Lazy-loaded singleton for fast opening lookups
+  - Supports JSON (eco.json format) and TSV file formats
+  - Uses FEN piece-placement as key for O(1) lookups
+  - Automatically loads on first access
+
+### Changed
+- **Books folder structure** - Now contains:
+  - `codekiddy.bin` - Polyglot opening book (replaces ABK format)
+  - `ecoA-E.json` - ECO opening names database
+- **Opening name display** - Enhanced from ~500 to 12,379+ recognized positions
+
+### Removed
+- **ABK book format support** - Removed `AbkBookReader.cs` and `AbkBookService.cs`
+  - ABK format replaced by superior Polyglot `.bin` format
+  - Polyglot is the industry standard used by Arena, Fritz, etc.
+
+### Technical
+- Added `PolyglotBookService.cs` - Multi-book loading and position lookup
+- Added `PolyglotBookReader.cs` - Binary file parser for Polyglot format
+- Added `PolyglotZobrist.cs` - Polyglot-compatible Zobrist hash computation
+- Added `OpeningDatabase.cs` - ECO database loader and lookup service
+- Added `BookMove.cs` model class
+- Updated `chessdroid.csproj` to copy Books folder to output
+
+---
+
 ## [2.5.1] - 2026-01-24
 
 ### Fixed

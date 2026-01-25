@@ -1,4 +1,5 @@
 using ChessDroid.Models;
+using System.Linq;
 
 namespace ChessDroid.Services
 {
@@ -642,7 +643,7 @@ namespace ChessDroid.Services
         }
 
         /// <summary>
-        /// Displays ABK opening book moves
+        /// Displays opening book moves (Polyglot format)
         /// </summary>
         public void DisplayBookMoves(List<BookMove> bookMoves)
         {
@@ -650,7 +651,7 @@ namespace ChessDroid.Services
                 return;
 
             richTextBox.SelectionColor = Color.Khaki;
-            richTextBox.AppendText($"📖 Book moves: ");
+            richTextBox.AppendText($"Book: ");
 
             for (int i = 0; i < Math.Min(bookMoves.Count, 5); i++)
             {
@@ -661,15 +662,14 @@ namespace ChessDroid.Services
                     richTextBox.AppendText(", ");
                 }
 
-                // Move with win rate
                 richTextBox.SelectionColor = Color.PaleGreen;
                 richTextBox.AppendText($"{move.UciMove}");
 
                 richTextBox.SelectionColor = Color.Gray;
-                richTextBox.AppendText($"({move.WinRate:F0}%/{move.Games})");
+                richTextBox.AppendText($"(w:{move.Priority})");
             }
-
             richTextBox.AppendText(Environment.NewLine);
+
             ResetFormatting();
         }
 
@@ -716,24 +716,15 @@ namespace ChessDroid.Services
             bool whiteToMoveForWdl = fenPartsForWdl.Length > 1 && fenPartsForWdl[1] == "w";
 
             // Display WDL information if available and enabled
-            if (config?.ShowWDL == true)
+            if (config?.ShowWDL == true && wdl != null)
             {
-                if (wdl != null)
-                {
-                    System.Diagnostics.Debug.WriteLine($"WDL data received: W={wdl.Win} D={wdl.Draw} L={wdl.Loss}");
-                    DisplayWDLInfo(wdl, whiteToMoveForWdl);
-                }
-                else
-                {
-                    System.Diagnostics.Debug.WriteLine("WDL: No data available from engine");
-                }
+                DisplayWDLInfo(wdl, whiteToMoveForWdl);
             }
 
             // Display opening name if in known theory and enabled
             if (config?.ShowOpeningName == true)
             {
                 string openingDisplay = OpeningBook.GetOpeningDisplay(completeFen);
-                System.Diagnostics.Debug.WriteLine($"OpeningBook lookup for FEN: {completeFen?.Split(' ')[0]} => {openingDisplay}");
 
                 if (!string.IsNullOrEmpty(openingDisplay) && openingDisplay != "Starting Position")
                 {

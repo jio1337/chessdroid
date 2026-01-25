@@ -1,6 +1,7 @@
 using ChessDroid.Models;
 using ChessDroid.Services;
 using Emgu.CV;
+using System.Linq;
 using Emgu.CV.CvEnum;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -36,7 +37,7 @@ namespace ChessDroid
         private BlunderTracker blunderTracker = new BlunderTracker();
         private EnginePathResolver? enginePathResolver;
         private BoardMonitorService? boardMonitorService;
-        private AbkBookService? abkBookService;
+        private PolyglotBookService? openingBookService;
 
         private AppConfig? config;
 
@@ -82,21 +83,42 @@ namespace ChessDroid
                 blunderTracker.SetPreviousEvaluation(currentEval);
             }
 
-            // Get ABK book moves if enabled (uses FEN-based lookup - works for any position)
+            // Get opening book moves if enabled (Polyglot .bin format)
             List<BookMove>? bookMoves = null;
 
-            // Try to load book if not loaded yet (lazy loading)
-            if (config?.UseAbkBook == true && abkBookService != null && !abkBookService.IsBookLoaded)
+            // Try to load opening books if not loaded yet (lazy loading)
+            if (config?.UseOpeningBook == true && openingBookService != null && !openingBookService.IsLoaded)
             {
-                if (!string.IsNullOrEmpty(config.AbkBookPath) && File.Exists(config.AbkBookPath))
+                if (!string.IsNullOrEmpty(config.OpeningBooksFolder))
                 {
-                    abkBookService.LoadBook(config.AbkBookPath);
+                    string booksPath = GetBooksPath(config.OpeningBooksFolder);
+                    if (Directory.Exists(booksPath))
+                        openingBookService.LoadBooksFromFolder(booksPath);
                 }
             }
 
-            if (config?.UseAbkBook == true && abkBookService?.IsBookLoaded == true)
+            if (config?.UseOpeningBook == true && openingBookService?.IsLoaded == true)
             {
-                bookMoves = abkBookService.GetBookMovesForPosition(completeFen);
+                var moves = openingBookService.GetBookMovesForPosition(completeFen);
+
+                if (moves != null && moves.Count > 0)
+                {
+                    bookMoves = new List<BookMove>();
+                    foreach (var pm in moves)
+                    {
+                        bookMoves.Add(new BookMove
+                        {
+                            UciMove = pm.UciMove,
+                            Games = pm.Weight,
+                            Priority = pm.Weight,
+                            WinRate = 50,
+                            Wins = 0,
+                            Losses = 0,
+                            Draws = 0,
+                            Source = "Book"
+                        });
+                    }
+                }
             }
 
             // Display analysis results (only show blunder warning if tracking is active)
@@ -209,31 +231,13 @@ namespace ChessDroid
             // Subscribe to turn change event
             boardMonitorService.UserTurnDetected += OnUserTurnDetected;
 
-            // Initialize ABK book service
-            try
+            // Initialize opening book service (loads all .bin files from folder)
+            openingBookService = new PolyglotBookService();
+            if (config.UseOpeningBook && !string.IsNullOrEmpty(config.OpeningBooksFolder))
             {
-                abkBookService = new AbkBookService();
-                Debug.WriteLine($"[MainForm] ABK config: UseAbkBook={config.UseAbkBook}, Path='{config.AbkBookPath}'");
-                if (config.UseAbkBook && !string.IsNullOrEmpty(config.AbkBookPath))
-                {
-                    Debug.WriteLine($"[MainForm] ABK book path exists: {File.Exists(config.AbkBookPath)}");
-                    if (abkBookService.LoadBook(config.AbkBookPath))
-                    {
-                        Debug.WriteLine($"[MainForm] ABK book loaded: {config.AbkBookPath} ({abkBookService.TotalPositions} positions)");
-                    }
-                    else
-                    {
-                        Debug.WriteLine($"[MainForm] Failed to load ABK book: {config.AbkBookPath}");
-                    }
-                }
-                else
-                {
-                    Debug.WriteLine("[MainForm] ABK book disabled or no path configured");
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"[MainForm] EXCEPTION loading ABK book: {ex.Message}");
+                string booksPath = GetBooksPath(config.OpeningBooksFolder);
+                if (Directory.Exists(booksPath))
+                    openingBookService.LoadBooksFromFolder(booksPath);
             }
 
             // Force auto-monitor OFF on every startup (user must enable with Alt+K)
@@ -250,6 +254,33 @@ namespace ChessDroid
             // Use selected site from config
             string selectedSite = config?.SelectedSite ?? "Lichess";
             pieceRecognitionService.LoadTemplatesAndMasks(selectedSite, Config);
+        }
+
+        /// <summary>
+        /// Resolves the opening books folder path (handles both relative and absolute paths).
+        /// </summary>
+        private string GetBooksPath(string booksFolder)
+        {
+            // If it's an absolute path that exists, use it directly
+            if (Path.IsPathRooted(booksFolder) && Directory.Exists(booksFolder))
+                return booksFolder;
+
+            // Try relative paths from application directory
+            string[] possiblePaths = new[]
+            {
+                Path.Combine(Application.StartupPath, booksFolder),
+                Path.Combine(AppContext.BaseDirectory, booksFolder),
+                Path.Combine(Directory.GetCurrentDirectory(), booksFolder)
+            };
+
+            foreach (var path in possiblePaths)
+            {
+                if (Directory.Exists(path))
+                    return path;
+            }
+
+            // Return the first option (may not exist yet)
+            return possiblePaths[0];
         }
 
         /// <summary>

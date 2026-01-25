@@ -870,9 +870,22 @@ namespace ChessDroid.Services
                 // Extract just the piece placement (first part of FEN)
                 string piecePlacement = fen.Split(' ')[0];
 
+                // First check built-in dictionary
                 if (_openings.TryGetValue(piecePlacement, out var opening))
                 {
                     return opening;
+                }
+
+                // Fall back to external OpeningDatabase (eco.json files)
+                var externalOpening = OpeningDatabase.Instance.GetOpening(fen);
+                if (externalOpening != null)
+                {
+                    return new Opening
+                    {
+                        ECO = externalOpening.ECO,
+                        Name = externalOpening.Name,
+                        Moves = externalOpening.Moves
+                    };
                 }
             }
             catch (Exception ex)
