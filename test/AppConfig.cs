@@ -47,7 +47,7 @@ namespace ChessDroid
 
         // Opening book settings (Polyglot .bin format)
         public string OpeningBooksFolder { get; set; } = "Books"; // Folder containing Polyglot .bin files (loads all)
-        public bool UseOpeningBook { get; set; } = false; // Enable opening book move suggestions
+        public bool UseOpeningBook { get; set; } = true; // Enable opening book move suggestions
         public bool ShowBookMoves { get; set; } = true; // Show book move suggestions in console
 
         private static readonly string ConfigFilePath = Path.Combine(
