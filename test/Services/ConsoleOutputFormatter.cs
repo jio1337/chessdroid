@@ -143,15 +143,15 @@ namespace ChessDroid.Services
                     // Add defenses on same line if present (before threats)
                     if (!string.IsNullOrEmpty(defensesText))
                     {
-                        AppendTextWithFormat(" | ", richTextBox.BackColor, Color.Gray, FontStyle.Regular);
-                        AppendTextWithFormat($"🛡 {defensesText}", richTextBox.BackColor, Color.CornflowerBlue, FontStyle.Regular);
+                        AppendTextWithFormat(" | ", richTextBox.BackColor, GetThemeColor(Color.Gray, Color.DarkSlateGray), FontStyle.Regular);
+                        AppendTextWithFormat($"🛡 {defensesText}", richTextBox.BackColor, GetThemeColor(Color.CornflowerBlue, Color.MidnightBlue), FontStyle.Regular);
                     }
 
                     // Add threats on same line if present
                     if (!string.IsNullOrEmpty(threatsText))
                     {
-                        AppendTextWithFormat(" | ", richTextBox.BackColor, Color.Gray, FontStyle.Regular);
-                        AppendTextWithFormat($"⚔ {threatsText}", richTextBox.BackColor, Color.LimeGreen, FontStyle.Regular);
+                        AppendTextWithFormat(" | ", richTextBox.BackColor, GetThemeColor(Color.Gray, Color.DarkSlateGray), FontStyle.Regular);
+                        AppendTextWithFormat($"⚔ {threatsText}", richTextBox.BackColor, GetThemeColor(Color.LimeGreen, Color.DarkGreen), FontStyle.Regular);
                     }
 
                     AppendTextWithFormat(Environment.NewLine, richTextBox.BackColor, explanationColor, FontStyle.Regular);
@@ -167,7 +167,7 @@ namespace ChessDroid.Services
                         AppendTextWithFormat($"{classification.Value.label.ToUpper()}", richTextBox.BackColor, classification.Value.color, FontStyle.Bold);
                         if (!string.IsNullOrEmpty(defensesText) || !string.IsNullOrEmpty(threatsText))
                         {
-                            AppendTextWithFormat(" | ", richTextBox.BackColor, Color.Gray, FontStyle.Regular);
+                            AppendTextWithFormat(" | ", richTextBox.BackColor, GetThemeColor(Color.Gray, Color.DarkSlateGray), FontStyle.Regular);
                         }
                     }
                     // Show "only winning move" first if applicable
@@ -176,22 +176,22 @@ namespace ChessDroid.Services
                         AppendTextWithFormat($"⚡ only winning move", richTextBox.BackColor, explanationColor, FontStyle.Italic);
                         if (!string.IsNullOrEmpty(defensesText) || !string.IsNullOrEmpty(threatsText))
                         {
-                            AppendTextWithFormat(" | ", richTextBox.BackColor, Color.Gray, FontStyle.Regular);
+                            AppendTextWithFormat(" | ", richTextBox.BackColor, GetThemeColor(Color.Gray, Color.DarkSlateGray), FontStyle.Regular);
                         }
                     }
 
                     if (!string.IsNullOrEmpty(defensesText))
                     {
-                        AppendTextWithFormat($"🛡 {defensesText}", richTextBox.BackColor, Color.CornflowerBlue, FontStyle.Regular);
+                        AppendTextWithFormat($"🛡 {defensesText}", richTextBox.BackColor, GetThemeColor(Color.CornflowerBlue, Color.MidnightBlue), FontStyle.Regular);
                         if (!string.IsNullOrEmpty(threatsText))
                         {
-                            AppendTextWithFormat(" | ", richTextBox.BackColor, Color.Gray, FontStyle.Regular);
+                            AppendTextWithFormat(" | ", richTextBox.BackColor, GetThemeColor(Color.Gray, Color.DarkSlateGray), FontStyle.Regular);
                         }
                     }
 
                     if (!string.IsNullOrEmpty(threatsText))
                     {
-                        AppendTextWithFormat($"⚔ {threatsText}", richTextBox.BackColor, Color.LimeGreen, FontStyle.Regular);
+                        AppendTextWithFormat($"⚔ {threatsText}", richTextBox.BackColor, GetThemeColor(Color.LimeGreen, Color.DarkGreen), FontStyle.Regular);
                     }
 
                     AppendTextWithFormat(Environment.NewLine, richTextBox.BackColor, explanationColor, FontStyle.Regular);
@@ -284,6 +284,15 @@ namespace ChessDroid.Services
             richTextBox.SelectionFont = new Font(richTextBox.Font, fontStyle);
             richTextBox.AppendText(text);
             richTextBox.SelectionFont = new Font(richTextBox.Font, FontStyle.Regular);
+        }
+
+        /// <summary>
+        /// Gets theme-aware color (darker colors for light mode, lighter for dark mode)
+        /// </summary>
+        private Color GetThemeColor(Color darkModeColor, Color lightModeColor)
+        {
+            bool isDarkMode = config?.Theme == "Dark";
+            return isDarkMode ? darkModeColor : lightModeColor;
         }
 
         /// <summary>
@@ -613,22 +622,25 @@ namespace ChessDroid.Services
             double drawPercent = wdl.DrawPercent;
 
             // WDL header
-            richTextBox.SelectionColor = Color.Gray;
+            richTextBox.SelectionColor = GetThemeColor(Color.Gray, Color.DarkSlateGray);
             richTextBox.AppendText("Position: ");
 
-            // Win percentage - green shade based on value
-            Color winColor = winPercent > 60 ? Color.LimeGreen :
-                            winPercent > 40 ? Color.MediumSeaGreen : Color.DarkSeaGreen;
+            // Win percentage - green shade based on value (darker for light mode)
+            Color winColor = winPercent > 60
+                ? GetThemeColor(Color.LimeGreen, Color.DarkGreen)
+                : winPercent > 40
+                    ? GetThemeColor(Color.MediumSeaGreen, Color.SeaGreen)
+                    : GetThemeColor(Color.DarkSeaGreen, Color.ForestGreen);
             richTextBox.SelectionColor = winColor;
             richTextBox.AppendText($"W:{winPercent:F0}% ");
 
-            // Draw percentage - neutral color
-            richTextBox.SelectionColor = Color.Gold;
+            // Draw percentage - neutral color (darker for light mode)
+            richTextBox.SelectionColor = GetThemeColor(Color.Gold, Color.Sienna);
             richTextBox.AppendText($"D:{drawPercent:F0}% ");
 
             // Loss percentage - red shade based on value
             Color lossColor = lossPercent > 60 ? Color.Crimson :
-                             lossPercent > 40 ? Color.IndianRed : Color.RosyBrown;
+                             lossPercent > 40 ? Color.IndianRed : GetThemeColor(Color.RosyBrown, Color.Maroon);
             richTextBox.SelectionColor = lossColor;
             richTextBox.AppendText($"L:{lossPercent:F0}% ");
 
@@ -643,14 +655,14 @@ namespace ChessDroid.Services
         }
 
         /// <summary>
-        /// Displays opening book moves (Polyglot format)
+        /// Displays opening book moves (Polyglot format) in SAN notation
         /// </summary>
-        public void DisplayBookMoves(List<BookMove> bookMoves)
+        public void DisplayBookMoves(List<BookMove> bookMoves, string fen)
         {
             if (bookMoves == null || bookMoves.Count == 0)
                 return;
 
-            richTextBox.SelectionColor = Color.Khaki;
+            richTextBox.SelectionColor = GetThemeColor(Color.Khaki, Color.DarkOliveGreen);
             richTextBox.AppendText($"Book: ");
 
             for (int i = 0; i < Math.Min(bookMoves.Count, 5); i++)
@@ -658,14 +670,18 @@ namespace ChessDroid.Services
                 var move = bookMoves[i];
                 if (i > 0)
                 {
-                    richTextBox.SelectionColor = Color.Gray;
+                    richTextBox.SelectionColor = GetThemeColor(Color.Gray, Color.DarkSlateGray);
                     richTextBox.AppendText(", ");
                 }
 
-                richTextBox.SelectionColor = Color.PaleGreen;
-                richTextBox.AppendText($"{move.UciMove}");
+                // Convert UCI to SAN notation
+                string sanMove = ChessNotationService.ConvertFullPvToSan(move.UciMove, fen,
+                    ChessRulesService.ApplyUciMove, ChessRulesService.CanReachSquare, ChessRulesService.FindAllPiecesOfSameType);
 
-                richTextBox.SelectionColor = Color.Gray;
+                richTextBox.SelectionColor = GetThemeColor(Color.PaleGreen, Color.DarkGreen);
+                richTextBox.AppendText($"{sanMove}");
+
+                richTextBox.SelectionColor = GetThemeColor(Color.Gray, Color.DarkSlateGray);
                 richTextBox.AppendText($"(w:{move.Priority})");
             }
             richTextBox.AppendText(Environment.NewLine);
@@ -683,6 +699,7 @@ namespace ChessDroid.Services
             List<string> evaluations,
             string completeFen,
             double? previousEvaluation,
+            bool showBestLine,
             bool showSecondLine,
             bool showThirdLine,
             WDLInfo? wdl = null,
@@ -728,49 +745,23 @@ namespace ChessDroid.Services
 
                 if (!string.IsNullOrEmpty(openingDisplay) && openingDisplay != "Starting Position")
                 {
-                    richTextBox.SelectionColor = Color.CornflowerBlue;
+                    richTextBox.SelectionColor = GetThemeColor(Color.CornflowerBlue, Color.MidnightBlue);
                     richTextBox.AppendText($"Opening: {openingDisplay}{Environment.NewLine}");
                     ResetFormatting();
                 }
                 else
                 {
                     // Show "Out of book" when we're past known theory
-                    richTextBox.SelectionColor = Color.Gray;
+                    richTextBox.SelectionColor = GetThemeColor(Color.Gray, Color.DarkSlateGray);
                     richTextBox.AppendText($"Opening: Out of book{Environment.NewLine}");
                     ResetFormatting();
                 }
             }
 
-            // Display ABK book moves if available and enabled
+            // Display book moves if available and enabled
             if (config?.ShowBookMoves == true && bookMoves != null && bookMoves.Count > 0)
             {
-                DisplayBookMoves(bookMoves);
-            }
-
-            // Display play style indicator based on aggressiveness setting
-            if (config != null)
-            {
-                string playStyle = config.Aggressiveness switch
-                {
-                    <= 20 => "Very Solid",
-                    <= 40 => "Solid",
-                    <= 60 => "Balanced",
-                    <= 80 => "Aggressive",
-                    _ => "Very Aggressive"
-                };
-
-                Color styleColor = config.Aggressiveness switch
-                {
-                    <= 20 => Color.SteelBlue,
-                    <= 40 => Color.CadetBlue,
-                    <= 60 => Color.Gold,
-                    <= 80 => Color.OrangeRed,
-                    _ => Color.Crimson
-                };
-
-                richTextBox.SelectionColor = styleColor;
-                richTextBox.AppendText($"Style: {playStyle} ({config.Aggressiveness}){Environment.NewLine}");
-                ResetFormatting();
+                DisplayBookMoves(bookMoves, completeFen);
             }
 
             // Determine if dark mode is enabled for color selection
@@ -826,7 +817,14 @@ namespace ChessDroid.Services
             string bestSanFull = ConvertPvToSan(pvs, 0, bestMove, fen);
             string formattedEval = FormatEvaluation(evaluation);
             // Use pvs[0] not bestMove - after Multi-PV sorting, bestMove may not match pvs[0]
+            // bestMove is the "recommended" move based on aggressiveness setting
             string firstMove = pvs.Count > 0 ? pvs[0].Split(' ')[0] : bestMove;
+
+            // Check if recommended move (bestMove) differs from eval-best move (firstMove)
+            // If so, we'll mark the recommended line with an indicator
+            bool recommendedDiffersFromBest = !string.IsNullOrEmpty(bestMove) &&
+                                               !string.IsNullOrEmpty(firstMove) &&
+                                               bestMove != firstMove;
 
             // Check for Brilliant move (piece sacrifice that works)
             (string label, string symbol, Color color)? bestMoveClassification = null;
@@ -837,24 +835,28 @@ namespace ChessDroid.Services
                 var (isBrilliant, explanation) = IsBrilliantMove(fen, firstMove, evalForBrilliant.Value, previousEvaluation);
                 if (isBrilliant)
                 {
-                    bestMoveClassification = ("Brilliant", "!!", Color.Cyan);
+                    bestMoveClassification = ("Brilliant", "!!", GetThemeColor(Color.Cyan, Color.Teal));
                     brilliantExplanation = explanation;
                 }
             }
 
-            DisplayMoveLine(
-                "Best line",
-                bestSanFull,
-                formattedEval,
-                fen,
-                pvs,
-                firstMove,
-                isDarkMode ? Color.PaleGreen : Color.Green,
-                isDarkMode ? Color.LightGreen : Color.ForestGreen,
-                showThreats: true,
-                isOnlyWinningMove: isOnlyWinningMove,
-                classification: bestMoveClassification,
-                overrideExplanation: brilliantExplanation);
+            // Best line - show if enabled
+            if (showBestLine)
+            {
+                DisplayMoveLine(
+                    "Best line",
+                    bestSanFull,
+                    formattedEval,
+                    fen,
+                    pvs,
+                    firstMove,
+                    isDarkMode ? Color.PaleGreen : Color.DarkGreen,
+                    isDarkMode ? Color.LightGreen : Color.ForestGreen,
+                    showThreats: true,
+                    isOnlyWinningMove: isOnlyWinningMove,
+                    classification: bestMoveClassification,
+                    overrideExplanation: brilliantExplanation);
+            }
 
             // Second best - show threats if enabled
             if (showSecondLine && pvs.Count >= 2)
@@ -886,8 +888,8 @@ namespace ChessDroid.Services
                     fen,
                     pvs,
                     secondMove,
-                    isDarkMode ? Color.Khaki : Color.Goldenrod,
-                    isDarkMode ? Color.LightGoldenrodYellow : Color.DarkGoldenrod,
+                    isDarkMode ? Color.Khaki : Color.SaddleBrown,
+                    isDarkMode ? Color.LightGoldenrodYellow : Color.Sienna,
                     showThreats: true,
                     isOnlyWinningMove: false,
                     classification: secondClassification);
@@ -923,11 +925,91 @@ namespace ChessDroid.Services
                     fen,
                     pvs,
                     thirdMove,
-                    isDarkMode ? Color.LightCoral : Color.Firebrick,
+                    isDarkMode ? Color.LightCoral : Color.Maroon,
                     isDarkMode ? Color.Salmon : Color.DarkRed,
                     showThreats: true,
                     isOnlyWinningMove: false,
                     classification: thirdClassification);
+            }
+
+            // Display recommended move (based on aggressiveness) if:
+            // 1. It differs from best line, OR
+            // 2. All three lines are hidden (user only wants style recommendation), OR
+            // 3. A non-balanced style is active (shows style confirmation even when recommendation = best)
+            bool allLinesHidden = !showBestLine && !showSecondLine && !showThirdLine;
+            bool hasNonBalancedStyle = config != null && (config.Aggressiveness <= 40 || config.Aggressiveness >= 61);
+            bool showRecommendedSection = recommendedDiffersFromBest || allLinesHidden || hasNonBalancedStyle;
+
+            if (showRecommendedSection)
+            {
+                // Find the recommended move's PV line and eval
+                // If recommended doesn't differ, use pvs[0] (the best eval line)
+                int recommendedIndex = -1;
+                for (int i = 0; i < pvs.Count; i++)
+                {
+                    string moveFromPv = pvs[i].Split(' ')[0];
+                    if (moveFromPv == bestMove)
+                    {
+                        recommendedIndex = i;
+                        break;
+                    }
+                }
+
+                if (recommendedIndex >= 0 && config != null)
+                {
+                    var recommendedSan = ChessNotationService.ConvertFullPvToSan(pvs[recommendedIndex], fen,
+                        ChessRulesService.ApplyUciMove, ChessRulesService.CanReachSquare, ChessRulesService.FindAllPiecesOfSameType);
+                    string recommendedEval = recommendedIndex < evaluations.Count ? evaluations[recommendedIndex] : "";
+                    string formattedRecommendedEval = FormatEvaluation(recommendedEval);
+
+                    // Add a blank line separator before style/recommended section (only if there are lines above)
+                    if (!allLinesHidden)
+                    {
+                        richTextBox.AppendText(Environment.NewLine);
+                    }
+
+                    // Display play style indicator
+                    string playStyle = config.Aggressiveness switch
+                    {
+                        <= 20 => "Very Solid",
+                        <= 40 => "Solid",
+                        <= 60 => "Balanced",
+                        <= 80 => "Aggressive",
+                        _ => "Very Aggressive"
+                    };
+                    Color styleColor = config.Aggressiveness switch
+                    {
+                        <= 20 => isDarkMode ? Color.SteelBlue : Color.MidnightBlue,
+                        <= 40 => isDarkMode ? Color.CadetBlue : Color.DarkCyan,
+                        <= 60 => isDarkMode ? Color.Gold : Color.Sienna,
+                        <= 80 => isDarkMode ? Color.OrangeRed : Color.Firebrick,
+                        _ => isDarkMode ? Color.Crimson : Color.DarkRed
+                    };
+                    richTextBox.SelectionColor = styleColor;
+                    richTextBox.AppendText($"Style: {playStyle} ({config.Aggressiveness}){Environment.NewLine}");
+                    ResetFormatting();
+
+                    // Use best line colors when it's the only line shown, orange when shown alongside other lines
+                    Color headerColor = allLinesHidden
+                        ? (isDarkMode ? Color.PaleGreen : Color.DarkGreen)
+                        : (isDarkMode ? Color.Orange : Color.DarkOrange);
+                    Color explanationColor = allLinesHidden
+                        ? (isDarkMode ? Color.LightGreen : Color.ForestGreen)
+                        : (isDarkMode ? Color.Gold : Color.Chocolate);
+
+                    DisplayMoveLine(
+                        "Recommended",
+                        recommendedSan,
+                        formattedRecommendedEval,
+                        fen,
+                        pvs,
+                        bestMove,
+                        headerColor,
+                        explanationColor,
+                        showThreats: allLinesHidden, // Show threats when it's the only line
+                        isOnlyWinningMove: false,
+                        classification: null);
+                }
             }
 
             // Display opponent threats at the bottom (independent of which move we choose)
@@ -971,7 +1053,7 @@ namespace ChessDroid.Services
                     // Game phase header
                     string phase = EndgameAnalysis.GetGamePhase(board);
                     AppendTextWithFormat($"♟ Endgame Analysis ({phase}):{Environment.NewLine}",
-                        richTextBox.BackColor, Color.Cyan, FontStyle.Bold);
+                        richTextBox.BackColor, GetThemeColor(Color.Cyan, Color.Teal), FontStyle.Bold);
 
                     foreach (var insight in insights)
                     {
@@ -991,37 +1073,37 @@ namespace ChessDroid.Services
         /// <summary>
         /// Get color for endgame insight based on content
         /// </summary>
-        private static Color GetInsightColor(string insight)
+        private Color GetInsightColor(string insight)
         {
             string lower = insight.ToLower();
 
             // Critical advantages
             if (lower.Contains("unstoppable") || lower.Contains("forced checkmate"))
-                return Color.LimeGreen;
+                return GetThemeColor(Color.LimeGreen, Color.DarkGreen);
 
             // Drawing indicators
             if (lower.Contains("draw") || lower.Contains("insufficient") ||
                 lower.Contains("fortress") || lower.Contains("wrong color"))
-                return Color.Gold;
+                return GetThemeColor(Color.Gold, Color.Sienna);
 
             // Opposition and key squares
             if (lower.Contains("opposition"))
-                return Color.MediumOrchid;
+                return GetThemeColor(Color.MediumOrchid, Color.Purple);
 
             // King activity
             if (lower.Contains("active king") || lower.Contains("centralization"))
-                return Color.PaleGreen;
+                return GetThemeColor(Color.PaleGreen, Color.DarkGreen);
 
             // Passed pawn insights
             if (lower.Contains("passed pawn"))
-                return Color.Orange;
+                return GetThemeColor(Color.Orange, Color.Firebrick);
 
             // Zugzwang
             if (lower.Contains("zugzwang"))
-                return Color.Coral;
+                return GetThemeColor(Color.Coral, Color.Maroon);
 
             // Default
-            return Color.LightGray;
+            return GetThemeColor(Color.LightGray, Color.DimGray);
         }
 
         /// <summary>
@@ -1041,9 +1123,9 @@ namespace ChessDroid.Services
                 if (opponentThreats.Count > 0)
                 {
                     richTextBox.AppendText(Environment.NewLine);
-                    AppendTextWithFormat("⚠ Opponent threats: ", richTextBox.BackColor, Color.Orange, FontStyle.Bold);
+                    AppendTextWithFormat("⚠ Opponent threats: ", richTextBox.BackColor, GetThemeColor(Color.Orange, Color.Firebrick), FontStyle.Bold);
                     string oppThreatText = string.Join(", ", opponentThreats.Select(t => t.Description));
-                    AppendTextWithFormat($"{oppThreatText}{Environment.NewLine}", richTextBox.BackColor, Color.Coral, FontStyle.Regular);
+                    AppendTextWithFormat($"{oppThreatText}{Environment.NewLine}", richTextBox.BackColor, GetThemeColor(Color.Coral, Color.Maroon), FontStyle.Regular);
                 }
             }
             catch (Exception ex)

@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.7.0] - 2026-01-26
+
+### Added
+- **Play Style Recommendations** - Style-based move suggestions now always visible when non-balanced
+  - Shows "Recommended" section for Very Solid, Solid, Aggressive, and Very Aggressive styles
+  - Displays even when recommended move matches engine's best (confirms style alignment)
+  - Green coloring when shown alone (all lines hidden), orange when shown with best lines
+
+### Fixed
+- **Very Solid Play Style Not Working** - Critical fix for aggressiveness 0-40
+  - Recommended move's PV was being trimmed before display, causing lookup failure
+  - Now ensures recommended move's PV line is always included for display
+  - Fixed format mismatch between bestMove and PV list entries
+- **Evaluation Line Ordering** - PV lines now stay sorted by evaluation (best first)
+  - Aggressiveness filter only changes the recommended move, not display order
+  - Prevents confusing display where "Best line" showed worse eval than "Second best"
+- **Sharpness Calculation** - More accurate style-based move selection
+  - Central piece development (c-f files) now scores as slightly sharp (+3)
+  - Flank pawn moves now score as solid (-5) in the opening
+  - Removed incorrect penalty for knight/bishop development
+
+### Changed
+- **Book Moves Display** - Now shows SAN notation (Nf3) instead of UCI (g1f3)
+- **Settings UI Reorganized**
+  - Renamed "Lc0-Inspired Features" → "Play Style" (now just contains aggressiveness slider)
+  - Moved "Show Opening Name", "Move Quality", "Show Book Moves" to Explanations section
+  - Removed "Auto-Monitor Board" checkbox from settings (functionality still available via hotkey)
+
+---
+
 ## [2.6.0] - 2026-01-25
 
 ### Added

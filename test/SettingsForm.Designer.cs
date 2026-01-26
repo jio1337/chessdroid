@@ -71,14 +71,13 @@ namespace ChessDroid
             chkSEE = new CheckBox();
             chkThreats = new CheckBox();
             chkWDL = new CheckBox();
-            chkAutoMonitor = new CheckBox();
+            chkOpeningName = new CheckBox();
+            chkMoveQuality = new CheckBox();
+            chkBookMoves = new CheckBox();
             grpLc0Features = new GroupBox();
             lblAggressiveness = new Label();
             trkAggressiveness = new TrackBar();
             lblAggressivenessValue = new Label();
-            chkOpeningName = new CheckBox();
-            chkMoveQuality = new CheckBox();
-            chkBookMoves = new CheckBox();
             btnSave = new Button();
             btnReset = new Button();
             btnHelp = new Button();
@@ -397,7 +396,7 @@ namespace ChessDroid
             // chkShowThird
             // 
             chkShowThird.AutoSize = true;
-            chkShowThird.Location = new Point(182, 116);
+            chkShowThird.Location = new Point(182, 120);
             chkShowThird.Name = "chkShowThird";
             chkShowThird.Size = new Size(15, 14);
             chkShowThird.TabIndex = 5;
@@ -406,7 +405,7 @@ namespace ChessDroid
             // 
             // lblThird
             // 
-            lblThird.Location = new Point(10, 114);
+            lblThird.Location = new Point(10, 118);
             lblThird.Name = "lblThird";
             lblThird.Size = new Size(150, 19);
             lblThird.TabIndex = 4;
@@ -415,7 +414,7 @@ namespace ChessDroid
             // chkShowSecond
             // 
             chkShowSecond.AutoSize = true;
-            chkShowSecond.Location = new Point(182, 100);
+            chkShowSecond.Location = new Point(182, 102);
             chkShowSecond.Name = "chkShowSecond";
             chkShowSecond.Size = new Size(15, 14);
             chkShowSecond.TabIndex = 3;
@@ -424,7 +423,7 @@ namespace ChessDroid
             // 
             // lblSecond
             // 
-            lblSecond.Location = new Point(10, 98);
+            lblSecond.Location = new Point(10, 100);
             lblSecond.Name = "lblSecond";
             lblSecond.Size = new Size(150, 19);
             lblSecond.TabIndex = 2;
@@ -461,11 +460,13 @@ namespace ChessDroid
             grpExplanations.Controls.Add(chkSEE);
             grpExplanations.Controls.Add(chkThreats);
             grpExplanations.Controls.Add(chkWDL);
-            grpExplanations.Controls.Add(chkAutoMonitor);
+            grpExplanations.Controls.Add(chkOpeningName);
+            grpExplanations.Controls.Add(chkMoveQuality);
+            grpExplanations.Controls.Add(chkBookMoves);
             grpExplanations.ForeColor = Color.White;
             grpExplanations.Location = new Point(316, 12);
             grpExplanations.Name = "grpExplanations";
-            grpExplanations.Size = new Size(255, 310);
+            grpExplanations.Size = new Size(255, 308);
             grpExplanations.TabIndex = 3;
             grpExplanations.TabStop = false;
             grpExplanations.Text = "Explanation Settings";
@@ -544,9 +545,9 @@ namespace ChessDroid
             chkOpening.Text = "Opening Principles";
             toolTip1.SetToolTip(chkOpening, "Show center control, development");
             chkOpening.UseVisualStyleBackColor = true;
-            //
+            // 
             // chkSEE
-            //
+            // 
             chkSEE.AutoSize = true;
             chkSEE.Checked = true;
             chkSEE.CheckState = CheckState.Checked;
@@ -572,9 +573,9 @@ namespace ChessDroid
             chkThreats.Text = "Threats Analysis";
             toolTip1.SetToolTip(chkThreats, "Show threats we create and opponent threats against us");
             chkThreats.UseVisualStyleBackColor = true;
-            //
+            // 
             // chkWDL
-            //
+            // 
             chkWDL.AutoSize = true;
             chkWDL.Checked = true;
             chkWDL.CheckState = CheckState.Checked;
@@ -586,34 +587,61 @@ namespace ChessDroid
             chkWDL.Text = "WDL & Sharpness (Lc0)";
             toolTip1.SetToolTip(chkWDL, "Show Win/Draw/Loss probabilities and position sharpness (Lc0-inspired)");
             chkWDL.UseVisualStyleBackColor = true;
-            //
-            // chkAutoMonitor
-            //
-            chkAutoMonitor.AutoSize = true;
-            chkAutoMonitor.ForeColor = Color.LightGreen;
-            chkAutoMonitor.Location = new Point(10, 230);
-            chkAutoMonitor.Name = "chkAutoMonitor";
-            chkAutoMonitor.Size = new Size(152, 18);
-            chkAutoMonitor.TabIndex = 11;
-            chkAutoMonitor.Text = "Auto-Monitor Board";
-            toolTip1.SetToolTip(chkAutoMonitor, "Automatically analyze position when it becomes your turn");
-            chkAutoMonitor.UseVisualStyleBackColor = true;
+            // 
+            // chkOpeningName
+            // 
+            chkOpeningName.AutoSize = true;
+            chkOpeningName.Checked = true;
+            chkOpeningName.CheckState = CheckState.Checked;
+            chkOpeningName.ForeColor = Color.White;
+            chkOpeningName.Location = new Point(10, 230);
+            chkOpeningName.Name = "chkOpeningName";
+            chkOpeningName.Size = new Size(145, 18);
+            chkOpeningName.TabIndex = 11;
+            chkOpeningName.Text = "Show Opening Name";
+            toolTip1.SetToolTip(chkOpeningName, "Display opening name when in known theory (ECO codes)");
+            chkOpeningName.UseVisualStyleBackColor = true;
+            // 
+            // chkMoveQuality
+            // 
+            chkMoveQuality.AutoSize = true;
+            chkMoveQuality.Checked = true;
+            chkMoveQuality.CheckState = CheckState.Checked;
+            chkMoveQuality.ForeColor = Color.White;
+            chkMoveQuality.Location = new Point(10, 255);
+            chkMoveQuality.Name = "chkMoveQuality";
+            chkMoveQuality.Size = new Size(229, 18);
+            chkMoveQuality.TabIndex = 12;
+            chkMoveQuality.Text = "Move Quality (Brilliant/Best)";
+            toolTip1.SetToolTip(chkMoveQuality, "Show move quality indicators like chess.com (!!, !, ?!, ?, ??)");
+            chkMoveQuality.UseVisualStyleBackColor = true;
+            // 
+            // chkBookMoves
+            // 
+            chkBookMoves.AutoSize = true;
+            chkBookMoves.Checked = true;
+            chkBookMoves.CheckState = CheckState.Checked;
+            chkBookMoves.ForeColor = Color.White;
+            chkBookMoves.Location = new Point(10, 280);
+            chkBookMoves.Name = "chkBookMoves";
+            chkBookMoves.Size = new Size(131, 18);
+            chkBookMoves.TabIndex = 13;
+            chkBookMoves.Text = "Show Book Moves";
+            toolTip1.SetToolTip(chkBookMoves, "Show opening book move suggestions from Polyglot books");
+            chkBookMoves.UseVisualStyleBackColor = true;
             // 
             // grpLc0Features
             // 
             grpLc0Features.Controls.Add(lblAggressiveness);
             grpLc0Features.Controls.Add(trkAggressiveness);
             grpLc0Features.Controls.Add(lblAggressivenessValue);
-            grpLc0Features.Controls.Add(chkOpeningName);
-            grpLc0Features.Controls.Add(chkMoveQuality);
-            grpLc0Features.Controls.Add(chkBookMoves);
             grpLc0Features.ForeColor = Color.White;
-            grpLc0Features.Location = new Point(316, 328);
+            grpLc0Features.Location = new Point(316, 326);
             grpLc0Features.Name = "grpLc0Features";
-            grpLc0Features.Size = new Size(255, 163);
+            grpLc0Features.Size = new Size(255, 121);
             grpLc0Features.TabIndex = 9;
             grpLc0Features.TabStop = false;
-            grpLc0Features.Text = "Lc0-Inspired Features";
+            grpLc0Features.Text = "Play Style";
             // 
             // lblAggressiveness
             // 
@@ -629,7 +657,7 @@ namespace ChessDroid
             trkAggressiveness.Location = new Point(10, 42);
             trkAggressiveness.Maximum = 100;
             trkAggressiveness.Name = "trkAggressiveness";
-            trkAggressiveness.Size = new Size(150, 45);
+            trkAggressiveness.Size = new Size(229, 45);
             trkAggressiveness.TabIndex = 1;
             trkAggressiveness.TickFrequency = 25;
             toolTip1.SetToolTip(trkAggressiveness, "0=Very Solid (avoid risk), 50=Balanced, 100=Very Aggressive (seek complications)");
@@ -638,59 +666,17 @@ namespace ChessDroid
             // 
             // lblAggressivenessValue
             // 
-            lblAggressivenessValue.Location = new Point(160, 45);
+            lblAggressivenessValue.Location = new Point(42, 84);
             lblAggressivenessValue.Name = "lblAggressivenessValue";
-            lblAggressivenessValue.Size = new Size(90, 19);
+            lblAggressivenessValue.Size = new Size(191, 19);
             lblAggressivenessValue.TabIndex = 2;
             lblAggressivenessValue.Text = "50 (Balanced)";
             // 
-            // chkOpeningName
-            // 
-            chkOpeningName.AutoSize = true;
-            chkOpeningName.Checked = true;
-            chkOpeningName.CheckState = CheckState.Checked;
-            chkOpeningName.ForeColor = Color.White;
-            chkOpeningName.Location = new Point(10, 96);
-            chkOpeningName.Name = "chkOpeningName";
-            chkOpeningName.Size = new Size(145, 18);
-            chkOpeningName.TabIndex = 3;
-            chkOpeningName.Text = "Show Opening Name";
-            toolTip1.SetToolTip(chkOpeningName, "Display opening name when in known theory (ECO codes)");
-            chkOpeningName.UseVisualStyleBackColor = true;
-            //
-            // chkMoveQuality
-            //
-            chkMoveQuality.AutoSize = true;
-            chkMoveQuality.Checked = true;
-            chkMoveQuality.CheckState = CheckState.Checked;
-            chkMoveQuality.ForeColor = Color.White;
-            chkMoveQuality.Location = new Point(10, 116);
-            chkMoveQuality.Name = "chkMoveQuality";
-            chkMoveQuality.Size = new Size(229, 18);
-            chkMoveQuality.TabIndex = 4;
-            chkMoveQuality.Text = "Move Quality (Brilliant/Best)";
-            toolTip1.SetToolTip(chkMoveQuality, "Show move quality indicators like chess.com (!!, !, ?!, ?, ??)");
-            chkMoveQuality.UseVisualStyleBackColor = true;
-            //
-            // chkBookMoves
-            //
-            chkBookMoves.AutoSize = true;
-            chkBookMoves.Checked = true;
-            chkBookMoves.CheckState = CheckState.Checked;
-            chkBookMoves.ForeColor = Color.White;
-            chkBookMoves.Location = new Point(10, 139);
-            chkBookMoves.Name = "chkBookMoves";
-            chkBookMoves.Size = new Size(180, 18);
-            chkBookMoves.TabIndex = 5;
-            chkBookMoves.Text = "Show Book Moves";
-            toolTip1.SetToolTip(chkBookMoves, "Show opening book move suggestions from Polyglot books");
-            chkBookMoves.UseVisualStyleBackColor = true;
-            //
             // btnSave
             // 
             btnSave.FlatStyle = FlatStyle.Popup;
             btnSave.ForeColor = SystemColors.ControlLightLight;
-            btnSave.Location = new Point(322, 501);
+            btnSave.Location = new Point(322, 453);
             btnSave.Name = "btnSave";
             btnSave.Size = new Size(100, 28);
             btnSave.TabIndex = 4;
@@ -702,7 +688,7 @@ namespace ChessDroid
             // 
             btnReset.FlatStyle = FlatStyle.Popup;
             btnReset.ForeColor = SystemColors.ControlLightLight;
-            btnReset.Location = new Point(322, 541);
+            btnReset.Location = new Point(322, 493);
             btnReset.Name = "btnReset";
             btnReset.Size = new Size(100, 28);
             btnReset.TabIndex = 5;
@@ -714,7 +700,7 @@ namespace ChessDroid
             // 
             btnHelp.FlatStyle = FlatStyle.Popup;
             btnHelp.ForeColor = SystemColors.ControlLightLight;
-            btnHelp.Location = new Point(471, 501);
+            btnHelp.Location = new Point(471, 453);
             btnHelp.Name = "btnHelp";
             btnHelp.Size = new Size(100, 28);
             btnHelp.TabIndex = 6;
@@ -727,7 +713,7 @@ namespace ChessDroid
             btnCancel.DialogResult = DialogResult.Cancel;
             btnCancel.FlatStyle = FlatStyle.Popup;
             btnCancel.ForeColor = SystemColors.ControlLightLight;
-            btnCancel.Location = new Point(471, 541);
+            btnCancel.Location = new Point(471, 493);
             btnCancel.Name = "btnCancel";
             btnCancel.Size = new Size(100, 28);
             btnCancel.TabIndex = 7;
@@ -741,7 +727,7 @@ namespace ChessDroid
             chkDarkMode.Checked = true;
             chkDarkMode.CheckState = CheckState.Checked;
             chkDarkMode.ForeColor = Color.White;
-            chkDarkMode.Location = new Point(12, 559);
+            chkDarkMode.Location = new Point(12, 535);
             chkDarkMode.Name = "chkDarkMode";
             chkDarkMode.Size = new Size(89, 18);
             chkDarkMode.TabIndex = 8;
@@ -757,7 +743,7 @@ namespace ChessDroid
             AutoSizeMode = AutoSizeMode.GrowAndShrink;
             BackColor = Color.FromArgb(45, 45, 48);
             CancelButton = btnCancel;
-            ClientSize = new Size(585, 585);
+            ClientSize = new Size(585, 560);
             Controls.Add(chkDarkMode);
             Controls.Add(btnCancel);
             Controls.Add(btnHelp);
@@ -848,7 +834,6 @@ namespace ChessDroid
         private System.Windows.Forms.CheckBox chkSEE;
         private System.Windows.Forms.CheckBox chkThreats;
         private System.Windows.Forms.CheckBox chkWDL;
-        private System.Windows.Forms.CheckBox chkAutoMonitor;
         private System.Windows.Forms.GroupBox grpLc0Features;
         private System.Windows.Forms.Label lblAggressiveness;
         private System.Windows.Forms.TrackBar trkAggressiveness;

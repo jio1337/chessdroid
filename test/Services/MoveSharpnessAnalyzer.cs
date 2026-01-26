@@ -123,7 +123,7 @@ namespace ChessDroid.Services
                 sharpness -= 10;
             }
 
-            // Factor 6: Piece development in opening - queen early is sharp, minor pieces solid
+            // Factor 6: Piece development in opening
             if (movedPiece.HasValue)
             {
                 char piece = char.ToLower(movedPiece.Value);
@@ -140,8 +140,22 @@ namespace ChessDroid.Services
                     }
                     else if (piece == 'n' || piece == 'b')
                     {
-                        // Knight/Bishop development - solid
-                        sharpness -= 5;
+                        // Knight/Bishop development is standard - neutral
+                        // Central development (to c3/c6, d2/d7, e2/e7, f3/f6) is slightly sharp
+                        int toFile = to[0] - 'a';
+                        if (toFile >= 2 && toFile <= 5) // c through f files
+                        {
+                            sharpness += 3; // Active central development
+                        }
+                    }
+                    else if (piece == 'p')
+                    {
+                        // Quiet pawn moves in opening (not captures, not center) are solid
+                        int toFile = to[0] - 'a';
+                        if (toFile < 3 || toFile > 4) // Not d/e files
+                        {
+                            sharpness -= 5; // Flank pawns are typically more solid
+                        }
                     }
                 }
             }

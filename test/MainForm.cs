@@ -125,6 +125,7 @@ namespace ChessDroid
             consoleFormatter?.DisplayAnalysisResults(
                 bestMove, evaluation, pvs, evaluations, completeFen,
                 previousEval,
+                config?.ShowBestLine == true,
                 config?.ShowSecondLine == true,
                 config?.ShowThirdLine == true,
                 wdl,

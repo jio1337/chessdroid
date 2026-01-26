@@ -3,7 +3,7 @@
 [![.NET](https://img.shields.io/badge/.NET-8.0-blue.svg)](https://dotnet.microsoft.com/download/dotnet/8.0)
 [![Platform](https://img.shields.io/badge/platform-Windows-lightgrey.svg)](https://www.microsoft.com/windows)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-2.5.1-brightgreen.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-2.7.0-brightgreen.svg)](CHANGELOG.md)
 
 **Offline chess analysis & training for Windows**
 
@@ -23,11 +23,13 @@ chessdroid is a desktop application built for focused chess study. Analyze posit
 - **Defense Detection** - Shows defensive aspects of moves (protecting pieces, blocking attacks)
 - **Move Quality Colors** - 6 levels from Brilliant (!!) to Blunder (??) with color coding
 
-### Lc0-Inspired Features (v2.2.0)
+### Play Style & Analysis (v2.7.0)
+- **Play Style Recommendations** - Style-based move suggestions (Very Solid → Very Aggressive)
 - **WDL Display** - Win/Draw/Loss probabilities from engine analysis
-- **Opening Book (BETA)** - 565+ opening positions with ECO codes and opening names
+- **Polyglot Opening Books** - Industry-standard .bin format with 1M+ positions
+- **ECO Database** - 12,379+ opening positions with names and ECO codes
 - **Move Quality Indicators** - Brilliant, Best, Good, Inaccuracy, Mistake, Blunder labels
-- **Aggressiveness Slider** - Functional style control (0=solid, 100=aggressive) that actually affects move selection
+- **Aggressiveness Slider** - Functional style control (0=solid, 100=aggressive) that affects move selection
 
 ### Performance (v2.3.0)
 - **3-5x Faster Analysis** - Comprehensive optimizations across the codebase

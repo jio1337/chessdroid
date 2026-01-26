@@ -86,6 +86,28 @@ namespace ChessDroid.Services
                     ? result.evaluations.GetRange(0, Math.Min(result.evaluations.Count, multiPVCount))
                     : new List<string>();
 
+                // Ensure recommended move's PV is included (it might be beyond trim limit)
+                if (!string.IsNullOrEmpty(result.bestMove) && result.pvs != null)
+                {
+                    bool recommendedInTrimmed = trimmedPVs.Any(pv => pv.Split(' ')[0] == result.bestMove);
+                    if (!recommendedInTrimmed)
+                    {
+                        // Find and add the recommended move's PV
+                        for (int i = 0; i < result.pvs.Count; i++)
+                        {
+                            if (result.pvs[i].Split(' ')[0] == result.bestMove)
+                            {
+                                trimmedPVs.Add(result.pvs[i]);
+                                if (result.evaluations != null && i < result.evaluations.Count)
+                                {
+                                    trimmedEvals.Add(result.evaluations[i]);
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
+
                 return (result.bestMove, result.evaluation, trimmedPVs, trimmedEvals, result.wdl);
             }
             catch (Exception ex)
@@ -159,32 +181,29 @@ namespace ChessDroid.Services
             // Select move based on aggressiveness
             int selectedIndex = sharpnessAnalyzer.SelectMoveByAggressiveness(candidates, aggressiveness, evalTolerance);
 
-            if (selectedIndex <= 0)
+            if (selectedIndex < 0)
             {
-                // Keep sorted best move (candidates[0] is already the best from Multi-PV sorting)
-                Debug.WriteLine($"[Aggressiveness] Keeping sorted best move: {candidates[0].move}");
+                // Error case - no valid selection
                 return result;
             }
 
-            // Different move selected!
+            // Get the selected candidate (even if index 0, use candidate move for format consistency)
             var selected = candidates[selectedIndex];
-            Debug.WriteLine($"[Aggressiveness] CHANGED from {result.bestMove} to {selected.move} (sharpness {candidates[0].sharpness} → {selected.sharpness})");
 
-            // Reorder PVs and evals to put selected move first
-            var newPvs = new List<string> { selected.pvLine };
-            var newEvals = new List<string> { selected.evaluation };
-
-            for (int i = 0; i < pvs.Count; i++)
+            if (selectedIndex == 0)
             {
-                if (i != selectedIndex && !string.IsNullOrEmpty(pvs[i]))
-                {
-                    newPvs.Add(pvs[i]);
-                    if (i < evals.Count)
-                        newEvals.Add(evals[i]);
-                }
+                // Style preference matches engine's best - log but still return PV-formatted move
+                Debug.WriteLine($"[Aggressiveness] Style preference matches best move: {selected.move}");
+            }
+            else
+            {
+                // Different move selected based on play style!
+                Debug.WriteLine($"[Aggressiveness] Recommending {selected.move} over {candidates[0].move} (sharpness {candidates[0].sharpness} → {selected.sharpness})");
             }
 
-            return (selected.move, selected.evaluation, newPvs, newEvals, result.wdl);
+            // Return the selected move from candidates (ensures format matches PVs)
+            // Keep PVs/evals in eval-sorted order for display
+            return (selected.move, evals[0], pvs, evals, result.wdl);
         }
 
         /// <summary>

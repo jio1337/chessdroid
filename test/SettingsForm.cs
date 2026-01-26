@@ -114,9 +114,8 @@ namespace ChessDroid
             chkSEE.Checked = config.ShowSEEValues;
             chkThreats.Checked = config.ShowThreats;
             chkWDL.Checked = config.ShowWDL;
-            chkAutoMonitor.Checked = config.AutoMonitorBoard;
 
-            // Lc0-inspired features
+            // Play style and display features
             trkAggressiveness.Value = Math.Clamp(config.Aggressiveness, 0, 100);
             UpdateAggressivenessLabel();
             chkOpeningName.Checked = config.ShowOpeningName;
@@ -175,9 +174,8 @@ namespace ChessDroid
             config.ShowSEEValues = chkSEE.Checked;
             config.ShowThreats = chkThreats.Checked;
             config.ShowWDL = chkWDL.Checked;
-            config.AutoMonitorBoard = chkAutoMonitor.Checked;
 
-            // Lc0-inspired features
+            // Play style and display features
             config.Aggressiveness = trkAggressiveness.Value;
             config.ShowOpeningName = chkOpeningName.Checked;
             config.ShowMoveQuality = chkMoveQuality.Checked;
@@ -319,16 +317,12 @@ namespace ChessDroid
                     }
                     else if (ctrl is CheckBox chk)
                     {
-                        // Special color for Auto-Monitor checkbox
-                        if (chk.Name == "chkAutoMonitor")
-                            chk.ForeColor = Color.LightGreen;
-                        else
-                            chk.ForeColor = Color.White;
+                        chk.ForeColor = Color.White;
                         chk.BackColor = Color.FromArgb(45, 45, 48);
                     }
                 }
 
-                // Lc0 Features GroupBox
+                // Play Style GroupBox
                 grpLc0Features.ForeColor = Color.Cyan;
                 grpLc0Features.BackColor = Color.FromArgb(45, 45, 48);
 
@@ -450,16 +444,12 @@ namespace ChessDroid
                     }
                     else if (ctrl is CheckBox chk)
                     {
-                        // Special color for Auto-Monitor checkbox
-                        if (chk.Name == "chkAutoMonitor")
-                            chk.ForeColor = Color.Green;
-                        else
-                            chk.ForeColor = Color.Black;
+                        chk.ForeColor = Color.Black;
                         chk.BackColor = Color.WhiteSmoke;
                     }
                 }
 
-                // Lc0 Features GroupBox
+                // Play Style GroupBox
                 grpLc0Features.ForeColor = Color.DarkCyan;
                 grpLc0Features.BackColor = Color.WhiteSmoke;
 
