@@ -18,6 +18,7 @@ namespace ChessDroid
 
         public const int WM_HOTKEY = 0x0312;
         public const uint MOD_ALT = 0x0001;
+        public const uint MOD_CONTROL = 0x0002;
 
         [DllImport("user32.dll")]
         public static extern bool RegisterHotKey(IntPtr hWnd, int id, uint fsModifiers, uint vk);
@@ -146,6 +147,11 @@ namespace ChessDroid
                 {
                     // Alt+K - Toggle auto-monitoring on/off
                     ToggleAutoMonitoring();
+                }
+                else if (hotkeyId == 3)
+                {
+                    // Ctrl+B - Open Analysis Board
+                    OpenAnalysisBoard();
                 }
             }
             base.WndProc(ref m);
@@ -361,6 +367,13 @@ namespace ChessDroid
                 MessageBox.Show("Failed to register ALT+K hotkey.", "Hotkey Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
 
+            // Register Ctrl+B for Analysis Board
+            bool registered3 = RegisterHotKey(this.Handle, 3, MOD_CONTROL, (uint)Keys.B);
+            if (!registered3)
+            {
+                Debug.WriteLine("Failed to register Ctrl+B hotkey for Analysis Board");
+            }
+
             manualTimer = new System.Windows.Forms.Timer();
             manualTimer.Interval = 1000;
             manualTimer.Tick += ManualTimer_Tick;
@@ -414,6 +427,7 @@ namespace ChessDroid
         {
             UnregisterHotKey(this.Handle, 1);
             UnregisterHotKey(this.Handle, 2);
+            UnregisterHotKey(this.Handle, 3);
         }
 
         private void buttonReset_Click(object sender, EventArgs e)
@@ -499,6 +513,18 @@ namespace ChessDroid
             });
 
             settingsForm.ShowDialog();
+        }
+
+        private void buttonAnalysisBoard_Click(object sender, EventArgs e)
+        {
+            OpenAnalysisBoard();
+        }
+
+        private void OpenAnalysisBoard()
+        {
+            // Open analysis board form, sharing the engine service
+            var analysisBoardForm = new AnalysisBoardForm(Config, engineService);
+            analysisBoardForm.Show();
         }
 
         private async void buttonAnalyze_Click(object sender, EventArgs e)

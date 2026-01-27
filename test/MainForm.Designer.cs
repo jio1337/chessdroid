@@ -32,6 +32,7 @@ namespace ChessDroid
             buttonAnalyze = new Button();
             buttonReset = new Button();
             buttonSettings = new Button();
+            buttonAnalysisBoard = new Button();
             richTextBoxConsole = new RichTextBox();
             labelStatus = new Label();
             chkWhiteTurn = new CheckBox();
@@ -69,6 +70,22 @@ namespace ChessDroid
             buttonReset.UseVisualStyleBackColor = false;
             buttonReset.Click += buttonReset_Click;
             //
+            // buttonAnalysisBoard
+            //
+            buttonAnalysisBoard.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            buttonAnalysisBoard.BackColor = Color.Lavender;
+            buttonAnalysisBoard.Cursor = Cursors.Hand;
+            buttonAnalysisBoard.FlatStyle = FlatStyle.Popup;
+            buttonAnalysisBoard.Font = new Font("Courier New", 9F, FontStyle.Bold);
+            buttonAnalysisBoard.ForeColor = Color.MediumSlateBlue;
+            buttonAnalysisBoard.Location = new Point(12, 293);
+            buttonAnalysisBoard.Name = "buttonAnalysisBoard";
+            buttonAnalysisBoard.Size = new Size(360, 35);
+            buttonAnalysisBoard.TabIndex = 3;
+            buttonAnalysisBoard.Text = "♟ Analysis Board (Ctrl+B)";
+            buttonAnalysisBoard.UseVisualStyleBackColor = false;
+            buttonAnalysisBoard.Click += buttonAnalysisBoard_Click;
+            //
             // buttonSettings
             //
             buttonSettings.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
@@ -77,10 +94,10 @@ namespace ChessDroid
             buttonSettings.FlatStyle = FlatStyle.Popup;
             buttonSettings.Font = new Font("Courier New", 9F, FontStyle.Bold);
             buttonSettings.ForeColor = Color.DarkGoldenrod;
-            buttonSettings.Location = new Point(12, 293);
+            buttonSettings.Location = new Point(12, 333);
             buttonSettings.Name = "buttonSettings";
             buttonSettings.Size = new Size(360, 35);
-            buttonSettings.TabIndex = 3;
+            buttonSettings.TabIndex = 4;
             buttonSettings.Text = "⚙ Settings";
             buttonSettings.UseVisualStyleBackColor = false;
             buttonSettings.Click += buttonSettings_Click;
@@ -106,10 +123,10 @@ namespace ChessDroid
             labelStatus.BackColor = Color.Transparent;
             labelStatus.Font = new Font("Courier New", 7.5F);
             labelStatus.ForeColor = Color.Black;
-            labelStatus.Location = new Point(12, 338);
+            labelStatus.Location = new Point(12, 378);
             labelStatus.Name = "labelStatus";
             labelStatus.Size = new Size(35, 12);
-            labelStatus.TabIndex = 4;
+            labelStatus.TabIndex = 5;
             labelStatus.Text = "Ready";
             //
             // chkWhiteTurn
@@ -121,10 +138,10 @@ namespace ChessDroid
             chkWhiteTurn.CheckState = CheckState.Checked;
             chkWhiteTurn.Font = new Font("Courier New", 8.25F, FontStyle.Bold);
             chkWhiteTurn.ForeColor = Color.Black;
-            chkWhiteTurn.Location = new Point(255, 335);
+            chkWhiteTurn.Location = new Point(255, 375);
             chkWhiteTurn.Name = "chkWhiteTurn";
             chkWhiteTurn.Size = new Size(117, 18);
-            chkWhiteTurn.TabIndex = 5;
+            chkWhiteTurn.TabIndex = 6;
             chkWhiteTurn.Text = "White to move";
             chkWhiteTurn.UseVisualStyleBackColor = false;
             chkWhiteTurn.CheckedChanged += chkWhiteTurn_CheckedChanged;
@@ -134,10 +151,11 @@ namespace ChessDroid
             AutoScaleDimensions = new SizeF(7F, 14F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = Color.WhiteSmoke;
-            ClientSize = new Size(385, 360);
+            ClientSize = new Size(385, 400);
             Controls.Add(chkWhiteTurn);
             Controls.Add(labelStatus);
             Controls.Add(buttonSettings);
+            Controls.Add(buttonAnalysisBoard);
             Controls.Add(richTextBoxConsole);
             Controls.Add(buttonReset);
             Controls.Add(buttonAnalyze);
@@ -163,6 +181,7 @@ namespace ChessDroid
         private Button buttonReset;
         private Button buttonAnalyze;
         private Button buttonSettings;
+        private Button buttonAnalysisBoard;
         private RichTextBox richTextBoxConsole;
         private Label labelStatus;
         private CheckBox chkWhiteTurn;
