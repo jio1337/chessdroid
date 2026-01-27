@@ -75,11 +75,20 @@ namespace ChessDroid.Services
                 }
             }
 
-            // Factor 2: Pawn moves (+5 to +15 sharpness for center/attacking pawns)
+            // Factor 2: Pawn moves - distinguish attacking vs quiet pawns
             if (movedPiece.HasValue && char.ToLower(movedPiece.Value) == 'p')
             {
                 int toFile = to[0] - 'a';
                 int toRank = to[1] - '1';
+
+                // Check if pawn attacks enemy pieces (aggressive confrontation)
+                bool attacksEnemyPawn = PawnAttacksEnemyPawn(boardPart, to, whiteToMove);
+                if (attacksEnemyPawn)
+                {
+                    // Pawn attacking enemy pawn = aggressive confrontation (like a4 vs b5)
+                    sharpness += 15;
+                    Debug.WriteLine($"[Sharpness] {move}: +15 for attacking enemy pawn");
+                }
 
                 // Central pawn pushes are sharp (d/e files)
                 if (toFile >= 3 && toFile <= 4)
@@ -150,11 +159,13 @@ namespace ChessDroid.Services
                     }
                     else if (piece == 'p')
                     {
-                        // Quiet pawn moves in opening (not captures, not center) are solid
+                        // Quiet pawn moves in opening (not captures, not center, not attacking) are solid
                         int toFile = to[0] - 'a';
-                        if (toFile < 3 || toFile > 4) // Not d/e files
+                        bool attacksEnemyPawn = PawnAttacksEnemyPawn(boardPart, to, whiteToMove);
+                        if ((toFile < 3 || toFile > 4) && !attacksEnemyPawn) // Not d/e files AND not attacking
                         {
-                            sharpness -= 5; // Flank pawns are typically more solid
+                            sharpness -= 5; // Only truly quiet flank pawns are solid
+                            Debug.WriteLine($"[Sharpness] {move}: -5 for quiet flank pawn");
                         }
                     }
                 }
@@ -207,11 +218,13 @@ namespace ChessDroid.Services
             }
 
             // Clamp to valid range
-            sharpness = Math.Max(0, Math.Min(100, sharpness));
+            int finalSharpness = Math.Max(0, Math.Min(100, sharpness));
 
-            Debug.WriteLine($"[Sharpness] Move {move}: {sharpness} (capture={capturedPiece.HasValue}, promo={promotion.HasValue})");
+            // Enhanced debug output for console
+            string pieceType = movedPiece.HasValue ? char.ToLower(movedPiece.Value).ToString() : "?";
+            Debug.WriteLine($"[Sharpness] {move} ({pieceType}): base=50 → final={finalSharpness} (delta={finalSharpness - 50:+#;-#;0})");
 
-            return sharpness;
+            return finalSharpness;
         }
 
         /// <summary>
@@ -370,6 +383,83 @@ namespace ChessDroid.Services
                     count++;
             }
             return count;
+        }
+
+        /// <summary>
+        /// Checks if a pawn on a given square attacks an enemy pawn.
+        /// Used to detect aggressive pawn confrontations (like a4 attacking b5).
+        /// </summary>
+        private bool PawnAttacksEnemyPawn(string boardFen, string square, bool whiteToMove)
+        {
+            if (string.IsNullOrEmpty(square) || square.Length != 2)
+                return false;
+
+            int file = square[0] - 'a';
+            int rank = square[1] - '1';
+
+            // Pawn attack directions: diagonal capture squares
+            // White pawns attack upward-diagonals (rank + 1)
+            // Black pawns attack downward-diagonals (rank - 1)
+            int attackRank = whiteToMove ? rank + 1 : rank - 1;
+
+            if (attackRank < 0 || attackRank > 7)
+                return false;
+
+            // Check both diagonal squares
+            char enemyPawn = whiteToMove ? 'p' : 'P';
+
+            // Left diagonal
+            if (file > 0)
+            {
+                char? pieceLeft = GetPieceAtCoords(boardFen, file - 1, attackRank);
+                if (pieceLeft.HasValue && pieceLeft.Value == enemyPawn)
+                    return true;
+            }
+
+            // Right diagonal
+            if (file < 7)
+            {
+                char? pieceRight = GetPieceAtCoords(boardFen, file + 1, attackRank);
+                if (pieceRight.HasValue && pieceRight.Value == enemyPawn)
+                    return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Gets piece at file/rank coordinates (0-7 each) from FEN.
+        /// </summary>
+        private char? GetPieceAtCoords(string boardFen, int file, int rank)
+        {
+            if (file < 0 || file > 7 || rank < 0 || rank > 7)
+                return null;
+
+            string[] ranks = boardFen.Split('/');
+            if (ranks.Length != 8)
+                return null;
+
+            string fenRank = ranks[7 - rank]; // FEN is rank 8 to rank 1
+
+            int currentFile = 0;
+            foreach (char c in fenRank)
+            {
+                if (char.IsDigit(c))
+                {
+                    currentFile += c - '0';
+                }
+                else
+                {
+                    if (currentFile == file)
+                        return c;
+                    currentFile++;
+                }
+
+                if (currentFile > file)
+                    break;
+            }
+
+            return '.';
         }
 
         /// <summary>

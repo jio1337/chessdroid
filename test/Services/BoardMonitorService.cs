@@ -415,6 +415,13 @@ namespace ChessDroid.Services
                     lastZobristHash = currentHash; // Update hash for O(1) comparison
                     isUserTurn = false; // Now waiting for opponent
 
+                    // CRITICAL: Update position state manager so en passant/castling is tracked correctly
+                    // This ensures the next move comparison (opponent's move) uses the correct previous state
+                    bool whiteToMoveAfterUserMove = !userIsWhite; // After user moves, it's opponent's turn
+                    positionStateManager.SetWhiteToMove(whiteToMoveAfterUserMove);
+                    positionStateManager.UpdatePositionState(currentBoard);
+                    positionStateManager.SaveMoveState(currentBoard);
+
                     // Switch to faster scanning while waiting for opponent
                     if (scanTimer != null)
                     {

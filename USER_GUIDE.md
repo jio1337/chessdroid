@@ -1,4 +1,4 @@
-## ChessDroid v2.5.1 - User Guide
+## ChessDroid v2.7.0 - User Guide
 
 ### Welcome to ChessDroid!
 
@@ -182,14 +182,16 @@ Opening: B90 - Sicilian Defense, Najdorf Variation
 
 ---
 
-### **7. Aggressiveness Slider**
+### **7. Play Style Slider**
 
-NEW! Control your playing style with the Aggressiveness slider (0-100).
+Control your playing style with the Aggressiveness slider (0-100).
 
 **How it works:**
-- **0-30 (Solid)** - Prefers safe, quiet moves that maintain position
-- **31-69 (Balanced)** - Trusts engine's recommendation
-- **70-100 (Aggressive)** - Prefers sharp, tactical moves with complications
+- **0-20 (Very Solid)** - Prefers very safe, quiet positional moves
+- **21-40 (Solid)** - Prefers safe moves that maintain position
+- **41-60 (Balanced)** - Trusts engine's recommendation
+- **61-80 (Aggressive)** - Prefers sharp, tactical moves
+- **81-100 (Very Aggressive)** - Prefers the sharpest, most tactical moves
 
 **What affects "sharpness":**
 - Captures and sacrifices (more aggressive)
@@ -204,11 +206,14 @@ NEW! Control your playing style with the Aggressiveness slider (0-100).
 
 **Example:**
 ```
-Aggressiveness: 90 (Very Aggressive)
-Engine's #1: Be3 (+0.50, sharpness: 45)
-Engine's #2: d4! (+0.35, sharpness: 78)
-Recommended: d4! (matches aggressive style)
+Play Style: 90 (Very Aggressive)
+Best Move: Be3 (+0.50)
+Recommended: d4! (+0.35) - matches your aggressive style
 ```
+
+When your play style differs from the engine's top choice, ChessDroid shows a
+"Recommended" section with the move that best fits your style while staying
+within an acceptable evaluation range.
 
 ---
 
@@ -557,7 +562,19 @@ ChessDroid supports global hotkeys (work even when window is minimized):
 
 ## Version History
 
-**v2.5.1** - SEE, Explanations, and Redundancy Fixes (Current)
+**v2.7.0** - Play Style Recommendations (Current)
+- Play Style slider with style-based move recommendations
+- Shows "Recommended" section when style differs from engine choice
+- Settings UI reorganization (Play Style section)
+- Various UI improvements
+
+**v2.6.0** - Opening Book & ECO Database
+- Polyglot (.bin) opening book support with 1M+ positions
+- Full ECO database for opening recognition
+- Opening names with ECO codes (e.g., "B01: Scandinavian Defense")
+- Book moves with weights and percentages
+
+**v2.5.1** - SEE, Explanations, and Redundancy Fixes
 - Fixed SEE explanation bug when pieces become vulnerable after move
 - Better Brilliant move explanations ("sacrifices rook for decisive advantage")
 - Fixed false "rook sacrifice" when piece is defended after capture
@@ -629,5 +646,5 @@ Free and open-source forever!
 
 **Enjoy analyzing with ChessDroid!**
 
-*Last Updated: 2026-01-25*
-*Version: 2.5.1 (Chess.com-Style Classification)*
+*Last Updated: 2026-01-26*
+*Version: 2.7.0 (Play Style Recommendations)*
