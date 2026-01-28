@@ -628,6 +628,66 @@ namespace ChessDroid.Services
             return double.MinValue;
         }
 
+        /// <summary>
+        /// Streamlined move request for engine-vs-engine matches.
+        /// Unlike GetBestMoveAsync, does NOT send ucinewgame (preserves hash tables),
+        /// uses MultiPV=1, and accepts an explicit go command string.
+        /// </summary>
+        public async Task<string?> GetMoveForMatchAsync(string fen, string goCommand, int timeoutMs, CancellationToken ct)
+        {
+            if (!IsEngineAlive() || State != EngineState.Ready)
+                return null;
+
+            try
+            {
+                // Sync with engine
+                if (!await SyncWithEngineAsync())
+                    return null;
+
+                // Set MultiPV to 1
+                await SafeWriteLineAsync($"{UCI_CMD_SETOPTION} MultiPV value 1");
+
+                // Set position
+                await SafeWriteLineAsync($"{UCI_CMD_POSITION} {fen}");
+
+                // Start search
+                State = EngineState.Analyzing;
+                await SafeWriteLineAsync(goCommand);
+
+                // Read until "bestmove"
+                using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                cts.CancelAfter(timeoutMs);
+
+                while (IsEngineAlive())
+                {
+                    string? line = await engineOutput!.ReadLineAsync().WaitAsync(cts.Token);
+                    if (line != null && line.StartsWith(UCI_RESPONSE_BESTMOVE))
+                    {
+                        State = EngineState.Ready;
+                        var parts = line.Split(' ');
+                        string move = parts.Length >= 2 ? parts[1] : "";
+                        // "(none)" and "0000" mean no legal moves (different engines use different conventions)
+                        return string.IsNullOrEmpty(move) || move == "(none)" || move == "0000" ? null : move;
+                    }
+                }
+
+                State = EngineState.Error;
+                return null;
+            }
+            catch (OperationCanceledException)
+            {
+                Debug.WriteLine("GetMoveForMatchAsync: Cancelled or timed out");
+                State = EngineState.Error;
+                return null;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"GetMoveForMatchAsync: Error - {ex.Message}");
+                State = EngineState.Error;
+                return null;
+            }
+        }
+
         private void CleanupProcess()
         {
             try
