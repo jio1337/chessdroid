@@ -8,6 +8,7 @@ namespace ChessDroid
     /// <summary>
     /// Offline analysis board form with interactive chess board, move list, and engine analysis.
     /// Provides a complete analysis experience without needing internet connection.
+    /// Supports variations/alternative lines through a move tree structure.
     /// </summary>
     public partial class AnalysisBoardForm : Form
     {
@@ -21,11 +22,12 @@ namespace ChessDroid
         private PolyglotBookService? openingBookService;
         private AppConfig config;
 
-        // Game state
-        private List<string> moveHistory = new List<string>();
-        private List<string> fenHistory = new List<string>();
-        private int currentMoveIndex = -1;
+        // Game state - move tree for variations support
+        private MoveTree moveTree = null!;
         private bool isNavigating = false;
+
+        // Track nodes for listbox mapping
+        private List<MoveNode> displayedNodes = new List<MoveNode>();
 
         public AnalysisBoardForm(AppConfig config, ChessEngineService? sharedEngineService = null)
         {
@@ -37,8 +39,8 @@ namespace ChessDroid
             ApplyTheme();
             InitializeServices();
 
-            // Save initial position
-            fenHistory.Add(boardControl.GetFEN());
+            // Initialize move tree with starting position
+            moveTree = new MoveTree(boardControl.GetFEN());
         }
 
         private void ApplyTheme()
@@ -211,20 +213,11 @@ namespace ChessDroid
             // Skip if we're navigating (not making a new move)
             if (isNavigating) return;
 
-            // If we're not at the latest position, truncate the history (branching)
-            if (currentMoveIndex >= 0 && currentMoveIndex < moveHistory.Count - 1)
-            {
-                // Remove moves after current position
-                int removeFrom = currentMoveIndex + 1;
-                moveHistory.RemoveRange(removeFrom, moveHistory.Count - removeFrom);
-                // fenHistory has one more entry (initial position), so remove from removeFrom + 1
-                fenHistory.RemoveRange(removeFrom + 1, fenHistory.Count - removeFrom - 1);
-            }
+            // Convert UCI to SAN for display
+            string san = ConvertUciToSan(e.UciMove, moveTree.CurrentNode.FEN);
 
-            // Add move to history
-            moveHistory.Add(e.UciMove);
-            fenHistory.Add(e.FEN);
-            currentMoveIndex = moveHistory.Count - 1;
+            // Add move to tree (handles variations automatically)
+            moveTree.AddMove(e.UciMove, san, e.FEN);
 
             // Update move list display
             UpdateMoveList();
@@ -286,11 +279,9 @@ namespace ChessDroid
         private void BtnNewGame_Click(object? sender, EventArgs e)
         {
             boardControl.ResetBoard();
-            moveHistory.Clear();
-            fenHistory.Clear();
-            fenHistory.Add(boardControl.GetFEN());
-            currentMoveIndex = -1;
+            moveTree.Clear(boardControl.GetFEN());
             moveListBox.Items.Clear();
+            displayedNodes.Clear();
             analysisOutput.Clear();
             UpdateFenDisplay();
             UpdateTurnLabel();
@@ -304,44 +295,50 @@ namespace ChessDroid
 
         private void BtnTakeBack_Click(object? sender, EventArgs e)
         {
-            if (moveHistory.Count > 0)
+            // Take back removes the current move from the tree
+            if (moveTree.CurrentNode != moveTree.Root)
             {
-                moveHistory.RemoveAt(moveHistory.Count - 1);
-                fenHistory.RemoveAt(fenHistory.Count - 1);
-                currentMoveIndex = moveHistory.Count - 1;
+                var parent = moveTree.CurrentNode.Parent;
+                if (parent != null)
+                {
+                    // Remove this node from parent's children
+                    parent.Children.Remove(moveTree.CurrentNode);
+                    moveTree.CurrentNode = parent;
 
-                // Load previous position
-                boardControl.LoadFEN(fenHistory[fenHistory.Count - 1]);
+                    // Load previous position
+                    boardControl.LoadFEN(parent.FEN);
 
-                UpdateMoveList();
-                UpdateFenDisplay();
-                UpdateTurnLabel();
-                lblStatus.Text = "Move taken back";
+                    UpdateMoveList();
+                    UpdateFenDisplay();
+                    UpdateTurnLabel();
+                    lblStatus.Text = "Move taken back";
+                }
             }
         }
 
         private void BtnPrevMove_Click(object? sender, EventArgs e)
         {
-            if (currentMoveIndex >= 0)
+            if (moveTree.GoBack())
             {
                 isNavigating = true;
                 try
                 {
-                    currentMoveIndex--;
-                    int fenIndex = currentMoveIndex + 1;
-                    if (fenIndex >= 0 && fenIndex < fenHistory.Count)
-                    {
-                        boardControl.LoadFEN(fenHistory[fenIndex]);
-                        UpdateFenDisplay();
-                        UpdateTurnLabel();
-                        UpdateMoveListSelection();
-                        lblStatus.Text = currentMoveIndex < 0 ? "Start position" : $"Move {currentMoveIndex + 1}";
+                    boardControl.LoadFEN(moveTree.CurrentNode.FEN);
+                    UpdateFenDisplay();
+                    UpdateTurnLabel();
+                    UpdateMoveListSelection();
 
-                        // Auto-analyze if enabled
-                        if (chkAutoAnalyze.Checked)
-                        {
-                            _ = TriggerAutoAnalysis();
-                        }
+                    string statusText = moveTree.CurrentNode == moveTree.Root
+                        ? "Start position"
+                        : $"Move {moveTree.CurrentNode.MoveNumber}";
+                    if (moveTree.CurrentNode.VariationDepth > 0)
+                        statusText += $" (variation)";
+                    lblStatus.Text = statusText;
+
+                    // Auto-analyze if enabled
+                    if (chkAutoAnalyze.Checked)
+                    {
+                        _ = TriggerAutoAnalysis();
                     }
                 }
                 finally
@@ -353,26 +350,25 @@ namespace ChessDroid
 
         private void BtnNextMove_Click(object? sender, EventArgs e)
         {
-            if (currentMoveIndex < moveHistory.Count - 1)
+            if (moveTree.GoForward())
             {
                 isNavigating = true;
                 try
                 {
-                    currentMoveIndex++;
-                    int fenIndex = currentMoveIndex + 1;
-                    if (fenIndex < fenHistory.Count)
-                    {
-                        boardControl.LoadFEN(fenHistory[fenIndex]);
-                        UpdateFenDisplay();
-                        UpdateTurnLabel();
-                        UpdateMoveListSelection();
-                        lblStatus.Text = $"Move {currentMoveIndex + 1}";
+                    boardControl.LoadFEN(moveTree.CurrentNode.FEN);
+                    UpdateFenDisplay();
+                    UpdateTurnLabel();
+                    UpdateMoveListSelection();
 
-                        // Auto-analyze if enabled
-                        if (chkAutoAnalyze.Checked)
-                        {
-                            _ = TriggerAutoAnalysis();
-                        }
+                    string statusText = $"Move {moveTree.CurrentNode.MoveNumber}";
+                    if (moveTree.CurrentNode.VariationDepth > 0)
+                        statusText += $" (variation)";
+                    lblStatus.Text = statusText;
+
+                    // Auto-analyze if enabled
+                    if (chkAutoAnalyze.Checked)
+                    {
+                        _ = TriggerAutoAnalysis();
                     }
                 }
                 finally
@@ -395,11 +391,9 @@ namespace ChessDroid
                 try
                 {
                     boardControl.LoadFEN(fen);
-                    moveHistory.Clear();
-                    fenHistory.Clear();
-                    fenHistory.Add(fen);
-                    currentMoveIndex = -1;
+                    moveTree.Clear(fen);
                     moveListBox.Items.Clear();
+                    displayedNodes.Clear();
                     analysisOutput.Clear();
                     UpdateTurnLabel();
                     lblStatus.Text = "Position loaded from FEN";
@@ -424,30 +418,26 @@ namespace ChessDroid
             if (isNavigating) return;
 
             int selected = moveListBox.SelectedIndex;
-            if (selected >= 0 && selected < fenHistory.Count - 1)
+            if (selected >= 0 && selected < displayedNodes.Count)
             {
                 isNavigating = true;
                 try
                 {
-                    // Each listbox item contains a full move (white + black)
-                    // Navigate to the position after the last move in that pair
-                    int halfMoveIndex = (selected + 1) * 2 - 1;
-                    if (halfMoveIndex >= moveHistory.Count)
-                        halfMoveIndex = moveHistory.Count - 1; // Clamp if odd number of moves
+                    var node = displayedNodes[selected];
+                    moveTree.GoToNode(node);
+                    boardControl.LoadFEN(node.FEN);
+                    UpdateFenDisplay();
+                    UpdateTurnLabel();
 
-                    int fenIndex = halfMoveIndex + 1;
-                    if (fenIndex < fenHistory.Count)
+                    string statusText = $"Move {node.MoveNumber}";
+                    if (node.VariationDepth > 0)
+                        statusText += $" (variation)";
+                    lblStatus.Text = statusText;
+
+                    // Auto-analyze if enabled
+                    if (chkAutoAnalyze.Checked)
                     {
-                        boardControl.LoadFEN(fenHistory[fenIndex]);
-                        currentMoveIndex = halfMoveIndex;
-                        UpdateFenDisplay();
-                        UpdateTurnLabel();
-
-                        // Auto-analyze if enabled
-                        if (chkAutoAnalyze.Checked)
-                        {
-                            _ = TriggerAutoAnalysis();
-                        }
+                        _ = TriggerAutoAnalysis();
                     }
                 }
                 finally
@@ -468,58 +458,108 @@ namespace ChessDroid
                 case Keys.Right:
                     BtnNextMove_Click(this, EventArgs.Empty);
                     return true;
+                case Keys.Up:
+                    // Navigate to previous variation at same level
+                    NavigateVariation(-1);
+                    return true;
+                case Keys.Down:
+                    // Navigate to next variation at same level
+                    NavigateVariation(1);
+                    return true;
                 case Keys.Home:
-                    if (fenHistory.Count > 0)
-                    {
-                        isNavigating = true;
-                        try
-                        {
-                            currentMoveIndex = -1;
-                            boardControl.LoadFEN(fenHistory[0]);
-                            UpdateFenDisplay();
-                            UpdateTurnLabel();
-                            UpdateMoveListSelection();
-                            lblStatus.Text = "Start position";
-
-                            // Auto-analyze if enabled
-                            if (chkAutoAnalyze.Checked)
-                            {
-                                _ = TriggerAutoAnalysis();
-                            }
-                        }
-                        finally
-                        {
-                            isNavigating = false;
-                        }
-                    }
+                    NavigateToStart();
                     return true;
                 case Keys.End:
-                    if (moveHistory.Count > 0)
-                    {
-                        isNavigating = true;
-                        try
-                        {
-                            currentMoveIndex = moveHistory.Count - 1;
-                            boardControl.LoadFEN(fenHistory[fenHistory.Count - 1]);
-                            UpdateFenDisplay();
-                            UpdateTurnLabel();
-                            UpdateMoveListSelection();
-                            lblStatus.Text = $"Move {currentMoveIndex + 1}";
-
-                            // Auto-analyze if enabled
-                            if (chkAutoAnalyze.Checked)
-                            {
-                                _ = TriggerAutoAnalysis();
-                            }
-                        }
-                        finally
-                        {
-                            isNavigating = false;
-                        }
-                    }
+                    NavigateToEnd();
                     return true;
             }
             return base.ProcessCmdKey(ref msg, keyData);
+        }
+
+        private void NavigateToStart()
+        {
+            isNavigating = true;
+            try
+            {
+                moveTree.GoToStart();
+                boardControl.LoadFEN(moveTree.CurrentNode.FEN);
+                UpdateFenDisplay();
+                UpdateTurnLabel();
+                UpdateMoveListSelection();
+                lblStatus.Text = "Start position";
+
+                // Auto-analyze if enabled
+                if (chkAutoAnalyze.Checked)
+                {
+                    _ = TriggerAutoAnalysis();
+                }
+            }
+            finally
+            {
+                isNavigating = false;
+            }
+        }
+
+        private void NavigateToEnd()
+        {
+            isNavigating = true;
+            try
+            {
+                moveTree.GoToEnd();
+                boardControl.LoadFEN(moveTree.CurrentNode.FEN);
+                UpdateFenDisplay();
+                UpdateTurnLabel();
+                UpdateMoveListSelection();
+
+                string statusText = moveTree.CurrentNode == moveTree.Root
+                    ? "Start position"
+                    : $"Move {moveTree.CurrentNode.MoveNumber}";
+                if (moveTree.CurrentNode.VariationDepth > 0)
+                    statusText += $" (variation)";
+                lblStatus.Text = statusText;
+
+                // Auto-analyze if enabled
+                if (chkAutoAnalyze.Checked)
+                {
+                    _ = TriggerAutoAnalysis();
+                }
+            }
+            finally
+            {
+                isNavigating = false;
+            }
+        }
+
+        private void NavigateVariation(int direction)
+        {
+            var current = moveTree.CurrentNode;
+            MoveNode? target = direction > 0 ? current.NextVariation() : current.PreviousVariation();
+
+            if (target != null)
+            {
+                isNavigating = true;
+                try
+                {
+                    moveTree.GoToNode(target);
+                    boardControl.LoadFEN(target.FEN);
+                    UpdateFenDisplay();
+                    UpdateTurnLabel();
+                    UpdateMoveListSelection();
+
+                    int varIdx = target.GetVariationIndex();
+                    lblStatus.Text = $"Move {target.MoveNumber} - Variation {varIdx + 1}";
+
+                    // Auto-analyze if enabled
+                    if (chkAutoAnalyze.Checked)
+                    {
+                        _ = TriggerAutoAnalysis();
+                    }
+                }
+                finally
+                {
+                    isNavigating = false;
+                }
+            }
         }
 
         private void AnalysisBoardForm_KeyDown(object? sender, KeyEventArgs e)
@@ -650,33 +690,119 @@ namespace ChessDroid
         private void UpdateMoveList()
         {
             moveListBox.Items.Clear();
+            displayedNodes.Clear();
 
-            for (int i = 0; i < moveHistory.Count; i++)
+            // Build the display list with variations
+            BuildMoveListRecursive(moveTree.Root, 0);
+
+            // Scroll to current position
+            UpdateMoveListSelection();
+        }
+
+        private void BuildMoveListRecursive(MoveNode node, int indentLevel)
+        {
+            // Process main line first
+            foreach (var child in node.Children)
             {
-                int moveNum = (i / 2) + 1;
-                bool isWhiteMove = i % 2 == 0;
+                // Add the move to display
+                string indent = new string(' ', indentLevel * 2);
+                string moveText;
 
-                string sanMove = ConvertUciToSan(moveHistory[i], fenHistory[i]);
-
-                if (isWhiteMove)
+                if (child.IsWhiteMove)
                 {
-                    moveListBox.Items.Add($"{moveNum}. {sanMove}");
+                    moveText = $"{indent}{child.MoveNumber}. {child.SanMove}";
                 }
                 else
                 {
-                    // Update last item to include black's move
-                    if (moveListBox.Items.Count > 0)
-                    {
-                        string lastItem = moveListBox.Items[moveListBox.Items.Count - 1].ToString() ?? "";
-                        moveListBox.Items[moveListBox.Items.Count - 1] = $"{lastItem} {sanMove}";
-                    }
+                    moveText = $"{indent}{child.MoveNumber}...{child.SanMove}";
                 }
+
+                // Mark variations
+                if (child.VariationDepth > 0 || child.GetVariationIndex() > 0)
+                {
+                    moveText = $"{indent}({child.SanMove})";
+                }
+
+                moveListBox.Items.Add(moveText);
+                displayedNodes.Add(child);
+
+                // Process this node's children (continue main line)
+                if (child.Children.Count > 0)
+                {
+                    // First child continues the line
+                    BuildMoveListRecursive(child, indentLevel);
+                }
+
+                // Process variations (children after the first one were already handled)
+                // Variations are added when their parent is processed
+                break; // Only process first child as main line continuation
             }
 
-            // Scroll to bottom
-            if (moveListBox.Items.Count > 0)
+            // Now process variations (non-first children)
+            if (node.Children.Count > 1)
             {
-                moveListBox.TopIndex = moveListBox.Items.Count - 1;
+                for (int i = 1; i < node.Children.Count; i++)
+                {
+                    var variation = node.Children[i];
+                    string indent = new string(' ', (indentLevel + 1) * 2);
+
+                    string varText;
+                    if (variation.IsWhiteMove)
+                    {
+                        varText = $"{indent}({variation.MoveNumber}. {variation.SanMove}";
+                    }
+                    else
+                    {
+                        varText = $"{indent}({variation.MoveNumber}...{variation.SanMove}";
+                    }
+
+                    moveListBox.Items.Add(varText);
+                    displayedNodes.Add(variation);
+
+                    // Continue the variation line
+                    BuildVariationLine(variation, indentLevel + 1);
+                }
+            }
+        }
+
+        private void BuildVariationLine(MoveNode node, int indentLevel)
+        {
+            var current = node;
+            while (current.Children.Count > 0)
+            {
+                var next = current.Children[0];
+                string indent = new string(' ', indentLevel * 2);
+
+                string moveText = $"{indent}{next.SanMove}";
+                if (next.IsWhiteMove)
+                {
+                    moveText = $"{indent}{next.MoveNumber}. {next.SanMove}";
+                }
+
+                moveListBox.Items.Add(moveText);
+                displayedNodes.Add(next);
+
+                // Handle nested variations in this line
+                if (current.Children.Count > 1)
+                {
+                    for (int i = 1; i < current.Children.Count; i++)
+                    {
+                        var nestedVar = current.Children[i];
+                        string nestedIndent = new string(' ', (indentLevel + 1) * 2);
+                        moveListBox.Items.Add($"{nestedIndent}({nestedVar.SanMove}");
+                        displayedNodes.Add(nestedVar);
+                        BuildVariationLine(nestedVar, indentLevel + 2);
+                    }
+                }
+
+                current = next;
+            }
+
+            // Close the variation parenthesis
+            if (indentLevel > 0)
+            {
+                string indent = new string(' ', (indentLevel - 1) * 2);
+                // Just visual indication - we don't add a node for closing paren
             }
         }
 
@@ -695,19 +821,18 @@ namespace ChessDroid
 
         private void UpdateMoveListSelection()
         {
-            // Highlight the current move in the list
-            // Each listbox item contains a full move (white + black)
-            if (currentMoveIndex < 0)
+            // Find current node in displayed nodes
+            var current = moveTree.CurrentNode;
+            if (current == moveTree.Root)
             {
                 moveListBox.ClearSelected();
+                return;
             }
-            else
+
+            int idx = displayedNodes.IndexOf(current);
+            if (idx >= 0 && idx < moveListBox.Items.Count)
             {
-                int itemIndex = currentMoveIndex / 2; // Each item has 2 half-moves
-                if (itemIndex < moveListBox.Items.Count)
-                {
-                    moveListBox.SelectedIndex = itemIndex;
-                }
+                moveListBox.SelectedIndex = idx;
             }
         }
 

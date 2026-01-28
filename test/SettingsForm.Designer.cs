@@ -472,7 +472,7 @@ namespace ChessDroid
             grpExplanations.Text = "Explanation Settings";
             // 
             // cmbComplexity
-            // 
+            //
             cmbComplexity.DropDownStyle = ComboBoxStyle.DropDownList;
             cmbComplexity.FormattingEnabled = true;
             cmbComplexity.Location = new Point(120, 20);
@@ -480,6 +480,7 @@ namespace ChessDroid
             cmbComplexity.Size = new Size(124, 22);
             cmbComplexity.TabIndex = 0;
             toolTip1.SetToolTip(cmbComplexity, "Explanation detail level: Beginner (simple) to Master (technical)");
+            cmbComplexity.SelectedIndexChanged += CmbComplexity_SelectedIndexChanged;
             // 
             // lblComplexity
             // 

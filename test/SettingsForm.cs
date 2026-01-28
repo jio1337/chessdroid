@@ -507,5 +507,69 @@ namespace ChessDroid
             };
             lblAggressivenessValue.Text = $"{trkAggressiveness.Value} ({style})";
         }
+
+        private void CmbComplexity_SelectedIndexChanged(object? sender, EventArgs e)
+        {
+            string? complexity = cmbComplexity.SelectedItem?.ToString();
+
+            switch (complexity)
+            {
+                case "Beginner":
+                    // Beginner (<1200): Tactical Analysis, Opening Principles, WDL
+                    chkTactical.Checked = true;
+                    chkPositional.Checked = false;
+                    chkEndgame.Checked = false;
+                    chkOpening.Checked = true;
+                    chkSEE.Checked = false;
+                    chkThreats.Checked = false;
+                    chkWDL.Checked = true;
+                    chkOpeningName.Checked = true;
+                    chkMoveQuality.Checked = false;
+                    chkBookMoves.Checked = false;
+                    break;
+
+                case "Intermediate":
+                    // Intermediate (1200-1800): All tactical/positional, Move Quality, WDL
+                    chkTactical.Checked = true;
+                    chkPositional.Checked = true;
+                    chkEndgame.Checked = false;
+                    chkOpening.Checked = true;
+                    chkSEE.Checked = false;
+                    chkThreats.Checked = true;
+                    chkWDL.Checked = true;
+                    chkOpeningName.Checked = true;
+                    chkMoveQuality.Checked = true;
+                    chkBookMoves.Checked = true;
+                    break;
+
+                case "Advanced":
+                    // Advanced (1800-2200): All features, SEE Values
+                    chkTactical.Checked = true;
+                    chkPositional.Checked = true;
+                    chkEndgame.Checked = true;
+                    chkOpening.Checked = true;
+                    chkSEE.Checked = true;
+                    chkThreats.Checked = true;
+                    chkWDL.Checked = true;
+                    chkOpeningName.Checked = true;
+                    chkMoveQuality.Checked = true;
+                    chkBookMoves.Checked = true;
+                    break;
+
+                case "Master":
+                    // Master (2200+): All features
+                    chkTactical.Checked = true;
+                    chkPositional.Checked = true;
+                    chkEndgame.Checked = true;
+                    chkOpening.Checked = true;
+                    chkSEE.Checked = true;
+                    chkThreats.Checked = true;
+                    chkWDL.Checked = true;
+                    chkOpeningName.Checked = true;
+                    chkMoveQuality.Checked = true;
+                    chkBookMoves.Checked = true;
+                    break;
+            }
+        }
     }
 }
