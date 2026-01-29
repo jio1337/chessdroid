@@ -50,6 +50,9 @@ namespace ChessDroid
             middlePanel = new Panel();
             moveListBox = new ListBox();
             lblMoves = new Label();
+            pnlPgnButtons = new Panel();
+            btnExportPgn = new Button();
+            btnImportPgn = new Button();
             rightPanel = new Panel();
             analysisOutput = new RichTextBox();
             grpEngineMatch = new GroupBox();
@@ -279,10 +282,11 @@ namespace ChessDroid
             lblStatus.Size = new Size(470, 20);
             lblStatus.TabIndex = 11;
             lblStatus.Text = "Ready";
-            // 
+            //
             // middlePanel
-            // 
+            //
             middlePanel.Controls.Add(moveListBox);
+            middlePanel.Controls.Add(pnlPgnButtons);
             middlePanel.Controls.Add(lblMoves);
             middlePanel.Dock = DockStyle.Fill;
             middlePanel.Location = new Point(512, 8);
@@ -290,9 +294,9 @@ namespace ChessDroid
             middlePanel.Padding = new Padding(5);
             middlePanel.Size = new Size(134, 630);
             middlePanel.TabIndex = 1;
-            // 
+            //
             // moveListBox
-            // 
+            //
             moveListBox.BorderStyle = BorderStyle.FixedSingle;
             moveListBox.Dock = DockStyle.Fill;
             moveListBox.Font = new Font("Consolas", 10F);
@@ -302,9 +306,43 @@ namespace ChessDroid
             moveListBox.Size = new Size(124, 468);
             moveListBox.TabIndex = 1;
             moveListBox.SelectedIndexChanged += MoveListBox_SelectedIndexChanged;
-            // 
+            //
+            // pnlPgnButtons
+            //
+            pnlPgnButtons.Controls.Add(btnExportPgn);
+            pnlPgnButtons.Controls.Add(btnImportPgn);
+            pnlPgnButtons.Dock = DockStyle.Bottom;
+            pnlPgnButtons.Location = new Point(5, 560);
+            pnlPgnButtons.Name = "pnlPgnButtons";
+            pnlPgnButtons.Size = new Size(124, 65);
+            pnlPgnButtons.TabIndex = 2;
+            //
+            // btnExportPgn
+            //
+            btnExportPgn.Dock = DockStyle.Top;
+            btnExportPgn.FlatStyle = FlatStyle.Flat;
+            btnExportPgn.Font = new Font("Courier New", 8.25F);
+            btnExportPgn.Location = new Point(0, 0);
+            btnExportPgn.Name = "btnExportPgn";
+            btnExportPgn.Size = new Size(124, 30);
+            btnExportPgn.TabIndex = 0;
+            btnExportPgn.Text = "Export PGN";
+            btnExportPgn.Click += BtnExportPgn_Click;
+            //
+            // btnImportPgn
+            //
+            btnImportPgn.Dock = DockStyle.Bottom;
+            btnImportPgn.FlatStyle = FlatStyle.Flat;
+            btnImportPgn.Font = new Font("Courier New", 8.25F);
+            btnImportPgn.Location = new Point(0, 35);
+            btnImportPgn.Name = "btnImportPgn";
+            btnImportPgn.Size = new Size(124, 30);
+            btnImportPgn.TabIndex = 1;
+            btnImportPgn.Text = "Import PGN";
+            btnImportPgn.Click += BtnImportPgn_Click;
+            //
             // lblMoves
-            // 
+            //
             lblMoves.Dock = DockStyle.Top;
             lblMoves.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
             lblMoves.Location = new Point(5, 5);
@@ -625,6 +663,9 @@ namespace ChessDroid
         // Middle panel - Move list
         private Label lblMoves;
         private ListBox moveListBox;
+        private Panel pnlPgnButtons;
+        private Button btnExportPgn;
+        private Button btnImportPgn;
 
         // Right panel - Engine Match
         private GroupBox grpEngineMatch;

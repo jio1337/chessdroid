@@ -259,9 +259,22 @@ namespace ChessDroid.Services
                 case PieceType.Pawn:
                     bool isWhite = char.IsUpper(piece);
                     int direction = isWhite ? -1 : 1;
+                    char destPiece = board[toRow, toCol];
                     if (df == 0)
+                    {
+                        // Straight move - destination must be empty
+                        if (destPiece != '.') return false;
                         return dr == direction || (dr == 2 * direction && ((isWhite && fromRow == 6) || (!isWhite && fromRow == 1)));
-                    return dr == direction && Math.Abs(df) == 1;
+                    }
+                    // Diagonal move - must be a capture (enemy piece on destination)
+                    // Note: This doesn't handle en passant, but that's rare in PGN disambiguation
+                    if (dr == direction && Math.Abs(df) == 1)
+                    {
+                        if (destPiece == '.') return false; // Can't capture empty square
+                        bool destIsEnemy = char.IsUpper(destPiece) != isWhite;
+                        return destIsEnemy;
+                    }
+                    return false;
 
                 case PieceType.Bishop:
                     return Math.Abs(dr) == Math.Abs(df) && dr != 0;

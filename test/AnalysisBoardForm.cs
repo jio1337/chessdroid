@@ -116,6 +116,12 @@ namespace ChessDroid
             moveListBox.BackColor = panelColor;
             moveListBox.ForeColor = textColor;
 
+            // PGN buttons
+            btnExportPgn.BackColor = buttonBg;
+            btnExportPgn.ForeColor = buttonFg;
+            btnImportPgn.BackColor = buttonBg;
+            btnImportPgn.ForeColor = buttonFg;
+
             // RichTextBox
             analysisOutput.BackColor = panelColor;
             analysisOutput.ForeColor = textColor;
@@ -1329,6 +1335,443 @@ namespace ChessDroid
             catch
             {
                 return uciMove; // Fallback to UCI notation
+            }
+        }
+
+        #endregion
+
+        #region PGN Import/Export
+
+        private void BtnExportPgn_Click(object? sender, EventArgs e)
+        {
+            try
+            {
+                string pgn = GeneratePgn();
+
+                using var dialog = new SaveFileDialog
+                {
+                    Filter = "PGN Files (*.pgn)|*.pgn|All Files (*.*)|*.*",
+                    DefaultExt = "pgn",
+                    FileName = $"game_{DateTime.Now:yyyyMMdd_HHmmss}.pgn"
+                };
+
+                if (dialog.ShowDialog() == DialogResult.OK)
+                {
+                    File.WriteAllText(dialog.FileName, pgn);
+                    lblStatus.Text = $"PGN saved to {Path.GetFileName(dialog.FileName)}";
+                }
+            }
+            catch (Exception ex)
+            {
+                lblStatus.Text = $"Export error: {ex.Message}";
+            }
+        }
+
+        private void BtnImportPgn_Click(object? sender, EventArgs e)
+        {
+            // Show a dialog to paste PGN
+            using var inputForm = new Form
+            {
+                Text = "Import PGN",
+                Size = new Size(500, 400),
+                StartPosition = FormStartPosition.CenterParent,
+                FormBorderStyle = FormBorderStyle.FixedDialog,
+                MaximizeBox = false,
+                MinimizeBox = false
+            };
+
+            bool isDark = config?.Theme == "Dark";
+            inputForm.BackColor = isDark ? Color.FromArgb(40, 40, 48) : Color.White;
+
+            var lblInstructions = new Label
+            {
+                Text = "Paste PGN content below:",
+                Location = new Point(10, 10),
+                Size = new Size(460, 20),
+                ForeColor = isDark ? Color.White : Color.Black
+            };
+
+            var txtPgn = new TextBox
+            {
+                Multiline = true,
+                ScrollBars = ScrollBars.Vertical,
+                Location = new Point(10, 35),
+                Size = new Size(460, 270),
+                Font = new Font("Consolas", 9F),
+                BackColor = isDark ? Color.FromArgb(30, 30, 35) : Color.White,
+                ForeColor = isDark ? Color.White : Color.Black
+            };
+
+            var btnOk = new Button
+            {
+                Text = "Import",
+                Location = new Point(310, 315),
+                Size = new Size(80, 30),
+                DialogResult = DialogResult.OK,
+                FlatStyle = FlatStyle.Flat,
+                BackColor = isDark ? Color.FromArgb(60, 90, 140) : Color.FromArgb(70, 130, 180),
+                ForeColor = Color.White
+            };
+
+            var btnCancel = new Button
+            {
+                Text = "Cancel",
+                Location = new Point(395, 315),
+                Size = new Size(80, 30),
+                DialogResult = DialogResult.Cancel,
+                FlatStyle = FlatStyle.Flat,
+                BackColor = isDark ? Color.FromArgb(50, 50, 58) : Color.FromArgb(230, 230, 230),
+                ForeColor = isDark ? Color.White : Color.Black
+            };
+
+            inputForm.Controls.AddRange(new Control[] { lblInstructions, txtPgn, btnOk, btnCancel });
+            inputForm.AcceptButton = btnOk;
+            inputForm.CancelButton = btnCancel;
+
+            if (inputForm.ShowDialog(this) == DialogResult.OK)
+            {
+                string pgnText = txtPgn.Text.Trim();
+                if (!string.IsNullOrEmpty(pgnText))
+                {
+                    ImportPgn(pgnText);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Generates PGN string from the current move tree.
+        /// </summary>
+        private string GeneratePgn()
+        {
+            var sb = new System.Text.StringBuilder();
+
+            // Standard PGN headers
+            sb.AppendLine("[Event \"Chess Analysis\"]");
+            sb.AppendLine("[Site \"chessdroid\"]");
+            sb.AppendLine($"[Date \"{DateTime.Now:yyyy.MM.dd}\"]");
+            sb.AppendLine("[Round \"?\"]");
+            sb.AppendLine("[White \"?\"]");
+            sb.AppendLine("[Black \"?\"]");
+            sb.AppendLine("[Result \"*\"]");
+
+            // Add FEN if not standard starting position
+            string rootFen = moveTree.Root.FEN;
+            if (rootFen != "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+            {
+                sb.AppendLine($"[FEN \"{rootFen}\"]");
+                sb.AppendLine("[SetUp \"1\"]");
+            }
+
+            sb.AppendLine();
+
+            // Generate move text
+            var mainLine = moveTree.GetMainLine();
+            if (mainLine.Count > 0)
+            {
+                var moveText = new System.Text.StringBuilder();
+                int lineLength = 0;
+
+                foreach (var node in mainLine)
+                {
+                    string moveStr;
+                    if (node.IsWhiteMove)
+                    {
+                        moveStr = $"{node.MoveNumber}. {node.SanMove}";
+                    }
+                    else
+                    {
+                        moveStr = node.SanMove;
+                    }
+
+                    // Word wrap at ~80 characters
+                    if (lineLength + moveStr.Length + 1 > 80)
+                    {
+                        moveText.AppendLine();
+                        lineLength = 0;
+                    }
+                    else if (moveText.Length > 0)
+                    {
+                        moveText.Append(' ');
+                        lineLength++;
+                    }
+
+                    moveText.Append(moveStr);
+                    lineLength += moveStr.Length;
+                }
+
+                sb.Append(moveText);
+                sb.Append(" *"); // Result
+            }
+            else
+            {
+                sb.Append("*");
+            }
+
+            sb.AppendLine();
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Imports a PGN string and populates the move tree.
+        /// </summary>
+        private void ImportPgn(string pgn)
+        {
+            try
+            {
+                // Parse headers
+                var headers = new Dictionary<string, string>();
+                var lines = pgn.Split('\n');
+                int moveTextStart = 0;
+
+                for (int i = 0; i < lines.Length; i++)
+                {
+                    string line = lines[i].Trim();
+                    if (line.StartsWith("[") && line.EndsWith("]"))
+                    {
+                        // Parse header: [Key "Value"]
+                        int keyEnd = line.IndexOf(' ');
+                        if (keyEnd > 1)
+                        {
+                            string key = line.Substring(1, keyEnd - 1);
+                            int valueStart = line.IndexOf('"') + 1;
+                            int valueEnd = line.LastIndexOf('"');
+                            if (valueStart > 0 && valueEnd > valueStart)
+                            {
+                                string value = line.Substring(valueStart, valueEnd - valueStart);
+                                headers[key] = value;
+                            }
+                        }
+                        moveTextStart = i + 1;
+                    }
+                    else if (!string.IsNullOrWhiteSpace(line))
+                    {
+                        moveTextStart = i;
+                        break;
+                    }
+                }
+
+                // Get starting FEN (or use standard position)
+                string startFen = headers.TryGetValue("FEN", out var fenValue)
+                    ? fenValue
+                    : "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+
+                // Reset board and tree
+                boardControl.LoadFEN(startFen);
+                moveTree.Clear(startFen);
+                moveListBox.Items.Clear();
+                displayedNodes.Clear();
+                _analysisCache.Clear();
+
+                // Extract move text (everything after headers)
+                string moveText = string.Join(" ", lines.Skip(moveTextStart));
+
+                // Clean up the move text
+                moveText = System.Text.RegularExpressions.Regex.Replace(moveText, @"\{[^}]*\}", " "); // Remove comments
+                moveText = System.Text.RegularExpressions.Regex.Replace(moveText, @"\([^)]*\)", " "); // Remove variations (simple)
+                moveText = System.Text.RegularExpressions.Regex.Replace(moveText, @"\$\d+", " "); // Remove NAGs
+                moveText = System.Text.RegularExpressions.Regex.Replace(moveText, @"[0-9]+\.\.\.", " "); // Remove continuation dots
+                moveText = moveText.Replace("\r", " ").Replace("\n", " ");
+
+                // Parse moves
+                var tokens = moveText.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                string currentFen = startFen;
+
+                // Set navigating flag to prevent BoardControl_MoveMade from double-adding moves
+                isNavigating = true;
+
+                foreach (var token in tokens)
+                {
+                    // Skip results
+                    if (token == "1-0" || token == "0-1" || token == "1/2-1/2" || token == "*")
+                        continue;
+
+                    // Skip standalone move numbers like "1." or "1"
+                    if (System.Text.RegularExpressions.Regex.IsMatch(token, @"^\d+\.?$"))
+                        continue;
+
+                    string san = token.Trim();
+
+                    // Handle move numbers attached to moves: "1.e4" -> "e4", "12.Nf3" -> "Nf3"
+                    var attachedMoveMatch = System.Text.RegularExpressions.Regex.Match(san, @"^\d+\.(.+)$");
+                    if (attachedMoveMatch.Success)
+                    {
+                        san = attachedMoveMatch.Groups[1].Value;
+                    }
+
+                    if (string.IsNullOrEmpty(san))
+                        continue;
+
+                    // Convert SAN to UCI
+                    string? uciMove = ConvertSanToUci(san, currentFen);
+                    if (uciMove == null)
+                    {
+                        Debug.WriteLine($"Failed to parse move: {san} in position {currentFen}");
+                        continue;
+                    }
+
+                    // Apply the move using the board control
+                    boardControl.LoadFEN(currentFen);
+                    if (!boardControl.MakeMove(uciMove))
+                    {
+                        Debug.WriteLine($"Failed to apply move: {uciMove}");
+                        continue;
+                    }
+                    string newFen = boardControl.GetFEN();
+
+                    // Add to tree
+                    moveTree.AddMove(uciMove, san, newFen);
+                    currentFen = newFen;
+                }
+
+                // Reset navigating flag
+                isNavigating = false;
+
+                // Update display
+                boardControl.LoadFEN(moveTree.CurrentNode.FEN);
+                UpdateMoveList();
+                UpdateFenDisplay();
+                UpdateTurnLabel();
+
+                int moveCount = moveTree.GetMainLine().Count;
+                lblStatus.Text = $"Imported {moveCount} moves from PGN";
+
+                // Navigate to start
+                moveTree.GoToStart();
+                boardControl.LoadFEN(moveTree.CurrentNode.FEN);
+                UpdateMoveListSelection();
+            }
+            catch (Exception ex)
+            {
+                isNavigating = false;
+                lblStatus.Text = $"Import error: {ex.Message}";
+                Debug.WriteLine($"PGN import error: {ex}");
+            }
+        }
+
+        /// <summary>
+        /// Converts SAN notation to UCI notation.
+        /// </summary>
+        private string? ConvertSanToUci(string san, string fen)
+        {
+            try
+            {
+                // Clean up the SAN
+                san = san.Replace("+", "").Replace("#", "").Replace("!", "").Replace("?", "");
+
+                string[] fenParts = fen.Split(' ');
+                bool isWhiteToMove = fenParts.Length > 1 && fenParts[1] == "w";
+
+                // Handle castling
+                if (san == "O-O" || san == "0-0")
+                {
+                    return isWhiteToMove ? "e1g1" : "e8g8";
+                }
+                if (san == "O-O-O" || san == "0-0-0")
+                {
+                    return isWhiteToMove ? "e1c1" : "e8c8";
+                }
+
+                // Parse piece type
+                char pieceType = 'P'; // Default to pawn
+                int idx = 0;
+                if (san.Length > 0 && char.IsUpper(san[0]) && san[0] != 'O')
+                {
+                    pieceType = san[0];
+                    idx = 1;
+                }
+
+                // Check for promotion
+                char? promotion = null;
+                if (san.Contains('='))
+                {
+                    int eqIdx = san.IndexOf('=');
+                    if (eqIdx + 1 < san.Length)
+                    {
+                        promotion = char.ToLower(san[eqIdx + 1]);
+                    }
+                    san = san.Substring(0, eqIdx);
+                }
+                else if (san.Length >= 2 && char.IsUpper(san[san.Length - 1]) && san[san.Length - 1] != 'O')
+                {
+                    // Promotion without = (e.g., e8Q)
+                    promotion = char.ToLower(san[san.Length - 1]);
+                    san = san.Substring(0, san.Length - 1);
+                }
+
+                // Find destination square (last two characters that form a valid square)
+                int destIdx = san.Length - 2;
+                while (destIdx >= idx)
+                {
+                    if (destIdx + 1 < san.Length &&
+                        san[destIdx] >= 'a' && san[destIdx] <= 'h' &&
+                        san[destIdx + 1] >= '1' && san[destIdx + 1] <= '8')
+                    {
+                        break;
+                    }
+                    destIdx--;
+                }
+
+                if (destIdx < idx || destIdx + 1 >= san.Length)
+                    return null;
+
+                string destSquare = san.Substring(destIdx, 2);
+                int destCol = destSquare[0] - 'a';
+                int destRow = 7 - (destSquare[1] - '1'); // Convert to internal coordinates
+
+                // Parse disambiguation (file and/or rank)
+                char? disambigFile = null;
+                char? disambigRank = null;
+                if (destIdx > idx)
+                {
+                    string middle = san.Substring(idx, destIdx - idx).Replace("x", "");
+                    foreach (char c in middle)
+                    {
+                        if (c >= 'a' && c <= 'h')
+                            disambigFile = c;
+                        else if (c >= '1' && c <= '8')
+                            disambigRank = c;
+                    }
+                }
+
+                // Build ChessBoard from FEN
+                var board = ChessBoard.FromFEN(fen);
+
+                // Determine piece character
+                char pieceChar = isWhiteToMove ? pieceType : char.ToLower(pieceType);
+                if (pieceType == 'P')
+                    pieceChar = isWhiteToMove ? 'P' : 'p';
+
+                // Find all pieces of this type that can move to destination
+                var candidates = ChessRulesService.FindAllPiecesOfSameType(board, char.ToLower(pieceChar), isWhiteToMove, destRow, destCol);
+
+                foreach (var (row, col) in candidates)
+                {
+                    // Check disambiguation
+                    char fileChar = (char)('a' + col);
+                    char rankChar = (char)('1' + (7 - row));
+
+                    if (disambigFile.HasValue && fileChar != disambigFile.Value)
+                        continue;
+                    if (disambigRank.HasValue && rankChar != disambigRank.Value)
+                        continue;
+
+                    // Check if this piece can reach the destination
+                    if (ChessRulesService.CanReachSquare(board, row, col, pieceChar, destRow, destCol))
+                    {
+                        string srcSquare = $"{fileChar}{rankChar}";
+                        string uci = srcSquare + destSquare;
+                        if (promotion.HasValue)
+                            uci += promotion.Value;
+                        return uci;
+                    }
+                }
+
+                return null;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"ConvertSanToUci error: {ex.Message} for {san}");
+                return null;
             }
         }
 
