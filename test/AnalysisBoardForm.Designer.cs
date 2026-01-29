@@ -32,6 +32,7 @@ namespace ChessDroid
         {
             mainLayout = new TableLayoutPanel();
             leftPanel = new Panel();
+            evalBar = new EvalBarControl();
             boardControl = new ChessBoardControl();
             lblTurn = new Label();
             btnNewGame = new Button();
@@ -51,11 +52,37 @@ namespace ChessDroid
             lblMoves = new Label();
             rightPanel = new Panel();
             analysisOutput = new RichTextBox();
+            grpEngineMatch = new GroupBox();
+            lblWhiteEngine = new Label();
+            cmbWhiteEngine = new ComboBox();
+            lblBlackEngine = new Label();
+            cmbBlackEngine = new ComboBox();
+            lblTimeControl = new Label();
+            cmbTimeControlType = new ComboBox();
+            pnlTimeParams = new Panel();
+            lblDepth = new Label();
+            numDepth = new NumericUpDown();
+            lblMoveTime = new Label();
+            numMoveTime = new NumericUpDown();
+            lblTotalTime = new Label();
+            numTotalTime = new NumericUpDown();
+            lblIncrement = new Label();
+            numIncrement = new NumericUpDown();
+            lblWhiteClock = new Label();
+            lblBlackClock = new Label();
+            btnStartMatch = new Button();
+            btnStopMatch = new Button();
             lblAnalysis = new Label();
             mainLayout.SuspendLayout();
             leftPanel.SuspendLayout();
             middlePanel.SuspendLayout();
             rightPanel.SuspendLayout();
+            grpEngineMatch.SuspendLayout();
+            pnlTimeParams.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)numDepth).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)numMoveTime).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)numTotalTime).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)numIncrement).BeginInit();
             SuspendLayout();
             // 
             // mainLayout
@@ -78,6 +105,7 @@ namespace ChessDroid
             // 
             // leftPanel
             // 
+            leftPanel.Controls.Add(evalBar);
             leftPanel.Controls.Add(boardControl);
             leftPanel.Controls.Add(lblTurn);
             leftPanel.Controls.Add(btnNewGame);
@@ -99,11 +127,19 @@ namespace ChessDroid
             leftPanel.TabIndex = 0;
             leftPanel.Resize += LeftPanel_Resize;
             // 
+            // evalBar
+            // 
+            evalBar.Location = new Point(10, 10);
+            evalBar.Name = "evalBar";
+            evalBar.Size = new Size(24, 480);
+            evalBar.TabIndex = 20;
+            // 
             // boardControl
             // 
-            boardControl.Location = new Point(10, 10);
+            boardControl.InteractionEnabled = true;
+            boardControl.Location = new Point(38, 10);
             boardControl.Name = "boardControl";
-            boardControl.Size = new Size(480, 480);
+            boardControl.Size = new Size(452, 452);
             boardControl.TabIndex = 0;
             boardControl.MoveMade += BoardControl_MoveMade;
             boardControl.BoardChanged += BoardControl_BoardChanged;
@@ -246,13 +282,13 @@ namespace ChessDroid
             // 
             // middlePanel
             // 
-            middlePanel.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             middlePanel.Controls.Add(moveListBox);
             middlePanel.Controls.Add(lblMoves);
+            middlePanel.Dock = DockStyle.Fill;
             middlePanel.Location = new Point(512, 8);
             middlePanel.Name = "middlePanel";
             middlePanel.Padding = new Padding(5);
-            middlePanel.Size = new Size(134, 503);
+            middlePanel.Size = new Size(134, 630);
             middlePanel.TabIndex = 1;
             // 
             // moveListBox
@@ -279,13 +315,14 @@ namespace ChessDroid
             // 
             // rightPanel
             // 
-            rightPanel.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             rightPanel.Controls.Add(analysisOutput);
+            rightPanel.Controls.Add(grpEngineMatch);
             rightPanel.Controls.Add(lblAnalysis);
+            rightPanel.Dock = DockStyle.Fill;
             rightPanel.Location = new Point(652, 8);
             rightPanel.Name = "rightPanel";
             rightPanel.Padding = new Padding(5);
-            rightPanel.Size = new Size(408, 503);
+            rightPanel.Size = new Size(408, 630);
             rightPanel.TabIndex = 2;
             // 
             // analysisOutput
@@ -293,13 +330,236 @@ namespace ChessDroid
             analysisOutput.BorderStyle = BorderStyle.FixedSingle;
             analysisOutput.Dock = DockStyle.Fill;
             analysisOutput.Font = new Font("Consolas", 10F);
-            analysisOutput.Location = new Point(5, 25);
+            analysisOutput.Location = new Point(5, 240);
             analysisOutput.Name = "analysisOutput";
             analysisOutput.ReadOnly = true;
             analysisOutput.ScrollBars = RichTextBoxScrollBars.Vertical;
-            analysisOutput.Size = new Size(398, 473);
+            analysisOutput.Size = new Size(398, 258);
             analysisOutput.TabIndex = 1;
             analysisOutput.Text = "";
+            // 
+            // grpEngineMatch
+            // 
+            grpEngineMatch.Controls.Add(lblWhiteEngine);
+            grpEngineMatch.Controls.Add(cmbWhiteEngine);
+            grpEngineMatch.Controls.Add(lblBlackEngine);
+            grpEngineMatch.Controls.Add(cmbBlackEngine);
+            grpEngineMatch.Controls.Add(lblTimeControl);
+            grpEngineMatch.Controls.Add(cmbTimeControlType);
+            grpEngineMatch.Controls.Add(pnlTimeParams);
+            grpEngineMatch.Controls.Add(lblWhiteClock);
+            grpEngineMatch.Controls.Add(lblBlackClock);
+            grpEngineMatch.Controls.Add(btnStartMatch);
+            grpEngineMatch.Controls.Add(btnStopMatch);
+            grpEngineMatch.Dock = DockStyle.Top;
+            grpEngineMatch.Font = new Font("Courier New", 9F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            grpEngineMatch.Location = new Point(5, 25);
+            grpEngineMatch.Name = "grpEngineMatch";
+            grpEngineMatch.Size = new Size(398, 215);
+            grpEngineMatch.TabIndex = 2;
+            grpEngineMatch.TabStop = false;
+            grpEngineMatch.Text = "Engine Match";
+            // 
+            // lblWhiteEngine
+            // 
+            lblWhiteEngine.Font = new Font("Courier New", 9F);
+            lblWhiteEngine.Location = new Point(10, 22);
+            lblWhiteEngine.Name = "lblWhiteEngine";
+            lblWhiteEngine.Size = new Size(50, 20);
+            lblWhiteEngine.TabIndex = 0;
+            lblWhiteEngine.Text = "White:";
+            // 
+            // cmbWhiteEngine
+            // 
+            cmbWhiteEngine.DropDownStyle = ComboBoxStyle.DropDownList;
+            cmbWhiteEngine.Font = new Font("Courier New", 9F);
+            cmbWhiteEngine.Location = new Point(65, 19);
+            cmbWhiteEngine.Name = "cmbWhiteEngine";
+            cmbWhiteEngine.Size = new Size(155, 23);
+            cmbWhiteEngine.TabIndex = 1;
+            // 
+            // lblBlackEngine
+            // 
+            lblBlackEngine.Font = new Font("Courier New", 9F);
+            lblBlackEngine.Location = new Point(10, 50);
+            lblBlackEngine.Name = "lblBlackEngine";
+            lblBlackEngine.Size = new Size(50, 20);
+            lblBlackEngine.TabIndex = 2;
+            lblBlackEngine.Text = "Black:";
+            // 
+            // cmbBlackEngine
+            // 
+            cmbBlackEngine.DropDownStyle = ComboBoxStyle.DropDownList;
+            cmbBlackEngine.Font = new Font("Courier New", 9F);
+            cmbBlackEngine.Location = new Point(65, 47);
+            cmbBlackEngine.Name = "cmbBlackEngine";
+            cmbBlackEngine.Size = new Size(155, 23);
+            cmbBlackEngine.TabIndex = 3;
+            // 
+            // lblTimeControl
+            // 
+            lblTimeControl.Font = new Font("Courier New", 9F);
+            lblTimeControl.Location = new Point(10, 78);
+            lblTimeControl.Name = "lblTimeControl";
+            lblTimeControl.Size = new Size(50, 20);
+            lblTimeControl.TabIndex = 4;
+            lblTimeControl.Text = "Time:";
+            // 
+            // cmbTimeControlType
+            // 
+            cmbTimeControlType.DropDownStyle = ComboBoxStyle.DropDownList;
+            cmbTimeControlType.Font = new Font("Courier New", 9F);
+            cmbTimeControlType.Items.AddRange(new object[] { "Fixed Depth", "Time per Move", "Total + Increment" });
+            cmbTimeControlType.Location = new Point(65, 75);
+            cmbTimeControlType.Name = "cmbTimeControlType";
+            cmbTimeControlType.Size = new Size(155, 23);
+            cmbTimeControlType.TabIndex = 5;
+            cmbTimeControlType.SelectedIndexChanged += CmbTimeControlType_SelectedIndexChanged;
+            // 
+            // pnlTimeParams
+            // 
+            pnlTimeParams.Controls.Add(lblDepth);
+            pnlTimeParams.Controls.Add(numDepth);
+            pnlTimeParams.Controls.Add(lblMoveTime);
+            pnlTimeParams.Controls.Add(numMoveTime);
+            pnlTimeParams.Controls.Add(lblTotalTime);
+            pnlTimeParams.Controls.Add(numTotalTime);
+            pnlTimeParams.Controls.Add(lblIncrement);
+            pnlTimeParams.Controls.Add(numIncrement);
+            pnlTimeParams.Font = new Font("Segoe UI", 9F);
+            pnlTimeParams.Location = new Point(10, 103);
+            pnlTimeParams.Name = "pnlTimeParams";
+            pnlTimeParams.Size = new Size(375, 30);
+            pnlTimeParams.TabIndex = 6;
+            // 
+            // lblDepth
+            // 
+            lblDepth.Font = new Font("Courier New", 9F);
+            lblDepth.Location = new Point(0, 5);
+            lblDepth.Name = "lblDepth";
+            lblDepth.Size = new Size(45, 20);
+            lblDepth.TabIndex = 0;
+            lblDepth.Text = "Depth:";
+            // 
+            // numDepth
+            // 
+            numDepth.Font = new Font("Courier New", 9F);
+            numDepth.Location = new Point(50, 3);
+            numDepth.Maximum = new decimal(new int[] { 30, 0, 0, 0 });
+            numDepth.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
+            numDepth.Name = "numDepth";
+            numDepth.Size = new Size(55, 21);
+            numDepth.TabIndex = 1;
+            numDepth.Value = new decimal(new int[] { 15, 0, 0, 0 });
+            // 
+            // lblMoveTime
+            // 
+            lblMoveTime.Location = new Point(0, 5);
+            lblMoveTime.Name = "lblMoveTime";
+            lblMoveTime.Size = new Size(70, 20);
+            lblMoveTime.TabIndex = 2;
+            lblMoveTime.Text = "ms/move:";
+            lblMoveTime.Visible = false;
+            // 
+            // numMoveTime
+            // 
+            numMoveTime.Font = new Font("Courier New", 9F);
+            numMoveTime.Increment = new decimal(new int[] { 100, 0, 0, 0 });
+            numMoveTime.Location = new Point(75, 3);
+            numMoveTime.Maximum = new decimal(new int[] { 60000, 0, 0, 0 });
+            numMoveTime.Minimum = new decimal(new int[] { 100, 0, 0, 0 });
+            numMoveTime.Name = "numMoveTime";
+            numMoveTime.Size = new Size(70, 21);
+            numMoveTime.TabIndex = 3;
+            numMoveTime.Value = new decimal(new int[] { 1000, 0, 0, 0 });
+            numMoveTime.Visible = false;
+            // 
+            // lblTotalTime
+            // 
+            lblTotalTime.Location = new Point(0, 5);
+            lblTotalTime.Name = "lblTotalTime";
+            lblTotalTime.Size = new Size(50, 20);
+            lblTotalTime.TabIndex = 4;
+            lblTotalTime.Text = "Time(s):";
+            lblTotalTime.Visible = false;
+            // 
+            // numTotalTime
+            // 
+            numTotalTime.Font = new Font("Courier New", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            numTotalTime.Location = new Point(55, 3);
+            numTotalTime.Maximum = new decimal(new int[] { 3600, 0, 0, 0 });
+            numTotalTime.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
+            numTotalTime.Name = "numTotalTime";
+            numTotalTime.Size = new Size(60, 21);
+            numTotalTime.TabIndex = 5;
+            numTotalTime.Value = new decimal(new int[] { 300, 0, 0, 0 });
+            numTotalTime.Visible = false;
+            // 
+            // lblIncrement
+            // 
+            lblIncrement.Font = new Font("Courier New", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            lblIncrement.Location = new Point(125, 5);
+            lblIncrement.Name = "lblIncrement";
+            lblIncrement.Size = new Size(40, 20);
+            lblIncrement.TabIndex = 6;
+            lblIncrement.Text = "Inc(s):";
+            lblIncrement.Visible = false;
+            // 
+            // numIncrement
+            // 
+            numIncrement.Font = new Font("Courier New", 9F);
+            numIncrement.Location = new Point(170, 3);
+            numIncrement.Maximum = new decimal(new int[] { 60, 0, 0, 0 });
+            numIncrement.Name = "numIncrement";
+            numIncrement.Size = new Size(50, 21);
+            numIncrement.TabIndex = 7;
+            numIncrement.Value = new decimal(new int[] { 2, 0, 0, 0 });
+            numIncrement.Visible = false;
+            // 
+            // lblWhiteClock
+            // 
+            lblWhiteClock.BorderStyle = BorderStyle.FixedSingle;
+            lblWhiteClock.Font = new Font("Consolas", 14F, FontStyle.Bold);
+            lblWhiteClock.Location = new Point(10, 140);
+            lblWhiteClock.Name = "lblWhiteClock";
+            lblWhiteClock.Size = new Size(120, 30);
+            lblWhiteClock.TabIndex = 7;
+            lblWhiteClock.Text = "W: --:--";
+            lblWhiteClock.TextAlign = ContentAlignment.MiddleCenter;
+            // 
+            // lblBlackClock
+            // 
+            lblBlackClock.BorderStyle = BorderStyle.FixedSingle;
+            lblBlackClock.Font = new Font("Consolas", 14F, FontStyle.Bold);
+            lblBlackClock.Location = new Point(140, 140);
+            lblBlackClock.Name = "lblBlackClock";
+            lblBlackClock.Size = new Size(120, 30);
+            lblBlackClock.TabIndex = 8;
+            lblBlackClock.Text = "B: --:--";
+            lblBlackClock.TextAlign = ContentAlignment.MiddleCenter;
+            // 
+            // btnStartMatch
+            // 
+            btnStartMatch.FlatStyle = FlatStyle.Flat;
+            btnStartMatch.Font = new Font("Courier New", 9F, FontStyle.Bold);
+            btnStartMatch.Location = new Point(10, 178);
+            btnStartMatch.Name = "btnStartMatch";
+            btnStartMatch.Size = new Size(120, 30);
+            btnStartMatch.TabIndex = 9;
+            btnStartMatch.Text = "Start Match";
+            btnStartMatch.Click += BtnStartMatch_Click;
+            // 
+            // btnStopMatch
+            // 
+            btnStopMatch.FlatStyle = FlatStyle.Flat;
+            btnStopMatch.Font = new Font("Courier New", 9F, FontStyle.Bold);
+            btnStopMatch.Location = new Point(140, 178);
+            btnStopMatch.Name = "btnStopMatch";
+            btnStopMatch.Size = new Size(120, 30);
+            btnStopMatch.TabIndex = 10;
+            btnStopMatch.Text = "Stop";
+            btnStopMatch.Visible = false;
+            btnStopMatch.Click += BtnStopMatch_Click;
             // 
             // lblAnalysis
             // 
@@ -328,6 +588,12 @@ namespace ChessDroid
             leftPanel.PerformLayout();
             middlePanel.ResumeLayout(false);
             rightPanel.ResumeLayout(false);
+            grpEngineMatch.ResumeLayout(false);
+            pnlTimeParams.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)numDepth).EndInit();
+            ((System.ComponentModel.ISupportInitialize)numMoveTime).EndInit();
+            ((System.ComponentModel.ISupportInitialize)numTotalTime).EndInit();
+            ((System.ComponentModel.ISupportInitialize)numIncrement).EndInit();
             ResumeLayout(false);
         }
 
@@ -340,6 +606,7 @@ namespace ChessDroid
         private Panel rightPanel;
 
         // Left panel - Board and controls
+        private EvalBarControl evalBar;
         private ChessBoardControl boardControl;
         private Label lblTurn;
         private Button btnNewGame;
@@ -358,6 +625,28 @@ namespace ChessDroid
         // Middle panel - Move list
         private Label lblMoves;
         private ListBox moveListBox;
+
+        // Right panel - Engine Match
+        private GroupBox grpEngineMatch;
+        private Label lblWhiteEngine;
+        private ComboBox cmbWhiteEngine;
+        private Label lblBlackEngine;
+        private ComboBox cmbBlackEngine;
+        private Label lblTimeControl;
+        private ComboBox cmbTimeControlType;
+        private Panel pnlTimeParams;
+        private Label lblDepth;
+        private NumericUpDown numDepth;
+        private Label lblMoveTime;
+        private NumericUpDown numMoveTime;
+        private Label lblTotalTime;
+        private NumericUpDown numTotalTime;
+        private Label lblIncrement;
+        private NumericUpDown numIncrement;
+        private Label lblWhiteClock;
+        private Label lblBlackClock;
+        private Button btnStartMatch;
+        private Button btnStopMatch;
 
         // Right panel - Analysis
         private Label lblAnalysis;

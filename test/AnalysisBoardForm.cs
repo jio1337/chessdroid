@@ -29,6 +29,11 @@ namespace ChessDroid
         // Track nodes for listbox mapping
         private List<MoveNode> displayedNodes = new List<MoveNode>();
 
+        // Engine match
+        private EngineMatchService? matchService;
+        private System.Windows.Forms.Timer clockTimer = null!;
+        private bool matchRunning = false;
+
         public AnalysisBoardForm(AppConfig config, ChessEngineService? sharedEngineService = null)
         {
             this.config = config;
@@ -38,6 +43,7 @@ namespace ChessDroid
             InitializeComponent();
             ApplyTheme();
             InitializeServices();
+            InitializeMatchControls();
 
             // Initialize move tree with starting position
             moveTree = new MoveTree(boardControl.GetFEN());
@@ -97,6 +103,46 @@ namespace ChessDroid
             analysisOutput.BackColor = panelColor;
             analysisOutput.ForeColor = textColor;
 
+            // Engine Match controls
+            grpEngineMatch.ForeColor = textColor;
+            grpEngineMatch.BackColor = isDarkMode ? Color.FromArgb(35, 35, 42) : Color.White;
+
+            lblWhiteEngine.ForeColor = textColor;
+            lblBlackEngine.ForeColor = textColor;
+            lblTimeControl.ForeColor = textColor;
+
+            cmbWhiteEngine.BackColor = panelColor;
+            cmbWhiteEngine.ForeColor = textColor;
+            cmbBlackEngine.BackColor = panelColor;
+            cmbBlackEngine.ForeColor = textColor;
+            cmbTimeControlType.BackColor = panelColor;
+            cmbTimeControlType.ForeColor = textColor;
+
+            pnlTimeParams.BackColor = grpEngineMatch.BackColor;
+            lblDepth.ForeColor = textColor;
+            lblMoveTime.ForeColor = textColor;
+            lblTotalTime.ForeColor = textColor;
+            lblIncrement.ForeColor = textColor;
+
+            numDepth.BackColor = panelColor;
+            numDepth.ForeColor = textColor;
+            numMoveTime.BackColor = panelColor;
+            numMoveTime.ForeColor = textColor;
+            numTotalTime.BackColor = panelColor;
+            numTotalTime.ForeColor = textColor;
+            numIncrement.BackColor = panelColor;
+            numIncrement.ForeColor = textColor;
+
+            lblWhiteClock.ForeColor = isDarkMode ? Color.White : Color.Black;
+            lblWhiteClock.BackColor = isDarkMode ? Color.FromArgb(50, 50, 58) : Color.FromArgb(240, 240, 240);
+            lblBlackClock.ForeColor = isDarkMode ? Color.LightGray : Color.DimGray;
+            lblBlackClock.BackColor = isDarkMode ? Color.FromArgb(50, 50, 58) : Color.FromArgb(240, 240, 240);
+
+            btnStartMatch.BackColor = isDarkMode ? Color.FromArgb(40, 100, 60) : Color.FromArgb(60, 140, 80);
+            btnStartMatch.ForeColor = Color.White;
+            btnStopMatch.BackColor = isDarkMode ? Color.FromArgb(140, 50, 50) : Color.FromArgb(180, 60, 60);
+            btnStopMatch.ForeColor = Color.White;
+
             // Update FEN display
             UpdateFenDisplay();
         }
@@ -121,6 +167,32 @@ namespace ChessDroid
             }
         }
 
+        private void InitializeMatchControls()
+        {
+            // Populate engine combo boxes
+            var resolver = new EnginePathResolver(config);
+            string[] engines = resolver.GetAvailableEngines();
+            cmbWhiteEngine.Items.Clear();
+            cmbBlackEngine.Items.Clear();
+            foreach (var eng in engines)
+            {
+                cmbWhiteEngine.Items.Add(eng);
+                cmbBlackEngine.Items.Add(eng);
+            }
+            if (engines.Length > 0) cmbWhiteEngine.SelectedIndex = 0;
+            if (engines.Length > 1) cmbBlackEngine.SelectedIndex = 1;
+            else if (engines.Length > 0) cmbBlackEngine.SelectedIndex = 0;
+
+            // Default time control selection
+            cmbTimeControlType.SelectedIndex = 0; // Fixed Depth
+            UpdateTimeControlParams();
+
+            // Initialize clock timer
+            clockTimer = new System.Windows.Forms.Timer();
+            clockTimer.Interval = 100;
+            clockTimer.Tick += ClockTimer_Tick;
+        }
+
         #region Event Handlers
 
         private void LeftPanel_Resize(object? sender, EventArgs e)
@@ -131,23 +203,34 @@ namespace ChessDroid
 
             if (sender is Panel panel)
             {
+                // Eval bar dimensions
+                const int evalBarWidth = 24;
+                const int evalBarGap = 4;
+                int evalBarTotal = evalBarWidth + evalBarGap; // 28px reserved for eval bar
+
                 // Calculate the largest square that fits in the available space
-                // Leave room for controls below (about 110 pixels)
-                int availableWidth = panel.Width - 20; // 10px padding on each side
+                // Leave room for eval bar on the left and controls below (about 110 pixels)
+                int availableWidth = panel.Width - 20 - evalBarTotal; // 10px padding each side + eval bar
                 int availableHeight = panel.Height - 110; // Room for controls below
 
                 int boardSize = Math.Min(availableWidth, availableHeight);
                 boardSize = Math.Max(boardSize, 300); // Minimum size
 
-                // Center the board horizontally in the panel
-                int boardX = (panel.Width - boardSize) / 2;
-                boardX = Math.Max(boardX, 10); // Minimum left margin
+                // Center the board+evalbar group horizontally in the panel
+                int groupWidth = boardSize + evalBarTotal;
+                int groupX = (panel.Width - groupWidth) / 2;
+                groupX = Math.Max(groupX, 10); // Minimum left margin
 
-                // Resize and position the board
+                // Position eval bar (left of board, same height)
+                evalBar.Location = new Point(groupX, 5);
+                evalBar.Size = new Size(evalBarWidth, boardSize);
+
+                // Position board (right of eval bar)
+                int boardX = groupX + evalBarTotal;
                 boardControl.Size = new Size(boardSize, boardSize);
                 boardControl.Location = new Point(boardX, 5);
 
-                // Reposition controls below the board
+                // Reposition controls below the board (aligned with board, not eval bar)
                 int controlsY = boardControl.Bottom + 5;
 
                 lblTurn.Location = new Point(boardX, controlsY);
@@ -195,16 +278,8 @@ namespace ChessDroid
                 lblStatus.Location = new Point(boardX, fenY + 30);
                 lblStatus.Width = boardSize;
 
-                // Match middle and right panel heights to the board
-                int panelHeight = boardControl.Bottom;
-                if (middlePanel != null)
-                {
-                    middlePanel.Height = panelHeight;
-                }
-                if (rightPanel != null)
-                {
-                    rightPanel.Height = panelHeight;
-                }
+                // Let middle and right panels fill the full form height
+                // (they use Dock.Fill in the TableLayoutPanel)
             }
         }
 
@@ -283,6 +358,7 @@ namespace ChessDroid
             moveListBox.Items.Clear();
             displayedNodes.Clear();
             analysisOutput.Clear();
+            evalBar?.Reset();
             UpdateFenDisplay();
             UpdateTurnLabel();
             lblStatus.Text = "New game started";
@@ -395,6 +471,7 @@ namespace ChessDroid
                     moveListBox.Items.Clear();
                     displayedNodes.Clear();
                     analysisOutput.Clear();
+                    evalBar?.Reset();
                     UpdateTurnLabel();
                     lblStatus.Text = "Position loaded from FEN";
                 }
@@ -449,6 +526,9 @@ namespace ChessDroid
 
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
         {
+            // Disable navigation during engine match
+            if (matchRunning) return base.ProcessCmdKey(ref msg, keyData);
+
             // Intercept arrow keys before they're used for control navigation
             switch (keyData)
             {
@@ -579,6 +659,298 @@ namespace ChessDroid
 
         #endregion
 
+        #region Engine Match
+
+        private void CmbTimeControlType_SelectedIndexChanged(object? sender, EventArgs e)
+        {
+            UpdateTimeControlParams();
+        }
+
+        private void UpdateTimeControlParams()
+        {
+            int idx = cmbTimeControlType.SelectedIndex;
+
+            // Fixed Depth
+            lblDepth.Visible = idx == 0;
+            numDepth.Visible = idx == 0;
+
+            // Time per Move
+            lblMoveTime.Visible = idx == 1;
+            numMoveTime.Visible = idx == 1;
+
+            // Total + Increment
+            lblTotalTime.Visible = idx == 2;
+            numTotalTime.Visible = idx == 2;
+            lblIncrement.Visible = idx == 2;
+            numIncrement.Visible = idx == 2;
+        }
+
+        private async void BtnStartMatch_Click(object? sender, EventArgs e)
+        {
+            if (cmbWhiteEngine.SelectedItem == null || cmbBlackEngine.SelectedItem == null)
+            {
+                lblStatus.Text = "Select both engines first";
+                return;
+            }
+
+            string whiteEngineName = cmbWhiteEngine.SelectedItem.ToString()!;
+            string blackEngineName = cmbBlackEngine.SelectedItem.ToString()!;
+
+            // Resolve engine paths
+            string enginesPath = config.GetEnginesPath();
+            string whiteEnginePath = Path.Combine(enginesPath, whiteEngineName);
+            string blackEnginePath = Path.Combine(enginesPath, blackEngineName);
+
+            if (!File.Exists(whiteEnginePath) || !File.Exists(blackEnginePath))
+            {
+                lblStatus.Text = "Engine file not found";
+                return;
+            }
+
+            // Build time control from UI
+            var tc = new EngineMatchTimeControl();
+            switch (cmbTimeControlType.SelectedIndex)
+            {
+                case 0: // Fixed Depth
+                    tc.Type = TimeControlType.FixedDepth;
+                    tc.Depth = (int)numDepth.Value;
+                    break;
+                case 1: // Time per Move
+                    tc.Type = TimeControlType.FixedTimePerMove;
+                    tc.MoveTimeMs = (int)numMoveTime.Value;
+                    break;
+                case 2: // Total + Increment
+                    tc.Type = TimeControlType.TotalPlusIncrement;
+                    tc.TotalTimeMs = (int)numTotalTime.Value * 1000;
+                    tc.IncrementMs = (int)numIncrement.Value * 1000;
+                    break;
+            }
+
+            // Reset the board
+            boardControl.ResetBoard();
+            string startFen = boardControl.GetFEN();
+            moveTree.Clear(startFen);
+            moveListBox.Items.Clear();
+            displayedNodes.Clear();
+
+            // Set up match log
+            analysisOutput.Clear();
+            analysisOutput.SelectionColor = analysisOutput.ForeColor;
+            analysisOutput.AppendText($"Engine Match: {whiteEngineName} vs {blackEngineName}\n");
+            analysisOutput.AppendText($"Time Control: {tc}\n\n");
+
+            // Disable conflicting controls
+            SetMatchControlsEnabled(true);
+
+            // Create and start match service
+            matchService?.Dispose();
+            matchService = new EngineMatchService(config);
+            matchService.OnMovePlayed += MatchService_OnMovePlayed;
+            matchService.OnClockUpdated += MatchService_OnClockUpdated;
+            matchService.OnMatchEnded += MatchService_OnMatchEnded;
+            matchService.OnStatusChanged += MatchService_OnStatusChanged;
+
+            // Initialize clocks display
+            if (tc.Type == TimeControlType.TotalPlusIncrement)
+            {
+                UpdateClockDisplay(tc.TotalTimeMs, tc.TotalTimeMs, true);
+            }
+            else
+            {
+                lblWhiteClock.Text = "W: --:--";
+                lblBlackClock.Text = "B: --:--";
+            }
+
+            clockTimer.Start();
+
+            // Run match (fire and forget - events handle the rest)
+            await matchService.StartMatchAsync(
+                whiteEnginePath, blackEnginePath,
+                whiteEngineName, blackEngineName,
+                tc);
+        }
+
+        private void BtnStopMatch_Click(object? sender, EventArgs e)
+        {
+            matchService?.StopMatch();
+        }
+
+        private void MatchService_OnMovePlayed(string uciMove, string fen, long moveTimeMs)
+        {
+            if (InvokeRequired)
+            {
+                Invoke(() => MatchService_OnMovePlayed(uciMove, fen, moveTimeMs));
+                return;
+            }
+
+            isNavigating = true;
+            try
+            {
+                // Make the move on the visual board
+                boardControl.MakeMove(uciMove);
+
+                // Convert to SAN and add to move tree
+                string san = ConvertUciToSan(uciMove, moveTree.CurrentNode.FEN);
+                string newFen = boardControl.GetFEN();
+                moveTree.AddMove(uciMove, san, newFen);
+
+                UpdateMoveList();
+                UpdateFenDisplay();
+                UpdateTurnLabel();
+
+                // Log to analysis output
+                var currentNode = moveTree.CurrentNode;
+                double timeSec = moveTimeMs / 1000.0;
+                string timeStr = $"({timeSec:F1}s)";
+
+                if (currentNode.IsWhiteMove)
+                {
+                    analysisOutput.AppendText($"{currentNode.MoveNumber}. {san} {timeStr}  ");
+                }
+                else
+                {
+                    analysisOutput.AppendText($"{san} {timeStr}\n");
+                }
+                analysisOutput.ScrollToCaret();
+            }
+            finally
+            {
+                isNavigating = false;
+            }
+        }
+
+        private void MatchService_OnClockUpdated(long whiteMs, long blackMs, bool whiteToMove)
+        {
+            if (InvokeRequired)
+            {
+                Invoke(() => MatchService_OnClockUpdated(whiteMs, blackMs, whiteToMove));
+                return;
+            }
+
+            UpdateClockDisplay(whiteMs, blackMs, whiteToMove);
+        }
+
+        private void MatchService_OnMatchEnded(EngineMatchResult result)
+        {
+            if (InvokeRequired)
+            {
+                Invoke(() => MatchService_OnMatchEnded(result));
+                return;
+            }
+
+            clockTimer.Stop();
+            matchRunning = false;
+
+            // Show result
+            analysisOutput.AppendText($"\n\n{result.GetResultString()}\n");
+            if (result.Termination != MatchTermination.UserStopped)
+            {
+                analysisOutput.AppendText($"White remaining: {FormatClock(result.WhiteTimeRemainingMs)}\n");
+                analysisOutput.AppendText($"Black remaining: {FormatClock(result.BlackTimeRemainingMs)}\n");
+            }
+            analysisOutput.ScrollToCaret();
+
+            lblStatus.Text = result.GetResultString();
+
+            // Re-enable controls
+            SetMatchControlsEnabled(false);
+
+            // Clean up match service
+            if (matchService != null)
+            {
+                matchService.OnMovePlayed -= MatchService_OnMovePlayed;
+                matchService.OnClockUpdated -= MatchService_OnClockUpdated;
+                matchService.OnMatchEnded -= MatchService_OnMatchEnded;
+                matchService.OnStatusChanged -= MatchService_OnStatusChanged;
+                matchService.Dispose();
+                matchService = null;
+            }
+        }
+
+        private void MatchService_OnStatusChanged(string status)
+        {
+            if (InvokeRequired)
+            {
+                Invoke(() => MatchService_OnStatusChanged(status));
+                return;
+            }
+
+            lblStatus.Text = status;
+        }
+
+        private void ClockTimer_Tick(object? sender, EventArgs e)
+        {
+            if (matchService?.IsRunning != true) return;
+
+            UpdateClockDisplay(
+                matchService.WhiteRemainingMs,
+                matchService.BlackRemainingMs,
+                matchService.WhiteToMove);
+        }
+
+        private void UpdateClockDisplay(long whiteMs, long blackMs, bool whiteToMove)
+        {
+            lblWhiteClock.Text = $"W: {FormatClock(whiteMs)}";
+            lblBlackClock.Text = $"B: {FormatClock(blackMs)}";
+
+            bool isDark = config?.Theme == "Dark";
+
+            // Highlight active side
+            if (matchRunning)
+            {
+                lblWhiteClock.BackColor = whiteToMove
+                    ? (isDark ? Color.FromArgb(40, 80, 50) : Color.FromArgb(200, 240, 200))
+                    : (isDark ? Color.FromArgb(50, 50, 58) : Color.FromArgb(240, 240, 240));
+                lblBlackClock.BackColor = !whiteToMove
+                    ? (isDark ? Color.FromArgb(40, 80, 50) : Color.FromArgb(200, 240, 200))
+                    : (isDark ? Color.FromArgb(50, 50, 58) : Color.FromArgb(240, 240, 240));
+            }
+        }
+
+        private static string FormatClock(long ms)
+        {
+            if (ms <= 0) return "0:00.0";
+            int totalSeconds = (int)(ms / 1000);
+            int minutes = totalSeconds / 60;
+            int seconds = totalSeconds % 60;
+            int tenths = (int)((ms % 1000) / 100);
+            return $"{minutes}:{seconds:D2}.{tenths}";
+        }
+
+        private void SetMatchControlsEnabled(bool running)
+        {
+            matchRunning = running;
+
+            // Disable/enable game controls
+            btnNewGame.Enabled = !running;
+            btnTakeBack.Enabled = !running;
+            btnLoadFen.Enabled = !running;
+            btnAnalyze.Enabled = !running;
+            chkAutoAnalyze.Enabled = !running;
+            boardControl.InteractionEnabled = !running;
+
+            // Match controls
+            cmbWhiteEngine.Enabled = !running;
+            cmbBlackEngine.Enabled = !running;
+            cmbTimeControlType.Enabled = !running;
+            numDepth.Enabled = !running;
+            numMoveTime.Enabled = !running;
+            numTotalTime.Enabled = !running;
+            numIncrement.Enabled = !running;
+
+            // Toggle start/stop buttons
+            btnStartMatch.Visible = !running;
+            btnStopMatch.Visible = running;
+
+            // Cancel auto-analysis during match
+            if (running)
+            {
+                autoAnalysisCts?.Cancel();
+            }
+        }
+
+        #endregion
+
         #region Analysis
 
         private async Task AnalyzeCurrentPosition()
@@ -670,6 +1042,9 @@ namespace ChessDroid
                     result.wdl,
                     bookMoves);
 
+                // Update eval bar with the evaluation
+                UpdateEvalBar(result.evaluation);
+
                 lblStatus.Text = $"Analysis complete (depth {depth})";
             }
             catch (Exception ex)
@@ -680,6 +1055,33 @@ namespace ChessDroid
             finally
             {
                 btnAnalyze.Enabled = true;
+            }
+        }
+
+        /// <summary>
+        /// Parses the evaluation string and updates the eval bar control.
+        /// </summary>
+        private void UpdateEvalBar(string evaluation)
+        {
+            if (evalBar == null || string.IsNullOrEmpty(evaluation))
+                return;
+
+            if (evaluation.StartsWith("Mate in "))
+            {
+                string mateStr = evaluation.Replace("Mate in ", "").Trim();
+                if (int.TryParse(mateStr, out int mateIn))
+                {
+                    evalBar.SetMate(mateIn);
+                }
+            }
+            else
+            {
+                string cleaned = evaluation.Replace("+", "");
+                if (double.TryParse(cleaned, System.Globalization.NumberStyles.Float,
+                    System.Globalization.CultureInfo.InvariantCulture, out double pawns))
+                {
+                    evalBar.SetEvaluation(pawns * 100.0); // Convert pawns to centipawns
+                }
             }
         }
 
