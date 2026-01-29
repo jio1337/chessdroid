@@ -662,6 +662,9 @@ namespace ChessDroid.Services
             if (bookMoves == null || bookMoves.Count == 0)
                 return;
 
+            // Calculate total weight for percentage display
+            int totalWeight = bookMoves.Sum(m => m.Priority);
+
             richTextBox.SelectionColor = GetThemeColor(Color.Khaki, Color.DarkOliveGreen);
             richTextBox.AppendText($"Book: ");
 
@@ -682,7 +685,8 @@ namespace ChessDroid.Services
                 richTextBox.AppendText($"{sanMove}");
 
                 richTextBox.SelectionColor = GetThemeColor(Color.Gray, Color.DarkSlateGray);
-                richTextBox.AppendText($"(w:{move.Priority})");
+                int pct = totalWeight > 0 ? (int)Math.Round(100.0 * move.Priority / totalWeight) : 0;
+                richTextBox.AppendText($" ({pct}%)");
             }
             richTextBox.AppendText(Environment.NewLine);
 

@@ -67,13 +67,13 @@ namespace ChessDroid.Services
             if (castling.Contains('k')) key ^= Random64Castle[2];
             if (castling.Contains('q')) key ^= Random64Castle[3];
 
-            // En passant - include if present in FEN
-            // Note: Some strict implementations only include if capture is possible,
-            // but most book generators include it whenever present in FEN
-            if (enPassant != "-" && enPassant.Length >= 1)
+            // En passant - only include if an en passant capture is actually possible
+            // (Polyglot spec: only hash ep if an enemy pawn can capture)
+            if (enPassant != "-" && enPassant.Length >= 2)
             {
                 int epFile = enPassant[0] - 'a';
-                if (epFile >= 0 && epFile < 8)
+                int epRank = enPassant[1] - '1';
+                if (epFile >= 0 && epFile < 8 && CanCaptureEnPassant(board, epFile, epRank, turn))
                 {
                     key ^= Random64EnPassant[epFile];
                 }
@@ -84,6 +84,62 @@ namespace ChessDroid.Services
                 key ^= Random64Turn;
 
             return key;
+        }
+
+        /// <summary>
+        /// Checks if an en passant capture is actually possible by verifying
+        /// an enemy pawn exists on an adjacent file at the correct rank.
+        /// </summary>
+        private static bool CanCaptureEnPassant(string board, int epFile, int epRank, string turn)
+        {
+            // Parse the board into a 2D array [rank, file] where rank 0 = rank 1
+            char[,] squares = new char[8, 8];
+            int rank = 7, file = 0;
+            foreach (char c in board)
+            {
+                if (c == '/')
+                {
+                    rank--;
+                    file = 0;
+                }
+                else if (char.IsDigit(c))
+                {
+                    for (int j = 0; j < c - '0'; j++)
+                        squares[rank, file++] = '.';
+                }
+                else
+                {
+                    squares[rank, file++] = c;
+                }
+            }
+
+            // The capturing pawn is on the same rank as the en passant square's adjacent rank
+            // EP on rank 6 (index 5): black pawn moved to rank 5 (index 4), white pawn captures from rank 5
+            // EP on rank 3 (index 2): white pawn moved to rank 4 (index 3), black pawn captures from rank 4
+            int pawnRank;
+            char enemyPawn;
+            if (epRank == 5) // ep square on rank 6, white captures
+            {
+                pawnRank = 4; // rank 5 (0-indexed)
+                enemyPawn = 'P';
+            }
+            else if (epRank == 2) // ep square on rank 3, black captures
+            {
+                pawnRank = 3; // rank 4 (0-indexed)
+                enemyPawn = 'p';
+            }
+            else
+            {
+                return false;
+            }
+
+            // Check adjacent files for the capturing pawn
+            if (epFile > 0 && squares[pawnRank, epFile - 1] == enemyPawn)
+                return true;
+            if (epFile < 7 && squares[pawnRank, epFile + 1] == enemyPawn)
+                return true;
+
+            return false;
         }
 
         private static int GetPieceIndex(char piece)

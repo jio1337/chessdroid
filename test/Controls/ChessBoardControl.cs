@@ -54,10 +54,15 @@ namespace ChessDroid.Controls
 
         // Piece images
         private Dictionary<char, Image?> pieceImages = new Dictionary<char, Image?>();
-        private string currentTemplateSet = "Lichess";
+        private string currentTemplateSet = "Chess.com";
 
         // Font for coordinates (fallback for pieces if images fail)
         private Font coordFont = new Font("Segoe UI", 10f, FontStyle.Bold);
+
+        /// <summary>
+        /// When false, disables mouse interaction (for engine-vs-engine matches).
+        /// </summary>
+        public bool InteractionEnabled { get; set; } = true;
 
         // Events
         public event EventHandler<MoveEventArgs>? MoveMade;
@@ -529,6 +534,7 @@ namespace ChessDroid.Controls
         {
             base.OnMouseDown(e);
 
+            if (!InteractionEnabled) return;
             if (e.Button != MouseButtons.Left) return;
 
             int squareSize = Math.Min(Width, Height) / 8;
@@ -566,6 +572,7 @@ namespace ChessDroid.Controls
         {
             base.OnMouseMove(e);
 
+            if (!InteractionEnabled) return;
             if (e.Button != MouseButtons.Left || !mouseDownOnPiece)
                 return;
 
@@ -593,6 +600,7 @@ namespace ChessDroid.Controls
         {
             base.OnMouseUp(e);
 
+            if (!InteractionEnabled) return;
             if (e.Button != MouseButtons.Left) return;
 
             int squareSize = Math.Min(Width, Height) / 8;

@@ -12,6 +12,23 @@ namespace ChessDroid
     /// </summary>
     public partial class AnalysisBoardForm : Form
     {
+        /// <summary>
+        /// Cached engine analysis result for a position.
+        /// </summary>
+        private class CachedAnalysis
+        {
+            public string BestMove { get; set; } = "";
+            public string Evaluation { get; set; } = "";
+            public List<string> PVs { get; set; } = new();
+            public List<string> Evaluations { get; set; } = new();
+            public WDLInfo? WDL { get; set; }
+            public int Depth { get; set; }
+        }
+
+        // Analysis cache - keyed by FEN (position only, not full FEN with move counters)
+        private Dictionary<string, CachedAnalysis> _analysisCache = new();
+        private int _cachedDepth = 0; // Track the depth used for cached analyses
+
         // Auto-analysis
         private CancellationTokenSource? autoAnalysisCts;
 
@@ -359,6 +376,7 @@ namespace ChessDroid
             displayedNodes.Clear();
             analysisOutput.Clear();
             evalBar?.Reset();
+            _analysisCache.Clear(); // Clear analysis cache for new game
             UpdateFenDisplay();
             UpdateTurnLabel();
             lblStatus.Text = "New game started";
@@ -472,6 +490,7 @@ namespace ChessDroid
                     displayedNodes.Clear();
                     analysisOutput.Clear();
                     evalBar?.Reset();
+                    _analysisCache.Clear(); // Clear analysis cache for new position
                     UpdateTurnLabel();
                     lblStatus.Text = "Position loaded from FEN";
                 }
@@ -732,6 +751,7 @@ namespace ChessDroid
             moveTree.Clear(startFen);
             moveListBox.Items.Clear();
             displayedNodes.Clear();
+            _analysisCache.Clear(); // Clear analysis cache for new match
 
             // Set up match log
             analysisOutput.Clear();
@@ -962,13 +982,31 @@ namespace ChessDroid
             }
 
             string fen = boardControl.GetFEN();
+            string cacheKey = GetPositionKey(fen);
+            int depth = config?.EngineDepth ?? 15;
+
+            // Check if depth setting changed - invalidate cache if so
+            if (_cachedDepth != depth)
+            {
+                _analysisCache.Clear();
+                _cachedDepth = depth;
+            }
+
+            // Check cache first
+            if (_analysisCache.TryGetValue(cacheKey, out var cached) && cached.Depth >= depth)
+            {
+                // Use cached result - instant display
+                DisplayAnalysisResult(fen, cached.BestMove, cached.Evaluation,
+                    cached.PVs, cached.Evaluations, cached.WDL, cached.Depth, fromCache: true);
+                return;
+            }
+
             lblStatus.Text = "Analyzing...";
             btnAnalyze.Enabled = false;
 
             try
             {
                 // Get engine analysis
-                int depth = config?.EngineDepth ?? 15;
                 int multiPV = 3; // Always get 3 lines for analysis board
 
                 var result = await engineService.GetBestMoveAsync(fen, depth, multiPV);
@@ -980,72 +1018,23 @@ namespace ChessDroid
                     return;
                 }
 
-                // Apply aggressiveness filter
-                var candidates = new List<(string move, string evaluation, string pvLine, int sharpness)>();
                 var pvs = result.pvs ?? new List<string>();
                 var evals = result.evaluations ?? new List<string>();
 
-                for (int i = 0; i < Math.Min(pvs.Count, evals.Count); i++)
+                // Cache the result
+                _analysisCache[cacheKey] = new CachedAnalysis
                 {
-                    string pvLine = pvs[i];
-                    string eval = evals[i];
-                    string firstMove = pvLine.Split(' ')[0];
-                    int sharpness = sharpnessAnalyzer.CalculateSharpness(firstMove, fen, eval, pvLine);
-                    candidates.Add((firstMove, eval, pvLine, sharpness));
-                }
-
-                // Select based on style
-                int aggressiveness = config?.Aggressiveness ?? 50;
-                string recommendedMove = result.bestMove;
-
-                if (candidates.Count >= 2 && aggressiveness != 50)
-                {
-                    int selectedIndex = sharpnessAnalyzer.SelectMoveByAggressiveness(candidates, aggressiveness, 0.30);
-                    if (selectedIndex >= 0 && selectedIndex < candidates.Count)
-                    {
-                        recommendedMove = candidates[selectedIndex].move;
-                    }
-                }
-
-                // Get book moves
-                List<BookMove>? bookMoves = null;
-                if (openingBookService?.IsLoaded == true)
-                {
-                    var moves = openingBookService.GetBookMovesForPosition(fen);
-                    if (moves != null && moves.Count > 0)
-                    {
-                        bookMoves = moves.Select(pm => new BookMove
-                        {
-                            UciMove = pm.UciMove,
-                            Games = pm.Weight,
-                            Priority = pm.Weight,
-                            WinRate = 50,
-                            Wins = 0,
-                            Losses = 0,
-                            Draws = 0,
-                            Source = "Book"
-                        }).ToList();
-                    }
-                }
+                    BestMove = result.bestMove,
+                    Evaluation = result.evaluation,
+                    PVs = new List<string>(pvs),
+                    Evaluations = new List<string>(evals),
+                    WDL = result.wdl,
+                    Depth = depth
+                };
 
                 // Display results
-                consoleFormatter?.DisplayAnalysisResults(
-                    recommendedMove,
-                    result.evaluation,
-                    pvs,
-                    evals,
-                    fen,
-                    null, // No previous eval for blunder detection
-                    true, // Show best line
-                    true, // Show second line
-                    true, // Show third line
-                    result.wdl,
-                    bookMoves);
-
-                // Update eval bar with the evaluation
-                UpdateEvalBar(result.evaluation);
-
-                lblStatus.Text = $"Analysis complete (depth {depth})";
+                DisplayAnalysisResult(fen, result.bestMove, result.evaluation,
+                    pvs, evals, result.wdl, depth, fromCache: false);
             }
             catch (Exception ex)
             {
@@ -1056,6 +1045,95 @@ namespace ChessDroid
             {
                 btnAnalyze.Enabled = true;
             }
+        }
+
+        /// <summary>
+        /// Extracts the position-only part of FEN for cache key (excludes move counters).
+        /// </summary>
+        private static string GetPositionKey(string fen)
+        {
+            // FEN format: pieces side castling enpassant halfmove fullmove
+            // We only need the first 4 parts for position identity
+            var parts = fen.Split(' ');
+            if (parts.Length >= 4)
+            {
+                return $"{parts[0]} {parts[1]} {parts[2]} {parts[3]}";
+            }
+            return fen;
+        }
+
+        /// <summary>
+        /// Displays analysis results (shared between cached and fresh analysis).
+        /// </summary>
+        private void DisplayAnalysisResult(string fen, string bestMove, string evaluation,
+            List<string> pvs, List<string> evals, WDLInfo? wdl,
+            int depth, bool fromCache)
+        {
+            // Apply aggressiveness filter
+            var candidates = new List<(string move, string evaluation, string pvLine, int sharpness)>();
+
+            for (int i = 0; i < Math.Min(pvs.Count, evals.Count); i++)
+            {
+                string pvLine = pvs[i];
+                string eval = evals[i];
+                string firstMove = pvLine.Split(' ')[0];
+                int sharpness = sharpnessAnalyzer.CalculateSharpness(firstMove, fen, eval, pvLine);
+                candidates.Add((firstMove, eval, pvLine, sharpness));
+            }
+
+            // Select based on style
+            int aggressiveness = config?.Aggressiveness ?? 50;
+            string recommendedMove = bestMove;
+
+            if (candidates.Count >= 2 && aggressiveness != 50)
+            {
+                int selectedIndex = sharpnessAnalyzer.SelectMoveByAggressiveness(candidates, aggressiveness, 0.30);
+                if (selectedIndex >= 0 && selectedIndex < candidates.Count)
+                {
+                    recommendedMove = candidates[selectedIndex].move;
+                }
+            }
+
+            // Get book moves
+            List<BookMove>? bookMoves = null;
+            if (openingBookService?.IsLoaded == true)
+            {
+                var moves = openingBookService.GetBookMovesForPosition(fen);
+                if (moves != null && moves.Count > 0)
+                {
+                    bookMoves = moves.Select(pm => new BookMove
+                    {
+                        UciMove = pm.UciMove,
+                        Games = pm.Weight,
+                        Priority = pm.Weight,
+                        WinRate = 50,
+                        Wins = 0,
+                        Losses = 0,
+                        Draws = 0,
+                        Source = "Book"
+                    }).ToList();
+                }
+            }
+
+            // Display results
+            consoleFormatter?.DisplayAnalysisResults(
+                recommendedMove,
+                evaluation,
+                pvs,
+                evals,
+                fen,
+                null, // No previous eval for blunder detection
+                true, // Show best line
+                true, // Show second line
+                true, // Show third line
+                wdl,
+                bookMoves);
+
+            // Update eval bar with the evaluation
+            UpdateEvalBar(evaluation);
+
+            string cacheIndicator = fromCache ? " (cached)" : "";
+            lblStatus.Text = $"Analysis complete (depth {depth}){cacheIndicator}";
         }
 
         /// <summary>
