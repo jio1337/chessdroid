@@ -240,9 +240,18 @@ namespace ChessDroid.Services
         }
 
         /// <summary>
-        /// Determines if a piece can reach a target square (basic move geometry, no path checking)
+        /// Determines if a piece can reach a target square (basic move geometry, no path checking).
+        /// Overload without en passant parameter for backward compatibility with delegates.
         /// </summary>
         public static bool CanReachSquare(ChessBoard board, int fromRow, int fromCol, char piece, int toRow, int toCol)
+        {
+            return CanReachSquareWithEnPassant(board, fromRow, fromCol, piece, toRow, toCol, enPassantSquare: null);
+        }
+
+        /// <summary>
+        /// Determines if a piece can reach a target square (basic move geometry, no path checking)
+        /// </summary>
+        public static bool CanReachSquareWithEnPassant(ChessBoard board, int fromRow, int fromCol, char piece, int toRow, int toCol, string? enPassantSquare)
         {
             PieceType pt = PieceHelper.GetPieceType(piece);
             int dr = toRow - fromRow;
@@ -266,11 +275,21 @@ namespace ChessDroid.Services
                         if (destPiece != '.') return false;
                         return dr == direction || (dr == 2 * direction && ((isWhite && fromRow == 6) || (!isWhite && fromRow == 1)));
                     }
-                    // Diagonal move - must be a capture (enemy piece on destination)
-                    // Note: This doesn't handle en passant, but that's rare in PGN disambiguation
+                    // Diagonal move - must be a capture (enemy piece on destination) OR en passant
                     if (dr == direction && Math.Abs(df) == 1)
                     {
-                        if (destPiece == '.') return false; // Can't capture empty square
+                        // Check for en passant: destination is empty but matches en passant square
+                        if (destPiece == '.')
+                        {
+                            if (!string.IsNullOrEmpty(enPassantSquare) && enPassantSquare != "-" && enPassantSquare.Length >= 2)
+                            {
+                                int epCol = enPassantSquare[0] - 'a';
+                                int epRow = 7 - (enPassantSquare[1] - '1');
+                                if (toRow == epRow && toCol == epCol)
+                                    return true; // Valid en passant capture
+                            }
+                            return false; // Can't capture empty square (not en passant)
+                        }
                         bool destIsEnemy = char.IsUpper(destPiece) != isWhite;
                         return destIsEnemy;
                     }
@@ -289,9 +308,18 @@ namespace ChessDroid.Services
         }
 
         /// <summary>
-        /// Finds all pieces of the same type that can reach a destination square
+        /// Finds all pieces of the same type that can reach a destination square.
+        /// Overload without en passant parameter for backward compatibility with delegates.
         /// </summary>
         public static List<(int row, int col)> FindAllPiecesOfSameType(ChessBoard board, char pieceLower, bool isWhite, int destRank, int destFile)
+        {
+            return FindAllPiecesOfSameTypeWithEnPassant(board, pieceLower, isWhite, destRank, destFile, enPassantSquare: null);
+        }
+
+        /// <summary>
+        /// Finds all pieces of the same type that can reach a destination square
+        /// </summary>
+        public static List<(int row, int col)> FindAllPiecesOfSameTypeWithEnPassant(ChessBoard board, char pieceLower, bool isWhite, int destRank, int destFile, string? enPassantSquare)
         {
             var result = new List<(int, int)>();
             for (int r = 0; r < 8; r++)
@@ -303,7 +331,7 @@ namespace ChessDroid.Services
                     if (char.IsUpper(p) != isWhite) continue;
                     if (char.ToLower(p) != pieceLower) continue;
 
-                    if (CanReachSquare(board, r, f, p, destRank, destFile))
+                    if (CanReachSquareWithEnPassant(board, r, f, p, destRank, destFile, enPassantSquare))
                     {
                         result.Add((r, f));
                     }

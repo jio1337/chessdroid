@@ -56,6 +56,19 @@ namespace ChessDroid.Services
         }
 
         /// <summary>
+        /// Get the name of the currently loaded engine (derived from file name)
+        /// </summary>
+        public string EngineName
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(lastEnginePath))
+                    return "Unknown Engine";
+                return Path.GetFileNameWithoutExtension(lastEnginePath);
+            }
+        }
+
+        /// <summary>
         /// Check if engine process is alive and ready
         /// </summary>
         public bool IsEngineAlive()

@@ -117,6 +117,8 @@ namespace ChessDroid
             moveListBox.ForeColor = textColor;
 
             // PGN buttons
+            btnClassifyMoves.BackColor = buttonBg;
+            btnClassifyMoves.ForeColor = buttonFg;
             btnExportPgn.BackColor = buttonBg;
             btnExportPgn.ForeColor = buttonFg;
             btnImportPgn.BackColor = buttonBg;
@@ -512,6 +514,76 @@ namespace ChessDroid
             string fen = boardControl.GetFEN();
             Clipboard.SetText(fen);
             lblStatus.Text = "FEN copied to clipboard";
+        }
+
+        private void MoveListBox_DrawItem(object? sender, DrawItemEventArgs e)
+        {
+            if (e.Index < 0) return;
+
+            // Draw background
+            e.DrawBackground();
+
+            string text = moveListBox.Items[e.Index]?.ToString() ?? "";
+            bool isDark = config?.Theme == "Dark";
+
+            // Check if text contains a classification symbol
+            string moveText = text;
+            string symbol = "";
+            Color symbolColor = e.ForeColor;
+
+            // Extract symbol from the end of the text
+            if (text.EndsWith("!!"))
+            {
+                symbol = "!!";
+                moveText = text.Substring(0, text.Length - 2).TrimEnd();
+                symbolColor = Color.FromArgb(26, 179, 148); // Brilliant - Cyan/teal
+            }
+            else if (text.EndsWith("??"))
+            {
+                symbol = "??";
+                moveText = text.Substring(0, text.Length - 2).TrimEnd();
+                symbolColor = Color.FromArgb(202, 52, 49); // Blunder - Red
+            }
+            else if (text.EndsWith("?!"))
+            {
+                symbol = "?!";
+                moveText = text.Substring(0, text.Length - 2).TrimEnd();
+                symbolColor = Color.FromArgb(247, 199, 72); // Inaccuracy - Yellow
+            }
+            else if (text.EndsWith("?") && !text.EndsWith("??") && !text.EndsWith("?!"))
+            {
+                symbol = "?";
+                moveText = text.Substring(0, text.Length - 1).TrimEnd();
+                symbolColor = Color.FromArgb(232, 106, 51); // Mistake - Orange
+            }
+
+            // Determine text color based on selection and theme
+            Color textColor = (e.State & DrawItemState.Selected) == DrawItemState.Selected
+                ? (isDark ? Color.White : SystemColors.HighlightText)
+                : (isDark ? Color.White : Color.Black);
+
+            // Draw move text
+            using (var brush = new SolidBrush(textColor))
+            {
+                e.Graphics.DrawString(moveText, e.Font!, brush, e.Bounds.Left + 2, e.Bounds.Top + 1);
+            }
+
+            // Draw symbol in color if present
+            if (!string.IsNullOrEmpty(symbol))
+            {
+                // Measure move text width to position symbol
+                var moveSize = e.Graphics.MeasureString(moveText + " ", e.Font!);
+
+                using (var symbolBrush = new SolidBrush(symbolColor))
+                using (var boldFont = new Font(e.Font!.FontFamily, e.Font.Size, FontStyle.Bold))
+                {
+                    e.Graphics.DrawString(symbol, boldFont, symbolBrush,
+                        e.Bounds.Left + 2 + moveSize.Width - 4, e.Bounds.Top + 1);
+                }
+            }
+
+            // Draw focus rectangle if focused
+            e.DrawFocusRectangle();
         }
 
         private void MoveListBox_SelectedIndexChanged(object? sender, EventArgs e)
@@ -998,8 +1070,11 @@ namespace ChessDroid
                 _cachedDepth = depth;
             }
 
-            // Check cache first
-            if (_analysisCache.TryGetValue(cacheKey, out var cached) && cached.Depth >= depth)
+            // Check cache first - must have enough PVs (3 for analysis board)
+            int requiredPVs = 3;
+            if (_analysisCache.TryGetValue(cacheKey, out var cached) &&
+                cached.Depth >= depth &&
+                cached.PVs.Count >= requiredPVs)
             {
                 // Use cached result - instant display
                 DisplayAnalysisResult(fen, cached.BestMove, cached.Evaluation,
@@ -1660,6 +1735,7 @@ namespace ChessDroid
 
                 string[] fenParts = fen.Split(' ');
                 bool isWhiteToMove = fenParts.Length > 1 && fenParts[1] == "w";
+                string enPassantSquare = fenParts.Length > 3 ? fenParts[3] : "-";
 
                 // Handle castling
                 if (san == "O-O" || san == "0-0")
@@ -1742,7 +1818,7 @@ namespace ChessDroid
                     pieceChar = isWhiteToMove ? 'P' : 'p';
 
                 // Find all pieces of this type that can move to destination
-                var candidates = ChessRulesService.FindAllPiecesOfSameType(board, char.ToLower(pieceChar), isWhiteToMove, destRow, destCol);
+                var candidates = ChessRulesService.FindAllPiecesOfSameTypeWithEnPassant(board, char.ToLower(pieceChar), isWhiteToMove, destRow, destCol, enPassantSquare);
 
                 foreach (var (row, col) in candidates)
                 {
@@ -1756,7 +1832,7 @@ namespace ChessDroid
                         continue;
 
                     // Check if this piece can reach the destination
-                    if (ChessRulesService.CanReachSquare(board, row, col, pieceChar, destRow, destCol))
+                    if (ChessRulesService.CanReachSquareWithEnPassant(board, row, col, pieceChar, destRow, destCol, enPassantSquare))
                     {
                         string srcSquare = $"{fileChar}{rankChar}";
                         string uci = srcSquare + destSquare;
@@ -1776,5 +1852,339 @@ namespace ChessDroid
         }
 
         #endregion
+
+        #region Move Classification
+
+        // Store the current classification result
+        private MoveClassificationResult? _currentClassification;
+
+        private async void BtnClassifyMoves_Click(object? sender, EventArgs e)
+        {
+            var mainLine = moveTree.GetMainLine();
+            if (mainLine.Count == 0)
+            {
+                lblStatus.Text = "No moves to classify";
+                return;
+            }
+
+            if (engineService == null)
+            {
+                lblStatus.Text = "Engine not available";
+                return;
+            }
+
+            // Confirm with user
+            var result = MessageBox.Show(
+                $"This will analyze all {mainLine.Count} moves and add quality symbols.\n" +
+                $"This may take a while depending on engine depth ({config?.EngineDepth ?? 15}).\n\n" +
+                "Continue?",
+                "Classify Moves",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question);
+
+            if (result != DialogResult.Yes)
+                return;
+
+            await ClassifyMoves(mainLine);
+        }
+
+        private async Task ClassifyMoves(List<MoveNode> mainLine)
+        {
+            btnClassifyMoves.Enabled = false;
+            btnAnalyze.Enabled = false;
+
+            // Clear analysis cache to ensure fresh evaluations with correct perspective
+            _analysisCache.Clear();
+
+            var classification = new MoveClassificationResult
+            {
+                EngineName = engineService!.EngineName,
+                EngineDepth = config?.EngineDepth ?? 15
+            };
+
+            // Initialize classification counts
+            foreach (MoveQualityAnalyzer.MoveQuality q in Enum.GetValues(typeof(MoveQualityAnalyzer.MoveQuality)))
+            {
+                classification.WhiteCounts[q] = 0;
+                classification.BlackCounts[q] = 0;
+            }
+
+            int whiteMoves = 0;
+            int blackMoves = 0;
+
+            for (int i = 0; i < mainLine.Count; i++)
+            {
+                var node = mainLine[i];
+                lblStatus.Text = $"Classifying move {i + 1}/{mainLine.Count}: {node.SanMove}...";
+                Application.DoEvents();
+
+                try
+                {
+                    // Use ParentFEN for position before the move (more reliable than tracking)
+                    string beforeFen = !string.IsNullOrEmpty(node.ParentFEN)
+                        ? node.ParentFEN
+                        : (i > 0 ? mainLine[i - 1].FEN : moveTree.Root.FEN);
+
+                    // Analyze the position BEFORE the move to get the best move and eval
+                    string cacheKey = GetPositionKey(beforeFen);
+                    double? evalBeforeNullable = null;
+                    string bestMove;
+                    double evalBestMove;
+                    string rawBeforeEval = "";
+
+                    if (_analysisCache.TryGetValue(cacheKey, out var cached))
+                    {
+                        bestMove = cached.BestMove;
+                        rawBeforeEval = cached.Evaluation;
+                        evalBeforeNullable = ParseEvalNullable(cached.Evaluation);
+                        evalBestMove = evalBeforeNullable ?? 0;
+                    }
+                    else
+                    {
+                        // Run engine analysis
+                        var analysisResult = await engineService.GetBestMoveAsync(beforeFen, classification.EngineDepth, 1);
+                        bestMove = analysisResult.bestMove ?? "";
+                        rawBeforeEval = analysisResult.evaluation;
+                        evalBeforeNullable = ParseEvalNullable(analysisResult.evaluation);
+                        evalBestMove = evalBeforeNullable ?? 0;
+
+                        Debug.WriteLine($"  [Before] Raw eval: '{analysisResult.evaluation}' -> Parsed: {evalBeforeNullable?.ToString("F2") ?? "NULL"}");
+
+                        // Cache it
+                        _analysisCache[cacheKey] = new CachedAnalysis
+                        {
+                            BestMove = bestMove,
+                            Evaluation = analysisResult.evaluation,
+                            PVs = analysisResult.pvs ?? new List<string>(),
+                            Evaluations = analysisResult.evaluations ?? new List<string>(),
+                            WDL = analysisResult.wdl,
+                            Depth = classification.EngineDepth
+                        };
+                    }
+
+                    // Skip this move if we couldn't get a valid before evaluation
+                    if (!evalBeforeNullable.HasValue)
+                    {
+                        Debug.WriteLine($"  SKIPPING move {i + 1} - empty before evaluation from engine");
+                        continue;
+                    }
+
+                    double evalBefore = evalBeforeNullable.Value;
+
+                    // The played move's result is the evaluation AFTER the move
+                    string afterCacheKey = GetPositionKey(node.FEN);
+                    double? evalAfterNullable = null;
+                    string rawAfterEval = "";
+
+                    if (_analysisCache.TryGetValue(afterCacheKey, out var afterCached))
+                    {
+                        rawAfterEval = afterCached.Evaluation;
+                        evalAfterNullable = ParseEvalNullable(afterCached.Evaluation);
+                    }
+                    else
+                    {
+                        var afterResult = await engineService.GetBestMoveAsync(node.FEN, classification.EngineDepth, 1);
+                        rawAfterEval = afterResult.evaluation;
+                        evalAfterNullable = ParseEvalNullable(afterResult.evaluation);
+
+                        Debug.WriteLine($"  [After] Raw eval: '{afterResult.evaluation}' -> Parsed: {evalAfterNullable?.ToString("F2") ?? "NULL"}");
+
+                        _analysisCache[afterCacheKey] = new CachedAnalysis
+                        {
+                            BestMove = afterResult.bestMove ?? "",
+                            Evaluation = afterResult.evaluation,
+                            PVs = afterResult.pvs ?? new List<string>(),
+                            Evaluations = afterResult.evaluations ?? new List<string>(),
+                            WDL = afterResult.wdl,
+                            Depth = classification.EngineDepth
+                        };
+                    }
+
+                    // Skip this move if we couldn't get a valid evaluation
+                    if (!evalAfterNullable.HasValue)
+                    {
+                        Debug.WriteLine($"  SKIPPING move {i + 1} - empty evaluation from engine");
+                        continue;
+                    }
+
+                    double evalAfter = evalAfterNullable.Value;
+
+                    // Calculate centipawn loss (from the moving side's perspective)
+                    // All evaluations are in White's perspective (positive = good for White)
+                    // For White's move: cpLoss = evalBefore - evalAfter (losing advantage is bad)
+                    // For Black's move: cpLoss = evalAfter - evalBefore (opponent gaining advantage is bad)
+                    double cpLoss = node.IsWhiteMove
+                        ? (evalBefore - evalAfter)
+                        : (evalAfter - evalBefore);
+
+                    // Special handling for draw positions:
+                    // If evalAfter is ~0.00 (draw), the player is accepting a draw.
+                    // Cap the cpLoss at 1.5 pawns to avoid massive "blunders" for accepting draws.
+                    if (IsDraw(evalAfter) && cpLoss > 1.5)
+                    {
+                        Debug.WriteLine($"  Draw position detected - capping cpLoss from {cpLoss:F2} to 1.50");
+                        cpLoss = 1.5;
+                    }
+
+                    // Debug output for troubleshooting
+                    Debug.WriteLine($"Move {i + 1}: {node.SanMove} | evalBefore={evalBefore:F2} evalAfter={evalAfter:F2} cpLoss={cpLoss:F2} (raw) | White={node.IsWhiteMove}");
+
+                    // Clamp extreme values (cpLoss is in pawns, cap at 6 pawns = 600 centipawns)
+                    if (cpLoss < 0) cpLoss = 0; // Can't have negative cp loss
+                    if (cpLoss > 6) cpLoss = 6; // Cap extreme blunders at 6 pawns
+
+                    // Check if it was the best move
+                    bool isBestMove = node.UciMove == bestMove;
+
+                    // Classify the move
+                    // MoveQualityAnalyzer expects evals from the moving player's perspective
+                    // For White: pass as-is (White's perspective)
+                    // For Black: negate both to convert to Black's perspective
+                    double qualityEvalBefore = node.IsWhiteMove ? evalBefore * 100 : -evalBefore * 100;
+                    double qualityEvalAfter = node.IsWhiteMove ? evalAfter * 100 : -evalAfter * 100;
+
+                    var quality = MoveQualityAnalyzer.AnalyzeMoveQuality(
+                        evalBefore: qualityEvalBefore,
+                        evalAfter: qualityEvalAfter,
+                        isBestMove: isBestMove
+                    );
+
+                    // Store the result
+                    var moveResult = new MoveReviewResult
+                    {
+                        Node = node,
+                        PlayedMove = node.SanMove,
+                        BestMove = ConvertUciToSan(bestMove, beforeFen),
+                        EvalBefore = evalBefore,
+                        EvalAfter = evalAfter,
+                        EvalBestMove = evalBestMove,
+                        CentipawnLoss = cpLoss * 100, // Store in centipawns
+                        Quality = quality.Quality,
+                        Symbol = quality.Symbol,
+                        IsWhiteMove = node.IsWhiteMove
+                    };
+                    classification.MoveResults.Add(moveResult);
+
+                    // Update stats
+                    if (node.IsWhiteMove)
+                    {
+                        whiteMoves++;
+                        classification.WhiteCounts[quality.Quality]++;
+                    }
+                    else
+                    {
+                        blackMoves++;
+                        classification.BlackCounts[quality.Quality]++;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Error classifying move {i + 1}: {ex.Message}");
+                }
+            }
+
+            // Store final stats
+            classification.WhiteMoveCount = whiteMoves;
+            classification.BlackMoveCount = blackMoves;
+
+            _currentClassification = classification;
+
+            // Update the move list with classification symbols
+            UpdateMoveListWithClassification();
+
+            btnClassifyMoves.Enabled = true;
+            btnAnalyze.Enabled = true;
+            lblStatus.Text = $"Classification complete - {whiteMoves + blackMoves} moves analyzed";
+        }
+
+        /// <summary>
+        /// Parse evaluation string. Returns null if parsing fails or string is empty.
+        /// </summary>
+        private double? ParseEvalNullable(string evalStr)
+        {
+            if (string.IsNullOrEmpty(evalStr))
+                return null; // Empty = unknown, not 0!
+
+            // Handle mate scores
+            if (evalStr.Contains("Mate") || evalStr.StartsWith("M") || evalStr.StartsWith("+M") || evalStr.StartsWith("-M"))
+            {
+                string numPart = evalStr
+                    .Replace("Mate in", "")
+                    .Replace("M", "")
+                    .Replace("+", "")
+                    .Replace("-", "")
+                    .Trim();
+
+                if (int.TryParse(numPart, out int mateIn))
+                {
+                    double mateScore = Math.Max(10, 15 - mateIn * 0.5);
+                    bool isNegative = evalStr.Contains("-");
+                    return isNegative ? -mateScore : mateScore;
+                }
+                return evalStr.Contains("-") ? -12 : 12;
+            }
+
+            // Regular eval like "+1.25" or "-0.50" or "+-0.00" (draw)
+            evalStr = evalStr.Replace("+", "").Trim();
+
+            if (double.TryParse(evalStr, System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture, out double eval))
+            {
+                return eval;
+            }
+
+            if (double.TryParse(evalStr, out eval))
+            {
+                return eval;
+            }
+
+            return null;
+        }
+
+        private double ParseEval(string evalStr)
+        {
+            return ParseEvalNullable(evalStr) ?? 0;
+        }
+
+        /// <summary>
+        /// Check if an evaluation indicates a draw (0.00 or very close)
+        /// </summary>
+        private bool IsDraw(double eval)
+        {
+            return Math.Abs(eval) < 0.05;
+        }
+
+        private void UpdateMoveListWithClassification()
+        {
+            if (_currentClassification == null) return;
+
+            // Rebuild the move list items with classification symbols
+            moveListBox.BeginUpdate();
+            try
+            {
+                for (int i = 0; i < displayedNodes.Count && i < moveListBox.Items.Count; i++)
+                {
+                    var node = displayedNodes[i];
+                    var result = _currentClassification.MoveResults.FirstOrDefault(r => r.Node == node);
+
+                    if (result != null && !string.IsNullOrEmpty(result.Symbol))
+                    {
+                        // Update the item text to include the symbol
+                        string moveText = node.IsWhiteMove
+                            ? $"{node.MoveNumber}. {node.SanMove}"
+                            : $"{node.MoveNumber}...{node.SanMove}";
+
+                        moveListBox.Items[i] = $"{moveText} {result.Symbol}";
+                    }
+                }
+            }
+            finally
+            {
+                moveListBox.EndUpdate();
+            }
+        }
+
+        #endregion
     }
 }
+
