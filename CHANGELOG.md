@@ -7,6 +7,56 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.8.0] - 2026-01-30
+
+### Added
+- **Analysis Board** - Full-featured offline analysis board with interactive chess board
+  - Drag-and-drop piece movement with legal move validation
+  - Move tree with variations support for exploring alternative lines
+  - Click on moves to navigate through game history
+  - Flip board, new game, take back, and FEN load/copy functionality
+- **PGN Import/Export** - Standard chess notation support
+  - Import games from PGN files with header parsing
+  - Export games with move history and metadata
+  - Handles move numbers, comments, and variations
+- **Move Classification** - Chess.com-style game review
+  - Analyze entire games with accuracy percentages
+  - Move quality symbols (Brilliant !!, Best, Good, Inaccuracy ?!, Mistake ?, Blunder ??)
+  - Centipawn loss tracking per move
+  - Per-side statistics (White/Black accuracy breakdown)
+- **Evaluation Bar** - Visual representation of position evaluation
+  - Smooth transitions between evaluations
+  - Shows both centipawn and mate scores
+- **Engine Matches** - Watch engines play against each other
+  - Configurable time controls (depth, move time, total time + increment)
+  - Real-time clock display with active side highlighting
+  - Start/stop controls for match management
+- **Analysis Caching** - Instant navigation through analyzed positions
+  - Thread-safe ConcurrentDictionary for async operations
+  - Cached evaluations, best moves, PVs, and WDL data
+
+### Improved
+- **Theme Centralization** - All Analysis Board colors now use ThemeService
+  - Added 14+ new color properties to ColorScheme class
+  - Centralized move classification symbol colors (Brilliant, Blunder, Inaccuracy, Mistake)
+  - Reduced ~50 hardcoded RGB values to theme-based lookups
+- **Regex Performance** - PGN parsing uses compiled regex patterns
+  - 6 static compiled patterns for comments, variations, NAGs, continuations, move numbers
+  - Faster parsing for large PGN files
+- **Code Quality** - Various improvements for maintainability
+  - Modern C# string slicing syntax (text[..^2] instead of Substring)
+  - Better exception handling in UCI-to-SAN conversion
+  - Removed dead code and unused variables
+
+### Technical
+- Added `MoveTree.cs` and `MoveNode.cs` for variation support
+- Added `MoveQualityAnalyzer.cs` for centipawn loss classification
+- Added `GameReviewResult.cs` and `MoveReviewResult.cs` models
+- Extended `ThemeService.cs` with Analysis Board color properties
+- Extended `AnalysisBoardForm.cs` with caching, variations, and PGN support
+
+---
+
 ## [2.7.0] - 2026-01-26
 
 ### Added

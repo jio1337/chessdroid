@@ -3,7 +3,7 @@
 [![.NET](https://img.shields.io/badge/.NET-8.0-blue.svg)](https://dotnet.microsoft.com/download/dotnet/8.0)
 [![Platform](https://img.shields.io/badge/platform-Windows-lightgrey.svg)](https://www.microsoft.com/windows)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-2.7.0-brightgreen.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-2.8.0-brightgreen.svg)](CHANGELOG.md)
 
 **Offline chess analysis & training for Windows**
 
@@ -22,6 +22,15 @@ chessdroid is a desktop application built for focused chess study. Analyze posit
 - **Threat Detection** - Shows NEW threats created by each move (pins, forks, attacks)
 - **Defense Detection** - Shows defensive aspects of moves (protecting pieces, blocking attacks)
 - **Move Quality Colors** - 6 levels from Brilliant (!!) to Blunder (??) with color coding
+
+### Analysis Board (v2.8.0)
+- **Interactive Chess Board** - Full-featured offline analysis board with drag-and-drop moves
+- **Move Tree with Variations** - Navigate through game history with full variation support
+- **PGN Import/Export** - Import games from PGN files, export your analysis
+- **Move Classification** - Review games with accuracy percentages and move quality symbols
+- **Evaluation Bar** - Visual representation of position evaluation
+- **Engine Matches** - Watch engines play against each other with configurable time controls
+- **Analysis Caching** - Instant navigation through cached positions
 
 ### Play Style & Analysis (v2.7.0)
 - **Play Style Recommendations** - Style-based move suggestions (Very Solid → Very Aggressive)

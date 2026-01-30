@@ -6,7 +6,7 @@ ChessDroid is an advanced chess analysis tool that combines tactical pattern rec
 
 ---
 
-## System Architecture (v2.5.1)
+## System Architecture (v2.8.0)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -1145,7 +1145,19 @@ public static string GetMyEvaluation(double eval, ...)
 - **"Only Winning Move" Detection:** Highlights critical moves where alternatives lose advantage
 - **ABK Opening Book Support:** Arena Chess GUI book format integration
 
-**v2.5.1** - SEE, Explanations, and Redundancy Fixes (Current)
+**v2.8.0** - Analysis Board & Move Classification (Current)
+- **Analysis Board (AnalysisBoardForm.cs):** Full-featured offline analysis board
+  - Interactive chess board with drag-and-drop moves
+  - Move tree with variations (MoveTree.cs, MoveNode.cs)
+  - PGN import/export with compiled regex parsing
+  - Move classification with accuracy percentages
+  - Evaluation bar with smooth transitions
+  - Engine matches with configurable time controls
+  - Analysis caching with ConcurrentDictionary
+- **ThemeService Extensions:** Added 14+ Analysis Board color properties to ColorScheme
+- **Code Quality:** Thread-safe caching, compiled regex, centralized theme colors
+
+**v2.5.1** - SEE, Explanations, and Redundancy Fixes
 - **SEE Explanation Bug Fix:** Fixed incorrect values when pieces become vulnerable after move
   - Added `GetHangingPieceValueAfterMove()` to detect exposed pieces
   - Checks if cheapest attacker < piece value (vulnerable even if defended)
@@ -1168,5 +1180,5 @@ https://github.com/jio1337/chessdroid/issues
 
 ---
 
-**Last Updated:** 2026-01-25
-**Document Version:** 2.5.1 (Chess.com-Style Classification)
+**Last Updated:** 2026-01-30
+**Document Version:** 2.8.0 (Analysis Board & Move Classification)

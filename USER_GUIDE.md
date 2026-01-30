@@ -1,4 +1,4 @@
-## ChessDroid v2.7.0 - User Guide
+## ChessDroid v2.8.0 - User Guide
 
 ### Welcome to ChessDroid!
 
@@ -562,7 +562,17 @@ ChessDroid supports global hotkeys (work even when window is minimized):
 
 ## Version History
 
-**v2.7.0** - Play Style Recommendations (Current)
+**v2.8.0** - Analysis Board & Move Classification (Current)
+- Full-featured Analysis Board with interactive chess board
+- Move tree with variations support for exploring alternative lines
+- PGN import/export functionality
+- Move classification with game review and accuracy percentages
+- Evaluation bar for visual position assessment
+- Engine matches with configurable time controls
+- Analysis caching for instant navigation
+- Code quality improvements (thread-safe caching, compiled regex)
+
+**v2.7.0** - Play Style Recommendations
 - Play Style slider with style-based move recommendations
 - Shows "Recommended" section when style differs from engine choice
 - Settings UI reorganization (Play Style section)
@@ -646,5 +656,5 @@ Free and open-source forever!
 
 **Enjoy analyzing with ChessDroid!**
 
-*Last Updated: 2026-01-26*
-*Version: 2.7.0 (Play Style Recommendations)*
+*Last Updated: 2026-01-30*
+*Version: 2.8.0 (Analysis Board & Move Classification)*
