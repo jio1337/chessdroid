@@ -1,4 +1,6 @@
+using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Text.RegularExpressions;
 using ChessDroid.Controls;
 using ChessDroid.Models;
 using ChessDroid.Services;
@@ -12,6 +14,14 @@ namespace ChessDroid
     /// </summary>
     public partial class AnalysisBoardForm : Form
     {
+        // Cached regex patterns for PGN parsing (compiled for performance)
+        private static readonly Regex PgnCommentRegex = new(@"\{[^}]*\}", RegexOptions.Compiled);
+        private static readonly Regex PgnVariationRegex = new(@"\([^)]*\)", RegexOptions.Compiled);
+        private static readonly Regex PgnNagRegex = new(@"\$\d+", RegexOptions.Compiled);
+        private static readonly Regex PgnContinuationRegex = new(@"[0-9]+\.\.\.", RegexOptions.Compiled);
+        private static readonly Regex PgnMoveNumberRegex = new(@"^\d+\.?$", RegexOptions.Compiled);
+        private static readonly Regex PgnAttachedMoveRegex = new(@"^\d+\.(.+)$", RegexOptions.Compiled);
+
         /// <summary>
         /// Cached engine analysis result for a position.
         /// </summary>
@@ -26,7 +36,8 @@ namespace ChessDroid
         }
 
         // Analysis cache - keyed by FEN (position only, not full FEN with move counters)
-        private Dictionary<string, CachedAnalysis> _analysisCache = new();
+        // Thread-safe for concurrent async access
+        private ConcurrentDictionary<string, CachedAnalysis> _analysisCache = new();
         private int _cachedDepth = 0; // Track the depth used for cached analyses
 
         // Auto-analysis
@@ -69,103 +80,78 @@ namespace ChessDroid
         private void ApplyTheme()
         {
             bool isDarkMode = config?.Theme == "Dark";
-            Color panelColor = isDarkMode ? Color.FromArgb(40, 40, 48) : Color.White;
-            Color textColor = isDarkMode ? Color.FromArgb(220, 220, 220) : Color.Black;
+            var scheme = ThemeService.GetColorScheme(isDarkMode);
 
             // Form colors
-            this.BackColor = isDarkMode ? Color.FromArgb(30, 30, 35) : Color.FromArgb(245, 245, 245);
+            this.BackColor = scheme.FormBackColor;
 
             // Labels
-            lblTurn.ForeColor = textColor;
-            lblFen.ForeColor = textColor;
-            lblStatus.ForeColor = isDarkMode ? Color.Gray : Color.DimGray;
-            lblMoves.ForeColor = textColor;
-            lblAnalysis.ForeColor = textColor;
+            lblTurn.ForeColor = scheme.TextColor;
+            lblFen.ForeColor = scheme.TextColor;
+            lblStatus.ForeColor = scheme.StatusColor;
+            lblMoves.ForeColor = scheme.TextColor;
+            lblAnalysis.ForeColor = scheme.TextColor;
 
-            // Buttons
-            Color buttonBg = isDarkMode ? Color.FromArgb(50, 50, 58) : Color.FromArgb(230, 230, 230);
-            Color buttonFg = isDarkMode ? Color.FromArgb(200, 200, 200) : Color.Black;
+            // Standard buttons
+            foreach (var btn in new[] { btnNewGame, btnFlipBoard, btnTakeBack, btnPrevMove,
+                                        btnNextMove, btnLoadFen, btnCopyFen, btnClassifyMoves,
+                                        btnExportPgn, btnImportPgn })
+            {
+                btn.BackColor = scheme.ButtonBackColor;
+                btn.ForeColor = scheme.ButtonForeColor;
+            }
 
-            btnNewGame.BackColor = buttonBg;
-            btnNewGame.ForeColor = buttonFg;
-            btnFlipBoard.BackColor = buttonBg;
-            btnFlipBoard.ForeColor = buttonFg;
-            btnTakeBack.BackColor = buttonBg;
-            btnTakeBack.ForeColor = buttonFg;
-            btnPrevMove.BackColor = buttonBg;
-            btnPrevMove.ForeColor = buttonFg;
-            btnNextMove.BackColor = buttonBg;
-            btnNextMove.ForeColor = buttonFg;
-            btnLoadFen.BackColor = buttonBg;
-            btnLoadFen.ForeColor = buttonFg;
-            btnCopyFen.BackColor = buttonBg;
-            btnCopyFen.ForeColor = buttonFg;
-
-            // Analyze button special color
-            btnAnalyze.BackColor = isDarkMode ? Color.FromArgb(60, 90, 140) : Color.FromArgb(70, 130, 180);
+            // Analyze button (special accent color)
+            btnAnalyze.BackColor = scheme.AnalyzeButtonBackColor;
             btnAnalyze.ForeColor = Color.White;
 
             // Checkbox
-            chkAutoAnalyze.ForeColor = textColor;
+            chkAutoAnalyze.ForeColor = scheme.TextColor;
 
-            // TextBox
-            txtFen.BackColor = panelColor;
-            txtFen.ForeColor = textColor;
-
-            // ListBox
-            moveListBox.BackColor = panelColor;
-            moveListBox.ForeColor = textColor;
-
-            // PGN buttons
-            btnClassifyMoves.BackColor = buttonBg;
-            btnClassifyMoves.ForeColor = buttonFg;
-            btnExportPgn.BackColor = buttonBg;
-            btnExportPgn.ForeColor = buttonFg;
-            btnImportPgn.BackColor = buttonBg;
-            btnImportPgn.ForeColor = buttonFg;
+            // TextBox and ListBox
+            txtFen.BackColor = scheme.PanelColor;
+            txtFen.ForeColor = scheme.TextColor;
+            moveListBox.BackColor = scheme.PanelColor;
+            moveListBox.ForeColor = scheme.TextColor;
 
             // RichTextBox
-            analysisOutput.BackColor = panelColor;
-            analysisOutput.ForeColor = textColor;
+            analysisOutput.BackColor = scheme.PanelColor;
+            analysisOutput.ForeColor = scheme.TextColor;
 
             // Engine Match controls
-            grpEngineMatch.ForeColor = textColor;
-            grpEngineMatch.BackColor = isDarkMode ? Color.FromArgb(35, 35, 42) : Color.White;
+            grpEngineMatch.ForeColor = scheme.TextColor;
+            grpEngineMatch.BackColor = scheme.GroupBoxBackColor;
 
-            lblWhiteEngine.ForeColor = textColor;
-            lblBlackEngine.ForeColor = textColor;
-            lblTimeControl.ForeColor = textColor;
+            foreach (var lbl in new[] { lblWhiteEngine, lblBlackEngine, lblTimeControl,
+                                        lblDepth, lblMoveTime, lblTotalTime, lblIncrement })
+            {
+                lbl.ForeColor = scheme.TextColor;
+            }
 
-            cmbWhiteEngine.BackColor = panelColor;
-            cmbWhiteEngine.ForeColor = textColor;
-            cmbBlackEngine.BackColor = panelColor;
-            cmbBlackEngine.ForeColor = textColor;
-            cmbTimeControlType.BackColor = panelColor;
-            cmbTimeControlType.ForeColor = textColor;
+            foreach (var cmb in new[] { cmbWhiteEngine, cmbBlackEngine, cmbTimeControlType })
+            {
+                cmb.BackColor = scheme.PanelColor;
+                cmb.ForeColor = scheme.TextColor;
+            }
 
-            pnlTimeParams.BackColor = grpEngineMatch.BackColor;
-            lblDepth.ForeColor = textColor;
-            lblMoveTime.ForeColor = textColor;
-            lblTotalTime.ForeColor = textColor;
-            lblIncrement.ForeColor = textColor;
+            pnlTimeParams.BackColor = scheme.GroupBoxBackColor;
 
-            numDepth.BackColor = panelColor;
-            numDepth.ForeColor = textColor;
-            numMoveTime.BackColor = panelColor;
-            numMoveTime.ForeColor = textColor;
-            numTotalTime.BackColor = panelColor;
-            numTotalTime.ForeColor = textColor;
-            numIncrement.BackColor = panelColor;
-            numIncrement.ForeColor = textColor;
+            foreach (var num in new[] { numDepth, numMoveTime, numTotalTime, numIncrement })
+            {
+                num.BackColor = scheme.PanelColor;
+                num.ForeColor = scheme.TextColor;
+            }
 
-            lblWhiteClock.ForeColor = isDarkMode ? Color.White : Color.Black;
-            lblWhiteClock.BackColor = isDarkMode ? Color.FromArgb(50, 50, 58) : Color.FromArgb(240, 240, 240);
-            lblBlackClock.ForeColor = isDarkMode ? Color.LightGray : Color.DimGray;
-            lblBlackClock.BackColor = isDarkMode ? Color.FromArgb(50, 50, 58) : Color.FromArgb(240, 240, 240);
+            // Clock labels
+            lblWhiteClock.ForeColor = scheme.WhiteClockForeColor;
+            lblWhiteClock.BackColor = scheme.ClockBackColor;
+            lblBlackClock.ForeColor = scheme.BlackClockForeColor;
+            lblBlackClock.BackColor = scheme.ClockBackColor;
 
-            btnStartMatch.BackColor = isDarkMode ? Color.FromArgb(40, 100, 60) : Color.FromArgb(60, 140, 80);
+            // Match control buttons
+            btnStartMatch.BackColor = scheme.StartMatchButtonBackColor;
             btnStartMatch.ForeColor = Color.White;
-            btnStopMatch.BackColor = isDarkMode ? Color.FromArgb(140, 50, 50) : Color.FromArgb(180, 60, 60);
+            btnStopMatch.BackColor = scheme.StopMatchButtonBackColor;
             btnStopMatch.ForeColor = Color.White;
 
             // Update FEN display
@@ -531,30 +517,30 @@ namespace ChessDroid
             string symbol = "";
             Color symbolColor = e.ForeColor;
 
-            // Extract symbol from the end of the text
+            // Extract symbol from the end of the text (using centralized theme colors)
             if (text.EndsWith("!!"))
             {
                 symbol = "!!";
-                moveText = text.Substring(0, text.Length - 2).TrimEnd();
-                symbolColor = Color.FromArgb(26, 179, 148); // Brilliant - Cyan/teal
+                moveText = text[..^2].TrimEnd();
+                symbolColor = ColorScheme.BrilliantColor;
             }
             else if (text.EndsWith("??"))
             {
                 symbol = "??";
-                moveText = text.Substring(0, text.Length - 2).TrimEnd();
-                symbolColor = Color.FromArgb(202, 52, 49); // Blunder - Red
+                moveText = text[..^2].TrimEnd();
+                symbolColor = ColorScheme.BlunderColor;
             }
             else if (text.EndsWith("?!"))
             {
                 symbol = "?!";
-                moveText = text.Substring(0, text.Length - 2).TrimEnd();
-                symbolColor = Color.FromArgb(247, 199, 72); // Inaccuracy - Yellow
+                moveText = text[..^2].TrimEnd();
+                symbolColor = ColorScheme.InaccuracyColor;
             }
             else if (text.EndsWith("?") && !text.EndsWith("??") && !text.EndsWith("?!"))
             {
                 symbol = "?";
-                moveText = text.Substring(0, text.Length - 1).TrimEnd();
-                symbolColor = Color.FromArgb(232, 106, 51); // Mistake - Orange
+                moveText = text[..^1].TrimEnd();
+                symbolColor = ColorScheme.MistakeColor;
             }
 
             // Determine text color based on selection and theme
@@ -991,17 +977,12 @@ namespace ChessDroid
             lblWhiteClock.Text = $"W: {FormatClock(whiteMs)}";
             lblBlackClock.Text = $"B: {FormatClock(blackMs)}";
 
-            bool isDark = config?.Theme == "Dark";
-
-            // Highlight active side
+            // Highlight active side using theme colors
             if (matchRunning)
             {
-                lblWhiteClock.BackColor = whiteToMove
-                    ? (isDark ? Color.FromArgb(40, 80, 50) : Color.FromArgb(200, 240, 200))
-                    : (isDark ? Color.FromArgb(50, 50, 58) : Color.FromArgb(240, 240, 240));
-                lblBlackClock.BackColor = !whiteToMove
-                    ? (isDark ? Color.FromArgb(40, 80, 50) : Color.FromArgb(200, 240, 200))
-                    : (isDark ? Color.FromArgb(50, 50, 58) : Color.FromArgb(240, 240, 240));
+                var scheme = ThemeService.GetColorScheme(config?.Theme == "Dark");
+                lblWhiteClock.BackColor = whiteToMove ? scheme.ClockActiveBackColor : scheme.ClockBackColor;
+                lblBlackClock.BackColor = !whiteToMove ? scheme.ClockActiveBackColor : scheme.ClockBackColor;
             }
         }
 
@@ -1287,10 +1268,10 @@ namespace ChessDroid
                 moveListBox.Items.Add(moveText);
                 displayedNodes.Add(child);
 
-                // Process this node's children (continue main line)
+                // Process this node's children (continue main line at same indent)
                 if (child.Children.Count > 0)
                 {
-                    // First child continues the line
+                    // First child continues the main line
                     BuildMoveListRecursive(child, indentLevel);
                 }
 
@@ -1358,13 +1339,6 @@ namespace ChessDroid
 
                 current = next;
             }
-
-            // Close the variation parenthesis
-            if (indentLevel > 0)
-            {
-                string indent = new string(' ', (indentLevel - 1) * 2);
-                // Just visual indication - we don't add a node for closing paren
-            }
         }
 
         private void UpdateFenDisplay()
@@ -1407,8 +1381,9 @@ namespace ChessDroid
                     ChessRulesService.CanReachSquare,
                     ChessRulesService.FindAllPiecesOfSameType);
             }
-            catch
+            catch (Exception ex)
             {
+                Debug.WriteLine($"ConvertUciToSan failed for '{uciMove}': {ex.Message}");
                 return uciMove; // Fallback to UCI notation
             }
         }
@@ -1640,16 +1615,18 @@ namespace ChessDroid
                 // Extract move text (everything after headers)
                 string moveText = string.Join(" ", lines.Skip(moveTextStart));
 
-                // Clean up the move text
-                moveText = System.Text.RegularExpressions.Regex.Replace(moveText, @"\{[^}]*\}", " "); // Remove comments
-                moveText = System.Text.RegularExpressions.Regex.Replace(moveText, @"\([^)]*\)", " "); // Remove variations (simple)
-                moveText = System.Text.RegularExpressions.Regex.Replace(moveText, @"\$\d+", " "); // Remove NAGs
-                moveText = System.Text.RegularExpressions.Regex.Replace(moveText, @"[0-9]+\.\.\.", " "); // Remove continuation dots
+                // Clean up the move text using cached regex patterns
+                moveText = PgnCommentRegex.Replace(moveText, " ");      // Remove comments
+                moveText = PgnVariationRegex.Replace(moveText, " ");    // Remove variations (simple)
+                moveText = PgnNagRegex.Replace(moveText, " ");          // Remove NAGs
+                moveText = PgnContinuationRegex.Replace(moveText, " "); // Remove continuation dots
                 moveText = moveText.Replace("\r", " ").Replace("\n", " ");
 
                 // Parse moves
                 var tokens = moveText.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
                 string currentFen = startFen;
+                int skippedMoves = 0;
+                var skippedMovesList = new List<string>();
 
                 // Set navigating flag to prevent BoardControl_MoveMade from double-adding moves
                 isNavigating = true;
@@ -1661,13 +1638,13 @@ namespace ChessDroid
                         continue;
 
                     // Skip standalone move numbers like "1." or "1"
-                    if (System.Text.RegularExpressions.Regex.IsMatch(token, @"^\d+\.?$"))
+                    if (PgnMoveNumberRegex.IsMatch(token))
                         continue;
 
                     string san = token.Trim();
 
                     // Handle move numbers attached to moves: "1.e4" -> "e4", "12.Nf3" -> "Nf3"
-                    var attachedMoveMatch = System.Text.RegularExpressions.Regex.Match(san, @"^\d+\.(.+)$");
+                    var attachedMoveMatch = PgnAttachedMoveRegex.Match(san);
                     if (attachedMoveMatch.Success)
                     {
                         san = attachedMoveMatch.Groups[1].Value;
@@ -1681,6 +1658,8 @@ namespace ChessDroid
                     if (uciMove == null)
                     {
                         Debug.WriteLine($"Failed to parse move: {san} in position {currentFen}");
+                        skippedMoves++;
+                        if (skippedMovesList.Count < 5) skippedMovesList.Add(san);
                         continue;
                     }
 
@@ -1689,6 +1668,8 @@ namespace ChessDroid
                     if (!boardControl.MakeMove(uciMove))
                     {
                         Debug.WriteLine($"Failed to apply move: {uciMove}");
+                        skippedMoves++;
+                        if (skippedMovesList.Count < 5) skippedMovesList.Add(san);
                         continue;
                     }
                     string newFen = boardControl.GetFEN();
@@ -1708,7 +1689,17 @@ namespace ChessDroid
                 UpdateTurnLabel();
 
                 int moveCount = moveTree.GetMainLine().Count;
-                lblStatus.Text = $"Imported {moveCount} moves from PGN";
+                if (skippedMoves > 0)
+                {
+                    string skippedInfo = skippedMovesList.Count < skippedMoves
+                        ? $"{string.Join(", ", skippedMovesList)}..."
+                        : string.Join(", ", skippedMovesList);
+                    lblStatus.Text = $"Imported {moveCount} moves ({skippedMoves} skipped: {skippedInfo})";
+                }
+                else
+                {
+                    lblStatus.Text = $"Imported {moveCount} moves from PGN";
+                }
 
                 // Navigate to start
                 moveTree.GoToStart();
