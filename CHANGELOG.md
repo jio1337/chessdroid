@@ -19,11 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Import games from PGN files with header parsing
   - Export games with move history and metadata
   - Handles move numbers, comments, and variations
-- **Move Classification** - Chess.com-style game review
-  - Analyze entire games with accuracy percentages
-  - Move quality symbols (Brilliant !!, Best, Good, Inaccuracy ?!, Mistake ?, Blunder ??)
-  - Centipawn loss tracking per move
-  - Per-side statistics (White/Black accuracy breakdown)
+- **Move Classification** - Chess.com-inspired
+  - Colored move quality symbols (Brilliant !!, Inaccuracy ?!, Mistake ?, Blunder ??) 
 - **Evaluation Bar** - Visual representation of position evaluation
   - Smooth transitions between evaluations
   - Shows both centipawn and mate scores
