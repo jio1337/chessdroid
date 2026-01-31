@@ -229,6 +229,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [Stockfish](https://stockfishchess.org/) - World's strongest chess engine, inspiration for move evaluation features
 - [Ethereal](https://github.com/AndyGrant/Ethereal) - High-performance chess engine, inspiration for positional evaluation
 - [Lc0](https://lczero.org/) - Leela Chess Zero, inspiration for WDL display and aggressiveness features
+- [Chess.com](https://www.chess.com/) - Inspiration for move classification system and quality symbols
 - [Claude](https://claude.ai/) - AI assistant by Anthropic, instrumental in developing chessdroid's architecture, analysis features, and codebase
 
 ## Disclaimer
