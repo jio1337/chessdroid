@@ -1887,6 +1887,9 @@ namespace ChessDroid
             // Clear analysis cache to ensure fresh evaluations with correct perspective
             _analysisCache.Clear();
 
+            // Set cached depth so navigation after classification uses the cache
+            _cachedDepth = config?.EngineDepth ?? 15;
+
             var classification = new MoveClassificationResult
             {
                 EngineName = engineService!.EngineName,
