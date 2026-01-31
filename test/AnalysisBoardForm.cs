@@ -1932,8 +1932,8 @@ namespace ChessDroid
                     }
                     else
                     {
-                        // Run engine analysis
-                        var analysisResult = await engineService.GetBestMoveAsync(beforeFen, classification.EngineDepth, 1);
+                        // Run engine analysis with 3 PVs so cache is valid for position navigation
+                        var analysisResult = await engineService.GetBestMoveAsync(beforeFen, classification.EngineDepth, 3);
                         bestMove = analysisResult.bestMove ?? "";
                         rawBeforeEval = analysisResult.evaluation;
                         evalBeforeNullable = ParseEvalNullable(analysisResult.evaluation);
@@ -1974,7 +1974,8 @@ namespace ChessDroid
                     }
                     else
                     {
-                        var afterResult = await engineService.GetBestMoveAsync(node.FEN, classification.EngineDepth, 1);
+                        // Use 3 PVs so cache is valid for position navigation
+                        var afterResult = await engineService.GetBestMoveAsync(node.FEN, classification.EngineDepth, 3);
                         rawAfterEval = afterResult.evaluation;
                         evalAfterNullable = ParseEvalNullable(afterResult.evaluation);
 
