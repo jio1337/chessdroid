@@ -86,50 +86,11 @@ namespace ChessDroid.Models
         }
 
         /// <summary>
-        /// Get all variations (children except the first one)
-        /// </summary>
-        public List<MoveNode> GetVariations()
-        {
-            return Children.Skip(1).ToList();
-        }
-
-        /// <summary>
         /// Navigate to next move in main line
         /// </summary>
         public MoveNode? Next()
         {
             return GetMainLine();
-        }
-
-        /// <summary>
-        /// Navigate to previous move
-        /// </summary>
-        public MoveNode? Previous()
-        {
-            return Parent;
-        }
-
-        /// <summary>
-        /// Get the path from root to this node
-        /// </summary>
-        public List<MoveNode> GetPathFromRoot()
-        {
-            var path = new List<MoveNode>();
-            var node = this;
-            while (node != null && !string.IsNullOrEmpty(node.UciMove))
-            {
-                path.Insert(0, node);
-                node = node.Parent;
-            }
-            return path;
-        }
-
-        /// <summary>
-        /// Check if this node has variations (siblings with different moves)
-        /// </summary>
-        public bool HasSiblingVariations()
-        {
-            return Parent != null && Parent.Children.Count > 1;
         }
 
         /// <summary>

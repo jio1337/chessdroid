@@ -53,28 +53,43 @@ namespace ChessDroid
         private static readonly string ConfigFilePath = Path.Combine(
             Application.StartupPath, "config.json");
 
+        // Thread synchronization for file I/O operations
+        private static readonly object _fileLock = new object();
+
         public static AppConfig Load()
         {
-            try
+            lock (_fileLock)
             {
-                if (File.Exists(ConfigFilePath))
+                try
                 {
-                    string json = File.ReadAllText(ConfigFilePath);
-                    return JsonSerializer.Deserialize<AppConfig>(json) ?? new AppConfig();
+                    if (File.Exists(ConfigFilePath))
+                    {
+                        string json = File.ReadAllText(ConfigFilePath);
+                        return JsonSerializer.Deserialize<AppConfig>(json) ?? new AppConfig();
+                    }
                 }
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Error loading config: {ex.Message}");
-            }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Error loading config: {ex.Message}");
+                }
 
-            // Create default config if doesn't exist
-            var config = new AppConfig();
-            config.Save();
-            return config;
+                // Create default config if doesn't exist
+                var config = new AppConfig();
+                config.SaveInternal(); // Use internal method since we already hold the lock
+                return config;
+            }
         }
 
         public void Save()
+        {
+            lock (_fileLock)
+            {
+                SaveInternal();
+            }
+        }
+
+        // Internal save method that doesn't acquire lock (for use within already-locked context)
+        private void SaveInternal()
         {
             try
             {
@@ -94,22 +109,25 @@ namespace ChessDroid
         /// </summary>
         public void Reload()
         {
-            try
+            lock (_fileLock)
             {
-                if (File.Exists(ConfigFilePath))
+                try
                 {
-                    string json = File.ReadAllText(ConfigFilePath);
-                    var loaded = JsonSerializer.Deserialize<AppConfig>(json);
-                    if (loaded != null)
+                    if (File.Exists(ConfigFilePath))
                     {
-                        CopyFrom(loaded);
-                        System.Diagnostics.Debug.WriteLine($"[Config] Reloaded - Aggressiveness: {Aggressiveness}");
+                        string json = File.ReadAllText(ConfigFilePath);
+                        var loaded = JsonSerializer.Deserialize<AppConfig>(json);
+                        if (loaded != null)
+                        {
+                            CopyFrom(loaded);
+                            System.Diagnostics.Debug.WriteLine($"[Config] Reloaded - Aggressiveness: {Aggressiveness}");
+                        }
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Error reloading config: {ex.Message}");
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Error reloading config: {ex.Message}");
+                }
             }
         }
 
@@ -154,38 +172,22 @@ namespace ChessDroid
             ShowBookMoves = other.ShowBookMoves;
         }
 
-        public string GetTemplatesPath()
+        public string GetTemplatesPath() => ResolveFolderPath(TemplatesFolder);
+
+        public string GetEnginesPath() => ResolveFolderPath(EnginesFolder);
+
+        /// <summary>
+        /// Resolves a folder path by trying multiple base locations.
+        /// Returns the first existing path, or the default location if none exist.
+        /// </summary>
+        private static string ResolveFolderPath(string folderName)
         {
-            // Try multiple locations
             string[] possiblePaths = new[]
             {
-                Path.Combine(Application.StartupPath, TemplatesFolder),
-                Path.Combine(AppContext.BaseDirectory, TemplatesFolder),
-                Path.Combine(Directory.GetCurrentDirectory(), TemplatesFolder),
-                Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) ?? "", TemplatesFolder)
-            };
-
-            foreach (var path in possiblePaths)
-            {
-                if (Directory.Exists(path))
-                {
-                    return path;
-                }
-            }
-
-            // If none found, return the first option (will fail later with better error message)
-            return possiblePaths[0];
-        }
-
-        public string GetEnginesPath()
-        {
-            // Try multiple locations
-            string[] possiblePaths = new[]
-            {
-                Path.Combine(Application.StartupPath, EnginesFolder),
-                Path.Combine(AppContext.BaseDirectory, EnginesFolder),
-                Path.Combine(Directory.GetCurrentDirectory(), EnginesFolder),
-                Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) ?? "", EnginesFolder)
+                Path.Combine(Application.StartupPath, folderName),
+                Path.Combine(AppContext.BaseDirectory, folderName),
+                Path.Combine(Directory.GetCurrentDirectory(), folderName),
+                Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) ?? "", folderName)
             };
 
             foreach (var path in possiblePaths)

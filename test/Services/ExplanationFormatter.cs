@@ -61,13 +61,9 @@ namespace ChessDroid.Services
                     return SimplifyForIntermediate(fullExplanation);
 
                 case ComplexityLevel.Advanced:
-                    return fullExplanation; // Keep all details
-
                 case ComplexityLevel.Master:
-                    return EnhanceForMaster(fullExplanation);
-
                 default:
-                    return fullExplanation;
+                    return fullExplanation; // Keep all details for Advanced/Master
             }
         }
 
@@ -96,13 +92,6 @@ namespace ChessDroid.Services
             return explanation
                 .Replace("opposite-colored bishops (drawish)", "opposite-colored bishops")
                 .Replace("zugzwang-prone position", "zugzwang territory");
-        }
-
-        private static string EnhanceForMaster(string explanation)
-        {
-            // Could add more technical details if available
-            // For now, just return as-is
-            return explanation;
         }
 
         // =============================

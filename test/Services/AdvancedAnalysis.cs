@@ -129,56 +129,12 @@ namespace ChessDroid.Services
         }
 
         // =============================
-        // LOW-PLY HISTORY (Opening-specific patterns)
-        // Inspired by Stockfish's low-ply history tracking
-        // Tracks move success in early game (first 20 moves)
+        // OPENING MOVE PRINCIPLES
+        // Basic opening principles for early moves
         // =============================
 
-        private static Dictionary<string, int> openingMoveHistory = new Dictionary<string, int>();
-        private static int totalOpeningMoves = 0;
-
         /// <summary>
-        /// Track opening move (first 20 plies)
-        /// </summary>
-        public static void RecordOpeningMove(string move, int ply, bool wasGood)
-        {
-            if (ply > 20) return; // Only track opening moves
-
-            string key = $"{move}_ply{ply}";
-
-            if (!openingMoveHistory.ContainsKey(key))
-                openingMoveHistory[key] = 0;
-
-            if (wasGood)
-                openingMoveHistory[key]++;
-
-            totalOpeningMoves++;
-        }
-
-        /// <summary>
-        /// Check if move is historically good in opening
-        /// </summary>
-        public static bool IsGoodOpeningMove(string move, int ply)
-        {
-            if (ply > 20) return false;
-
-            string key = $"{move}_ply{ply}";
-
-            if (openingMoveHistory.TryGetValue(key, out int successCount))
-            {
-                // If seen at least 5 times and success rate > 60%
-                if (successCount >= 5 && totalOpeningMoves > 0)
-                {
-                    double successRate = (double)successCount / totalOpeningMoves;
-                    return successRate > 0.6;
-                }
-            }
-
-            return false;
-        }
-
-        /// <summary>
-        /// Get opening move quality description
+        /// Get opening move quality description based on common principles
         /// </summary>
         public static string? GetOpeningMoveDescription(string move, int ply)
         {
@@ -195,10 +151,6 @@ namespace ChessDroid.Services
                 if (move == "g1f3" || move == "b1c3" || move == "g8f6" || move == "b8c6")
                     return "develops piece to good square";
             }
-
-            // Check historical data
-            if (IsGoodOpeningMove(move, ply))
-                return "historically strong opening move";
 
             return null;
         }

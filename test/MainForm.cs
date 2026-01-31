@@ -12,7 +12,8 @@ namespace ChessDroid
     {
         private System.Windows.Forms.Timer? manualTimer;
 
-        private bool moveInProgress = false;
+        private volatile bool moveInProgress = false;
+        private readonly object _moveInProgressLock = new object();
 
         private System.Windows.Forms.Timer? moveTimeoutTimer;
 
@@ -383,10 +384,13 @@ namespace ChessDroid
             moveTimeoutTimer.Interval = Config.MoveTimeoutMs;
             moveTimeoutTimer.Tick += (s, ev) =>
             {
-                if (moveInProgress)
+                lock (_moveInProgressLock)
                 {
-                    moveInProgress = false;
-                    moveTimeoutTimer.Stop();
+                    if (moveInProgress)
+                    {
+                        moveInProgress = false;
+                        moveTimeoutTimer.Stop();
+                    }
                 }
             };
         }
@@ -547,10 +551,13 @@ namespace ChessDroid
             moveTimeoutTimer?.Stop();
             moveTimeoutTimer?.Start();
 
+            Mat? fullScreenMat = null;
+            Mat? boardMat = null;
+
             try
             {
                 // 1) Capture and extract the board
-                Mat? fullScreenMat = screenCaptureService.CaptureScreenAsMat();
+                fullScreenMat = screenCaptureService.CaptureScreenAsMat();
                 if (fullScreenMat == null)
                 {
                     labelStatus.Text = "Screen capture failed";
@@ -559,7 +566,7 @@ namespace ChessDroid
 
                 // Try to detect the board automatically
                 var detectedResult = boardDetectionService.DetectBoardWithRectangle(fullScreenMat);
-                Mat? boardMat = detectedResult.boardMat;
+                boardMat = detectedResult.boardMat;
                 Rectangle boardRect = detectedResult.boardRect;
 
                 if (boardMat == null)
@@ -625,6 +632,10 @@ namespace ChessDroid
             }
             finally
             {
+                // Dispose Mat objects to prevent memory leaks
+                fullScreenMat?.Dispose();
+                boardMat?.Dispose();
+
                 // ALWAYS reset the flag so button can be clicked again
                 moveTimeoutTimer?.Stop();
                 moveInProgress = false;
@@ -636,24 +647,36 @@ namespace ChessDroid
 
         private void ManualTimer_Tick(object? sender, EventArgs e)
         {
-            Mat? fullMat = screenCaptureService.CaptureScreenAsMat();
-            if (fullMat == null) return;
+            Mat? fullMat = null;
+            Mat? boardMat = null;
 
-            var detectedResult = boardDetectionService.DetectBoardWithRectangle(fullMat);
-            Mat? boardMat = detectedResult.boardMat;
-
-            if (boardMat == null) return;
-
-            bool blackAtBottom = !positionStateManager.IsWhiteToMove();
-            if (blackAtBottom)
-                CvInvoke.Flip(boardMat, boardMat, FlipType.Vertical | FlipType.Horizontal);
-
-            ChessBoard currentBoard = pieceRecognitionService.ExtractBoardFromMat(boardMat, blackAtBottom, Config.MatchThreshold);
-
-            if (positionStateManager.LastDetectedBoard != null && ChessRulesService.CountBoardDifferences(positionStateManager.LastDetectedBoard, currentBoard) >= 2)
+            try
             {
-                manualTimer?.Stop();
-                positionStateManager.SaveMoveState(currentBoard);
+                fullMat = screenCaptureService.CaptureScreenAsMat();
+                if (fullMat == null) return;
+
+                var detectedResult = boardDetectionService.DetectBoardWithRectangle(fullMat);
+                boardMat = detectedResult.boardMat;
+
+                if (boardMat == null) return;
+
+                bool blackAtBottom = !positionStateManager.IsWhiteToMove();
+                if (blackAtBottom)
+                    CvInvoke.Flip(boardMat, boardMat, FlipType.Vertical | FlipType.Horizontal);
+
+                ChessBoard currentBoard = pieceRecognitionService.ExtractBoardFromMat(boardMat, blackAtBottom, Config.MatchThreshold);
+
+                if (positionStateManager.LastDetectedBoard != null && ChessRulesService.CountBoardDifferences(positionStateManager.LastDetectedBoard, currentBoard) >= 2)
+                {
+                    manualTimer?.Stop();
+                    positionStateManager.SaveMoveState(currentBoard);
+                }
+            }
+            finally
+            {
+                // Dispose Mat objects to prevent memory leaks
+                fullMat?.Dispose();
+                boardMat?.Dispose();
             }
         }
 

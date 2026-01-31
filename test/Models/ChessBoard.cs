@@ -58,40 +58,7 @@ namespace ChessDroid.Models
         public char this[int row, int col]
         {
             get => board[row, col];
-            set
-            {
-                if (row >= 0 && row < BOARD_SIZE && col >= 0 && col < BOARD_SIZE)
-                {
-                    char oldPiece = board[row, col];
-                    if (oldPiece == value) return; // No change
-
-                    board[row, col] = value;
-
-                    // Update cached king positions
-                    UpdateKingCache(row, col, oldPiece, value);
-
-                    // Incremental Zobrist hash update (O(1) instead of O(64))
-                    if (cachedHash.HasValue)
-                    {
-                        ulong hash = cachedHash.Value;
-                        int square = row * 8 + col;
-
-                        // XOR out old piece
-                        if (oldPiece != '.' && PieceIndex.TryGetValue(oldPiece, out int oldIdx))
-                            hash ^= ZobristTable[oldIdx, square];
-
-                        // XOR in new piece
-                        if (value != '.' && PieceIndex.TryGetValue(value, out int newIdx))
-                            hash ^= ZobristTable[newIdx, square];
-
-                        cachedHash = hash;
-                    }
-                    else
-                    {
-                        cachedHash = null; // Invalidate hash cache when board changes
-                    }
-                }
-            }
+            set => SetPiece(row, col, value);
         }
 
         public char[,] GetArray() => (char[,])board.Clone();
@@ -323,21 +290,6 @@ namespace ChessDroid.Models
 
             cachedHash = hash;
             return hash;
-        }
-
-        /// <summary>
-        /// Fast comparison using Zobrist hash - O(1) after first computation.
-        /// </summary>
-        public bool HashEquals(ChessBoard other)
-        {
-            if (other == null) return false;
-            return GetZobristHash() == other.GetZobristHash();
-        }
-
-        public string GetHashKey()
-        {
-            // Return hex string of Zobrist hash for caching
-            return GetZobristHash().ToString("X16");
         }
     }
 }

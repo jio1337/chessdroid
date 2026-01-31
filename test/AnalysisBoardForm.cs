@@ -2153,6 +2153,9 @@ namespace ChessDroid
         {
             if (_currentClassification == null) return;
 
+            // Build dictionary for O(1) lookup instead of O(n) FirstOrDefault per item
+            var resultLookup = _currentClassification.MoveResults.ToDictionary(r => r.Node, r => r);
+
             // Rebuild the move list items with classification symbols
             moveListBox.BeginUpdate();
             try
@@ -2160,9 +2163,7 @@ namespace ChessDroid
                 for (int i = 0; i < displayedNodes.Count && i < moveListBox.Items.Count; i++)
                 {
                     var node = displayedNodes[i];
-                    var result = _currentClassification.MoveResults.FirstOrDefault(r => r.Node == node);
-
-                    if (result != null && !string.IsNullOrEmpty(result.Symbol))
+                    if (resultLookup.TryGetValue(node, out var result) && !string.IsNullOrEmpty(result.Symbol))
                     {
                         // Update the item text to include the symbol
                         string moveText = node.IsWhiteMove

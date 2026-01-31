@@ -38,15 +38,5 @@ namespace ChessDroid.Models
         // Move counts
         public int WhiteMoveCount { get; set; }
         public int BlackMoveCount { get; set; }
-
-        /// <summary>
-        /// Get total count for a specific classification across both sides.
-        /// </summary>
-        public int GetTotalCount(MoveQualityAnalyzer.MoveQuality quality)
-        {
-            int white = WhiteCounts.TryGetValue(quality, out var wc) ? wc : 0;
-            int black = BlackCounts.TryGetValue(quality, out var bc) ? bc : 0;
-            return white + black;
-        }
     }
 }

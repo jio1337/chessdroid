@@ -59,6 +59,10 @@ namespace ChessDroid.Controls
         // Font for coordinates (fallback for pieces if images fail)
         private Font coordFont = new Font("Segoe UI", 10f, FontStyle.Bold);
 
+        // Cached font for fallback Unicode piece rendering (prevents GDI+ leak)
+        private Font? pieceFallbackFont;
+        private float lastPieceFontSize = 0f;
+
         /// <summary>
         /// When false, disables mouse interaction (for engine-vs-engine matches).
         /// </summary>
@@ -473,8 +477,16 @@ namespace ChessDroid.Controls
             else
             {
                 // Fallback to Unicode if image not available
+                // Use cached font to prevent GDI+ handle leaks
+                float targetFontSize = squareSize * 0.7f;
+                if (pieceFallbackFont == null || Math.Abs(lastPieceFontSize - targetFontSize) > 0.5f)
+                {
+                    pieceFallbackFont?.Dispose();
+                    pieceFallbackFont = new Font("Segoe UI Symbol", targetFontSize, FontStyle.Regular);
+                    lastPieceFontSize = targetFontSize;
+                }
+
                 string pieceChar = GetPieceUnicode(piece);
-                using (Font pieceFont = new Font("Segoe UI Symbol", squareSize * 0.7f, FontStyle.Regular))
                 using (SolidBrush brush = new SolidBrush(char.IsUpper(piece) ? Color.White : Color.Black))
                 {
                     // Add shadow for white pieces
@@ -482,17 +494,17 @@ namespace ChessDroid.Controls
                     {
                         using (SolidBrush shadowBrush = new SolidBrush(Color.FromArgb(80, 0, 0, 0)))
                         {
-                            SizeF textSize = g.MeasureString(pieceChar, pieceFont);
+                            SizeF textSize = g.MeasureString(pieceChar, pieceFallbackFont);
                             float x = rect.X + (rect.Width - textSize.Width) / 2 + 1;
                             float y = rect.Y + (rect.Height - textSize.Height) / 2 + 1;
-                            g.DrawString(pieceChar, pieceFont, shadowBrush, x, y);
+                            g.DrawString(pieceChar, pieceFallbackFont, shadowBrush, x, y);
                         }
                     }
 
-                    SizeF size = g.MeasureString(pieceChar, pieceFont);
+                    SizeF size = g.MeasureString(pieceChar, pieceFallbackFont);
                     float px = rect.X + (rect.Width - size.Width) / 2;
                     float py = rect.Y + (rect.Height - size.Height) / 2;
-                    g.DrawString(pieceChar, pieceFont, brush, px, py);
+                    g.DrawString(pieceChar, pieceFallbackFont, brush, px, py);
                 }
             }
         }
@@ -1190,6 +1202,7 @@ namespace ChessDroid.Controls
             if (disposing)
             {
                 coordFont?.Dispose();
+                pieceFallbackFont?.Dispose();
                 foreach (var img in pieceImages.Values)
                 {
                     img?.Dispose();

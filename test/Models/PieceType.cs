@@ -63,16 +63,6 @@ namespace ChessDroid.Models
             return char.IsLower(piece) && piece != '.';
         }
 
-        public static bool IsEmpty(char piece)
-        {
-            return piece == '.';
-        }
-
-        public static char ToChar(Piece piece)
-        {
-            return (char)piece;
-        }
-
         public static Piece FromChar(char c)
         {
             return c switch

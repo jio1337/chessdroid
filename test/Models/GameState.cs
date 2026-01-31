@@ -56,19 +56,5 @@ namespace ChessDroid.Models
 
             return state;
         }
-
-        public GameState Clone()
-        {
-            return new GameState
-            {
-                Board = new ChessBoard(Board.GetArray()),
-                WhiteToMove = WhiteToMove,
-                CastlingRights = CastlingRights,
-                EnPassantTarget = EnPassantTarget,
-                HalfMoveClock = HalfMoveClock,
-                FullMoveNumber = FullMoveNumber,
-                LastMoveTime = LastMoveTime
-            };
-        }
     }
 }
