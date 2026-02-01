@@ -24,6 +24,9 @@ chessdroid is a desktop application built for focused chess study. Analyze posit
 - **Move Quality Colors** - 6 levels from Brilliant (!!) to Blunder (??) with color coding
 
 ### Analysis Board (v2.8.0)
+
+![Analysis Board](chessdroid-website/analysisboard.png)
+
 - **Interactive Chess Board** - Full-featured offline analysis board with drag-and-drop moves
 - **Move Tree with Variations** - Navigate through game history with full variation support
 - **PGN Import/Export** - Import games from PGN files, export your analysis
