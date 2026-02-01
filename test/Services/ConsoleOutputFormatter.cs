@@ -440,7 +440,7 @@ namespace ChessDroid.Services
         /// <param name="evalAfter">Evaluation after the move (in pawns)</param>
         /// <param name="evalBefore">Evaluation before the move (in pawns), can be null</param>
         /// <returns>Tuple of (isBrilliant, explanation) - explanation describes the sacrifice</returns>
-        private static (bool isBrilliant, string? explanation) IsBrilliantMove(string fen, string uciMove, double evalAfter, double? evalBefore)
+        internal static (bool isBrilliant, string? explanation) IsBrilliantMove(string fen, string uciMove, double evalAfter, double? evalBefore)
         {
             try
             {

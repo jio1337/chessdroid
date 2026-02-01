@@ -35,6 +35,8 @@ namespace ChessDroid
             evalBar = new EvalBarControl();
             boardControl = new ChessBoardControl();
             lblTurn = new Label();
+            lblPieces = new Label();
+            cmbPieces = new ComboBox();
             btnNewGame = new Button();
             btnFlipBoard = new Button();
             btnTakeBack = new Button();
@@ -76,6 +78,7 @@ namespace ChessDroid
             lblBlackClock = new Label();
             btnStartMatch = new Button();
             btnStopMatch = new Button();
+            chkFromPosition = new CheckBox();
             lblAnalysis = new Label();
             mainLayout.SuspendLayout();
             leftPanel.SuspendLayout();
@@ -92,9 +95,9 @@ namespace ChessDroid
             // mainLayout
             // 
             mainLayout.ColumnCount = 3;
-            mainLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 55F));
-            mainLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 140F));
-            mainLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 45F));
+            mainLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 62F));
+            mainLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 130F));
+            mainLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 38F));
             mainLayout.Controls.Add(leftPanel, 0, 0);
             mainLayout.Controls.Add(middlePanel, 1, 0);
             mainLayout.Controls.Add(rightPanel, 2, 0);
@@ -112,6 +115,8 @@ namespace ChessDroid
             leftPanel.Controls.Add(evalBar);
             leftPanel.Controls.Add(boardControl);
             leftPanel.Controls.Add(lblTurn);
+            leftPanel.Controls.Add(lblPieces);
+            leftPanel.Controls.Add(cmbPieces);
             leftPanel.Controls.Add(btnNewGame);
             leftPanel.Controls.Add(btnFlipBoard);
             leftPanel.Controls.Add(btnTakeBack);
@@ -147,16 +152,35 @@ namespace ChessDroid
             boardControl.TabIndex = 0;
             boardControl.MoveMade += BoardControl_MoveMade;
             boardControl.BoardChanged += BoardControl_BoardChanged;
-            // 
+            //
             // lblTurn
-            // 
+            //
             lblTurn.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
             lblTurn.Location = new Point(10, 500);
             lblTurn.Name = "lblTurn";
             lblTurn.Size = new Size(200, 25);
             lblTurn.TabIndex = 1;
             lblTurn.Text = "White to move";
-            // 
+            //
+            // lblPieces
+            //
+            lblPieces.Font = new Font("Courier New", 8.25F);
+            lblPieces.Location = new Point(230, 505);
+            lblPieces.Name = "lblPieces";
+            lblPieces.Size = new Size(50, 20);
+            lblPieces.TabIndex = 21;
+            lblPieces.Text = "Pieces:";
+            //
+            // cmbPieces
+            //
+            cmbPieces.DropDownStyle = ComboBoxStyle.DropDownList;
+            cmbPieces.Font = new Font("Courier New", 8.25F);
+            cmbPieces.Location = new Point(285, 502);
+            cmbPieces.Name = "cmbPieces";
+            cmbPieces.Size = new Size(100, 22);
+            cmbPieces.TabIndex = 22;
+            cmbPieces.SelectedIndexChanged += CmbPieces_SelectedIndexChanged;
+            //
             // btnNewGame
             // 
             btnNewGame.FlatStyle = FlatStyle.Flat;
@@ -405,15 +429,17 @@ namespace ChessDroid
             grpEngineMatch.Controls.Add(lblBlackClock);
             grpEngineMatch.Controls.Add(btnStartMatch);
             grpEngineMatch.Controls.Add(btnStopMatch);
+            grpEngineMatch.Controls.Add(chkFromPosition);
             grpEngineMatch.Dock = DockStyle.Top;
             grpEngineMatch.Font = new Font("Courier New", 9F, FontStyle.Bold, GraphicsUnit.Point, 0);
             grpEngineMatch.Location = new Point(5, 25);
             grpEngineMatch.Name = "grpEngineMatch";
-            grpEngineMatch.Size = new Size(398, 215);
+            grpEngineMatch.Size = new Size(398, 240);
             grpEngineMatch.TabIndex = 2;
             grpEngineMatch.TabStop = false;
             grpEngineMatch.Text = "Engine Match";
-            // 
+            grpEngineMatch.Resize += GrpEngineMatch_Resize;
+            //
             // lblWhiteEngine
             // 
             lblWhiteEngine.Font = new Font("Courier New", 9F);
@@ -614,7 +640,16 @@ namespace ChessDroid
             btnStopMatch.Text = "Stop";
             btnStopMatch.Visible = false;
             btnStopMatch.Click += BtnStopMatch_Click;
-            // 
+            //
+            // chkFromPosition
+            //
+            chkFromPosition.AutoSize = true;
+            chkFromPosition.Font = new Font("Courier New", 9F);
+            chkFromPosition.Location = new Point(10, 212);
+            chkFromPosition.Name = "chkFromPosition";
+            chkFromPosition.TabIndex = 11;
+            chkFromPosition.Text = "Start from current position";
+            //
             // lblAnalysis
             // 
             lblAnalysis.Dock = DockStyle.Top;
@@ -663,6 +698,8 @@ namespace ChessDroid
         private EvalBarControl evalBar;
         private ChessBoardControl boardControl;
         private Label lblTurn;
+        private Label lblPieces;
+        private ComboBox cmbPieces;
         private Button btnNewGame;
         private Button btnFlipBoard;
         private Button btnTakeBack;
@@ -705,6 +742,7 @@ namespace ChessDroid
         private Label lblBlackClock;
         private Button btnStartMatch;
         private Button btnStopMatch;
+        private CheckBox chkFromPosition;
 
         // Right panel - Analysis
         private Label lblAnalysis;

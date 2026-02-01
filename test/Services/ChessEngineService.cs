@@ -645,17 +645,24 @@ namespace ChessDroid.Services
         /// Streamlined move request for engine-vs-engine matches.
         /// Unlike GetBestMoveAsync, does NOT send ucinewgame (preserves hash tables),
         /// uses MultiPV=1, and accepts an explicit go command string.
+        /// Returns the best move and evaluation (in White's perspective).
         /// </summary>
-        public async Task<string?> GetMoveForMatchAsync(string fen, string goCommand, int timeoutMs, CancellationToken ct)
+        public async Task<(string? move, string? eval)> GetMoveForMatchAsync(string fen, string goCommand, int timeoutMs, CancellationToken ct)
         {
             if (!IsEngineAlive() || State != EngineState.Ready)
-                return null;
+                return (null, null);
+
+            // Determine side to move from FEN for eval perspective conversion
+            bool whiteToMove = true;
+            var fenParts = fen.Split(' ');
+            if (fenParts.Length >= 2)
+                whiteToMove = fenParts[1] == "w";
 
             try
             {
                 // Sync with engine
                 if (!await SyncWithEngineAsync())
-                    return null;
+                    return (null, null);
 
                 // Set MultiPV to 1
                 await SafeWriteLineAsync($"{UCI_CMD_SETOPTION} MultiPV value 1");
@@ -667,37 +674,73 @@ namespace ChessDroid.Services
                 State = EngineState.Analyzing;
                 await SafeWriteLineAsync(goCommand);
 
-                // Read until "bestmove"
+                // Read until "bestmove", capturing last evaluation from info lines
                 using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
                 cts.CancelAfter(timeoutMs);
+
+                string? lastEval = null;
 
                 while (IsEngineAlive())
                 {
                     string? line = await engineOutput!.ReadLineAsync().WaitAsync(cts.Token);
-                    if (line != null && line.StartsWith(UCI_RESPONSE_BESTMOVE))
+                    if (line == null) continue;
+
+                    // Parse info lines to capture evaluation
+                    if (line.StartsWith(UCI_RESPONSE_INFO) && line.Contains(UCI_TOKEN_SCORE))
+                    {
+                        var tokens = line.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                        for (int i = 0; i < tokens.Length; i++)
+                        {
+                            if (tokens[i] == UCI_TOKEN_SCORE && i + 2 < tokens.Length)
+                            {
+                                if (tokens[i + 1] == UCI_TOKEN_CP && double.TryParse(tokens[i + 2], out double cp))
+                                {
+                                    // Convert to White's perspective
+                                    double displayCp = whiteToMove ? cp : -cp;
+                                    lastEval = (displayCp / 100.0 >= 0 ? "+" : "") +
+                                               (displayCp / 100.0).ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
+                                }
+                                else if (tokens[i + 1] == UCI_TOKEN_MATE && int.TryParse(tokens[i + 2], out int mateIn))
+                                {
+                                    // Convert to White's perspective
+                                    int displayMate = whiteToMove ? mateIn : -mateIn;
+                                    if (displayMate > 0)
+                                        lastEval = $"Mate in +{displayMate}";
+                                    else if (displayMate < 0)
+                                        lastEval = $"Mate in {displayMate}";
+                                    else
+                                        lastEval = "Mate in 0";
+                                }
+                                break;
+                            }
+                        }
+                    }
+                    else if (line.StartsWith(UCI_RESPONSE_BESTMOVE))
                     {
                         State = EngineState.Ready;
                         var parts = line.Split(' ');
                         string move = parts.Length >= 2 ? parts[1] : "";
                         // "(none)" and "0000" mean no legal moves (different engines use different conventions)
-                        return string.IsNullOrEmpty(move) || move == "(none)" || move == "0000" ? null : move;
+                        if (string.IsNullOrEmpty(move) || move == "(none)" || move == "0000")
+                            return (null, lastEval);
+                        return (move, lastEval);
                     }
                 }
 
                 State = EngineState.Error;
-                return null;
+                return (null, null);
             }
             catch (OperationCanceledException)
             {
                 Debug.WriteLine("GetMoveForMatchAsync: Cancelled or timed out");
                 State = EngineState.Error;
-                return null;
+                return (null, null);
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"GetMoveForMatchAsync: Error - {ex.Message}");
                 State = EngineState.Error;
-                return null;
+                return (null, null);
             }
         }
 

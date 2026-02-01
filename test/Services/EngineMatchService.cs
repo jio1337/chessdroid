@@ -32,7 +32,7 @@ namespace ChessDroid.Services
         private EngineMatchTimeControl timeControl = new();
 
         // Events (invoked on background thread - callers must marshal to UI thread)
-        public event Action<string, string, long>? OnMovePlayed;  // (uciMove, fen, moveTimeMs)
+        public event Action<string, string, long, string?>? OnMovePlayed;  // (uciMove, fen, moveTimeMs, eval)
         public event Action<long, long, bool>? OnClockUpdated;    // (whiteMs, blackMs, whiteToMove)
         public event Action<EngineMatchResult>? OnMatchEnded;
         public event Action<string>? OnStatusChanged;
@@ -173,11 +173,12 @@ namespace ChessDroid.Services
                 // Measure thinking time
                 moveStopwatch.Restart();
 
-                // Get engine's move
+                // Get engine's move and evaluation
                 string? bestMove;
+                string? moveEval;
                 try
                 {
-                    bestMove = await activeEngine.GetMoveForMatchAsync(fen, goCommand, timeoutMs, ct);
+                    (bestMove, moveEval) = await activeEngine.GetMoveForMatchAsync(fen, goCommand, timeoutMs, ct);
                 }
                 catch (OperationCanceledException)
                 {
@@ -265,9 +266,9 @@ namespace ChessDroid.Services
                 gameState.WhiteToMove = !gameState.WhiteToMove;
                 moveCount++;
 
-                // Fire move played event
+                // Fire move played event with evaluation
                 string newFen = gameState.ToCompleteFEN();
-                OnMovePlayed?.Invoke(bestMove, newFen, moveTimeMs);
+                OnMovePlayed?.Invoke(bestMove, newFen, moveTimeMs, moveEval);
                 OnClockUpdated?.Invoke(whiteRemainingMs, blackRemainingMs, gameState.WhiteToMove);
 
                 // Check for checkmate or stalemate by verifying legal moves exist

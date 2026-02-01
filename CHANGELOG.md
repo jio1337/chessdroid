@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.9.0] - 2026-02-01
+
+### Added
+- **Start from Current Position** - Engine matches can now begin from any board position
+  - New "Start from current position" checkbox in Engine Match panel
+  - Set up openings manually (e.g., London System) and have engines continue from there
+  - Match log indicates when starting from custom position
+- **Brilliant Move Detection in Matches** - Real-time brilliant move (!!) detection during engine vs engine games
+  - Detects piece sacrifices that maintain or improve position
+  - Shows "!!" symbol in move list and analysis log
+  - Displays explanation (e.g., "sacrifices knight for decisive advantage")
+- **Dynamic Template Selection** - Piece templates now auto-populate from Templates folder
+  - Combobox in Analysis Board for switching piece sets on the fly
+  - Settings form dynamically lists available template folders
+  - Supports any folder name (Chess.com, Lichess, custom themes)
+
+### Fixed
+- **Analysis Board Pieces Combobox** - Fixed positioning and responsiveness on form resize
+
+---
+
 ## [2.8.1] - 2026-01-31
 
 ### Fixed

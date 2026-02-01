@@ -63,6 +63,38 @@ namespace ChessDroid
             }
         }
 
+        private void PopulateSitesComboBox()
+        {
+            try
+            {
+                string templatesFolder = config.GetTemplatesPath();
+                cmbSite.Items.Clear();
+
+                if (Directory.Exists(templatesFolder))
+                {
+                    string[] siteFolders = Directory.GetDirectories(templatesFolder);
+                    foreach (string folder in siteFolders)
+                    {
+                        cmbSite.Items.Add(Path.GetFileName(folder));
+                    }
+                }
+
+                // Select configured site or default to first available
+                if (!string.IsNullOrEmpty(config.SelectedSite) && cmbSite.Items.Contains(config.SelectedSite))
+                {
+                    cmbSite.SelectedItem = config.SelectedSite;
+                }
+                else if (cmbSite.Items.Count > 0)
+                {
+                    cmbSite.SelectedIndex = 0;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error loading template sites: " + ex.Message, "Template Loading Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
         private void LoadSettings()
         {
             this.TopMost = true;
@@ -93,11 +125,8 @@ namespace ChessDroid
             // Display options
             PopulateEnginesComboBox();
 
-            // Site selection
-            cmbSite.Items.Clear();
-            cmbSite.Items.Add("Lichess");
-            cmbSite.Items.Add("Chess.com");
-            cmbSite.SelectedItem = config.SelectedSite;
+            // Site selection - dynamically populate from Templates folder
+            PopulateSitesComboBox();
 
             // Best lines checkboxes
             chkShowBest.Checked = config.ShowBestLine;
@@ -160,7 +189,7 @@ namespace ChessDroid
 
             // Save display options
             config.SelectedEngine = cmbEngine.SelectedItem?.ToString() ?? "";
-            config.SelectedSite = cmbSite.SelectedItem?.ToString() ?? "Lichess";
+            config.SelectedSite = cmbSite.SelectedItem?.ToString() ?? config.SelectedSite;
             config.ShowBestLine = chkShowBest.Checked;
             config.ShowSecondLine = chkShowSecond.Checked;
             config.ShowThirdLine = chkShowThird.Checked;

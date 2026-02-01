@@ -61,6 +61,7 @@ namespace ChessDroid
         private EngineMatchService? matchService;
         private System.Windows.Forms.Timer clockTimer = null!;
         private bool matchRunning = false;
+        private double? _previousMatchEval; // Track previous eval for brilliant move detection
 
         public AnalysisBoardForm(AppConfig config, ChessEngineService? sharedEngineService = null)
         {
@@ -72,6 +73,7 @@ namespace ChessDroid
             ApplyTheme();
             InitializeServices();
             InitializeMatchControls();
+            PopulatePiecesComboBox();
 
             // Initialize move tree with starting position
             moveTree = new MoveTree(boardControl.GetFEN());
@@ -91,6 +93,11 @@ namespace ChessDroid
             lblStatus.ForeColor = scheme.StatusColor;
             lblMoves.ForeColor = scheme.TextColor;
             lblAnalysis.ForeColor = scheme.TextColor;
+            lblPieces.ForeColor = scheme.TextColor;
+
+            // Pieces combobox
+            cmbPieces.BackColor = scheme.ButtonBackColor;
+            cmbPieces.ForeColor = scheme.TextColor;
 
             // Standard buttons
             foreach (var btn in new[] { btnNewGame, btnFlipBoard, btnTakeBack, btnPrevMove,
@@ -105,8 +112,9 @@ namespace ChessDroid
             btnAnalyze.BackColor = scheme.AnalyzeButtonBackColor;
             btnAnalyze.ForeColor = Color.White;
 
-            // Checkbox
+            // Checkboxes
             chkAutoAnalyze.ForeColor = scheme.TextColor;
+            chkFromPosition.ForeColor = scheme.TextColor;
 
             // TextBox and ListBox
             txtFen.BackColor = scheme.PanelColor;
@@ -178,6 +186,47 @@ namespace ChessDroid
             }
         }
 
+        private void PopulatePiecesComboBox()
+        {
+            try
+            {
+                string templatesFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Templates");
+                cmbPieces.Items.Clear();
+
+                if (Directory.Exists(templatesFolder))
+                {
+                    string[] siteFolders = Directory.GetDirectories(templatesFolder);
+                    foreach (string folder in siteFolders)
+                    {
+                        cmbPieces.Items.Add(Path.GetFileName(folder));
+                    }
+                }
+
+                // Select configured site or default to first available
+                if (!string.IsNullOrEmpty(config?.SelectedSite) && cmbPieces.Items.Contains(config.SelectedSite))
+                {
+                    cmbPieces.SelectedItem = config.SelectedSite;
+                }
+                else if (cmbPieces.Items.Count > 0)
+                {
+                    cmbPieces.SelectedIndex = 0;
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error loading piece templates: {ex.Message}");
+            }
+        }
+
+        private void CmbPieces_SelectedIndexChanged(object? sender, EventArgs e)
+        {
+            string? selectedTemplate = cmbPieces.SelectedItem?.ToString();
+            if (!string.IsNullOrEmpty(selectedTemplate))
+            {
+                boardControl.SetTemplateSet(selectedTemplate);
+            }
+        }
+
         private void InitializeMatchControls()
         {
             // Populate engine combo boxes
@@ -202,6 +251,9 @@ namespace ChessDroid
             clockTimer = new System.Windows.Forms.Timer();
             clockTimer.Interval = 100;
             clockTimer.Tick += ClockTimer_Tick;
+
+            // Trigger initial layout for responsive checkbox positioning
+            GrpEngineMatch_Resize(grpEngineMatch, EventArgs.Empty);
         }
 
         #region Event Handlers
@@ -209,7 +261,7 @@ namespace ChessDroid
         private void LeftPanel_Resize(object? sender, EventArgs e)
         {
             // Guard against resize during initialization
-            if (boardControl == null || lblTurn == null || btnNewGame == null || chkAutoAnalyze == null)
+            if (boardControl == null || lblTurn == null || btnNewGame == null || chkAutoAnalyze == null || lblPieces == null || cmbPieces == null)
                 return;
 
             if (sender is Panel panel)
@@ -245,6 +297,11 @@ namespace ChessDroid
                 int controlsY = boardControl.Bottom + 5;
 
                 lblTurn.Location = new Point(boardX, controlsY);
+
+                // Pieces selector (right of turn label)
+                lblPieces.Location = new Point(boardX + 200, controlsY + 3);
+                cmbPieces.Location = new Point(boardX + 255, controlsY);
+                cmbPieces.Width = Math.Min(120, boardSize - 270);
 
                 int buttonY = controlsY + 25;
                 int buttonWidth = Math.Min(90, (boardSize - 30) / 5);
@@ -292,6 +349,12 @@ namespace ChessDroid
                 // Let middle and right panels fill the full form height
                 // (they use Dock.Fill in the TableLayoutPanel)
             }
+        }
+
+        private void GrpEngineMatch_Resize(object? sender, EventArgs e)
+        {
+            // Checkbox is now at fixed position below buttons - no dynamic repositioning needed
+            // This handler is kept for potential future responsive adjustments
         }
 
         private void BoardControl_MoveMade(object? sender, MoveEventArgs e)
@@ -809,9 +872,19 @@ namespace ChessDroid
                     break;
             }
 
-            // Reset the board
-            boardControl.ResetBoard();
-            string startFen = boardControl.GetFEN();
+            // Get starting FEN - either current position or standard starting position
+            string startFen;
+            if (chkFromPosition.Checked)
+            {
+                // Use current board position
+                startFen = boardControl.GetFEN();
+            }
+            else
+            {
+                // Reset to standard starting position
+                boardControl.ResetBoard();
+                startFen = boardControl.GetFEN();
+            }
             moveTree.Clear(startFen);
             moveListBox.Items.Clear();
             displayedNodes.Clear();
@@ -821,7 +894,12 @@ namespace ChessDroid
             analysisOutput.Clear();
             analysisOutput.SelectionColor = analysisOutput.ForeColor;
             analysisOutput.AppendText($"Engine Match: {whiteEngineName} vs {blackEngineName}\n");
-            analysisOutput.AppendText($"Time Control: {tc}\n\n");
+            analysisOutput.AppendText($"Time Control: {tc}\n");
+            if (chkFromPosition.Checked)
+            {
+                analysisOutput.AppendText("Starting from custom position\n");
+            }
+            analysisOutput.AppendText("\n");
 
             // Disable conflicting controls
             SetMatchControlsEnabled(true);
@@ -829,6 +907,7 @@ namespace ChessDroid
             // Create and start match service
             matchService?.Dispose();
             matchService = new EngineMatchService(config);
+            _previousMatchEval = null; // Reset for brilliant move detection
             matchService.OnMovePlayed += MatchService_OnMovePlayed;
             matchService.OnClockUpdated += MatchService_OnClockUpdated;
             matchService.OnMatchEnded += MatchService_OnMatchEnded;
@@ -851,7 +930,8 @@ namespace ChessDroid
             await matchService.StartMatchAsync(
                 whiteEnginePath, blackEnginePath,
                 whiteEngineName, blackEngineName,
-                tc);
+                tc,
+                startFen);
         }
 
         private void BtnStopMatch_Click(object? sender, EventArgs e)
@@ -859,41 +939,79 @@ namespace ChessDroid
             matchService?.StopMatch();
         }
 
-        private void MatchService_OnMovePlayed(string uciMove, string fen, long moveTimeMs)
+        private void MatchService_OnMovePlayed(string uciMove, string fen, long moveTimeMs, string? eval)
         {
             if (InvokeRequired)
             {
-                Invoke(() => MatchService_OnMovePlayed(uciMove, fen, moveTimeMs));
+                Invoke(() => MatchService_OnMovePlayed(uciMove, fen, moveTimeMs, eval));
                 return;
             }
 
             isNavigating = true;
             try
             {
+                // Get FEN before the move for brilliant detection
+                string fenBeforeMove = moveTree.CurrentNode.FEN;
+
                 // Make the move on the visual board
                 boardControl.MakeMove(uciMove);
 
                 // Convert to SAN and add to move tree
-                string san = ConvertUciToSan(uciMove, moveTree.CurrentNode.FEN);
+                string san = ConvertUciToSan(uciMove, fenBeforeMove);
                 string newFen = boardControl.GetFEN();
-                moveTree.AddMove(uciMove, san, newFen);
+
+                // Check for brilliant move
+                string brilliantSymbol = "";
+                string? brilliantExplanation = null;
+                double? currentEval = null;
+
+                if (!string.IsNullOrEmpty(eval))
+                {
+                    currentEval = MovesExplanation.ParseEvaluation(eval);
+                    if (currentEval.HasValue)
+                    {
+                        var (isBrilliant, explanation) = ConsoleOutputFormatter.IsBrilliantMove(
+                            fenBeforeMove, uciMove, currentEval.Value, _previousMatchEval);
+
+                        if (isBrilliant)
+                        {
+                            brilliantSymbol = "!!";
+                            brilliantExplanation = explanation;
+                        }
+                    }
+                }
+
+                // Add move to tree (with symbol if brilliant)
+                string sanWithSymbol = san + brilliantSymbol;
+                moveTree.AddMove(uciMove, sanWithSymbol, newFen);
 
                 UpdateMoveList();
                 UpdateFenDisplay();
                 UpdateTurnLabel();
 
+                // Update eval bar with engine's evaluation
+                if (!string.IsNullOrEmpty(eval))
+                {
+                    UpdateEvalBar(eval);
+                }
+
+                // Update previous eval for next move
+                _previousMatchEval = currentEval;
+
                 // Log to analysis output
                 var currentNode = moveTree.CurrentNode;
                 double timeSec = moveTimeMs / 1000.0;
+                string evalStr = !string.IsNullOrEmpty(eval) ? $" [{eval}]" : "";
                 string timeStr = $"({timeSec:F1}s)";
+                string brilliantStr = !string.IsNullOrEmpty(brilliantExplanation) ? $" {brilliantExplanation}" : "";
 
                 if (currentNode.IsWhiteMove)
                 {
-                    analysisOutput.AppendText($"{currentNode.MoveNumber}. {san} {timeStr}  ");
+                    analysisOutput.AppendText($"{currentNode.MoveNumber}. {sanWithSymbol}{evalStr}{brilliantStr} {timeStr}  ");
                 }
                 else
                 {
-                    analysisOutput.AppendText($"{san} {timeStr}\n");
+                    analysisOutput.AppendText($"{sanWithSymbol}{evalStr}{brilliantStr} {timeStr}\n");
                 }
                 analysisOutput.ScrollToCaret();
             }
