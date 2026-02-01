@@ -240,7 +240,7 @@ namespace ChessDroid.Services
         }
 
         /// <summary>
-        /// Determines if a piece can reach a target square (basic move geometry, no path checking).
+        /// Determines if a piece can legally reach a target square (checks move geometry and path clearance).
         /// Overload without en passant parameter for backward compatibility with delegates.
         /// </summary>
         public static bool CanReachSquare(ChessBoard board, int fromRow, int fromCol, char piece, int toRow, int toCol)
@@ -249,7 +249,7 @@ namespace ChessDroid.Services
         }
 
         /// <summary>
-        /// Determines if a piece can reach a target square (basic move geometry, no path checking)
+        /// Determines if a piece can legally reach a target square (checks move geometry and path clearance for sliding pieces).
         /// </summary>
         public static bool CanReachSquareWithEnPassant(ChessBoard board, int fromRow, int fromCol, char piece, int toRow, int toCol, string? enPassantSquare)
         {
@@ -296,15 +296,43 @@ namespace ChessDroid.Services
                     return false;
 
                 case PieceType.Bishop:
-                    return Math.Abs(dr) == Math.Abs(df) && dr != 0;
+                    if (Math.Abs(dr) != Math.Abs(df) || dr == 0) return false;
+                    return IsPathClear(board, fromRow, fromCol, toRow, toCol);
 
                 case PieceType.Rook:
-                    return (dr == 0 && df != 0) || (df == 0 && dr != 0);
+                    if (!((dr == 0 && df != 0) || (df == 0 && dr != 0))) return false;
+                    return IsPathClear(board, fromRow, fromCol, toRow, toCol);
 
                 case PieceType.Queen:
-                    return (dr == 0 && df != 0) || (df == 0 && dr != 0) || (Math.Abs(dr) == Math.Abs(df) && dr != 0);
+                    if (!((dr == 0 && df != 0) || (df == 0 && dr != 0) || (Math.Abs(dr) == Math.Abs(df) && dr != 0))) return false;
+                    return IsPathClear(board, fromRow, fromCol, toRow, toCol);
             }
             return false;
+        }
+
+        /// <summary>
+        /// Checks if the path between two squares is clear (no pieces blocking).
+        /// Used for sliding pieces (rook, bishop, queen).
+        /// </summary>
+        private static bool IsPathClear(ChessBoard board, int fromRow, int fromCol, int toRow, int toCol)
+        {
+            int dr = Math.Sign(toRow - fromRow);
+            int df = Math.Sign(toCol - fromCol);
+
+            int currentRow = fromRow + dr;
+            int currentCol = fromCol + df;
+
+            // Check all squares between source and destination (exclusive)
+            while (currentRow != toRow || currentCol != toCol)
+            {
+                if (board[currentRow, currentCol] != '.')
+                    return false; // Path is blocked
+
+                currentRow += dr;
+                currentCol += df;
+            }
+
+            return true; // Path is clear
         }
 
         /// <summary>
