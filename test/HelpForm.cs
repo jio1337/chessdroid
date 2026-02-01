@@ -50,7 +50,7 @@ namespace ChessDroid
 
         private void LoadHelpText()
         {
-            string helpText = @"CHESSDROID v2.4.0 SETTINGS GUIDE
+            string helpText = @"CHESSDROID v2.9.0 SETTINGS GUIDE
 
 ═══════════════════════════════════════════════════════════════════
 📊 BOARD DETECTION
