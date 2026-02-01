@@ -25,7 +25,7 @@ chessdroid is a desktop application built for focused chess study. Analyze posit
 
 ### Analysis Board (v2.8.0)
 
-![Analysis Board](chessdroid-website/analysisboard.png)
+![Analysis Board](analysisboard.png)
 
 - **Interactive Chess Board** - Full-featured offline analysis board with drag-and-drop moves
 - **Move Tree with Variations** - Navigate through game history with full variation support
