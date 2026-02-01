@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.8.1] - 2026-01-31
+
+### Fixed
+- **Sliding Pieces Ignoring Blockers** - Queen, bishop, and rook could illegally move through other pieces in the Analysis Board click-to-move feature. Move validation now properly checks that the path is clear.
+
+---
+
 ## [2.8.0] - 2026-01-30
 
 ### Added
