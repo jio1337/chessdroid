@@ -748,8 +748,164 @@ namespace ChessDroid.Services
             }
 
             // We found a hanging piece with no compensating threat - this is an implicit sacrifice!
+            // Try to generate a specific tactical explanation (e.g., "if Qxb5 → Nc7+ wins the queen")
+            string? tacticalExplanation = GenerateTacticalExplanation(
+                afterMove, hangingPiece.Value.row, hangingPiece.Value.col,
+                hangingPiece.Value.piece, whiteToMove);
+
+            if (tacticalExplanation != null)
+            {
+                return (true, tacticalExplanation);
+            }
+
+            // Fallback to generic explanation
             PieceType sacrificedType = PieceHelper.GetPieceType(hangingPiece.Value.piece);
             return GenerateBrilliantExplanation(sacrificedType, whiteToMove, evalAfter, isImplicit: true);
+        }
+
+        /// <summary>
+        /// Generate a specific tactical explanation for an implicit sacrifice.
+        /// Looks for patterns like "if Qxb5 → Nc7+ wins the queen" (fork after capture).
+        /// </summary>
+        private static string? GenerateTacticalExplanation(
+            ChessBoard afterMove, int hangingRow, int hangingCol, char hangingPiece, bool weAreWhite)
+        {
+            // Find the most valuable enemy piece that can capture the hanging piece
+            (int row, int col, char piece)? bestCapture = null;
+            int bestCaptureValue = 0;
+
+            for (int r = 0; r < 8; r++)
+            {
+                for (int c = 0; c < 8; c++)
+                {
+                    char piece = afterMove.GetPiece(r, c);
+                    if (piece == '.') continue;
+
+                    bool pieceIsWhite = char.IsUpper(piece);
+                    if (pieceIsWhite == weAreWhite) continue; // Not enemy piece
+
+                    // Check if this enemy piece can capture the hanging piece
+                    if (ChessUtilities.CanAttackSquare(afterMove, r, c, piece, hangingRow, hangingCol))
+                    {
+                        PieceType pieceType = PieceHelper.GetPieceType(piece);
+                        int pieceValue = ChessUtilities.GetPieceValue(pieceType);
+
+                        // Prefer higher value captures (queen taking is more committal)
+                        if (pieceValue > bestCaptureValue)
+                        {
+                            bestCapture = (r, c, piece);
+                            bestCaptureValue = pieceValue;
+                        }
+                    }
+                }
+            }
+
+            if (bestCapture == null) return null;
+
+            // Simulate the capture
+            using var pooled = BoardPool.Rent(afterMove);
+            ChessBoard afterCapture = pooled.Board;
+            afterCapture.SetPiece(bestCapture.Value.row, bestCapture.Value.col, '.');
+            afterCapture.SetPiece(hangingRow, hangingCol, bestCapture.Value.piece);
+
+            // Find our king's position (for check detection)
+            int enemyKingRow = -1, enemyKingCol = -1;
+            char enemyKing = weAreWhite ? 'k' : 'K';
+            for (int r = 0; r < 8; r++)
+            {
+                for (int c = 0; c < 8; c++)
+                {
+                    if (afterCapture.GetPiece(r, c) == enemyKing)
+                    {
+                        enemyKingRow = r;
+                        enemyKingCol = c;
+                        break;
+                    }
+                }
+                if (enemyKingRow >= 0) break;
+            }
+
+            // Look for a winning response: a move that gives check AND attacks the capturing piece
+            // This would be a "fork" - we get our material back plus the captured piece
+            for (int srcR = 0; srcR < 8; srcR++)
+            {
+                for (int srcC = 0; srcC < 8; srcC++)
+                {
+                    char ourPiece = afterCapture.GetPiece(srcR, srcC);
+                    if (ourPiece == '.') continue;
+
+                    bool pieceIsWhite = char.IsUpper(ourPiece);
+                    if (pieceIsWhite != weAreWhite) continue; // Not our piece
+
+                    // Try all destination squares for this piece
+                    for (int destR = 0; destR < 8; destR++)
+                    {
+                        for (int destC = 0; destC < 8; destC++)
+                        {
+                            if (srcR == destR && srcC == destC) continue;
+
+                            // Check if this is a valid move for the piece
+                            if (!ChessUtilities.CanAttackSquare(afterCapture, srcR, srcC, ourPiece, destR, destC))
+                                continue;
+
+                            // Simulate the response move
+                            using var pooled2 = BoardPool.Rent(afterCapture);
+                            ChessBoard afterResponse = pooled2.Board;
+                            afterResponse.SetPiece(srcR, srcC, '.');
+                            afterResponse.SetPiece(destR, destC, ourPiece);
+
+                            // Check if this gives check
+                            bool givesCheck = enemyKingRow >= 0 &&
+                                ChessUtilities.CanAttackSquare(afterResponse, destR, destC, ourPiece, enemyKingRow, enemyKingCol);
+
+                            // Check if this attacks the capturing piece
+                            bool attacksCaptor = ChessUtilities.CanAttackSquare(afterResponse, destR, destC, ourPiece, hangingRow, hangingCol);
+
+                            // Found a fork! (check + attacks the capturing piece)
+                            if (givesCheck && attacksCaptor && bestCaptureValue >= 5)
+                            {
+                                // Format: "if Qxb5 → Nc7+ wins the queen"
+                                string captorName = GetPieceSymbol(bestCapture.Value.piece);
+                                string targetSquare = GetSquareName(hangingRow, hangingCol);
+                                string responseSquare = GetSquareName(destR, destC);
+                                string responderSymbol = GetPieceSymbol(ourPiece);
+                                string capturedName = bestCaptureValue >= 9 ? "queen" : "rook";
+
+                                return $"if {captorName}x{targetSquare} → {responderSymbol}{responseSquare}+ wins the {capturedName}";
+                            }
+                        }
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Get the algebraic notation for a square (e.g., "b5", "c7")
+        /// </summary>
+        private static string GetSquareName(int row, int col)
+        {
+            char file = (char)('a' + col);
+            int rank = 8 - row;
+            return $"{file}{rank}";
+        }
+
+        /// <summary>
+        /// Get the piece symbol for notation (K, Q, R, B, N, or empty for pawn)
+        /// </summary>
+        private static string GetPieceSymbol(char piece)
+        {
+            char upper = char.ToUpper(piece);
+            return upper switch
+            {
+                'K' => "K",
+                'Q' => "Q",
+                'R' => "R",
+                'B' => "B",
+                'N' => "N",
+                _ => "" // Pawn has no symbol
+            };
         }
 
         /// <summary>
