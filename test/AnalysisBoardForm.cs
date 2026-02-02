@@ -2152,7 +2152,13 @@ namespace ChessDroid
                     // Check for brilliant move using our dedicated detection
                     // This handles both capture sacrifices and implicit sacrifices (leaving pieces en prise)
                     bool isBrilliant = false;
-                    if (isBestMove || cpLoss <= 0.10) // Only check moves that are best or very close
+
+                    // If move was already detected as brilliant in real-time (has !! in SanMove), preserve that
+                    if (node.SanMove.EndsWith("!!"))
+                    {
+                        isBrilliant = true;
+                    }
+                    else if (isBestMove || cpLoss <= 0.10) // Only check moves that are best or very close
                     {
                         // Get the previous move's eval for context
                         double? prevEval = i > 0 ? classification.MoveResults.LastOrDefault()?.EvalAfter : null;
@@ -2176,6 +2182,17 @@ namespace ChessDroid
                         isSacrifice: isBrilliant
                     );
 
+                    // If real-time detection marked this as brilliant, preserve that regardless of what
+                    // the analyzer says. Real-time uses board analysis (actual sacrifice detection),
+                    // which can catch brilliancies the eval-based analyzer misses.
+                    string finalSymbol = quality.Symbol;
+                    var finalQuality = quality.Quality;
+                    if (isBrilliant && quality.Symbol != "!!")
+                    {
+                        finalSymbol = "!!";
+                        finalQuality = MoveQualityAnalyzer.MoveQuality.Brilliant;
+                    }
+
                     // Store the result
                     var moveResult = new MoveReviewResult
                     {
@@ -2186,8 +2203,8 @@ namespace ChessDroid
                         EvalAfter = evalAfter,
                         EvalBestMove = evalBestMove,
                         CentipawnLoss = cpLoss * 100, // Store in centipawns
-                        Quality = quality.Quality,
-                        Symbol = quality.Symbol,
+                        Quality = finalQuality,
+                        Symbol = finalSymbol,
                         IsWhiteMove = node.IsWhiteMove
                     };
                     classification.MoveResults.Add(moveResult);
@@ -2297,10 +2314,14 @@ namespace ChessDroid
                     var node = displayedNodes[i];
                     if (resultLookup.TryGetValue(node, out var result) && !string.IsNullOrEmpty(result.Symbol))
                     {
+                        // Strip any existing annotation symbols from SanMove (e.g., from real-time detection)
+                        // to avoid duplicates like "Nxd4!!!!" or "Bc5!!?!"
+                        string cleanSan = StripAnnotationSymbols(node.SanMove);
+
                         // Update the item text to include the symbol
                         string moveText = node.IsWhiteMove
-                            ? $"{node.MoveNumber}. {node.SanMove}"
-                            : $"{node.MoveNumber}...{node.SanMove}";
+                            ? $"{node.MoveNumber}. {cleanSan}"
+                            : $"{node.MoveNumber}...{cleanSan}";
 
                         moveListBox.Items[i] = $"{moveText} {result.Symbol}";
                     }
@@ -2310,6 +2331,28 @@ namespace ChessDroid
             {
                 moveListBox.EndUpdate();
             }
+        }
+
+        /// <summary>
+        /// Strips chess annotation symbols from a SAN move.
+        /// Removes: !!, !, ?!, ?, ??, !? from the end of the move.
+        /// </summary>
+        private static string StripAnnotationSymbols(string san)
+        {
+            if (string.IsNullOrEmpty(san)) return san;
+
+            // Remove annotation symbols from the end (order matters - check longer patterns first)
+            string[] symbols = { "!!", "??", "!?", "?!", "!", "?" };
+            foreach (var symbol in symbols)
+            {
+                if (san.EndsWith(symbol))
+                {
+                    san = san.Substring(0, san.Length - symbol.Length);
+                    // Check again in case there are multiple (shouldn't happen but be safe)
+                    break;
+                }
+            }
+            return san;
         }
 
         #endregion
