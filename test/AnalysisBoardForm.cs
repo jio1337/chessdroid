@@ -203,13 +203,22 @@ namespace ChessDroid
                 }
 
                 // Select configured site or default to first available
+                string? templateToUse = null;
                 if (!string.IsNullOrEmpty(config?.SelectedSite) && cmbPieces.Items.Contains(config.SelectedSite))
                 {
                     cmbPieces.SelectedItem = config.SelectedSite;
+                    templateToUse = config.SelectedSite;
                 }
                 else if (cmbPieces.Items.Count > 0)
                 {
                     cmbPieces.SelectedIndex = 0;
+                    templateToUse = cmbPieces.Items[0]?.ToString();
+                }
+
+                // Explicitly update the board (event might not fire during init)
+                if (!string.IsNullOrEmpty(templateToUse))
+                {
+                    boardControl.SetTemplateSet(templateToUse);
                 }
             }
             catch (Exception ex)
@@ -224,6 +233,13 @@ namespace ChessDroid
             if (!string.IsNullOrEmpty(selectedTemplate))
             {
                 boardControl.SetTemplateSet(selectedTemplate);
+
+                // Remember the selection for next time
+                if (config != null && config.SelectedSite != selectedTemplate)
+                {
+                    config.SelectedSite = selectedTemplate;
+                    config.Save();
+                }
             }
         }
 

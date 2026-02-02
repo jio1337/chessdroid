@@ -54,7 +54,7 @@ namespace ChessDroid.Controls
 
         // Piece images
         private Dictionary<char, Image?> pieceImages = new Dictionary<char, Image?>();
-        private string currentTemplateSet = "Chess.com";
+        private string currentTemplateSet = "Lichess";
 
         // Font for coordinates (fallback for pieces if images fail)
         private Font coordFont = new Font("Segoe UI", 10f, FontStyle.Bold);
