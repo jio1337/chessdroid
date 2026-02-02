@@ -2149,6 +2149,19 @@ namespace ChessDroid
                     // Check if it was the best move
                     bool isBestMove = node.UciMove == bestMove;
 
+                    // Check for brilliant move using our dedicated detection
+                    // This handles both capture sacrifices and implicit sacrifices (leaving pieces en prise)
+                    bool isBrilliant = false;
+                    if (isBestMove || cpLoss <= 0.10) // Only check moves that are best or very close
+                    {
+                        // Get the previous move's eval for context
+                        double? prevEval = i > 0 ? classification.MoveResults.LastOrDefault()?.EvalAfter : null;
+
+                        var (brilliant, _) = ConsoleOutputFormatter.IsBrilliantMove(
+                            beforeFen, node.UciMove, evalAfter, prevEval);
+                        isBrilliant = brilliant;
+                    }
+
                     // Classify the move
                     // MoveQualityAnalyzer expects evals from the moving player's perspective
                     // For White: pass as-is (White's perspective)
@@ -2159,7 +2172,8 @@ namespace ChessDroid
                     var quality = MoveQualityAnalyzer.AnalyzeMoveQuality(
                         evalBefore: qualityEvalBefore,
                         evalAfter: qualityEvalAfter,
-                        isBestMove: isBestMove
+                        isBestMove: isBestMove,
+                        isSacrifice: isBrilliant
                     );
 
                     // Store the result

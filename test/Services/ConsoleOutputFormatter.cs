@@ -434,6 +434,8 @@ namespace ChessDroid.Services
         /// <summary>
         /// Check if a move is a Brilliant move (Chess.com criteria)
         /// Brilliant = piece sacrifice where you're not in a bad position after and weren't already winning
+        /// Supports both CAPTURE sacrifices (Nxf7 where knight is lost) and IMPLICIT sacrifices
+        /// (Qh5 leaving a bishop hanging, Ng6+ leaving knight en prise)
         /// </summary>
         /// <param name="fen">Position before the move</param>
         /// <param name="uciMove">The move in UCI notation (e.g., "e2e4")</param>
@@ -448,7 +450,7 @@ namespace ChessDroid.Services
                 string[] fenParts = fen.Split(' ');
                 bool whiteToMove = fenParts.Length > 1 && fenParts[1] == "w";
 
-                // Condition 3: Wasn't already completely winning (decisive advantage = > 1.50)
+                // Condition: Wasn't already completely winning (decisive advantage = > 1.50)
                 // If we were already +2.0 or better, it's not brilliant - we were winning anyway
                 if (evalBefore.HasValue)
                 {
@@ -456,13 +458,12 @@ namespace ChessDroid.Services
                     if (!whiteToMove && evalBefore.Value <= -2.0) return (false, null);
                 }
 
-                // Condition 2: Not in a bad position after the move
+                // Condition: Not in a bad position after the move
                 // "Bad position" = clearly losing (< -0.70 for White, > +0.70 for Black)
                 if (whiteToMove && evalAfter < -0.70) return (false, null);
                 if (!whiteToMove && evalAfter > 0.70) return (false, null);
 
-                // Condition 1: Must be a PIECE sacrifice (not pawn)
-                // Parse the move to check if it's a capture with negative SEE
+                // Parse the move
                 if (uciMove.Length < 4) return (false, null);
 
                 int srcCol = uciMove[0] - 'a';
@@ -474,82 +475,475 @@ namespace ChessDroid.Services
                 char movingPiece = board.GetPiece(srcRow, srcCol);
                 char targetPiece = board.GetPiece(destRow, destCol);
 
-                // Must be a capture
-                if (targetPiece == '.') return (false, null);
-
-                // The SACRIFICED piece must be a minor piece or better (value >= 3)
-                // This means WE give up a piece worth >= 3 points
-                PieceType movingType = PieceHelper.GetPieceType(movingPiece);
-                int movingValue = ChessUtilities.GetPieceValue(movingType);
-
-                // Pawn sacrifices don't count as "Brilliant"
-                if (movingValue < 3) return (false, null);
-
-                // CRITICAL: If we're capturing a piece worth MORE OR EQUAL to our piece,
-                // it's NOT a sacrifice - it's a winning or even trade!
-                // Example: Bishop takes Queen = winning material, not a sacrifice
-                PieceType capturedType = PieceHelper.GetPieceType(targetPiece);
-                int capturedValue = ChessUtilities.GetPieceValue(capturedType);
-                if (capturedValue >= movingValue) return (false, null);
-
-                // CRITICAL: Check if enemy can PROFITABLY recapture our piece
-                // A sacrifice means we lose material. If enemy has a pawn that can recapture,
-                // it's not a sacrifice - they come out ahead (pawn for piece).
-                // Example: Nxd5 cxd5 - pawn takes knight is GOOD for Black, not a sacrifice by White
-
-                // Simulate the capture
-                using var pooled = BoardPool.Rent(board);
-                ChessBoard afterCapture = pooled.Board;
-                afterCapture.SetPiece(srcRow, srcCol, '.');
-                afterCapture.SetPiece(destRow, destCol, movingPiece);
-
-                // Check if enemy has a PAWN that can recapture
-                // Pawns are always worth less than minor pieces, so pawn recapture = not a sacrifice
-                bool enemyPawnCanRecapture = CanEnemyPawnCapture(afterCapture, destRow, destCol, whiteToMove);
-                if (enemyPawnCanRecapture) return (false, null);
-
-                // Also check if our piece is defended - if so, any recapture loses material for enemy
-                bool ourPieceDefended = ChessUtilities.IsSquareDefended(afterCapture, destRow, destCol, whiteToMove);
-                if (ourPieceDefended) return (false, null);
-
-                // Finally check SEE - must lose material for it to be a sacrifice
-                int seeValue = MoveEvaluation.StaticExchangeEvaluation(
-                    board, destRow, destCol, movingPiece, whiteToMove, srcRow, srcCol);
-
-                // Must be a sacrifice (SEE < 0 means we lose material in the exchange)
-                if (seeValue >= 0) return (false, null);
-
-                // All conditions met - it's a Brilliant move!
-                // Generate meaningful explanation based on the sacrifice
-                string pieceName = movingType switch
+                // Check for CAPTURE sacrifice (piece takes lesser piece and gets recaptured)
+                if (targetPiece != '.')
                 {
-                    PieceType.Queen => "queen",
-                    PieceType.Rook => "rook",
-                    PieceType.Bishop => "bishop",
-                    PieceType.Knight => "knight",
-                    _ => "piece"
-                };
+                    return CheckCaptureSacrifice(board, movingPiece, targetPiece,
+                        srcRow, srcCol, destRow, destCol, whiteToMove, evalAfter);
+                }
 
-                // Describe the compensation based on position evaluation
-                string compensation;
-                double evalAdvantage = whiteToMove ? evalAfter : -evalAfter;
-
-                if (evalAdvantage >= 1.5)
-                    compensation = "decisive advantage";
-                else if (evalAdvantage >= 0.5)
-                    compensation = "strong initiative";
-                else if (evalAdvantage >= 0.0)
-                    compensation = "lasting compensation";
-                else
-                    compensation = "dynamic counterplay";
-
-                string explanation = $"sacrifices {pieceName} for {compensation}";
-                return (true, explanation);
+                // Check for IMPLICIT sacrifice (non-capture that leaves pieces hanging)
+                // Examples: Qh5 leaving bishop hanging, Ng6+ leaving knight en prise
+                return CheckImplicitSacrifice(board, movingPiece,
+                    srcRow, srcCol, destRow, destCol, whiteToMove, evalAfter);
             }
             catch
             {
                 return (false, null);
             }
+        }
+
+        /// <summary>
+        /// Check for capture sacrifice: piece captures lesser piece and gets recaptured
+        /// Example: Nxf7 (knight takes pawn, knight gets captured)
+        /// </summary>
+        private static (bool isBrilliant, string? explanation) CheckCaptureSacrifice(
+            ChessBoard board, char movingPiece, char targetPiece,
+            int srcRow, int srcCol, int destRow, int destCol,
+            bool whiteToMove, double evalAfter)
+        {
+            // The SACRIFICED piece must be a minor piece or better (value >= 3)
+            PieceType movingType = PieceHelper.GetPieceType(movingPiece);
+            int movingValue = ChessUtilities.GetPieceValue(movingType);
+
+            // Pawn sacrifices don't count as "Brilliant"
+            if (movingValue < 3) return (false, null);
+
+            // CRITICAL: If we're capturing a piece worth MORE OR EQUAL to our piece,
+            // it's NOT a sacrifice - it's a winning or even trade!
+            PieceType capturedType = PieceHelper.GetPieceType(targetPiece);
+            int capturedValue = ChessUtilities.GetPieceValue(capturedType);
+            if (capturedValue >= movingValue) return (false, null);
+
+            // Simulate the capture
+            using var pooled = BoardPool.Rent(board);
+            ChessBoard afterCapture = pooled.Board;
+            afterCapture.SetPiece(srcRow, srcCol, '.');
+            afterCapture.SetPiece(destRow, destCol, movingPiece);
+
+            // Check if enemy has a PAWN that can recapture
+            // Pawns are always worth less than minor pieces, so pawn recapture = not a sacrifice
+            bool enemyPawnCanRecapture = CanEnemyPawnCapture(afterCapture, destRow, destCol, whiteToMove);
+            if (enemyPawnCanRecapture) return (false, null);
+
+            // Check if our piece is defended - if so, any recapture loses material for enemy
+            bool ourPieceDefended = ChessUtilities.IsSquareDefended(afterCapture, destRow, destCol, whiteToMove);
+            if (ourPieceDefended) return (false, null);
+
+            // CRITICAL: Check for x-ray defense (battery/discovered recapture)
+            // Example: Rxf4 with queen behind - if Qxf4, then Qxf4 wins the queen
+            // If any enemy recapture would allow us to recapture profitably, it's not a sacrifice
+            if (HasProfitableRecapture(afterCapture, destRow, destCol, movingValue, whiteToMove))
+                return (false, null);
+
+            // Finally check SEE - must lose material for it to be a sacrifice
+            int seeValue = MoveEvaluation.StaticExchangeEvaluation(
+                board, destRow, destCol, movingPiece, whiteToMove, srcRow, srcCol);
+
+            // Must be a sacrifice (SEE < 0 means we lose material in the exchange)
+            if (seeValue >= 0) return (false, null);
+
+            // All conditions met - it's a Brilliant capture sacrifice!
+            return GenerateBrilliantExplanation(movingType, whiteToMove, evalAfter);
+        }
+
+        /// <summary>
+        /// Check if any enemy recapture would allow us to win material
+        /// Covers multiple scenarios:
+        /// 1. X-ray/battery: We recapture on same square (Rxf4, Qxf4, Qxf4)
+        /// 2. Pin: Enemy piece is pinned, taking exposes bigger piece (Nxe4?? Bxd8)
+        /// 3. Discovered attack: Enemy moving reveals our attack on their piece
+        /// </summary>
+        private static bool HasProfitableRecapture(ChessBoard afterCapture, int pieceRow, int pieceCol, int ourPieceValue, bool weAreWhite)
+        {
+            char ourPiece = afterCapture.GetPiece(pieceRow, pieceCol);
+
+            // Find all enemy pieces that can capture our piece
+            for (int r = 0; r < 8; r++)
+            {
+                for (int c = 0; c < 8; c++)
+                {
+                    char enemyPiece = afterCapture.GetPiece(r, c);
+                    if (enemyPiece == '.') continue;
+
+                    bool enemyIsWhite = char.IsUpper(enemyPiece);
+                    if (enemyIsWhite == weAreWhite) continue; // Not an enemy
+
+                    // Can this enemy piece capture our piece?
+                    if (!ChessUtilities.CanAttackSquare(afterCapture, r, c, enemyPiece, pieceRow, pieceCol))
+                        continue;
+
+                    PieceType enemyType = PieceHelper.GetPieceType(enemyPiece);
+                    int enemyValue = ChessUtilities.GetPieceValue(enemyType);
+
+                    // Simulate enemy capturing our piece
+                    using var pooled2 = BoardPool.Rent(afterCapture);
+                    ChessBoard afterEnemyCapture = pooled2.Board;
+                    afterEnemyCapture.SetPiece(r, c, '.'); // Enemy leaves their square
+                    afterEnemyCapture.SetPiece(pieceRow, pieceCol, enemyPiece); // Enemy takes our piece
+
+                    // Check 1: Can we recapture on the same square profitably?
+                    if (CanRecaptureOnSquare(afterEnemyCapture, pieceRow, pieceCol, enemyValue, ourPieceValue, weAreWhite))
+                        return true;
+
+                    // Check 2: Did enemy moving expose any of their pieces to capture?
+                    // (This handles pins - e.g., knight was pinned to queen, now queen is exposed)
+                    int exposedValue = GetMaxExposedPieceValue(afterCapture, afterEnemyCapture, r, c, weAreWhite);
+                    if (exposedValue > 0)
+                    {
+                        // If we can capture something worth more than what we lost, it's not a sacrifice
+                        // We lost ourPieceValue, we can capture exposedValue
+                        if (exposedValue >= ourPieceValue)
+                            return true;
+                    }
+                }
+            }
+
+            return false; // No profitable response found
+        }
+
+        /// <summary>
+        /// Check if we can recapture on a square profitably
+        /// </summary>
+        private static bool CanRecaptureOnSquare(ChessBoard board, int row, int col, int enemyValueOnSquare, int ourLostValue, bool weAreWhite)
+        {
+            for (int r = 0; r < 8; r++)
+            {
+                for (int c = 0; c < 8; c++)
+                {
+                    char ourPiece = board.GetPiece(r, c);
+                    if (ourPiece == '.') continue;
+
+                    bool pieceIsWhite = char.IsUpper(ourPiece);
+                    if (pieceIsWhite != weAreWhite) continue;
+
+                    if (ChessUtilities.CanAttackSquare(board, r, c, ourPiece, row, col))
+                    {
+                        // We can recapture! Is it profitable?
+                        // We lost ourLostValue, we gain enemyValueOnSquare
+                        if (enemyValueOnSquare >= ourLostValue)
+                            return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Get the max value of enemy pieces that became exposed after enemy moved from (fromRow, fromCol)
+        /// This detects pins: if enemy knight was pinned to queen, moving the knight exposes the queen
+        /// </summary>
+        private static int GetMaxExposedPieceValue(ChessBoard beforeMove, ChessBoard afterMove, int fromRow, int fromCol, bool weAreWhite)
+        {
+            int maxExposed = 0;
+
+            // Check all enemy pieces - did any become attackable after the enemy piece moved?
+            for (int r = 0; r < 8; r++)
+            {
+                for (int c = 0; c < 8; c++)
+                {
+                    char enemyPiece = afterMove.GetPiece(r, c);
+                    if (enemyPiece == '.') continue;
+
+                    bool enemyIsWhite = char.IsUpper(enemyPiece);
+                    if (enemyIsWhite == weAreWhite) continue; // Not an enemy piece
+
+                    // Was this piece NOT attackable before, but IS attackable now?
+                    bool wasAttackable = ChessUtilities.IsSquareAttackedBy(beforeMove, r, c, weAreWhite);
+                    bool isAttackable = ChessUtilities.IsSquareAttackedBy(afterMove, r, c, weAreWhite);
+
+                    if (!wasAttackable && isAttackable)
+                    {
+                        // This piece became exposed!
+                        PieceType exposedType = PieceHelper.GetPieceType(enemyPiece);
+                        int exposedValue = ChessUtilities.GetPieceValue(exposedType);
+                        if (exposedValue > maxExposed)
+                            maxExposed = exposedValue;
+                    }
+                }
+            }
+
+            return maxExposed;
+        }
+
+        /// <summary>
+        /// Check for implicit sacrifice: non-capture that leaves pieces hanging
+        /// Examples:
+        /// - Qh5 threatening mate while leaving bishop on f4 undefended
+        /// - Ng6+ giving check while the knight is en prise
+        ///
+        /// NOT implicit sacrifices (tactical threats):
+        /// - Rd6 attacking queen while knight hangs (opponent can't take knight without losing queen)
+        /// - Discovered attack where piece "hangs" but reveals attack on bigger piece
+        /// </summary>
+        private static (bool isBrilliant, string? explanation) CheckImplicitSacrifice(
+            ChessBoard board, char movingPiece,
+            int srcRow, int srcCol, int destRow, int destCol,
+            bool whiteToMove, double evalAfter)
+        {
+            // Apply the move to see the resulting position
+            using var pooled = BoardPool.Rent(board);
+            ChessBoard afterMove = pooled.Board;
+            afterMove.SetPiece(srcRow, srcCol, '.');
+            afterMove.SetPiece(destRow, destCol, movingPiece);
+
+            // Handle pawn promotion
+            if (movingPiece == 'P' && destRow == 0)
+                afterMove.SetPiece(destRow, destCol, 'Q');
+            else if (movingPiece == 'p' && destRow == 7)
+                afterMove.SetPiece(destRow, destCol, 'q');
+
+            // Find all our pieces that are now hanging (undefended and can be captured)
+            // A piece is "hanging" if:
+            // 1. It's our piece (value >= 3 for brilliant consideration)
+            // 2. It's not defended by any of our pieces
+            // 3. It CAN be captured by an enemy piece
+
+            (int row, int col, char piece, int value)? hangingPiece = null;
+
+            for (int r = 0; r < 8; r++)
+            {
+                for (int c = 0; c < 8; c++)
+                {
+                    char piece = afterMove.GetPiece(r, c);
+                    if (piece == '.') continue;
+
+                    bool pieceIsWhite = char.IsUpper(piece);
+                    if (pieceIsWhite != whiteToMove) continue; // Not our piece
+
+                    PieceType pieceType = PieceHelper.GetPieceType(piece);
+                    int pieceValue = ChessUtilities.GetPieceValue(pieceType);
+
+                    // Only consider minor pieces or better (value >= 3)
+                    if (pieceValue < 3) continue;
+
+                    // Check if this piece is defended by us
+                    bool isDefended = IsSquareDefendedExcluding(afterMove, r, c, whiteToMove, r, c);
+                    if (isDefended) continue; // Piece is defended, not hanging
+
+                    // Check if enemy can capture this piece
+                    bool canBeCaptured = ChessUtilities.IsSquareAttackedBy(afterMove, r, c, !whiteToMove);
+                    if (!canBeCaptured) continue; // Enemy can't take it
+
+                    // This piece is hanging! Track the highest value one
+                    if (hangingPiece == null || pieceValue > hangingPiece.Value.value)
+                    {
+                        hangingPiece = (r, c, piece, pieceValue);
+                    }
+                }
+            }
+
+            // No hanging pieces = not an implicit sacrifice
+            if (hangingPiece == null) return (false, null);
+
+            // CRITICAL: Check if this is just a tactical threat, not a true sacrifice
+            // If the move attacks enemy pieces worth >= the hanging piece, opponent can't profitably take it
+            // Examples: Rd6 attacks queen (9) while knight (3) hangs - not a sacrifice, it's a threat
+            int maxThreatValue = GetMaxThreatValue(afterMove, srcRow, srcCol, destRow, destCol, whiteToMove);
+
+            if (maxThreatValue >= hangingPiece.Value.value)
+            {
+                // The hanging piece is "protected" by a bigger threat - not a real sacrifice
+                return (false, null);
+            }
+
+            // We found a hanging piece with no compensating threat - this is an implicit sacrifice!
+            PieceType sacrificedType = PieceHelper.GetPieceType(hangingPiece.Value.piece);
+            return GenerateBrilliantExplanation(sacrificedType, whiteToMove, evalAfter, isImplicit: true);
+        }
+
+        /// <summary>
+        /// Get the maximum value of enemy pieces threatened by our move.
+        /// Includes both direct attacks from the moved piece and discovered attacks.
+        /// </summary>
+        private static int GetMaxThreatValue(ChessBoard afterMove, int srcRow, int srcCol, int destRow, int destCol, bool whiteToMove)
+        {
+            int maxThreat = 0;
+            char movedPiece = afterMove.GetPiece(destRow, destCol);
+
+            for (int r = 0; r < 8; r++)
+            {
+                for (int c = 0; c < 8; c++)
+                {
+                    char enemyPiece = afterMove.GetPiece(r, c);
+                    if (enemyPiece == '.') continue;
+
+                    bool enemyIsWhite = char.IsUpper(enemyPiece);
+                    if (enemyIsWhite == whiteToMove) continue; // Not an enemy piece
+
+                    PieceType enemyType = PieceHelper.GetPieceType(enemyPiece);
+                    int enemyValue = ChessUtilities.GetPieceValue(enemyType);
+
+                    // Check if moved piece attacks this enemy
+                    if (ChessUtilities.CanAttackSquare(afterMove, destRow, destCol, movedPiece, r, c))
+                    {
+                        if (enemyValue > maxThreat)
+                            maxThreat = enemyValue;
+                    }
+
+                    // Check for discovered attacks - pieces that were blocked by the moved piece
+                    // and now have a clear line to enemy pieces
+                    // Check along the line from dest through src (opposite direction of the move)
+                    if (IsDiscoveredAttack(afterMove, srcRow, srcCol, r, c, whiteToMove))
+                    {
+                        if (enemyValue > maxThreat)
+                            maxThreat = enemyValue;
+                    }
+                }
+            }
+
+            return maxThreat;
+        }
+
+        /// <summary>
+        /// Check if there's a discovered attack through the source square to the target square
+        /// </summary>
+        private static bool IsDiscoveredAttack(ChessBoard board, int srcRow, int srcCol, int targetRow, int targetCol, bool byWhite)
+        {
+            // Look for our pieces that can attack through the now-empty source square
+            // Check along lines and diagonals that pass through srcRow, srcCol
+
+            // For each of our sliding pieces (bishop, rook, queen), check if they attack the target
+            // through the source square (which is now empty after the move)
+            for (int r = 0; r < 8; r++)
+            {
+                for (int c = 0; c < 8; c++)
+                {
+                    char piece = board.GetPiece(r, c);
+                    if (piece == '.') continue;
+
+                    bool pieceIsWhite = char.IsUpper(piece);
+                    if (pieceIsWhite != byWhite) continue;
+
+                    PieceType pieceType = PieceHelper.GetPieceType(piece);
+
+                    // Only sliding pieces can create discovered attacks
+                    if (pieceType != PieceType.Bishop && pieceType != PieceType.Rook && pieceType != PieceType.Queen)
+                        continue;
+
+                    // Check if this piece attacks the target
+                    if (ChessUtilities.CanAttackSquare(board, r, c, piece, targetRow, targetCol))
+                    {
+                        // Verify the attack goes through or near the source square
+                        // (i.e., the source square was blocking this attack before)
+                        if (IsOnLineBetween(r, c, srcRow, srcCol, targetRow, targetCol))
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Check if point (midRow, midCol) is on the line between (r1, c1) and (r2, c2)
+        /// </summary>
+        private static bool IsOnLineBetween(int r1, int c1, int midRow, int midCol, int r2, int c2)
+        {
+            // Check if mid is between r1,c1 and r2,c2 on a straight line or diagonal
+
+            // Same row (horizontal line)
+            if (r1 == midRow && midRow == r2)
+            {
+                int minCol = Math.Min(c1, c2);
+                int maxCol = Math.Max(c1, c2);
+                return midCol > minCol && midCol < maxCol;
+            }
+
+            // Same column (vertical line)
+            if (c1 == midCol && midCol == c2)
+            {
+                int minRow = Math.Min(r1, r2);
+                int maxRow = Math.Max(r1, r2);
+                return midRow > minRow && midRow < maxRow;
+            }
+
+            // Diagonal
+            int dr1 = midRow - r1;
+            int dc1 = midCol - c1;
+            int dr2 = r2 - midRow;
+            int dc2 = c2 - midCol;
+
+            // Check if same diagonal direction and mid is between
+            if (Math.Abs(dr1) == Math.Abs(dc1) && Math.Abs(dr2) == Math.Abs(dc2))
+            {
+                // Same diagonal direction
+                if (dr1 != 0 && dc1 != 0 && dr2 != 0 && dc2 != 0)
+                {
+                    int signR1 = Math.Sign(dr1);
+                    int signC1 = Math.Sign(dc1);
+                    int signR2 = Math.Sign(dr2);
+                    int signC2 = Math.Sign(dc2);
+
+                    // Must be same direction from r1,c1 to mid and from mid to r2,c2
+                    return signR1 == signR2 && signC1 == signC2;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Check if a square is defended by a side, excluding a specific piece from consideration
+        /// Used to check if a piece defends itself (it doesn't)
+        /// </summary>
+        private static bool IsSquareDefendedExcluding(ChessBoard board, int row, int col, bool byWhite, int excludeRow, int excludeCol)
+        {
+            for (int r = 0; r < 8; r++)
+            {
+                for (int c = 0; c < 8; c++)
+                {
+                    // Skip the excluded square (the piece itself)
+                    if (r == excludeRow && c == excludeCol) continue;
+
+                    char piece = board.GetPiece(r, c);
+                    if (piece == '.') continue;
+
+                    bool pieceIsWhite = char.IsUpper(piece);
+                    if (pieceIsWhite != byWhite) continue;
+
+                    if (ChessUtilities.CanAttackSquare(board, r, c, piece, row, col))
+                        return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Generate the brilliant move explanation
+        /// </summary>
+        private static (bool isBrilliant, string? explanation) GenerateBrilliantExplanation(
+            PieceType sacrificedType, bool whiteToMove, double evalAfter, bool isImplicit = false)
+        {
+            string pieceName = sacrificedType switch
+            {
+                PieceType.Queen => "queen",
+                PieceType.Rook => "rook",
+                PieceType.Bishop => "bishop",
+                PieceType.Knight => "knight",
+                _ => "piece"
+            };
+
+            // Describe the compensation based on position evaluation
+            string compensation;
+            double evalAdvantage = whiteToMove ? evalAfter : -evalAfter;
+
+            if (evalAdvantage >= 1.5)
+                compensation = "decisive advantage";
+            else if (evalAdvantage >= 0.5)
+                compensation = "strong initiative";
+            else if (evalAdvantage >= 0.0)
+                compensation = "lasting compensation";
+            else
+                compensation = "dynamic counterplay";
+
+            // Different phrasing for implicit vs explicit sacrifice
+            string verb = isImplicit ? "leaves" : "sacrifices";
+            string suffix = isImplicit ? " en prise" : "";
+            string explanation = $"{verb} {pieceName}{suffix} for {compensation}";
+            return (true, explanation);
         }
 
         /// <summary>
