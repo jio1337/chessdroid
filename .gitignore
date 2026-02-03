@@ -118,3 +118,7 @@ temp.html
 publish/
 *.zip
 release_build/
+
+# Claude session files
+MEMORY.md
+SOUL.md

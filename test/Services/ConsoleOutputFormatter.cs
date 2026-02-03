@@ -544,6 +544,14 @@ namespace ChessDroid.Services
             if (seeValue >= 0) return (false, null);
 
             // All conditions met - it's a Brilliant capture sacrifice!
+            // Try to generate a specific deflection explanation (e.g., "deflects queen allowing checkmate")
+            string? deflectionExplanation = GenerateDeflectionExplanation(
+                afterCapture, destRow, destCol, movingPiece, whiteToMove);
+            if (deflectionExplanation != null)
+            {
+                return (true, deflectionExplanation);
+            }
+
             return GenerateBrilliantExplanation(movingType, whiteToMove, evalAfter);
         }
 
@@ -687,11 +695,53 @@ namespace ChessDroid.Services
             afterMove.SetPiece(srcRow, srcCol, '.');
             afterMove.SetPiece(destRow, destCol, movingPiece);
 
+            // Handle castling - need to also move the rook!
+            // Castling is detected by king moving 2 squares horizontally
+            if (char.ToUpper(movingPiece) == 'K' && Math.Abs(destCol - srcCol) == 2)
+            {
+                int rookRow = srcRow; // Same row as king
+                if (destCol > srcCol) // Kingside (O-O): king goes right
+                {
+                    // Rook moves from h-file (col 7) to f-file (col 5)
+                    char rook = afterMove.GetPiece(rookRow, 7);
+                    afterMove.SetPiece(rookRow, 7, '.');
+                    afterMove.SetPiece(rookRow, 5, rook);
+                }
+                else // Queenside (O-O-O): king goes left
+                {
+                    // Rook moves from a-file (col 0) to d-file (col 3)
+                    char rook = afterMove.GetPiece(rookRow, 0);
+                    afterMove.SetPiece(rookRow, 0, '.');
+                    afterMove.SetPiece(rookRow, 3, rook);
+                }
+            }
+
             // Handle pawn promotion
             if (movingPiece == 'P' && destRow == 0)
                 afterMove.SetPiece(destRow, destCol, 'Q');
             else if (movingPiece == 'p' && destRow == 7)
                 afterMove.SetPiece(destRow, destCol, 'q');
+
+            // Check if this move gives check - if so, hanging pieces (other than checking piece)
+            // are not truly en prise because opponent must deal with check first
+            int enemyKingRow = -1, enemyKingCol = -1;
+            char enemyKing = whiteToMove ? 'k' : 'K';
+            for (int r = 0; r < 8; r++)
+            {
+                for (int c = 0; c < 8; c++)
+                {
+                    if (afterMove.GetPiece(r, c) == enemyKing)
+                    {
+                        enemyKingRow = r;
+                        enemyKingCol = c;
+                        break;
+                    }
+                }
+                if (enemyKingRow >= 0) break;
+            }
+
+            bool movesGivesCheck = enemyKingRow >= 0 &&
+                ChessUtilities.IsSquareAttackedBy(afterMove, enemyKingRow, enemyKingCol, whiteToMove);
 
             // Find all our pieces that are now hanging (undefended and can be captured)
             // A piece is "hanging" if:
@@ -724,6 +774,16 @@ namespace ChessDroid.Services
                     // Check if enemy can capture this piece
                     bool canBeCaptured = ChessUtilities.IsSquareAttackedBy(afterMove, r, c, !whiteToMove);
                     if (!canBeCaptured) continue; // Enemy can't take it
+
+                    // If the move gives check, only pieces DELIVERING check are truly hanging
+                    // (because taking them addresses the check). Other pieces aren't en prise
+                    // since opponent must deal with check first, giving us time to defend.
+                    // Example: O-O-O+ gives check via rook, queen elsewhere isn't truly hanging
+                    if (movesGivesCheck && enemyKingRow >= 0)
+                    {
+                        bool deliversCheck = ChessUtilities.CanAttackSquare(afterMove, r, c, piece, enemyKingRow, enemyKingCol);
+                        if (!deliversCheck) continue; // Piece not giving check, not truly hanging
+                    }
 
                     // This piece is hanging! Track the highest value one
                     if (hangingPiece == null || pieceValue > hangingPiece.Value.value)
@@ -780,6 +840,9 @@ namespace ChessDroid.Services
                 {
                     char piece = afterMove.GetPiece(r, c);
                     if (piece == '.') continue;
+
+                    // Skip king - can't "win" a king in a fork, we just give check
+                    if (char.ToUpper(piece) == 'K') continue;
 
                     bool pieceIsWhite = char.IsUpper(piece);
                     if (pieceIsWhite == weAreWhite) continue; // Not enemy piece
@@ -879,6 +942,523 @@ namespace ChessDroid.Services
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Generate explanation for deflection sacrifices.
+        /// A deflection sacrifice is when taking our piece allows checkmate (or major threat).
+        /// Example: Nxf7!! - if Qxf7 then we have checkmate
+        /// </summary>
+        private static string? GenerateDeflectionExplanation(
+            ChessBoard afterCapture, int pieceRow, int pieceCol, char ourPiece, bool weAreWhite)
+        {
+            // Find the most valuable enemy piece that can recapture
+            (int row, int col, char piece)? bestRecapture = null;
+            int bestRecaptureValue = 0;
+
+            for (int r = 0; r < 8; r++)
+            {
+                for (int c = 0; c < 8; c++)
+                {
+                    char piece = afterCapture.GetPiece(r, c);
+                    if (piece == '.') continue;
+
+                    // Skip king - we want to find deflectable pieces (usually queen)
+                    if (char.ToUpper(piece) == 'K') continue;
+
+                    bool pieceIsWhite = char.IsUpper(piece);
+                    if (pieceIsWhite == weAreWhite) continue; // Not enemy piece
+
+                    // Can this piece capture our piece?
+                    if (!ChessUtilities.CanAttackSquare(afterCapture, r, c, piece, pieceRow, pieceCol))
+                        continue;
+
+                    PieceType pieceType = PieceHelper.GetPieceType(piece);
+                    int pieceValue = ChessUtilities.GetPieceValue(pieceType);
+
+                    // Track the most valuable recapturing piece (usually queen)
+                    if (pieceValue > bestRecaptureValue)
+                    {
+                        bestRecapture = (r, c, piece);
+                        bestRecaptureValue = pieceValue;
+                    }
+                }
+            }
+
+            // Only check deflection for valuable pieces (queen = 9, rook = 5)
+            if (bestRecapture == null || bestRecaptureValue < 5) return null;
+
+            // Simulate the recapture
+            using var pooled = BoardPool.Rent(afterCapture);
+            ChessBoard afterRecapture = pooled.Board;
+            afterRecapture.SetPiece(bestRecapture.Value.row, bestRecapture.Value.col, '.');
+            afterRecapture.SetPiece(pieceRow, pieceCol, bestRecapture.Value.piece);
+
+            // Check if we have checkmate in 1 after the recapture
+            if (HasMateInOne(afterRecapture, weAreWhite))
+            {
+                string deflectedPiece = bestRecaptureValue >= 9 ? "queen" : "rook";
+                return $"deflects {deflectedPiece} allowing checkmate";
+            }
+
+            // Check if we have checkmate in 2 after the recapture
+            if (HasMateInTwo(afterRecapture, weAreWhite))
+            {
+                string deflectedPiece = bestRecaptureValue >= 9 ? "queen" : "rook";
+                return $"deflects {deflectedPiece} allowing forced checkmate";
+            }
+
+            // Check if we have a strong mating attack (multiple pieces attacking king area)
+            // This catches cases like mate in 2-3 where we have overwhelming force
+            if (HasOverwhelmingMatingAttack(afterRecapture, weAreWhite))
+            {
+                string deflectedPiece = bestRecaptureValue >= 9 ? "queen" : "rook";
+                return $"deflects {deflectedPiece} from defending mate threat";
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Check if we have checkmate in 1 from this position
+        /// </summary>
+        private static bool HasMateInOne(ChessBoard board, bool weAreWhite)
+        {
+            // Find enemy king
+            char enemyKing = weAreWhite ? 'k' : 'K';
+            int kingRow = -1, kingCol = -1;
+            for (int r = 0; r < 8; r++)
+            {
+                for (int c = 0; c < 8; c++)
+                {
+                    if (board.GetPiece(r, c) == enemyKing)
+                    {
+                        kingRow = r;
+                        kingCol = c;
+                        break;
+                    }
+                }
+                if (kingRow >= 0) break;
+            }
+            if (kingRow < 0) return false;
+
+            // Try all our pieces and all possible moves
+            for (int srcR = 0; srcR < 8; srcR++)
+            {
+                for (int srcC = 0; srcC < 8; srcC++)
+                {
+                    char piece = board.GetPiece(srcR, srcC);
+                    if (piece == '.') continue;
+
+                    bool pieceIsWhite = char.IsUpper(piece);
+                    if (pieceIsWhite != weAreWhite) continue; // Not our piece
+
+                    // Try all destination squares
+                    for (int destR = 0; destR < 8; destR++)
+                    {
+                        for (int destC = 0; destC < 8; destC++)
+                        {
+                            if (srcR == destR && srcC == destC) continue;
+
+                            // Check if this is a valid move
+                            if (!CanMakeMove(board, srcR, srcC, destR, destC, piece, weAreWhite))
+                                continue;
+
+                            // Simulate the move
+                            using var pooled = BoardPool.Rent(board);
+                            ChessBoard afterMove = pooled.Board;
+                            afterMove.SetPiece(srcR, srcC, '.');
+                            afterMove.SetPiece(destR, destC, piece);
+
+                            // Handle pawn promotion (assume queen)
+                            if (char.ToUpper(piece) == 'P' && (destR == 0 || destR == 7))
+                            {
+                                afterMove.SetPiece(destR, destC, weAreWhite ? 'Q' : 'q');
+                            }
+
+                            // Check if this is checkmate
+                            if (IsCheckmate(afterMove, !weAreWhite))
+                            {
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Check if we have checkmate in 2 from this position
+        /// This is more expensive than mate in 1, but catches deflection sacrifices
+        /// </summary>
+        private static bool HasMateInTwo(ChessBoard board, bool weAreWhite)
+        {
+            // Try all our moves (our first move)
+            for (int srcR = 0; srcR < 8; srcR++)
+            {
+                for (int srcC = 0; srcC < 8; srcC++)
+                {
+                    char piece = board.GetPiece(srcR, srcC);
+                    if (piece == '.') continue;
+
+                    bool pieceIsWhite = char.IsUpper(piece);
+                    if (pieceIsWhite != weAreWhite) continue;
+
+                    for (int destR = 0; destR < 8; destR++)
+                    {
+                        for (int destC = 0; destC < 8; destC++)
+                        {
+                            if (srcR == destR && srcC == destC) continue;
+                            if (!CanMakeMove(board, srcR, srcC, destR, destC, piece, weAreWhite))
+                                continue;
+
+                            // Simulate our move
+                            using var pooled1 = BoardPool.Rent(board);
+                            ChessBoard afterOurMove = pooled1.Board;
+                            afterOurMove.SetPiece(srcR, srcC, '.');
+                            afterOurMove.SetPiece(destR, destC, piece);
+
+                            // Handle pawn promotion
+                            if (char.ToUpper(piece) == 'P' && (destR == 0 || destR == 7))
+                                afterOurMove.SetPiece(destR, destC, weAreWhite ? 'Q' : 'q');
+
+                            // If this is already checkmate, we found mate in 1 (handled elsewhere)
+                            if (IsCheckmate(afterOurMove, !weAreWhite))
+                                continue; // Skip, we want mate in 2, not 1
+
+                            // Check if opponent's king is in check - required for forcing sequence
+                            char enemyKing = weAreWhite ? 'k' : 'K';
+                            int kingRow = -1, kingCol = -1;
+                            for (int r = 0; r < 8; r++)
+                            {
+                                for (int c = 0; c < 8; c++)
+                                {
+                                    if (afterOurMove.GetPiece(r, c) == enemyKing)
+                                    {
+                                        kingRow = r;
+                                        kingCol = c;
+                                        break;
+                                    }
+                                }
+                                if (kingRow >= 0) break;
+                            }
+
+                            bool givesCheck = kingRow >= 0 &&
+                                ChessUtilities.IsSquareAttackedBy(afterOurMove, kingRow, kingCol, weAreWhite);
+
+                            // Only consider checking moves for forced mate in 2
+                            if (!givesCheck) continue;
+
+                            // Try all opponent responses
+                            bool allResponsesLeadToMate = true;
+                            bool hasLegalResponse = false;
+
+                            for (int oppSrcR = 0; oppSrcR < 8; oppSrcR++)
+                            {
+                                for (int oppSrcC = 0; oppSrcC < 8; oppSrcC++)
+                                {
+                                    char oppPiece = afterOurMove.GetPiece(oppSrcR, oppSrcC);
+                                    if (oppPiece == '.') continue;
+
+                                    bool oppIsWhite = char.IsUpper(oppPiece);
+                                    if (oppIsWhite == weAreWhite) continue; // Not opponent's piece
+
+                                    for (int oppDestR = 0; oppDestR < 8; oppDestR++)
+                                    {
+                                        for (int oppDestC = 0; oppDestC < 8; oppDestC++)
+                                        {
+                                            if (oppSrcR == oppDestR && oppSrcC == oppDestC) continue;
+                                            if (!CanMakeMove(afterOurMove, oppSrcR, oppSrcC, oppDestR, oppDestC, oppPiece, !weAreWhite))
+                                                continue;
+
+                                            // Simulate opponent's response
+                                            using var pooled2 = BoardPool.Rent(afterOurMove);
+                                            ChessBoard afterOppMove = pooled2.Board;
+                                            afterOppMove.SetPiece(oppSrcR, oppSrcC, '.');
+                                            afterOppMove.SetPiece(oppDestR, oppDestC, oppPiece);
+
+                                            // Check if this leaves their king in check (illegal move)
+                                            int newKingRow = kingRow, newKingCol = kingCol;
+                                            if (char.ToUpper(oppPiece) == 'K')
+                                            {
+                                                newKingRow = oppDestR;
+                                                newKingCol = oppDestC;
+                                            }
+
+                                            if (ChessUtilities.IsSquareAttackedBy(afterOppMove, newKingRow, newKingCol, weAreWhite))
+                                                continue; // Illegal - still in check
+
+                                            hasLegalResponse = true;
+
+                                            // Check if we have mate in 1 after their response
+                                            if (!HasMateInOne(afterOppMove, weAreWhite))
+                                            {
+                                                allResponsesLeadToMate = false;
+                                                break;
+                                            }
+                                        }
+                                        if (!allResponsesLeadToMate) break;
+                                    }
+                                    if (!allResponsesLeadToMate) break;
+                                }
+                                if (!allResponsesLeadToMate) break;
+                            }
+
+                            // If all legal responses lead to mate in 1, we have mate in 2
+                            if (hasLegalResponse && allResponsesLeadToMate)
+                                return true;
+                        }
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Simplified move validation for mate search
+        /// </summary>
+        private static bool CanMakeMove(ChessBoard board, int srcR, int srcC, int destR, int destC, char piece, bool weAreWhite)
+        {
+            // Can't capture our own pieces
+            char target = board.GetPiece(destR, destC);
+            if (target != '.')
+            {
+                bool targetIsWhite = char.IsUpper(target);
+                if (targetIsWhite == weAreWhite) return false;
+            }
+
+            // Check if piece can attack that square
+            return ChessUtilities.CanAttackSquare(board, srcR, srcC, piece, destR, destC);
+        }
+
+        /// <summary>
+        /// Check if a position is checkmate
+        /// </summary>
+        private static bool IsCheckmate(ChessBoard board, bool kingIsWhite)
+        {
+            // Find the king
+            char king = kingIsWhite ? 'K' : 'k';
+            int kingRow = -1, kingCol = -1;
+            for (int r = 0; r < 8; r++)
+            {
+                for (int c = 0; c < 8; c++)
+                {
+                    if (board.GetPiece(r, c) == king)
+                    {
+                        kingRow = r;
+                        kingCol = c;
+                        break;
+                    }
+                }
+                if (kingRow >= 0) break;
+            }
+            if (kingRow < 0) return false;
+
+            // King must be in check
+            if (!ChessUtilities.IsSquareAttackedBy(board, kingRow, kingCol, !kingIsWhite))
+                return false;
+
+            // Check if king has any escape squares
+            for (int dr = -1; dr <= 1; dr++)
+            {
+                for (int dc = -1; dc <= 1; dc++)
+                {
+                    if (dr == 0 && dc == 0) continue;
+                    int newR = kingRow + dr;
+                    int newC = kingCol + dc;
+                    if (newR < 0 || newR > 7 || newC < 0 || newC > 7) continue;
+
+                    char target = board.GetPiece(newR, newC);
+                    // Can't move to square with own piece
+                    if (target != '.')
+                    {
+                        bool targetIsWhite = char.IsUpper(target);
+                        if (targetIsWhite == kingIsWhite) continue;
+                    }
+
+                    // Simulate king move
+                    using var pooled = BoardPool.Rent(board);
+                    ChessBoard afterKingMove = pooled.Board;
+                    afterKingMove.SetPiece(kingRow, kingCol, '.');
+                    afterKingMove.SetPiece(newR, newC, king);
+
+                    // Check if king is still attacked
+                    if (!ChessUtilities.IsSquareAttackedBy(afterKingMove, newR, newC, !kingIsWhite))
+                        return false; // King can escape
+                }
+            }
+
+            // Check if any piece can block or capture the attacker
+            // This is a simplified check - for full accuracy we'd need to find all attackers
+            // and check if any friendly piece can interpose or capture
+            for (int r = 0; r < 8; r++)
+            {
+                for (int c = 0; c < 8; c++)
+                {
+                    char piece = board.GetPiece(r, c);
+                    if (piece == '.') continue;
+
+                    bool pieceIsWhite = char.IsUpper(piece);
+                    if (pieceIsWhite != kingIsWhite) continue; // Not our piece
+                    if (char.ToUpper(piece) == 'K') continue; // Already handled king moves
+
+                    // Try all moves for this piece
+                    for (int destR = 0; destR < 8; destR++)
+                    {
+                        for (int destC = 0; destC < 8; destC++)
+                        {
+                            if (r == destR && c == destC) continue;
+
+                            if (!ChessUtilities.CanAttackSquare(board, r, c, piece, destR, destC))
+                                continue;
+
+                            // Can't capture own pieces
+                            char target = board.GetPiece(destR, destC);
+                            if (target != '.')
+                            {
+                                bool targetIsWhite = char.IsUpper(target);
+                                if (targetIsWhite == kingIsWhite) continue;
+                            }
+
+                            // Simulate the move
+                            using var pooled = BoardPool.Rent(board);
+                            ChessBoard afterMove = pooled.Board;
+                            afterMove.SetPiece(r, c, '.');
+                            afterMove.SetPiece(destR, destC, piece);
+
+                            // Check if king is still in check
+                            if (!ChessUtilities.IsSquareAttackedBy(afterMove, kingRow, kingCol, !kingIsWhite))
+                                return false; // Can block or capture
+                        }
+                    }
+                }
+            }
+
+            return true; // No escape, no block - it's checkmate
+        }
+
+        /// <summary>
+        /// Check if we have an overwhelming mating attack (multiple major pieces attacking king zone)
+        /// This heuristic catches cases where mate in 2-3 is likely
+        /// </summary>
+        private static bool HasOverwhelmingMatingAttack(ChessBoard board, bool weAreWhite)
+        {
+            // Find enemy king
+            char enemyKing = weAreWhite ? 'k' : 'K';
+            int kingRow = -1, kingCol = -1;
+            for (int r = 0; r < 8; r++)
+            {
+                for (int c = 0; c < 8; c++)
+                {
+                    if (board.GetPiece(r, c) == enemyKing)
+                    {
+                        kingRow = r;
+                        kingCol = c;
+                        break;
+                    }
+                }
+                if (kingRow >= 0) break;
+            }
+            if (kingRow < 0) return false;
+
+            // Count king's safe escape squares
+            int safeEscapes = 0;
+            for (int dr = -1; dr <= 1; dr++)
+            {
+                for (int dc = -1; dc <= 1; dc++)
+                {
+                    if (dr == 0 && dc == 0) continue;
+                    int r = kingRow + dr;
+                    int c = kingCol + dc;
+                    if (r < 0 || r > 7 || c < 0 || c > 7) continue;
+
+                    char target = board.GetPiece(r, c);
+                    // Can't move to square with own piece
+                    if (target != '.')
+                    {
+                        bool targetIsWhite = char.IsUpper(target);
+                        bool kingIsWhite = !weAreWhite; // Enemy king
+                        if (targetIsWhite == kingIsWhite) continue;
+                    }
+
+                    // Check if square is safe (not attacked by us)
+                    if (!ChessUtilities.IsSquareAttackedBy(board, r, c, weAreWhite))
+                    {
+                        safeEscapes++;
+                    }
+                }
+            }
+
+            // Count our major pieces (Q, R) and check if we can give check
+            int ourMajorPieces = 0;
+            bool canGiveCheck = false;
+
+            for (int srcR = 0; srcR < 8; srcR++)
+            {
+                for (int srcC = 0; srcC < 8; srcC++)
+                {
+                    char piece = board.GetPiece(srcR, srcC);
+                    if (piece == '.') continue;
+
+                    bool pieceIsWhite = char.IsUpper(piece);
+                    if (pieceIsWhite != weAreWhite) continue;
+
+                    char upper = char.ToUpper(piece);
+
+                    // Count major pieces
+                    if (upper == 'Q' || upper == 'R')
+                    {
+                        ourMajorPieces++;
+                    }
+
+                    // Check if this piece can give check (attack king square)
+                    if (ChessUtilities.CanAttackSquare(board, srcR, srcC, piece, kingRow, kingCol))
+                    {
+                        canGiveCheck = true;
+                    }
+                    else
+                    {
+                        // Check if piece can move to give check
+                        for (int destR = 0; destR < 8; destR++)
+                        {
+                            for (int destC = 0; destC < 8; destC++)
+                            {
+                                if (srcR == destR && srcC == destC) continue;
+                                if (!ChessUtilities.CanAttackSquare(board, srcR, srcC, piece, destR, destC))
+                                    continue;
+
+                                // Would this move give check?
+                                if (ChessUtilities.CanAttackSquare(board, destR, destC, piece, kingRow, kingCol))
+                                {
+                                    canGiveCheck = true;
+                                    break;
+                                }
+                            }
+                            if (canGiveCheck) break;
+                        }
+                    }
+                }
+            }
+
+            // Mating attack indicators:
+            // 1. King is very constrained (0-1 safe escapes)
+            // 2. We have queen + rook or multiple rooks (2+ major pieces)
+            // 3. We can give check (forcing moves available)
+            bool kingConstrained = safeEscapes <= 1;
+            bool haveMajorPieces = ourMajorPieces >= 2;
+
+            // Strong mating attack: constrained king + major pieces + can give check
+            if (kingConstrained && haveMajorPieces && canGiveCheck)
+                return true;
+
+            // Also trigger if king has NO safe escapes and we have any major piece
+            if (safeEscapes == 0 && ourMajorPieces >= 1 && canGiveCheck)
+                return true;
+
+            return false;
         }
 
         /// <summary>
