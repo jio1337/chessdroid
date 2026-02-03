@@ -539,6 +539,421 @@ namespace ChessDroid.Services
             return (false, "", evalDrop, whiteBlundered);
         }
 
+        /// <summary>
+        /// Generates an explanation for WHY a blunder is bad by analyzing the opponent's punishing move.
+        /// </summary>
+        /// <param name="completeFen">The position after the blunder was played</param>
+        /// <param name="bestLine">The best line for the opponent (first move is the punishing move)</param>
+        /// <param name="evaluation">Current evaluation</param>
+        /// <param name="whiteBlundered">Whether white was the one who blundered</param>
+        /// <returns>Human-readable explanation of why the blunder is bad</returns>
+        public static string GenerateBlunderExplanation(string completeFen, List<string> pvs, string evaluation, bool whiteBlundered)
+        {
+            try
+            {
+                if (pvs == null || pvs.Count == 0 || string.IsNullOrEmpty(pvs[0]))
+                    return "";
+
+                // Parse the best line to get the punishing move
+                string bestLine = pvs[0];
+                string[] moves = bestLine.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                if (moves.Length == 0 || moves[0].Length < 4)
+                    return "";
+
+                string punishingMove = moves[0]; // The opponent's best reply
+
+                // Parse FEN
+                var gameState = GameState.FromFEN(completeFen);
+                if (gameState == null)
+                    return "";
+
+                ChessBoard board = gameState.Board;
+                bool opponentIsWhite = !whiteBlundered; // Opponent is the one who punishes
+
+                // Convert UCI move to SAN for display
+                string sanMove = ConvertUciToSan(punishingMove, completeFen);
+
+                // Check for checkmate first
+                if (!string.IsNullOrEmpty(evaluation) && evaluation.StartsWith("Mate in "))
+                {
+                    return $"allows {sanMove} leading to forced checkmate";
+                }
+
+                // Parse the punishing move
+                int srcFile = punishingMove[0] - 'a';
+                int srcRank = 8 - (punishingMove[1] - '0');
+                int destFile = punishingMove[2] - 'a';
+                int destRank = 8 - (punishingMove[3] - '0');
+
+                char movingPiece = board.GetPiece(srcRank, srcFile);
+                char capturedPiece = board.GetPiece(destRank, destFile);
+
+                // Create board after punishing move
+                using var pooled = BoardPool.Rent(board);
+                ChessBoard afterPunish = pooled.Board;
+                afterPunish.SetPiece(destRank, destFile, movingPiece);
+                afterPunish.SetPiece(srcRank, srcFile, '.');
+
+                // Handle promotion
+                if (punishingMove.Length > 4)
+                {
+                    char promotionPiece = opponentIsWhite ? char.ToUpper(punishingMove[4]) : char.ToLower(punishingMove[4]);
+                    afterPunish.SetPiece(destRank, destFile, promotionPiece);
+                }
+
+                // Get piece names
+                PieceType movingType = PieceHelper.GetPieceType(movingPiece);
+                string movingPieceName = ChessUtilities.GetPieceName(movingType);
+
+                // Check if it's a capture - what did we hang?
+                if (capturedPiece != '.')
+                {
+                    PieceType capturedType = PieceHelper.GetPieceType(capturedPiece);
+                    string capturedPieceName = ChessUtilities.GetPieceName(capturedType);
+                    int capturedValue = ChessUtilities.GetPieceValue(capturedType);
+                    int movingValue = ChessUtilities.GetPieceValue(movingType);
+
+                    // Check if it's defended - if not, it's a hanging piece
+                    bool wasDefended = ChessUtilities.IsSquareAttackedBy(board, destRank, destFile, whiteBlundered);
+
+                    if (!wasDefended)
+                    {
+                        return $"hangs {capturedPieceName} on {ChessUtilities.GetSquareName(destRank, destFile)}";
+                    }
+                    else if (capturedValue > movingValue)
+                    {
+                        // Trading down - winning exchange for opponent
+                        return $"loses {capturedPieceName} to {movingPieceName}";
+                    }
+                }
+
+                // Check what the punishing move achieves
+                // 1. Check for fork after the punishing move
+                string forkExplanation = DetectForkAfterMove(afterPunish, destRank, destFile, movingPiece, opponentIsWhite);
+                if (!string.IsNullOrEmpty(forkExplanation))
+                {
+                    return $"allows {sanMove} {forkExplanation}";
+                }
+
+                // 2. Check for pin after the punishing move
+                string pinExplanation = DetectPinAfterMove(afterPunish, destRank, destFile, movingPiece, opponentIsWhite);
+                if (!string.IsNullOrEmpty(pinExplanation))
+                {
+                    return $"allows {sanMove} {pinExplanation}";
+                }
+
+                // 3. Check for discovered attack after punishing move
+                string discoveredExplanation = DetectDiscoveredAttackAfterMove(board, afterPunish, srcRank, srcFile, destRank, destFile, movingPiece, opponentIsWhite);
+                if (!string.IsNullOrEmpty(discoveredExplanation))
+                {
+                    return $"allows {discoveredExplanation}";
+                }
+
+                // 4. Check if it gives check
+                var (kingRow, kingCol) = afterPunish.GetKingPosition(whiteBlundered);
+                if (kingRow >= 0 && ChessUtilities.CanAttackSquare(afterPunish, destRank, destFile, movingPiece, kingRow, kingCol))
+                {
+                    // Check with a threat
+                    int escapeSquares = CountKingEscapeSquares(afterPunish, kingRow, kingCol, whiteBlundered);
+                    if (escapeSquares == 0)
+                    {
+                        return $"allows {sanMove} with dangerous check";
+                    }
+                }
+
+                // 5. Check for threats using ThreatDetection
+                string enPassantSquare = "-";
+                if (gameState != null && !string.IsNullOrEmpty(gameState.EnPassantTarget))
+                {
+                    enPassantSquare = gameState.EnPassantTarget;
+                }
+
+                var threats = ThreatDetection.AnalyzeThreatsAfterMove(board, punishingMove, opponentIsWhite, enPassantSquare);
+                if (threats.Count > 0)
+                {
+                    var topThreat = threats[0];
+                    if (topThreat.Type == ThreatDetection.ThreatType.CheckmateThreat)
+                    {
+                        return $"allows {sanMove} threatening checkmate";
+                    }
+                    else if (topThreat.Type == ThreatDetection.ThreatType.Fork)
+                    {
+                        return $"allows {sanMove} {topThreat.Description}";
+                    }
+                    else if (topThreat.Type == ThreatDetection.ThreatType.HangingPiece || topThreat.Type == ThreatDetection.ThreatType.MaterialWin)
+                    {
+                        return $"allows {sanMove} which {topThreat.Description}";
+                    }
+                    else if (topThreat.Type == ThreatDetection.ThreatType.Pin)
+                    {
+                        return $"allows {sanMove} which {topThreat.Description}";
+                    }
+                }
+
+                // 6. Generic explanation based on eval drop
+                if (!string.IsNullOrEmpty(evaluation))
+                {
+                    double? eval = ParseEvaluation(evaluation);
+                    if (eval.HasValue)
+                    {
+                        double absEval = Math.Abs(eval.Value);
+                        if (absEval >= 5.0)
+                        {
+                            return "loses decisive material";
+                        }
+                        else if (absEval >= 3.0)
+                        {
+                            return "loses significant material";
+                        }
+                        else if (absEval >= 1.5)
+                        {
+                            return "loses material";
+                        }
+                    }
+                }
+
+                return ""; // No specific explanation found
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"GenerateBlunderExplanation error: {ex.Message}");
+                return "";
+            }
+        }
+
+        /// <summary>
+        /// Detects if a move creates a fork (attacking multiple valuable pieces)
+        /// </summary>
+        private static string DetectForkAfterMove(ChessBoard board, int pieceRow, int pieceCol, char piece, bool isWhite)
+        {
+            var attackedPieces = new List<(int row, int col, char piece, int value, string name)>();
+
+            for (int r = 0; r < 8; r++)
+            {
+                for (int c = 0; c < 8; c++)
+                {
+                    char target = board.GetPiece(r, c);
+                    if (target == '.') continue;
+
+                    bool targetIsWhite = char.IsUpper(target);
+                    if (targetIsWhite == isWhite) continue; // Skip own pieces
+
+                    if (ChessUtilities.CanAttackSquare(board, pieceRow, pieceCol, piece, r, c))
+                    {
+                        PieceType targetType = PieceHelper.GetPieceType(target);
+                        int value = targetType == PieceType.King ? 100 : ChessUtilities.GetPieceValue(targetType);
+                        string name = ChessUtilities.GetPieceName(targetType);
+                        attackedPieces.Add((r, c, target, value, name));
+                    }
+                }
+            }
+
+            // Fork = attacking 2+ valuable pieces (value >= 3 or King)
+            var valuableAttacked = attackedPieces.Where(p => p.value >= 3 || char.ToUpper(p.piece) == 'K').ToList();
+
+            if (valuableAttacked.Count >= 2)
+            {
+                var pieceNames = valuableAttacked.Select(p => p.name).Take(2);
+                return $"forking {string.Join(" and ", pieceNames)}";
+            }
+
+            return "";
+        }
+
+        /// <summary>
+        /// Detects if a move creates a pin
+        /// </summary>
+        private static string DetectPinAfterMove(ChessBoard board, int pieceRow, int pieceCol, char piece, bool isWhite)
+        {
+            PieceType pieceType = PieceHelper.GetPieceType(piece);
+
+            // Only sliding pieces can pin
+            if (pieceType != PieceType.Bishop && pieceType != PieceType.Rook && pieceType != PieceType.Queen)
+                return "";
+
+            var directions = ChessUtilities.GetDirectionsForPiece(pieceType);
+
+            foreach (var (dR, dF) in directions)
+            {
+                int r = pieceRow + dR, c = pieceCol + dF;
+                char? firstPiece = null;
+                int firstRow = -1, firstCol = -1;
+
+                while (r >= 0 && r < 8 && c >= 0 && c < 8)
+                {
+                    char target = board.GetPiece(r, c);
+                    if (target != '.')
+                    {
+                        bool targetIsWhite = char.IsUpper(target);
+
+                        if (firstPiece == null)
+                        {
+                            // First piece must be enemy
+                            if (targetIsWhite != isWhite)
+                            {
+                                firstPiece = target;
+                                firstRow = r;
+                                firstCol = c;
+                            }
+                            else break;
+                        }
+                        else
+                        {
+                            // Second piece must also be enemy and more valuable (or King)
+                            if (targetIsWhite != isWhite)
+                            {
+                                PieceType firstType = PieceHelper.GetPieceType(firstPiece.Value);
+                                PieceType secondType = PieceHelper.GetPieceType(target);
+
+                                int firstValue = ChessUtilities.GetPieceValue(firstType);
+                                int secondValue = secondType == PieceType.King ? 100 : ChessUtilities.GetPieceValue(secondType);
+
+                                if (secondValue > firstValue)
+                                {
+                                    string pinnedName = ChessUtilities.GetPieceName(firstType);
+                                    string behindName = secondType == PieceType.King ? "king" : ChessUtilities.GetPieceName(secondType);
+                                    return $"pinning {pinnedName} to {behindName}";
+                                }
+                            }
+                            break;
+                        }
+                    }
+                    r += dR;
+                    c += dF;
+                }
+            }
+
+            return "";
+        }
+
+        /// <summary>
+        /// Detects if a move creates a discovered attack
+        /// </summary>
+        private static string DetectDiscoveredAttackAfterMove(ChessBoard beforeBoard, ChessBoard afterBoard,
+            int srcRow, int srcCol, int destRow, int destCol, char movingPiece, bool isWhite)
+        {
+            // Look for pieces behind the source square that now have open lines
+            int[] directions = { -1, 0, 1 };
+
+            foreach (int dR in directions)
+            {
+                foreach (int dC in directions)
+                {
+                    if (dR == 0 && dC == 0) continue;
+
+                    // Look backwards from source to find our sliding piece
+                    int r = srcRow - dR, c = srcCol - dC;
+                    while (r >= 0 && r < 8 && c >= 0 && c < 8)
+                    {
+                        char behindPiece = afterBoard.GetPiece(r, c);
+                        if (behindPiece == '.')
+                        {
+                            r -= dR;
+                            c -= dC;
+                            continue;
+                        }
+
+                        bool behindIsWhite = char.IsUpper(behindPiece);
+                        if (behindIsWhite != isWhite) break; // Enemy piece, no discovered attack
+
+                        PieceType behindType = PieceHelper.GetPieceType(behindPiece);
+
+                        // Check if it's a sliding piece that can attack in this direction
+                        bool canAttackInDirection = false;
+                        if (behindType == PieceType.Queen) canAttackInDirection = true;
+                        else if (behindType == PieceType.Rook && (dR == 0 || dC == 0)) canAttackInDirection = true;
+                        else if (behindType == PieceType.Bishop && dR != 0 && dC != 0) canAttackInDirection = true;
+
+                        if (!canAttackInDirection) break;
+
+                        // Now look forward from source to find enemy pieces that are now attacked
+                        int targetR = srcRow + dR, targetC = srcCol + dC;
+                        while (targetR >= 0 && targetR < 8 && targetC >= 0 && targetC < 8)
+                        {
+                            char targetPiece = afterBoard.GetPiece(targetR, targetC);
+                            if (targetPiece != '.')
+                            {
+                                bool targetIsWhite = char.IsUpper(targetPiece);
+                                if (targetIsWhite != isWhite) // Enemy piece
+                                {
+                                    PieceType targetType = PieceHelper.GetPieceType(targetPiece);
+                                    if (ChessUtilities.GetPieceValue(targetType) >= 3 || targetType == PieceType.King)
+                                    {
+                                        string targetName = ChessUtilities.GetPieceName(targetType);
+                                        string attackerName = ChessUtilities.GetPieceName(behindType);
+                                        return $"discovered {attackerName} attack on {targetName}";
+                                    }
+                                }
+                                break;
+                            }
+                            targetR += dR;
+                            targetC += dC;
+                        }
+                        break;
+                    }
+                }
+            }
+
+            return "";
+        }
+
+        /// <summary>
+        /// Counts the number of safe escape squares for a king
+        /// </summary>
+        private static int CountKingEscapeSquares(ChessBoard board, int kingRow, int kingCol, bool kingIsWhite)
+        {
+            int escapeSquares = 0;
+            char king = kingIsWhite ? 'K' : 'k';
+
+            for (int dr = -1; dr <= 1; dr++)
+            {
+                for (int dc = -1; dc <= 1; dc++)
+                {
+                    if (dr == 0 && dc == 0) continue;
+
+                    int newRow = kingRow + dr;
+                    int newCol = kingCol + dc;
+
+                    if (newRow < 0 || newRow >= 8 || newCol < 0 || newCol >= 8) continue;
+
+                    char target = board.GetPiece(newRow, newCol);
+
+                    // Can't move to square occupied by own piece
+                    if (target != '.' && char.IsUpper(target) == kingIsWhite) continue;
+
+                    // Check if square is attacked by opponent
+                    using var pooledKing = BoardPool.Rent(board);
+                    ChessBoard tempBoard = pooledKing.Board;
+                    tempBoard.SetPiece(kingRow, kingCol, '.');
+                    tempBoard.SetPiece(newRow, newCol, king);
+
+                    if (!ChessUtilities.IsSquareAttackedBy(tempBoard, newRow, newCol, !kingIsWhite))
+                    {
+                        escapeSquares++;
+                    }
+                }
+            }
+
+            return escapeSquares;
+        }
+
+        /// <summary>
+        /// Converts a UCI move to SAN notation for display
+        /// </summary>
+        private static string ConvertUciToSan(string uciMove, string fen)
+        {
+            try
+            {
+                return ChessNotationService.ConvertUCIToSAN(uciMove, fen,
+                    ChessRulesService.CanReachSquare, ChessRulesService.FindAllPiecesOfSameType);
+            }
+            catch
+            {
+                // Fallback to UCI if conversion fails
+                return uciMove;
+            }
+        }
+
         // Delegate to ChessUtilities
         private static bool IsPieceImmediatelyRecapturable(ChessBoard board, int pieceRow, int pieceCol, char piece, bool isWhite, ChessBoard? originalBoard = null)
             => ChessUtilities.IsPieceImmediatelyRecapturable(board, pieceRow, pieceCol, piece, isWhite, originalBoard);

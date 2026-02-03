@@ -24,21 +24,32 @@ namespace ChessDroid.Services
         }
 
         /// <summary>
-        /// Displays blunder warning with colored background
+        /// Displays blunder warning with colored background and explanation
         /// </summary>
-        public void DisplayBlunderWarning(string blunderType, double evalDrop, bool whiteBlundered)
+        public void DisplayBlunderWarning(string blunderType, double evalDrop, bool whiteBlundered, string explanation = "")
         {
             AppendTextWithFormat($"⚠ {blunderType}! Eval swing: {evalDrop:F2} pawns{Environment.NewLine}",
                 Color.Orange, Color.Black, FontStyle.Bold);
 
-            // Determine who blundered
-            if (whiteBlundered)
+            // Show explanation if available
+            if (!string.IsNullOrEmpty(explanation))
             {
-                richTextBox.AppendText($"White just blundered and gave Black a big opportunity!{Environment.NewLine}");
+                string who = whiteBlundered ? "White" : "Black";
+                richTextBox.SelectionColor = GetThemeColor(Color.OrangeRed, Color.DarkOrange);
+                richTextBox.AppendText($"{who} {explanation}{Environment.NewLine}");
+                ResetFormatting();
             }
             else
             {
-                richTextBox.AppendText($"Black just blundered and gave White a big opportunity!{Environment.NewLine}");
+                // Fallback to generic message
+                if (whiteBlundered)
+                {
+                    richTextBox.AppendText($"White just blundered and gave Black a big opportunity!{Environment.NewLine}");
+                }
+                else
+                {
+                    richTextBox.AppendText($"Black just blundered and gave White a big opportunity!{Environment.NewLine}");
+                }
             }
 
             ResetFormatting();
@@ -1858,7 +1869,10 @@ namespace ChessDroid.Services
 
                 if (isBlunder)
                 {
-                    DisplayBlunderWarning(blunderType, evalDrop, whiteBlundered);
+                    // Generate explanation for why it's a blunder
+                    string blunderExplanation = MovesExplanation.GenerateBlunderExplanation(
+                        fen, pvs, evaluation, whiteBlundered);
+                    DisplayBlunderWarning(blunderType, evalDrop, whiteBlundered, blunderExplanation);
                 }
             }
 
