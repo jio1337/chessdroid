@@ -9,7 +9,7 @@ namespace ChessDroid.Services
     /// Implemented tactics: Fork, Pin, Skewer, Discovered Attack, Double Check,
     /// Hanging Piece, Trapped Piece, Removal of Defender, Double Attack, Deflection,
     /// Decoy, Overloading, X-Ray Attack, Back Rank Mate, Smothered Mate,
-    /// Promotion Tactics, Perpetual Check, Tempo Attack.
+    /// Promotion Tactics, Perpetual Check, Tempo Attack, Zwischenzug.
     ///
     /// Also includes: SEE for captures, positional evaluation, endgame analysis.
     /// </summary>
@@ -1007,6 +1007,13 @@ namespace ChessDroid.Services
                     return pinInfo;
                 }
 
+                // Zwischenzug detection - intermediate forcing move instead of "obvious" recapture
+                var zwischenzugInfo = DetectZwischenzug(originalBoard, board, srcRow, srcCol, pieceRow, pieceCol, piece, isWhite);
+                if (!string.IsNullOrEmpty(zwischenzugInfo))
+                {
+                    return zwischenzugInfo;
+                }
+
                 if (!pieceWillBeRecaptured)
                 {
                     var skewerInfo = DetectSkewer(board, pieceRow, pieceCol, piece, isWhite);
@@ -1269,6 +1276,124 @@ namespace ChessDroid.Services
             {
                 return null;
             }
+        }
+
+        /// <summary>
+        /// Detect Zwischenzug (intermediate move) - playing an unexpected forcing move
+        /// instead of an "obvious" recapture or expected response.
+        /// A zwischenzug is detected when:
+        /// 1. There's an obvious capture available (hanging piece or recapture opportunity)
+        /// 2. The best move is NOT that capture
+        /// 3. The best move gives check or attacks something more valuable
+        /// </summary>
+        private static string? DetectZwischenzug(ChessBoard originalBoard, ChessBoard afterMoveBoard,
+            int srcRow, int srcCol, int destRow, int destCol, char piece, bool isWhite)
+        {
+            try
+            {
+                // Get the piece we're capturing (if any) with the best move
+                char capturedPiece = originalBoard.GetPiece(destRow, destCol);
+                bool isCapture = capturedPiece != '.' && char.IsUpper(capturedPiece) != isWhite;
+
+                // Check if our move gives check
+                bool givesCheck = IsGivingCheck(afterMoveBoard, destRow, destCol, piece, isWhite);
+
+                // If we're not giving check, this isn't a zwischenzug (the key feature is the forcing intermediate move)
+                if (!givesCheck)
+                    return null;
+
+                // Now check if there was an "obvious" capture we ignored
+                // Look for hanging enemy pieces we could have captured instead
+                var obviousCaptures = FindObviousCaptures(originalBoard, isWhite, destRow, destCol);
+
+                if (obviousCaptures.Count == 0)
+                    return null; // No obvious capture was available, so this isn't a zwischenzug
+
+                // Find the most valuable obvious capture we're ignoring
+                var bestIgnoredCapture = obviousCaptures
+                    .OrderByDescending(c => ChessUtilities.GetPieceValue(c.pieceType))
+                    .First();
+
+                int ignoredCaptureValue = ChessUtilities.GetPieceValue(bestIgnoredCapture.pieceType);
+
+                // Only report zwischenzug if we're ignoring a significant capture (3+ points = minor piece or better)
+                if (ignoredCaptureValue < 3)
+                    return null;
+
+                // If we ARE capturing something, only call it zwischenzug if we're ignoring something more valuable
+                if (isCapture)
+                {
+                    int captureValue = ChessUtilities.GetPieceValue(PieceHelper.GetPieceType(capturedPiece));
+                    // If we're capturing something equally or more valuable, not a zwischenzug
+                    if (captureValue >= ignoredCaptureValue)
+                        return null;
+                }
+
+                // This is a zwischenzug! Instead of recapturing/taking the obvious piece, we give check first
+                string ignoredPieceName = ChessUtilities.GetPieceName(bestIgnoredCapture.pieceType);
+                return $"zwischenzug (check before recapturing {ignoredPieceName})";
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Find all "obvious" captures available for a side - undefended pieces or pieces we can win.
+        /// Excludes the actual destination square of the move being analyzed.
+        /// </summary>
+        private static List<(int row, int col, PieceType pieceType)> FindObviousCaptures(
+            ChessBoard board, bool forWhite, int excludeRow, int excludeCol)
+        {
+            var captures = new List<(int row, int col, PieceType pieceType)>();
+
+            // Find all enemy pieces
+            for (int r = 0; r < 8; r++)
+            {
+                for (int c = 0; c < 8; c++)
+                {
+                    // Skip the square we're actually moving to
+                    if (r == excludeRow && c == excludeCol)
+                        continue;
+
+                    char piece = board.GetPiece(r, c);
+                    if (piece == '.') continue;
+
+                    bool pieceIsWhite = char.IsUpper(piece);
+                    if (pieceIsWhite == forWhite) continue; // Same color - not a capture target
+
+                    PieceType pieceType = PieceHelper.GetPieceType(piece);
+                    if (pieceType == PieceType.King) continue; // Can't capture king
+
+                    // Check if this piece is attacked by us
+                    bool isAttacked = ChessUtilities.IsSquareAttackedBy(board, r, c, forWhite);
+                    if (!isAttacked) continue;
+
+                    // Check if this is a "free" or winning capture
+                    bool isDefended = ChessUtilities.IsSquareAttackedBy(board, r, c, !forWhite);
+                    int pieceValue = ChessUtilities.GetPieceValue(pieceType);
+
+                    if (!isDefended)
+                    {
+                        // Undefended piece - obvious capture
+                        captures.Add((r, c, pieceType));
+                    }
+                    else
+                    {
+                        // Defended, but check if we can capture profitably
+                        // (our lowest attacker value < piece value)
+                        int lowestAttackerValue = ChessUtilities.GetLowestAttackerValue(board, r, c, forWhite);
+                        if (lowestAttackerValue > 0 && lowestAttackerValue < pieceValue)
+                        {
+                            // We win material even if defended
+                            captures.Add((r, c, pieceType));
+                        }
+                    }
+                }
+            }
+
+            return captures;
         }
 
         // Detect if this piece is skewering enemy pieces

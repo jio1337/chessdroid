@@ -36,6 +36,7 @@ namespace ChessDroid
             richTextBoxConsole = new RichTextBox();
             labelStatus = new Label();
             chkWhiteTurn = new CheckBox();
+            chkPin = new CheckBox();
             SuspendLayout();
             //
             // buttonAnalyze
@@ -146,12 +147,30 @@ namespace ChessDroid
             chkWhiteTurn.UseVisualStyleBackColor = false;
             chkWhiteTurn.CheckedChanged += chkWhiteTurn_CheckedChanged;
             //
+            // chkPin
+            //
+            chkPin.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+            chkPin.AutoSize = true;
+            chkPin.BackColor = Color.WhiteSmoke;
+            chkPin.Checked = true;
+            chkPin.CheckState = CheckState.Checked;
+            chkPin.Font = new Font("Courier New", 8.25F, FontStyle.Bold);
+            chkPin.ForeColor = Color.Black;
+            chkPin.Location = new Point(60, 375);
+            chkPin.Name = "chkPin";
+            chkPin.Size = new Size(47, 18);
+            chkPin.TabIndex = 7;
+            chkPin.Text = "Pin";
+            chkPin.UseVisualStyleBackColor = false;
+            chkPin.CheckedChanged += chkPin_CheckedChanged;
+            //
             // MainForm
             //
             AutoScaleDimensions = new SizeF(7F, 14F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = Color.WhiteSmoke;
             ClientSize = new Size(385, 400);
+            Controls.Add(chkPin);
             Controls.Add(chkWhiteTurn);
             Controls.Add(labelStatus);
             Controls.Add(buttonSettings);
@@ -168,7 +187,7 @@ namespace ChessDroid
             MinimumSize = new Size(350, 300);
             Name = "MainForm";
             StartPosition = FormStartPosition.CenterScreen;
-            Text = "chessdroid v2.9.0";
+            Text = "chessdroid v2.9.2";
             TopMost = true;
             FormClosed += Form1_FormClosed;
             Load += Form1_Load;
@@ -185,5 +204,6 @@ namespace ChessDroid
         private RichTextBox richTextBoxConsole;
         private Label labelStatus;
         private CheckBox chkWhiteTurn;
+        private CheckBox chkPin;
     }
 }

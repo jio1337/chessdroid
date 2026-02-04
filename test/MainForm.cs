@@ -354,8 +354,7 @@ namespace ChessDroid
 
         private async void Form1_Load(object sender, EventArgs e)
         {
-            TopMost = true;
-
+            // TopMost is controlled by chkPin checkbox (set in designer, default checked)
             await InitializeEngineAsync();
             bool registered = RegisterHotKey(this.Handle, 1, MOD_ALT, (uint)Keys.X);
             if (!registered)
@@ -472,6 +471,12 @@ namespace ChessDroid
 
             // Update checkbox text based on state
             chkWhiteTurn.Text = chkWhiteTurn.Checked ? "White to move" : "Black to move";
+        }
+
+        private void chkPin_CheckedChanged(object? sender, EventArgs e)
+        {
+            // Toggle window always-on-top
+            TopMost = chkPin.Checked;
         }
 
         private void buttonSettings_Click(object sender, EventArgs e)
@@ -682,7 +687,7 @@ namespace ChessDroid
 
         private void ApplyTheme(bool isDarkMode)
         {
-            ThemeService.ApplyTheme(this, labelStatus, buttonAnalyze, buttonReset, buttonSettings, richTextBoxConsole, chkWhiteTurn, isDarkMode);
+            ThemeService.ApplyTheme(this, labelStatus, buttonAnalyze, buttonReset, buttonSettings, richTextBoxConsole, chkWhiteTurn, chkPin, isDarkMode);
         }
     }
 }

@@ -121,7 +121,7 @@ namespace ChessDroid.Services
         /// Applies theme to MainForm controls
         /// </summary>
         public static void ApplyTheme(Form form, Label labelStatus, Button button1, Button buttonReset,
-            Button buttonSettings, RichTextBox richTextBoxConsole, CheckBox chkWhiteTurn, bool isDarkMode)
+            Button buttonSettings, RichTextBox richTextBoxConsole, CheckBox chkWhiteTurn, CheckBox chkPin, bool isDarkMode)
         {
             // Suspend layout to prevent flickering
             form.SuspendLayout();
@@ -142,6 +142,8 @@ namespace ChessDroid.Services
             richTextBoxConsole.ForeColor = scheme.ConsoleForeColor;
             chkWhiteTurn.BackColor = scheme.CheckboxBackColor;
             chkWhiteTurn.ForeColor = scheme.CheckboxForeColor;
+            chkPin.BackColor = scheme.CheckboxBackColor;
+            chkPin.ForeColor = scheme.CheckboxForeColor;
 
             // Resume layout
             form.ResumeLayout();

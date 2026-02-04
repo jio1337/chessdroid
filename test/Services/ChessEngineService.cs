@@ -623,8 +623,11 @@ namespace ChessDroid.Services
                     }
                     else if (mateIn < 0)
                     {
-                        // Black delivers mate - huge negative, shorter mate is "better" (more decisive)
-                        return -100000.0 - Math.Abs(mateIn);
+                        // Black delivers mate - huge negative, shorter mate is better
+                        // Use + so shorter mate (smaller abs value) gives lower result for ascending sort
+                        // Mate in -3: -100000 + 3 = -99997 (comes first in ascending)
+                        // Mate in -9: -100000 + 9 = -99991 (comes later in ascending)
+                        return -100000.0 + Math.Abs(mateIn);
                     }
                     else
                     {
