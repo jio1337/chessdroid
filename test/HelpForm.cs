@@ -50,28 +50,18 @@ namespace ChessDroid
 
         private void LoadHelpText()
         {
-            string helpText = @"CHESSDROID v2.9.0 SETTINGS GUIDE
+            string helpText = @"CHESSDROID v3.0.0 - CHESS ANALYSIS BOARD
 
 ═══════════════════════════════════════════════════════════════════
-📊 BOARD DETECTION
+🎮 GETTING STARTED
 ═══════════════════════════════════════════════════════════════════
 
-🎯 Match Threshold (0.1 - 1.0)
-Controls how similar a piece must look to be recognized.
-
-  • 0.55-0.75 (Recommended): Balanced accuracy
-  • 0.40-0.54 (Relaxed): Use if pieces aren't detected
-  • 0.75-1.0 (Strict): Very precise, may miss unusual pieces
-
-📐 Canny Thresholds (Edge Detection)
-Controls board outline detection.
-
-  • Low/High should be 1:2 or 1:3 ratio (e.g., 50/150)
-  • Increase both: If too many edges confuse detection
-  • Decrease both: If board edges aren't found
-
-📏 Min Board Area - Minimum pixel area to detect as board
-🔍 Debug Cells - Show detected squares for troubleshooting
+Chessdroid is a powerful chess analysis tool featuring:
+  • 30+ tactical pattern detection (pins, forks, skewers, etc.)
+  • Move quality classification (Brilliant, Best, Good, etc.)
+  • Opening book support (Polyglot .bin format)
+  • Engine vs Engine matches with adjustable strength
+  • PGN import/export with full move tree support
 
 ═══════════════════════════════════════════════════════════════════
 🤖 CHESS ENGINE
@@ -84,10 +74,10 @@ Controls board outline detection.
 ⏱ Response Timeout - Max wait time for engine analysis
 🔄 Max Retries - Retry attempts on engine failure
 ⏳ Move Timeout - Total time for full analysis cycle
-⏱ Min Analysis Time - Minimum analysis time (prevents rushed moves)
+⏱ Min Analysis Time - Minimum analysis time
 
 🎮 Engine Selection - Choose from engines in /Engines folder
-🌐 Site Selection - Lichess or Chess.com (affects piece templates)
+🎨 Piece Set - Choose piece style from /Templates folder
 
 ═══════════════════════════════════════════════════════════════════
 📝 EXPLANATION SETTINGS
@@ -105,7 +95,7 @@ Controls how detailed explanations are:
 
   ♟ Tactical Analysis
     Pins, forks, skewers, discovered attacks, sacrifices,
-    tempo attacks, perpetual check detection
+    tempo attacks, zwischenzug, perpetual check
 
   ♟ Positional Analysis
     Pawn structure, outposts, piece mobility, king safety,
@@ -113,30 +103,25 @@ Controls how detailed explanations are:
 
   ♟ Endgame Analysis
     Opposition detection, rule of the square, king activity,
-    insufficient material, fortress detection, zugzwang,
-    passed pawn evaluation, mop-up technique
+    insufficient material, fortress detection, zugzwang
 
   ♟ Opening Principles
     Opening move descriptions and principles
 
   ♟ SEE Values
-    Static Exchange Evaluation - shows material won/lost
-    after all captures on a square
+    Static Exchange Evaluation - material won/lost after captures
 
   ♟ Threats Analysis
-    Shows threats created by your move (⚔) and
-    defenses against opponent threats (🛡)
+    Threats created by your move and opponent threats
 
   ♟ WDL & Sharpness
     Win/Draw/Loss percentages and position sharpness
-    Inspired by Lc0's probability-based evaluation
 
 ═══════════════════════════════════════════════════════════════════
-🎛 LC0-INSPIRED FEATURES
+🎛 PLAY STYLE
 ═══════════════════════════════════════════════════════════════════
 
 ⚔ Aggressiveness Slider (0-100)
-Filters move suggestions based on playing style:
 
   • 0-20 (Very Solid): Prefer safe, defensive moves
   • 21-40 (Solid): Slightly conservative
@@ -145,51 +130,37 @@ Filters move suggestions based on playing style:
   • 81-100 (Very Aggressive): Maximum attacking chances
 
 📖 Show Opening Name
-Displays the detected opening name (e.g., 'Sicilian Defense')
+Displays the detected opening (e.g., 'Sicilian Defense')
 
 ⭐ Show Move Quality
-Shows quality labels: Brilliant (!!) Best (!) Good Inaccuracy (?!)
-Mistake (?) Blunder (??)
+Shows: Brilliant (!!) Best (!) Good Inaccuracy (?!)
+       Mistake (?) Blunder (??)
 
 ═══════════════════════════════════════════════════════════════════
 📺 DISPLAY OPTIONS
 ═══════════════════════════════════════════════════════════════════
 
-Show Best Line - Always shows the #1 recommended move
-Show Second Line - Shows 2nd best alternative
-Show Third Line - Shows 3rd best alternative
-
+Show Best/Second/Third Line - Control how many engine lines to show
 Comparing multiple lines helps understand why one move is better!
-
-═══════════════════════════════════════════════════════════════════
-🔄 AUTO-MONITOR (BETA)
-═══════════════════════════════════════════════════════════════════
-
-Automatically analyzes the board when it's your turn.
-Toggle with Alt+K hotkey or checkbox in settings.
-
-⚠ Known limitations:
-  • May miss very fast opponent moves (<200ms)
-  • Occasional issues with rapid position changes
-  • Disabled by default for stability
 
 ═══════════════════════════════════════════════════════════════════
 ⌨ KEYBOARD SHORTCUTS
 ═══════════════════════════════════════════════════════════════════
 
-  Alt+X     Analyze current position
-  Alt+K     Toggle Auto-Monitor on/off
+  Ctrl+O    Open PGN file
+  Ctrl+S    Save PGN file
+  Ctrl+V    Paste FEN/PGN from clipboard
+  Ctrl+C    Copy current FEN
+  Left/Right arrows - Navigate moves
 
 ═══════════════════════════════════════════════════════════════════
-💡 TROUBLESHOOTING
+💡 TIPS
 ═══════════════════════════════════════════════════════════════════
 
-Pieces not detected → Lower Match Threshold (0.50-0.60)
-Wrong pieces detected → Increase Match Threshold (0.70-0.80)
-Board not found → Adjust Canny Thresholds (try 60/180)
 Engine timeout → Reduce Depth or increase Timeout
 No endgame insights → Enable 'Endgame Analysis' toggle
-Explanations too verbose → Lower Complexity level";
+Explanations too verbose → Lower Complexity level
+Want book moves → Enable 'Show Book Moves' in settings";
 
             txtHelp.Text = helpText;
             txtHelp.SelectionStart = 0;

@@ -118,38 +118,6 @@ namespace ChessDroid.Services
         };
 
         /// <summary>
-        /// Applies theme to MainForm controls
-        /// </summary>
-        public static void ApplyTheme(Form form, Label labelStatus, Button button1, Button buttonReset,
-            Button buttonSettings, RichTextBox richTextBoxConsole, CheckBox chkWhiteTurn, CheckBox chkPin, bool isDarkMode)
-        {
-            // Suspend layout to prevent flickering
-            form.SuspendLayout();
-
-            ColorScheme scheme = isDarkMode ? DarkScheme : LightScheme;
-
-            // Apply colors
-            form.BackColor = scheme.BackgroundColor;
-            labelStatus.BackColor = scheme.LabelBackColor;
-            labelStatus.ForeColor = scheme.LabelForeColor;
-            button1.BackColor = scheme.Button1BackColor;
-            button1.ForeColor = scheme.Button1ForeColor;
-            buttonReset.BackColor = scheme.ButtonResetBackColor;
-            buttonReset.ForeColor = scheme.ButtonResetForeColor;
-            buttonSettings.BackColor = scheme.ButtonSettingsBackColor;
-            buttonSettings.ForeColor = scheme.ButtonSettingsForeColor;
-            richTextBoxConsole.BackColor = scheme.ConsoleBackColor;
-            richTextBoxConsole.ForeColor = scheme.ConsoleForeColor;
-            chkWhiteTurn.BackColor = scheme.CheckboxBackColor;
-            chkWhiteTurn.ForeColor = scheme.CheckboxForeColor;
-            chkPin.BackColor = scheme.CheckboxBackColor;
-            chkPin.ForeColor = scheme.CheckboxForeColor;
-
-            // Resume layout
-            form.ResumeLayout();
-        }
-
-        /// <summary>
         /// Gets the color scheme for a theme
         /// </summary>
         public static ColorScheme GetColorScheme(bool isDarkMode)

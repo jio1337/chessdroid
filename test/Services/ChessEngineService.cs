@@ -167,8 +167,26 @@ namespace ChessDroid.Services
         {
             try
             {
+                // Resolve engine path - check Engines folder if path doesn't exist directly
+                string resolvedPath = enginePath;
+                if (!File.Exists(resolvedPath))
+                {
+                    // Try in Engines subfolder
+                    string enginesFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Engines");
+                    string engineInFolder = Path.Combine(enginesFolder, Path.GetFileName(enginePath));
+                    if (File.Exists(engineInFolder))
+                    {
+                        resolvedPath = engineInFolder;
+                        Debug.WriteLine($"Engine resolved to Engines folder: {resolvedPath}");
+                    }
+                    else
+                    {
+                        Debug.WriteLine($"Engine not found at: {enginePath} or {engineInFolder}");
+                    }
+                }
+
                 // Store path for restart capability
-                lastEnginePath = enginePath;
+                lastEnginePath = resolvedPath;
                 State = EngineState.Starting;
 
                 // Clean up any existing process
@@ -176,7 +194,7 @@ namespace ChessDroid.Services
 
                 ProcessStartInfo psi = new ProcessStartInfo
                 {
-                    FileName = enginePath,
+                    FileName = resolvedPath,
                     UseShellExecute = false,
                     RedirectStandardInput = true,
                     RedirectStandardOutput = true,
@@ -287,7 +305,7 @@ namespace ChessDroid.Services
         }
 
         public async Task<(string bestMove, string evaluation, List<string> pvs, List<string> evaluations, WDLInfo? wdl)> GetBestMoveAsync(
-            string fen, int depth, int multiPV)
+            string fen, int depth, int multiPV, bool preserveHashTables = true)
         {
             string bestMove = "";
             string evaluation = "";
@@ -332,10 +350,14 @@ namespace ChessDroid.Services
                         throw new IOException("Failed to set MultiPV option");
                     }
 
-                    // Send ucinewgame (clears hash tables)
-                    if (!await SafeWriteLineAsync(UCI_CMD_UCINEWGAME))
+                    // Only send ucinewgame if we want to clear hash tables (e.g., new game)
+                    // Preserving hash tables allows engine to reuse previous calculations
+                    if (!preserveHashTables)
                     {
-                        throw new IOException("Failed to send ucinewgame");
+                        if (!await SafeWriteLineAsync(UCI_CMD_UCINEWGAME))
+                        {
+                            throw new IOException("Failed to send ucinewgame");
+                        }
                     }
 
                     // Set position
@@ -794,21 +816,30 @@ namespace ChessDroid.Services
             // Wait a bit for OS to release resources
             await Task.Delay(100);
 
-            if (!string.IsNullOrEmpty(lastEnginePath))
+            // Use lastEnginePath if available, otherwise build full path from config
+            string? enginePath = lastEnginePath;
+            if (string.IsNullOrEmpty(enginePath) && !string.IsNullOrEmpty(config?.SelectedEngine))
+            {
+                // Build full path: Engines folder + selected engine filename
+                enginePath = Path.Combine(config.GetEnginesPath(), config.SelectedEngine);
+            }
+
+            if (!string.IsNullOrEmpty(enginePath))
             {
                 try
                 {
-                    await InitializeAsync(lastEnginePath);
-                    Debug.WriteLine("Engine restarted successfully");
+                    Debug.WriteLine($"Initializing engine from: {enginePath}");
+                    await InitializeAsync(enginePath);
+                    Debug.WriteLine("Engine started successfully");
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine($"Failed to restart engine: {ex.Message}");
+                    Debug.WriteLine($"Failed to start engine: {ex.Message}");
                 }
             }
             else
             {
-                Debug.WriteLine("Cannot restart engine: no engine path stored");
+                Debug.WriteLine("Cannot start engine: no engine path in config or stored");
             }
         }
 

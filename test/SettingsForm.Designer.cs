@@ -29,16 +29,6 @@ namespace ChessDroid
         private void InitializeComponent()
         {
             components = new System.ComponentModel.Container();
-            grpDetection = new GroupBox();
-            chkDebugCells = new CheckBox();
-            numMinBoardArea = new NumericUpDown();
-            numCannyHigh = new NumericUpDown();
-            numCannyLow = new NumericUpDown();
-            numMatchThreshold = new NumericUpDown();
-            lblMinBoardArea = new Label();
-            lblCannyHigh = new Label();
-            lblCannyLow = new Label();
-            lblMatchThreshold = new Label();
             grpEngine = new GroupBox();
             cmbEngineDepth = new ComboBox();
             numMinAnalysisTime = new NumericUpDown();
@@ -51,8 +41,6 @@ namespace ChessDroid
             lblMaxRetries = new Label();
             lblEngineTimeout = new Label();
             grpDisplay = new GroupBox();
-            cmbSite = new ComboBox();
-            lblSite = new Label();
             cmbEngine = new ComboBox();
             lblEngine = new Label();
             chkShowThird = new CheckBox();
@@ -84,11 +72,6 @@ namespace ChessDroid
             btnCancel = new Button();
             chkDarkMode = new CheckBox();
             toolTip1 = new ToolTip(components);
-            grpDetection.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)numMinBoardArea).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)numCannyHigh).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)numCannyLow).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)numMatchThreshold).BeginInit();
             grpEngine.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)numMinAnalysisTime).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numMoveTimeout).BeginInit();
@@ -99,122 +82,6 @@ namespace ChessDroid
             grpLc0Features.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)trkAggressiveness).BeginInit();
             SuspendLayout();
-            // 
-            // grpDetection
-            // 
-            grpDetection.Controls.Add(chkDebugCells);
-            grpDetection.Controls.Add(numMinBoardArea);
-            grpDetection.Controls.Add(numCannyHigh);
-            grpDetection.Controls.Add(numCannyLow);
-            grpDetection.Controls.Add(numMatchThreshold);
-            grpDetection.Controls.Add(lblMinBoardArea);
-            grpDetection.Controls.Add(lblCannyHigh);
-            grpDetection.Controls.Add(lblCannyLow);
-            grpDetection.Controls.Add(lblMatchThreshold);
-            grpDetection.ForeColor = Color.White;
-            grpDetection.Location = new Point(12, 12);
-            grpDetection.Name = "grpDetection";
-            grpDetection.Size = new Size(298, 173);
-            grpDetection.TabIndex = 0;
-            grpDetection.TabStop = false;
-            grpDetection.Text = "Board Detection";
-            // 
-            // chkDebugCells
-            // 
-            chkDebugCells.AutoSize = true;
-            chkDebugCells.ForeColor = Color.White;
-            chkDebugCells.Location = new Point(10, 145);
-            chkDebugCells.Name = "chkDebugCells";
-            chkDebugCells.Size = new Size(103, 18);
-            chkDebugCells.TabIndex = 8;
-            chkDebugCells.Text = "Debug Cells";
-            toolTip1.SetToolTip(chkDebugCells, "Show board visualization popup for debugging piece recognition");
-            chkDebugCells.UseVisualStyleBackColor = true;
-            // 
-            // numMinBoardArea
-            // 
-            numMinBoardArea.Increment = new decimal(new int[] { 500, 0, 0, 0 });
-            numMinBoardArea.Location = new Point(182, 117);
-            numMinBoardArea.Maximum = new decimal(new int[] { 50000, 0, 0, 0 });
-            numMinBoardArea.Minimum = new decimal(new int[] { 1000, 0, 0, 0 });
-            numMinBoardArea.Name = "numMinBoardArea";
-            numMinBoardArea.Size = new Size(100, 20);
-            numMinBoardArea.TabIndex = 7;
-            toolTip1.SetToolTip(numMinBoardArea, "Minimum board size to detect. Increase if detecting wrong areas.");
-            numMinBoardArea.Value = new decimal(new int[] { 10000, 0, 0, 0 });
-            // 
-            // numCannyHigh
-            // 
-            numCannyHigh.Increment = new decimal(new int[] { 5, 0, 0, 0 });
-            numCannyHigh.Location = new Point(182, 84);
-            numCannyHigh.Maximum = new decimal(new int[] { 300, 0, 0, 0 });
-            numCannyHigh.Minimum = new decimal(new int[] { 50, 0, 0, 0 });
-            numCannyHigh.Name = "numCannyHigh";
-            numCannyHigh.Size = new Size(100, 20);
-            numCannyHigh.TabIndex = 6;
-            toolTip1.SetToolTip(numCannyHigh, "Edge detection upper threshold. Should be 2-3x the low value.");
-            numCannyHigh.Value = new decimal(new int[] { 150, 0, 0, 0 });
-            // 
-            // numCannyLow
-            // 
-            numCannyLow.Increment = new decimal(new int[] { 5, 0, 0, 0 });
-            numCannyLow.Location = new Point(182, 51);
-            numCannyLow.Maximum = new decimal(new int[] { 200, 0, 0, 0 });
-            numCannyLow.Minimum = new decimal(new int[] { 10, 0, 0, 0 });
-            numCannyLow.Name = "numCannyLow";
-            numCannyLow.Size = new Size(100, 20);
-            numCannyLow.TabIndex = 5;
-            toolTip1.SetToolTip(numCannyLow, "Edge detection lower threshold. Adjust if board detection fails.");
-            numCannyLow.Value = new decimal(new int[] { 50, 0, 0, 0 });
-            // 
-            // numMatchThreshold
-            // 
-            numMatchThreshold.DecimalPlaces = 2;
-            numMatchThreshold.Increment = new decimal(new int[] { 5, 0, 0, 131072 });
-            numMatchThreshold.Location = new Point(182, 19);
-            numMatchThreshold.Maximum = new decimal(new int[] { 1, 0, 0, 0 });
-            numMatchThreshold.Minimum = new decimal(new int[] { 1, 0, 0, 65536 });
-            numMatchThreshold.Name = "numMatchThreshold";
-            numMatchThreshold.Size = new Size(100, 20);
-            numMatchThreshold.TabIndex = 4;
-            toolTip1.SetToolTip(numMatchThreshold, "Minimum similarity for piece recognition (0.1-1.0). Higher = stricter matching.");
-            numMatchThreshold.Value = new decimal(new int[] { 75, 0, 0, 131072 });
-            // 
-            // lblMinBoardArea
-            // 
-            lblMinBoardArea.Location = new Point(10, 119);
-            lblMinBoardArea.Name = "lblMinBoardArea";
-            lblMinBoardArea.Size = new Size(200, 19);
-            lblMinBoardArea.TabIndex = 3;
-            lblMinBoardArea.Text = "Min Board Area (px²):";
-            toolTip1.SetToolTip(lblMinBoardArea, "Minimum board size to detect. Increase if detecting wrong areas.");
-            // 
-            // lblCannyHigh
-            // 
-            lblCannyHigh.Location = new Point(10, 87);
-            lblCannyHigh.Name = "lblCannyHigh";
-            lblCannyHigh.Size = new Size(200, 19);
-            lblCannyHigh.TabIndex = 2;
-            lblCannyHigh.Text = "Canny High Threshold:";
-            toolTip1.SetToolTip(lblCannyHigh, "Edge detection upper threshold. Should be 2-3x the low value.");
-            // 
-            // lblCannyLow
-            // 
-            lblCannyLow.Location = new Point(10, 54);
-            lblCannyLow.Name = "lblCannyLow";
-            lblCannyLow.Size = new Size(200, 19);
-            lblCannyLow.TabIndex = 1;
-            lblCannyLow.Text = "Canny Low Threshold:";
-            toolTip1.SetToolTip(lblCannyLow, "Edge detection lower threshold. Adjust if board detection fails.");
-            // 
-            // lblMatchThreshold
-            // 
-            lblMatchThreshold.Location = new Point(10, 21);
-            lblMatchThreshold.Name = "lblMatchThreshold";
-            lblMatchThreshold.Size = new Size(200, 19);
-            lblMatchThreshold.TabIndex = 0;
-            lblMatchThreshold.Text = "Match Threshold:";
-            toolTip1.SetToolTip(lblMatchThreshold, "Minimum similarity for piece recognition (0.1-1.0). Higher = stricter matching.");
             // 
             // grpEngine
             // 
@@ -229,7 +96,7 @@ namespace ChessDroid
             grpEngine.Controls.Add(lblMaxRetries);
             grpEngine.Controls.Add(lblEngineTimeout);
             grpEngine.ForeColor = Color.White;
-            grpEngine.Location = new Point(12, 191);
+            grpEngine.Location = new Point(13, 13);
             grpEngine.Name = "grpEngine";
             grpEngine.Size = new Size(298, 185);
             grpEngine.TabIndex = 1;
@@ -339,8 +206,6 @@ namespace ChessDroid
             // 
             // grpDisplay
             // 
-            grpDisplay.Controls.Add(cmbSite);
-            grpDisplay.Controls.Add(lblSite);
             grpDisplay.Controls.Add(cmbEngine);
             grpDisplay.Controls.Add(lblEngine);
             grpDisplay.Controls.Add(chkShowThird);
@@ -350,30 +215,12 @@ namespace ChessDroid
             grpDisplay.Controls.Add(chkShowBest);
             grpDisplay.Controls.Add(lblBest);
             grpDisplay.ForeColor = Color.White;
-            grpDisplay.Location = new Point(12, 382);
+            grpDisplay.Location = new Point(13, 204);
             grpDisplay.Name = "grpDisplay";
-            grpDisplay.Size = new Size(298, 146);
+            grpDisplay.Size = new Size(298, 117);
             grpDisplay.TabIndex = 2;
             grpDisplay.TabStop = false;
             grpDisplay.Text = "Display Options";
-            // 
-            // cmbSite
-            // 
-            cmbSite.DropDownStyle = ComboBoxStyle.DropDownList;
-            cmbSite.FormattingEnabled = true;
-            cmbSite.Location = new Point(182, 50);
-            cmbSite.Name = "cmbSite";
-            cmbSite.Size = new Size(100, 22);
-            cmbSite.TabIndex = 9;
-            toolTip1.SetToolTip(cmbSite, "Select chess website for piece templates");
-            // 
-            // lblSite
-            // 
-            lblSite.Location = new Point(10, 53);
-            lblSite.Name = "lblSite";
-            lblSite.Size = new Size(150, 19);
-            lblSite.TabIndex = 8;
-            lblSite.Text = "Website:";
             // 
             // cmbEngine
             // 
@@ -396,7 +243,7 @@ namespace ChessDroid
             // chkShowThird
             // 
             chkShowThird.AutoSize = true;
-            chkShowThird.Location = new Point(182, 120);
+            chkShowThird.Location = new Point(182, 88);
             chkShowThird.Name = "chkShowThird";
             chkShowThird.Size = new Size(15, 14);
             chkShowThird.TabIndex = 5;
@@ -405,7 +252,7 @@ namespace ChessDroid
             // 
             // lblThird
             // 
-            lblThird.Location = new Point(10, 118);
+            lblThird.Location = new Point(10, 86);
             lblThird.Name = "lblThird";
             lblThird.Size = new Size(150, 19);
             lblThird.TabIndex = 4;
@@ -414,7 +261,7 @@ namespace ChessDroid
             // chkShowSecond
             // 
             chkShowSecond.AutoSize = true;
-            chkShowSecond.Location = new Point(182, 102);
+            chkShowSecond.Location = new Point(182, 70);
             chkShowSecond.Name = "chkShowSecond";
             chkShowSecond.Size = new Size(15, 14);
             chkShowSecond.TabIndex = 3;
@@ -423,7 +270,7 @@ namespace ChessDroid
             // 
             // lblSecond
             // 
-            lblSecond.Location = new Point(10, 100);
+            lblSecond.Location = new Point(10, 68);
             lblSecond.Name = "lblSecond";
             lblSecond.Size = new Size(150, 19);
             lblSecond.TabIndex = 2;
@@ -434,7 +281,7 @@ namespace ChessDroid
             chkShowBest.AutoSize = true;
             chkShowBest.Checked = true;
             chkShowBest.CheckState = CheckState.Checked;
-            chkShowBest.Location = new Point(182, 84);
+            chkShowBest.Location = new Point(182, 52);
             chkShowBest.Name = "chkShowBest";
             chkShowBest.Size = new Size(15, 14);
             chkShowBest.TabIndex = 1;
@@ -443,7 +290,7 @@ namespace ChessDroid
             // 
             // lblBest
             // 
-            lblBest.Location = new Point(10, 82);
+            lblBest.Location = new Point(10, 50);
             lblBest.Name = "lblBest";
             lblBest.Size = new Size(150, 19);
             lblBest.TabIndex = 0;
@@ -464,7 +311,7 @@ namespace ChessDroid
             grpExplanations.Controls.Add(chkMoveQuality);
             grpExplanations.Controls.Add(chkBookMoves);
             grpExplanations.ForeColor = Color.White;
-            grpExplanations.Location = new Point(316, 12);
+            grpExplanations.Location = new Point(317, 13);
             grpExplanations.Name = "grpExplanations";
             grpExplanations.Size = new Size(255, 308);
             grpExplanations.TabIndex = 3;
@@ -472,7 +319,7 @@ namespace ChessDroid
             grpExplanations.Text = "Explanation Settings";
             // 
             // cmbComplexity
-            //
+            // 
             cmbComplexity.DropDownStyle = ComboBoxStyle.DropDownList;
             cmbComplexity.FormattingEnabled = true;
             cmbComplexity.Location = new Point(120, 20);
@@ -497,7 +344,7 @@ namespace ChessDroid
             chkTactical.Checked = true;
             chkTactical.CheckState = CheckState.Checked;
             chkTactical.ForeColor = Color.White;
-            chkTactical.Location = new Point(10, 55);
+            chkTactical.Location = new Point(10, 52);
             chkTactical.Name = "chkTactical";
             chkTactical.Size = new Size(145, 18);
             chkTactical.TabIndex = 1;
@@ -511,7 +358,7 @@ namespace ChessDroid
             chkPositional.Checked = true;
             chkPositional.CheckState = CheckState.Checked;
             chkPositional.ForeColor = Color.White;
-            chkPositional.Location = new Point(10, 80);
+            chkPositional.Location = new Point(10, 77);
             chkPositional.Name = "chkPositional";
             chkPositional.Size = new Size(159, 18);
             chkPositional.TabIndex = 2;
@@ -525,7 +372,7 @@ namespace ChessDroid
             chkEndgame.Checked = true;
             chkEndgame.CheckState = CheckState.Checked;
             chkEndgame.ForeColor = Color.White;
-            chkEndgame.Location = new Point(10, 105);
+            chkEndgame.Location = new Point(10, 102);
             chkEndgame.Name = "chkEndgame";
             chkEndgame.Size = new Size(138, 18);
             chkEndgame.TabIndex = 3;
@@ -539,7 +386,7 @@ namespace ChessDroid
             chkOpening.Checked = true;
             chkOpening.CheckState = CheckState.Checked;
             chkOpening.ForeColor = Color.White;
-            chkOpening.Location = new Point(10, 130);
+            chkOpening.Location = new Point(10, 127);
             chkOpening.Name = "chkOpening";
             chkOpening.Size = new Size(152, 18);
             chkOpening.TabIndex = 4;
@@ -553,7 +400,7 @@ namespace ChessDroid
             chkSEE.Checked = true;
             chkSEE.CheckState = CheckState.Checked;
             chkSEE.ForeColor = Color.White;
-            chkSEE.Location = new Point(10, 155);
+            chkSEE.Location = new Point(10, 152);
             chkSEE.Name = "chkSEE";
             chkSEE.Size = new Size(96, 18);
             chkSEE.TabIndex = 8;
@@ -567,7 +414,7 @@ namespace ChessDroid
             chkThreats.Checked = true;
             chkThreats.CheckState = CheckState.Checked;
             chkThreats.ForeColor = Color.White;
-            chkThreats.Location = new Point(10, 180);
+            chkThreats.Location = new Point(10, 177);
             chkThreats.Name = "chkThreats";
             chkThreats.Size = new Size(138, 18);
             chkThreats.TabIndex = 9;
@@ -581,7 +428,7 @@ namespace ChessDroid
             chkWDL.Checked = true;
             chkWDL.CheckState = CheckState.Checked;
             chkWDL.ForeColor = Color.White;
-            chkWDL.Location = new Point(10, 205);
+            chkWDL.Location = new Point(10, 202);
             chkWDL.Name = "chkWDL";
             chkWDL.Size = new Size(166, 18);
             chkWDL.TabIndex = 10;
@@ -595,7 +442,7 @@ namespace ChessDroid
             chkOpeningName.Checked = true;
             chkOpeningName.CheckState = CheckState.Checked;
             chkOpeningName.ForeColor = Color.White;
-            chkOpeningName.Location = new Point(10, 230);
+            chkOpeningName.Location = new Point(10, 227);
             chkOpeningName.Name = "chkOpeningName";
             chkOpeningName.Size = new Size(145, 18);
             chkOpeningName.TabIndex = 11;
@@ -609,7 +456,7 @@ namespace ChessDroid
             chkMoveQuality.Checked = true;
             chkMoveQuality.CheckState = CheckState.Checked;
             chkMoveQuality.ForeColor = Color.White;
-            chkMoveQuality.Location = new Point(10, 255);
+            chkMoveQuality.Location = new Point(10, 252);
             chkMoveQuality.Name = "chkMoveQuality";
             chkMoveQuality.Size = new Size(229, 18);
             chkMoveQuality.TabIndex = 12;
@@ -623,7 +470,7 @@ namespace ChessDroid
             chkBookMoves.Checked = true;
             chkBookMoves.CheckState = CheckState.Checked;
             chkBookMoves.ForeColor = Color.White;
-            chkBookMoves.Location = new Point(10, 280);
+            chkBookMoves.Location = new Point(10, 277);
             chkBookMoves.Name = "chkBookMoves";
             chkBookMoves.Size = new Size(131, 18);
             chkBookMoves.TabIndex = 13;
@@ -637,9 +484,9 @@ namespace ChessDroid
             grpLc0Features.Controls.Add(trkAggressiveness);
             grpLc0Features.Controls.Add(lblAggressivenessValue);
             grpLc0Features.ForeColor = Color.White;
-            grpLc0Features.Location = new Point(316, 326);
+            grpLc0Features.Location = new Point(317, 327);
             grpLc0Features.Name = "grpLc0Features";
-            grpLc0Features.Size = new Size(255, 121);
+            grpLc0Features.Size = new Size(255, 122);
             grpLc0Features.TabIndex = 9;
             grpLc0Features.TabStop = false;
             grpLc0Features.Text = "Play Style";
@@ -650,7 +497,7 @@ namespace ChessDroid
             lblAggressiveness.Name = "lblAggressiveness";
             lblAggressiveness.Size = new Size(100, 19);
             lblAggressiveness.TabIndex = 0;
-            lblAggressiveness.Text = "Play Style:";
+            lblAggressiveness.Text = "Choose:";
             toolTip1.SetToolTip(lblAggressiveness, "0=Very Solid (avoid risk), 50=Balanced, 100=Very Aggressive (seek complications)");
             // 
             // trkAggressiveness
@@ -677,7 +524,7 @@ namespace ChessDroid
             // 
             btnSave.FlatStyle = FlatStyle.Popup;
             btnSave.ForeColor = SystemColors.ControlLightLight;
-            btnSave.Location = new Point(322, 453);
+            btnSave.Location = new Point(12, 386);
             btnSave.Name = "btnSave";
             btnSave.Size = new Size(100, 28);
             btnSave.TabIndex = 4;
@@ -689,7 +536,7 @@ namespace ChessDroid
             // 
             btnReset.FlatStyle = FlatStyle.Popup;
             btnReset.ForeColor = SystemColors.ControlLightLight;
-            btnReset.Location = new Point(322, 493);
+            btnReset.Location = new Point(12, 421);
             btnReset.Name = "btnReset";
             btnReset.Size = new Size(100, 28);
             btnReset.TabIndex = 5;
@@ -701,7 +548,7 @@ namespace ChessDroid
             // 
             btnHelp.FlatStyle = FlatStyle.Popup;
             btnHelp.ForeColor = SystemColors.ControlLightLight;
-            btnHelp.Location = new Point(471, 453);
+            btnHelp.Location = new Point(195, 386);
             btnHelp.Name = "btnHelp";
             btnHelp.Size = new Size(100, 28);
             btnHelp.TabIndex = 6;
@@ -714,7 +561,7 @@ namespace ChessDroid
             btnCancel.DialogResult = DialogResult.Cancel;
             btnCancel.FlatStyle = FlatStyle.Popup;
             btnCancel.ForeColor = SystemColors.ControlLightLight;
-            btnCancel.Location = new Point(471, 493);
+            btnCancel.Location = new Point(195, 421);
             btnCancel.Name = "btnCancel";
             btnCancel.Size = new Size(100, 28);
             btnCancel.TabIndex = 7;
@@ -728,7 +575,7 @@ namespace ChessDroid
             chkDarkMode.Checked = true;
             chkDarkMode.CheckState = CheckState.Checked;
             chkDarkMode.ForeColor = Color.White;
-            chkDarkMode.Location = new Point(12, 535);
+            chkDarkMode.Location = new Point(13, 348);
             chkDarkMode.Name = "chkDarkMode";
             chkDarkMode.Size = new Size(89, 18);
             chkDarkMode.TabIndex = 8;
@@ -744,7 +591,7 @@ namespace ChessDroid
             AutoSizeMode = AutoSizeMode.GrowAndShrink;
             BackColor = Color.FromArgb(45, 45, 48);
             CancelButton = btnCancel;
-            ClientSize = new Size(585, 560);
+            ClientSize = new Size(585, 461);
             Controls.Add(chkDarkMode);
             Controls.Add(btnCancel);
             Controls.Add(btnHelp);
@@ -754,7 +601,6 @@ namespace ChessDroid
             Controls.Add(grpExplanations);
             Controls.Add(grpDisplay);
             Controls.Add(grpEngine);
-            Controls.Add(grpDetection);
             Font = new Font("Courier New", 8.25F, FontStyle.Regular, GraphicsUnit.Point, 0);
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
@@ -762,12 +608,6 @@ namespace ChessDroid
             Name = "SettingsForm";
             StartPosition = FormStartPosition.CenterParent;
             Text = "chessdroid://settings";
-            grpDetection.ResumeLayout(false);
-            grpDetection.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)numMinBoardArea).EndInit();
-            ((System.ComponentModel.ISupportInitialize)numCannyHigh).EndInit();
-            ((System.ComponentModel.ISupportInitialize)numCannyLow).EndInit();
-            ((System.ComponentModel.ISupportInitialize)numMatchThreshold).EndInit();
             grpEngine.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)numMinAnalysisTime).EndInit();
             ((System.ComponentModel.ISupportInitialize)numMoveTimeout).EndInit();
@@ -787,15 +627,6 @@ namespace ChessDroid
 
         #endregion
 
-        private System.Windows.Forms.GroupBox grpDetection;
-        private System.Windows.Forms.NumericUpDown numMinBoardArea;
-        private System.Windows.Forms.NumericUpDown numCannyHigh;
-        private System.Windows.Forms.NumericUpDown numCannyLow;
-        private System.Windows.Forms.NumericUpDown numMatchThreshold;
-        private System.Windows.Forms.Label lblMinBoardArea;
-        private System.Windows.Forms.Label lblCannyHigh;
-        private System.Windows.Forms.Label lblCannyLow;
-        private System.Windows.Forms.Label lblMatchThreshold;
         private System.Windows.Forms.GroupBox grpEngine;
         private System.Windows.Forms.ComboBox cmbEngineDepth;
         private System.Windows.Forms.NumericUpDown numMinAnalysisTime;
@@ -808,8 +639,6 @@ namespace ChessDroid
         private System.Windows.Forms.Label lblMaxRetries;
         private System.Windows.Forms.Label lblEngineTimeout;
         private System.Windows.Forms.GroupBox grpDisplay;
-        private System.Windows.Forms.ComboBox cmbSite;
-        private System.Windows.Forms.Label lblSite;
         private System.Windows.Forms.ComboBox cmbEngine;
         private System.Windows.Forms.Label lblEngine;
         private System.Windows.Forms.CheckBox chkShowThird;
@@ -823,7 +652,6 @@ namespace ChessDroid
         private System.Windows.Forms.Button btnHelp;
         private System.Windows.Forms.Button btnCancel;
         private System.Windows.Forms.CheckBox chkDarkMode;
-        private System.Windows.Forms.CheckBox chkDebugCells;
         private System.Windows.Forms.ToolTip toolTip1;
         private System.Windows.Forms.GroupBox grpExplanations;
         private System.Windows.Forms.ComboBox cmbComplexity;

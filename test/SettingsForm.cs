@@ -63,51 +63,14 @@ namespace ChessDroid
             }
         }
 
-        private void PopulateSitesComboBox()
-        {
-            try
-            {
-                string templatesFolder = config.GetTemplatesPath();
-                cmbSite.Items.Clear();
-
-                if (Directory.Exists(templatesFolder))
-                {
-                    string[] siteFolders = Directory.GetDirectories(templatesFolder);
-                    foreach (string folder in siteFolders)
-                    {
-                        cmbSite.Items.Add(Path.GetFileName(folder));
-                    }
-                }
-
-                // Select configured site or default to first available
-                if (!string.IsNullOrEmpty(config.SelectedSite) && cmbSite.Items.Contains(config.SelectedSite))
-                {
-                    cmbSite.SelectedItem = config.SelectedSite;
-                }
-                else if (cmbSite.Items.Count > 0)
-                {
-                    cmbSite.SelectedIndex = 0;
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Error loading template sites: " + ex.Message, "Template Loading Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
-
         private void LoadSettings()
         {
             this.TopMost = true;
 
-            // Detection settings
-            numMatchThreshold.Value = (decimal)config.MatchThreshold;
+            // Engine settings
             numEngineTimeout.Value = config.EngineResponseTimeoutMs;
             numMaxRetries.Value = config.MaxEngineRetries;
             numMoveTimeout.Value = config.MoveTimeoutMs;
-            numCannyLow.Value = config.CannyThresholdLow;
-            numCannyHigh.Value = config.CannyThresholdHigh;
-            numMinBoardArea.Value = config.MinBoardArea;
-            chkDebugCells.Checked = config.ShowDebugCells;
 
             // Engine depth
             if (config.EngineDepth >= 1 && config.EngineDepth <= 20)
@@ -124,9 +87,6 @@ namespace ChessDroid
 
             // Display options
             PopulateEnginesComboBox();
-
-            // Site selection - dynamically populate from Templates folder
-            PopulateSitesComboBox();
 
             // Best lines checkboxes
             chkShowBest.Checked = config.ShowBestLine;
@@ -158,14 +118,6 @@ namespace ChessDroid
 
         private void BtnSave_Click(object? sender, EventArgs e)
         {
-            // Validate Canny thresholds
-            if (numCannyHigh.Value < numCannyLow.Value * 2)
-            {
-                MessageBox.Show("Canny High Threshold should be at least 2x the Low Threshold.",
-                    "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
             // Validate Engine Depth selection
             if (cmbEngineDepth.SelectedItem == null)
             {
@@ -174,22 +126,16 @@ namespace ChessDroid
                 return;
             }
 
-            // Save values
-            config.MatchThreshold = (double)numMatchThreshold.Value;
+            // Save engine values
             config.EngineResponseTimeoutMs = (int)numEngineTimeout.Value;
             config.MaxEngineRetries = (int)numMaxRetries.Value;
             config.MoveTimeoutMs = (int)numMoveTimeout.Value;
-            config.CannyThresholdLow = (int)numCannyLow.Value;
-            config.CannyThresholdHigh = (int)numCannyHigh.Value;
-            config.MinBoardArea = (int)numMinBoardArea.Value;
             config.EngineDepth = (int)cmbEngineDepth.SelectedItem;
             config.MinAnalysisTimeMs = (int)numMinAnalysisTime.Value;
             config.Theme = chkDarkMode.Checked ? "Dark" : "Light";
-            config.ShowDebugCells = chkDebugCells.Checked;
 
             // Save display options
             config.SelectedEngine = cmbEngine.SelectedItem?.ToString() ?? "";
-            config.SelectedSite = cmbSite.SelectedItem?.ToString() ?? config.SelectedSite;
             config.ShowBestLine = chkShowBest.Checked;
             config.ShowSecondLine = chkShowSecond.Checked;
             config.ShowThirdLine = chkShowThird.Checked;
@@ -266,25 +212,8 @@ namespace ChessDroid
                 this.BackColor = Color.FromArgb(45, 45, 48);
 
                 // GroupBoxes
-                grpDetection.ForeColor = Color.White;
-                grpDetection.BackColor = Color.FromArgb(45, 45, 48);
                 grpEngine.ForeColor = Color.White;
                 grpEngine.BackColor = Color.FromArgb(45, 45, 48);
-
-                // Labels
-                foreach (Control ctrl in grpDetection.Controls)
-                {
-                    if (ctrl is Label lbl)
-                    {
-                        lbl.ForeColor = Color.White;
-                        lbl.BackColor = Color.FromArgb(45, 45, 48);
-                    }
-                    else if (ctrl is NumericUpDown num)
-                    {
-                        num.BackColor = Color.FromArgb(60, 60, 65);
-                        num.ForeColor = Color.White;
-                    }
-                }
 
                 foreach (Control ctrl in grpEngine.Controls)
                 {
@@ -393,25 +322,8 @@ namespace ChessDroid
                 this.BackColor = Color.WhiteSmoke;
 
                 // GroupBoxes
-                grpDetection.ForeColor = Color.Black;
-                grpDetection.BackColor = Color.WhiteSmoke;
                 grpEngine.ForeColor = Color.Black;
                 grpEngine.BackColor = Color.WhiteSmoke;
-
-                // Labels
-                foreach (Control ctrl in grpDetection.Controls)
-                {
-                    if (ctrl is Label lbl)
-                    {
-                        lbl.ForeColor = Color.Black;
-                        lbl.BackColor = Color.WhiteSmoke;
-                    }
-                    else if (ctrl is NumericUpDown num)
-                    {
-                        num.BackColor = Color.White;
-                        num.ForeColor = Color.Black;
-                    }
-                }
 
                 foreach (Control ctrl in grpEngine.Controls)
                 {

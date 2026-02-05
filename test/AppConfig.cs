@@ -6,17 +6,12 @@ namespace ChessDroid
     {
         public string TemplatesFolder { get; set; } = "Templates";
         public string EnginesFolder { get; set; } = "Engines";
-        public double MatchThreshold { get; set; } = 0.55;
-        public int CannyThresholdLow { get; set; } = 50;
-        public int CannyThresholdHigh { get; set; } = 150;
-        public int MinBoardArea { get; set; } = 5000;
         public int MoveTimeoutMs { get; set; } = 30000;
         public int EngineResponseTimeoutMs { get; set; } = 10000;
         public int MaxEngineRetries { get; set; } = 3;
         public int EngineDepth { get; set; } = 15; // Default depth for engine analysis (1-20)
         public int MinAnalysisTimeMs { get; set; } = 500; // Minimum analysis time in milliseconds (0 = no minimum)
         public string Theme { get; set; } = "Dark"; // "Dark" or "Light"
-        public bool ShowDebugCells { get; set; } = false; // Show cell recognition popup
 
         // Display settings
         public string SelectedEngine { get; set; } = ""; // Selected engine name
@@ -36,9 +31,6 @@ namespace ChessDroid
         public bool ShowSEEValues { get; set; } = true; // Static Exchange Evaluation
         public bool ShowThreats { get; set; } = true; // Show threats analysis
         public bool ShowWDL { get; set; } = true; // Show Win/Draw/Loss probabilities (Lc0-inspired)
-
-        // Auto-monitoring settings
-        public bool AutoMonitorBoard { get; set; } = false; // Enable continuous board monitoring
 
         // Lc0-inspired features
         public int Aggressiveness { get; set; } = 50; // 0=Solid (avoid risk), 50=Balanced, 100=Aggressive (seek complications)
@@ -139,17 +131,12 @@ namespace ChessDroid
         {
             TemplatesFolder = other.TemplatesFolder;
             EnginesFolder = other.EnginesFolder;
-            MatchThreshold = other.MatchThreshold;
-            CannyThresholdLow = other.CannyThresholdLow;
-            CannyThresholdHigh = other.CannyThresholdHigh;
-            MinBoardArea = other.MinBoardArea;
             MoveTimeoutMs = other.MoveTimeoutMs;
             EngineResponseTimeoutMs = other.EngineResponseTimeoutMs;
             MaxEngineRetries = other.MaxEngineRetries;
             EngineDepth = other.EngineDepth;
             MinAnalysisTimeMs = other.MinAnalysisTimeMs;
             Theme = other.Theme;
-            ShowDebugCells = other.ShowDebugCells;
             SelectedEngine = other.SelectedEngine;
             SelectedSite = other.SelectedSite;
             ShowBestLine = other.ShowBestLine;
@@ -163,7 +150,6 @@ namespace ChessDroid
             ShowSEEValues = other.ShowSEEValues;
             ShowThreats = other.ShowThreats;
             ShowWDL = other.ShowWDL;
-            AutoMonitorBoard = other.AutoMonitorBoard;
             Aggressiveness = other.Aggressiveness;
             ShowOpeningName = other.ShowOpeningName;
             ShowMoveQuality = other.ShowMoveQuality;

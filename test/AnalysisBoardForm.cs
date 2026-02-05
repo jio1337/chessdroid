@@ -77,6 +77,32 @@ namespace ChessDroid
 
             // Initialize move tree with starting position
             moveTree = new MoveTree(boardControl.GetFEN());
+
+            // Pre-initialize engine when form is shown (async, non-blocking)
+            this.Shown += async (s, e) => await InitializeEngineAsync();
+        }
+
+        private async Task InitializeEngineAsync()
+        {
+            if (string.IsNullOrEmpty(config?.SelectedEngine))
+            {
+                lblStatus.Text = "No engine configured - click ⚙ to set up";
+                return;
+            }
+
+            try
+            {
+                lblStatus.Text = "Starting engine...";
+                // Build full path: Engines folder + selected engine filename
+                string enginePath = Path.Combine(config.GetEnginesPath(), config.SelectedEngine);
+                await engineService!.InitializeAsync(enginePath);
+                lblStatus.Text = "Engine ready";
+            }
+            catch (Exception ex)
+            {
+                lblStatus.Text = $"Engine failed: {ex.Message}";
+                Debug.WriteLine($"Engine init failed: {ex}");
+            }
         }
 
         private void ApplyTheme()
@@ -100,7 +126,7 @@ namespace ChessDroid
             cmbPieces.ForeColor = scheme.TextColor;
 
             // Standard buttons
-            foreach (var btn in new[] { btnNewGame, btnFlipBoard, btnTakeBack, btnPrevMove,
+            foreach (var btn in new[] { btnSettings, btnNewGame, btnFlipBoard, btnTakeBack, btnPrevMove,
                                         btnNextMove, btnLoadFen, btnCopyFen, btnClassifyMoves,
                                         btnExportPgn, btnImportPgn })
             {
@@ -108,12 +134,7 @@ namespace ChessDroid
                 btn.ForeColor = scheme.ButtonForeColor;
             }
 
-            // Analyze button (special accent color)
-            btnAnalyze.BackColor = scheme.AnalyzeButtonBackColor;
-            btnAnalyze.ForeColor = Color.White;
-
             // Checkboxes
-            chkAutoAnalyze.ForeColor = scheme.TextColor;
             chkFromPosition.ForeColor = scheme.TextColor;
 
             // TextBox and ListBox
@@ -277,7 +298,7 @@ namespace ChessDroid
         private void LeftPanel_Resize(object? sender, EventArgs e)
         {
             // Guard against resize during initialization
-            if (boardControl == null || lblTurn == null || btnNewGame == null || chkAutoAnalyze == null || lblPieces == null || cmbPieces == null)
+            if (boardControl == null || lblTurn == null || btnNewGame == null || lblPieces == null || cmbPieces == null)
                 return;
 
             if (sender is Panel panel)
@@ -340,12 +361,6 @@ namespace ChessDroid
                 btnNextMove.Location = new Point(navX + navButtonWidth + 2, buttonY);
                 btnNextMove.Width = navButtonWidth;
 
-                btnAnalyze.Location = new Point(btnNextMove.Right + buttonSpacing, buttonY);
-                btnAnalyze.Width = buttonWidth + 10;
-
-                // Auto-analyze checkbox
-                chkAutoAnalyze.Location = new Point(btnAnalyze.Right + 5, buttonY + 4);
-
                 // FEN input row
                 int fenY = buttonY + 32;
                 int fenLabelWidth = 35;
@@ -390,25 +405,9 @@ namespace ChessDroid
             UpdateTurnLabel();
 
             // Auto-analyze if enabled
-            if (chkAutoAnalyze.Checked)
+            if (!matchRunning)
             {
                 _ = TriggerAutoAnalysis();
-            }
-        }
-
-        private void ChkAutoAnalyze_CheckedChanged(object? sender, EventArgs e)
-        {
-            if (chkAutoAnalyze.Checked)
-            {
-                lblStatus.Text = "Auto-analysis enabled";
-                // Analyze current position immediately when enabled
-                _ = TriggerAutoAnalysis();
-            }
-            else
-            {
-                // Cancel any pending analysis
-                autoAnalysisCts?.Cancel();
-                lblStatus.Text = "Auto-analysis disabled";
             }
         }
 
@@ -419,19 +418,12 @@ namespace ChessDroid
             autoAnalysisCts = new CancellationTokenSource();
             var token = autoAnalysisCts.Token;
 
-            try
-            {
-                // Small delay to avoid analyzing during rapid moves
-                await Task.Delay(150, token);
+            // Small delay to avoid analyzing during rapid moves
+            await Task.Delay(150);
 
-                if (!token.IsCancellationRequested)
-                {
-                    await AnalyzeCurrentPosition();
-                }
-            }
-            catch (OperationCanceledException)
+            if (!token.IsCancellationRequested)
             {
-                // Analysis was cancelled, that's fine
+                await AnalyzeCurrentPosition();
             }
         }
 
@@ -453,6 +445,23 @@ namespace ChessDroid
             UpdateFenDisplay();
             UpdateTurnLabel();
             lblStatus.Text = "New game started";
+        }
+
+        private async void BtnSettings_Click(object? sender, EventArgs e)
+        {
+            using var settingsForm = new SettingsForm(config);
+            if (settingsForm.ShowDialog() == DialogResult.OK)
+            {
+                // Reload engine service with new settings
+                engineService?.Dispose();
+                engineService = new ChessEngineService(config);
+                InitializeServices();
+                ApplyTheme();
+                _analysisCache.Clear(); // Clear cache when settings change
+
+                // Initialize the engine immediately
+                await InitializeEngineAsync();
+            }
         }
 
         private void BtnFlipBoard_Click(object? sender, EventArgs e)
@@ -503,7 +512,7 @@ namespace ChessDroid
                     lblStatus.Text = statusText;
 
                     // Auto-analyze if enabled
-                    if (chkAutoAnalyze.Checked)
+                    if (!matchRunning)
                     {
                         _ = TriggerAutoAnalysis();
                     }
@@ -533,7 +542,7 @@ namespace ChessDroid
                     lblStatus.Text = statusText;
 
                     // Auto-analyze if enabled
-                    if (chkAutoAnalyze.Checked)
+                    if (!matchRunning)
                     {
                         _ = TriggerAutoAnalysis();
                     }
@@ -543,11 +552,6 @@ namespace ChessDroid
                     isNavigating = false;
                 }
             }
-        }
-
-        private async void BtnAnalyze_Click(object? sender, EventArgs e)
-        {
-            await AnalyzeCurrentPosition();
         }
 
         private void BtnLoadFen_Click(object? sender, EventArgs e)
@@ -674,7 +678,7 @@ namespace ChessDroid
                     lblStatus.Text = statusText;
 
                     // Auto-analyze if enabled
-                    if (chkAutoAnalyze.Checked)
+                    if (!matchRunning)
                     {
                         _ = TriggerAutoAnalysis();
                     }
@@ -731,7 +735,7 @@ namespace ChessDroid
                 lblStatus.Text = "Start position";
 
                 // Auto-analyze if enabled
-                if (chkAutoAnalyze.Checked)
+                if (!matchRunning)
                 {
                     _ = TriggerAutoAnalysis();
                 }
@@ -761,7 +765,7 @@ namespace ChessDroid
                 lblStatus.Text = statusText;
 
                 // Auto-analyze if enabled
-                if (chkAutoAnalyze.Checked)
+                if (!matchRunning)
                 {
                     _ = TriggerAutoAnalysis();
                 }
@@ -792,7 +796,7 @@ namespace ChessDroid
                     lblStatus.Text = $"Move {target.MoveNumber} - Variation {varIdx + 1}";
 
                     // Auto-analyze if enabled
-                    if (chkAutoAnalyze.Checked)
+                    if (!matchRunning)
                     {
                         _ = TriggerAutoAnalysis();
                     }
@@ -807,12 +811,7 @@ namespace ChessDroid
         private void AnalysisBoardForm_KeyDown(object? sender, KeyEventArgs e)
         {
             // Arrow keys and Home/End are handled in ProcessCmdKey
-            if (e.KeyCode == Keys.F2)
-            {
-                BtnAnalyze_Click(sender, e);
-                e.Handled = true;
-            }
-            else if (e.KeyCode == Keys.Back)
+            if (e.KeyCode == Keys.Back)
             {
                 BtnTakeBack_Click(sender, e);
                 e.Handled = true;
@@ -1138,8 +1137,6 @@ namespace ChessDroid
             btnNewGame.Enabled = !running;
             btnTakeBack.Enabled = !running;
             btnLoadFen.Enabled = !running;
-            btnAnalyze.Enabled = !running;
-            chkAutoAnalyze.Enabled = !running;
             boardControl.InteractionEnabled = !running;
 
             // Match controls
@@ -1198,7 +1195,7 @@ namespace ChessDroid
             }
 
             lblStatus.Text = "Analyzing...";
-            btnAnalyze.Enabled = false;
+
 
             try
             {
@@ -1210,7 +1207,7 @@ namespace ChessDroid
                 if (string.IsNullOrEmpty(result.bestMove))
                 {
                     lblStatus.Text = "Analysis failed";
-                    btnAnalyze.Enabled = true;
+
                     return;
                 }
 
@@ -1239,7 +1236,6 @@ namespace ChessDroid
             }
             finally
             {
-                btnAnalyze.Enabled = true;
             }
         }
 
@@ -2016,7 +2012,7 @@ namespace ChessDroid
         private async Task ClassifyMoves(List<MoveNode> mainLine)
         {
             btnClassifyMoves.Enabled = false;
-            btnAnalyze.Enabled = false;
+
 
             // Clear analysis cache to ensure fresh evaluations with correct perspective
             _analysisCache.Clear();
@@ -2253,7 +2249,6 @@ namespace ChessDroid
             UpdateMoveListWithClassification();
 
             btnClassifyMoves.Enabled = true;
-            btnAnalyze.Enabled = true;
             lblStatus.Text = $"Classification complete - {whiteMoves + blackMoves} moves analyzed";
         }
 

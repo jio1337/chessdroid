@@ -37,13 +37,12 @@ namespace ChessDroid
             lblTurn = new Label();
             lblPieces = new Label();
             cmbPieces = new ComboBox();
+            btnSettings = new Button();
             btnNewGame = new Button();
             btnFlipBoard = new Button();
             btnTakeBack = new Button();
             btnPrevMove = new Button();
             btnNextMove = new Button();
-            btnAnalyze = new Button();
-            chkAutoAnalyze = new CheckBox();
             lblFen = new Label();
             txtFen = new TextBox();
             btnLoadFen = new Button();
@@ -51,11 +50,11 @@ namespace ChessDroid
             lblStatus = new Label();
             middlePanel = new Panel();
             moveListBox = new ListBox();
-            lblMoves = new Label();
             pnlPgnButtons = new Panel();
             btnClassifyMoves = new Button();
             btnExportPgn = new Button();
             btnImportPgn = new Button();
+            lblMoves = new Label();
             rightPanel = new Panel();
             analysisOutput = new RichTextBox();
             grpEngineMatch = new GroupBox();
@@ -83,6 +82,7 @@ namespace ChessDroid
             mainLayout.SuspendLayout();
             leftPanel.SuspendLayout();
             middlePanel.SuspendLayout();
+            pnlPgnButtons.SuspendLayout();
             rightPanel.SuspendLayout();
             grpEngineMatch.SuspendLayout();
             pnlTimeParams.SuspendLayout();
@@ -117,13 +117,12 @@ namespace ChessDroid
             leftPanel.Controls.Add(lblTurn);
             leftPanel.Controls.Add(lblPieces);
             leftPanel.Controls.Add(cmbPieces);
+            leftPanel.Controls.Add(btnSettings);
             leftPanel.Controls.Add(btnNewGame);
             leftPanel.Controls.Add(btnFlipBoard);
             leftPanel.Controls.Add(btnTakeBack);
             leftPanel.Controls.Add(btnPrevMove);
             leftPanel.Controls.Add(btnNextMove);
-            leftPanel.Controls.Add(btnAnalyze);
-            leftPanel.Controls.Add(chkAutoAnalyze);
             leftPanel.Controls.Add(lblFen);
             leftPanel.Controls.Add(txtFen);
             leftPanel.Controls.Add(btnLoadFen);
@@ -132,7 +131,7 @@ namespace ChessDroid
             leftPanel.Dock = DockStyle.Fill;
             leftPanel.Location = new Point(8, 8);
             leftPanel.Name = "leftPanel";
-            leftPanel.Size = new Size(498, 630);
+            leftPanel.Size = new Size(569, 630);
             leftPanel.TabIndex = 0;
             leftPanel.Resize += LeftPanel_Resize;
             // 
@@ -148,44 +147,55 @@ namespace ChessDroid
             boardControl.InteractionEnabled = true;
             boardControl.Location = new Point(38, 10);
             boardControl.Name = "boardControl";
-            boardControl.Size = new Size(452, 452);
+            boardControl.Size = new Size(480, 480);
             boardControl.TabIndex = 0;
             boardControl.MoveMade += BoardControl_MoveMade;
             boardControl.BoardChanged += BoardControl_BoardChanged;
-            //
+            // 
             // lblTurn
-            //
+            // 
             lblTurn.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
             lblTurn.Location = new Point(10, 500);
             lblTurn.Name = "lblTurn";
-            lblTurn.Size = new Size(200, 25);
+            lblTurn.Size = new Size(123, 25);
             lblTurn.TabIndex = 1;
             lblTurn.Text = "White to move";
-            //
+            // 
             // lblPieces
-            //
+            // 
             lblPieces.Font = new Font("Courier New", 8.25F);
-            lblPieces.Location = new Point(230, 505);
+            lblPieces.Location = new Point(407, 537);
             lblPieces.Name = "lblPieces";
             lblPieces.Size = new Size(50, 20);
             lblPieces.TabIndex = 21;
             lblPieces.Text = "Pieces:";
-            //
+            // 
             // cmbPieces
-            //
+            // 
             cmbPieces.DropDownStyle = ComboBoxStyle.DropDownList;
             cmbPieces.Font = new Font("Courier New", 8.25F);
-            cmbPieces.Location = new Point(285, 502);
+            cmbPieces.Location = new Point(462, 534);
             cmbPieces.Name = "cmbPieces";
-            cmbPieces.Size = new Size(100, 22);
+            cmbPieces.Size = new Size(93, 22);
             cmbPieces.TabIndex = 22;
             cmbPieces.SelectedIndexChanged += CmbPieces_SelectedIndexChanged;
-            //
+            // 
+            // btnSettings
+            // 
+            btnSettings.FlatStyle = FlatStyle.Flat;
+            btnSettings.Font = new Font("Segoe UI", 10F);
+            btnSettings.Location = new Point(10, 530);
+            btnSettings.Name = "btnSettings";
+            btnSettings.Size = new Size(28, 28);
+            btnSettings.TabIndex = 23;
+            btnSettings.Text = "⚙";
+            btnSettings.Click += BtnSettings_Click;
+            // 
             // btnNewGame
             // 
             btnNewGame.FlatStyle = FlatStyle.Flat;
             btnNewGame.Font = new Font("Courier New", 8.25F);
-            btnNewGame.Location = new Point(10, 530);
+            btnNewGame.Location = new Point(43, 530);
             btnNewGame.Name = "btnNewGame";
             btnNewGame.Size = new Size(90, 28);
             btnNewGame.TabIndex = 2;
@@ -196,7 +206,7 @@ namespace ChessDroid
             // 
             btnFlipBoard.FlatStyle = FlatStyle.Flat;
             btnFlipBoard.Font = new Font("Courier New", 8.25F);
-            btnFlipBoard.Location = new Point(105, 530);
+            btnFlipBoard.Location = new Point(138, 530);
             btnFlipBoard.Name = "btnFlipBoard";
             btnFlipBoard.Size = new Size(90, 28);
             btnFlipBoard.TabIndex = 3;
@@ -207,7 +217,7 @@ namespace ChessDroid
             // 
             btnTakeBack.FlatStyle = FlatStyle.Flat;
             btnTakeBack.Font = new Font("Courier New", 8.25F);
-            btnTakeBack.Location = new Point(200, 530);
+            btnTakeBack.Location = new Point(233, 530);
             btnTakeBack.Name = "btnTakeBack";
             btnTakeBack.Size = new Size(90, 28);
             btnTakeBack.TabIndex = 4;
@@ -218,7 +228,7 @@ namespace ChessDroid
             // 
             btnPrevMove.FlatStyle = FlatStyle.Flat;
             btnPrevMove.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
-            btnPrevMove.Location = new Point(295, 530);
+            btnPrevMove.Location = new Point(328, 530);
             btnPrevMove.Name = "btnPrevMove";
             btnPrevMove.Size = new Size(35, 28);
             btnPrevMove.TabIndex = 12;
@@ -229,36 +239,12 @@ namespace ChessDroid
             // 
             btnNextMove.FlatStyle = FlatStyle.Flat;
             btnNextMove.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
-            btnNextMove.Location = new Point(335, 530);
+            btnNextMove.Location = new Point(368, 530);
             btnNextMove.Name = "btnNextMove";
             btnNextMove.Size = new Size(35, 28);
             btnNextMove.TabIndex = 13;
             btnNextMove.Text = "▶";
             btnNextMove.Click += BtnNextMove_Click;
-            // 
-            // btnAnalyze
-            // 
-            btnAnalyze.FlatStyle = FlatStyle.Flat;
-            btnAnalyze.Font = new Font("Courier New", 8.25F);
-            btnAnalyze.ForeColor = Color.White;
-            btnAnalyze.Location = new Point(377, 530);
-            btnAnalyze.Name = "btnAnalyze";
-            btnAnalyze.Size = new Size(110, 28);
-            btnAnalyze.TabIndex = 5;
-            btnAnalyze.Text = "Analyze (F2)";
-            btnAnalyze.Click += BtnAnalyze_Click;
-            // 
-            // chkAutoAnalyze
-            // 
-            chkAutoAnalyze.Checked = true;
-            chkAutoAnalyze.CheckState = CheckState.Checked;
-            chkAutoAnalyze.Font = new Font("Courier New", 8.25F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            chkAutoAnalyze.Location = new Point(407, 603);
-            chkAutoAnalyze.Name = "chkAutoAnalyze";
-            chkAutoAnalyze.Size = new Size(55, 20);
-            chkAutoAnalyze.TabIndex = 6;
-            chkAutoAnalyze.Text = "Auto";
-            chkAutoAnalyze.CheckedChanged += ChkAutoAnalyze_CheckedChanged;
             // 
             // lblFen
             // 
@@ -304,24 +290,24 @@ namespace ChessDroid
             lblStatus.Font = new Font("Courier New", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
             lblStatus.Location = new Point(10, 603);
             lblStatus.Name = "lblStatus";
-            lblStatus.Size = new Size(470, 20);
+            lblStatus.Size = new Size(391, 20);
             lblStatus.TabIndex = 11;
             lblStatus.Text = "Ready";
-            //
+            // 
             // middlePanel
-            //
+            // 
             middlePanel.Controls.Add(moveListBox);
             middlePanel.Controls.Add(pnlPgnButtons);
             middlePanel.Controls.Add(lblMoves);
             middlePanel.Dock = DockStyle.Fill;
-            middlePanel.Location = new Point(512, 8);
+            middlePanel.Location = new Point(583, 8);
             middlePanel.Name = "middlePanel";
             middlePanel.Padding = new Padding(5);
-            middlePanel.Size = new Size(134, 630);
+            middlePanel.Size = new Size(124, 630);
             middlePanel.TabIndex = 1;
-            //
+            // 
             // moveListBox
-            //
+            // 
             moveListBox.BorderStyle = BorderStyle.FixedSingle;
             moveListBox.Dock = DockStyle.Fill;
             moveListBox.DrawMode = DrawMode.OwnerDrawFixed;
@@ -329,65 +315,65 @@ namespace ChessDroid
             moveListBox.ItemHeight = 18;
             moveListBox.Location = new Point(5, 30);
             moveListBox.Name = "moveListBox";
-            moveListBox.Size = new Size(124, 468);
+            moveListBox.Size = new Size(114, 500);
             moveListBox.TabIndex = 1;
             moveListBox.DrawItem += MoveListBox_DrawItem;
             moveListBox.SelectedIndexChanged += MoveListBox_SelectedIndexChanged;
-            //
+            // 
             // pnlPgnButtons
-            //
+            // 
             pnlPgnButtons.Controls.Add(btnClassifyMoves);
             pnlPgnButtons.Controls.Add(btnExportPgn);
             pnlPgnButtons.Controls.Add(btnImportPgn);
             pnlPgnButtons.Dock = DockStyle.Bottom;
             pnlPgnButtons.Location = new Point(5, 530);
             pnlPgnButtons.Name = "pnlPgnButtons";
-            pnlPgnButtons.Size = new Size(124, 95);
+            pnlPgnButtons.Size = new Size(114, 95);
             pnlPgnButtons.TabIndex = 2;
-            //
+            // 
             // btnClassifyMoves
-            //
+            // 
             btnClassifyMoves.Dock = DockStyle.Top;
             btnClassifyMoves.FlatStyle = FlatStyle.Flat;
             btnClassifyMoves.Font = new Font("Courier New", 8.25F);
-            btnClassifyMoves.Location = new Point(0, 0);
+            btnClassifyMoves.Location = new Point(0, 30);
             btnClassifyMoves.Name = "btnClassifyMoves";
-            btnClassifyMoves.Size = new Size(124, 30);
+            btnClassifyMoves.Size = new Size(114, 37);
             btnClassifyMoves.TabIndex = 0;
-            btnClassifyMoves.Text = "Classify Moves";
+            btnClassifyMoves.Text = "Classify";
             btnClassifyMoves.Click += BtnClassifyMoves_Click;
-            //
+            // 
             // btnExportPgn
-            //
+            // 
             btnExportPgn.Dock = DockStyle.Top;
             btnExportPgn.FlatStyle = FlatStyle.Flat;
             btnExportPgn.Font = new Font("Courier New", 8.25F);
-            btnExportPgn.Location = new Point(0, 30);
+            btnExportPgn.Location = new Point(0, 0);
             btnExportPgn.Name = "btnExportPgn";
-            btnExportPgn.Size = new Size(124, 30);
+            btnExportPgn.Size = new Size(114, 30);
             btnExportPgn.TabIndex = 1;
             btnExportPgn.Text = "Export PGN";
             btnExportPgn.Click += BtnExportPgn_Click;
-            //
+            // 
             // btnImportPgn
-            //
+            // 
             btnImportPgn.Dock = DockStyle.Bottom;
             btnImportPgn.FlatStyle = FlatStyle.Flat;
             btnImportPgn.Font = new Font("Courier New", 8.25F);
             btnImportPgn.Location = new Point(0, 65);
             btnImportPgn.Name = "btnImportPgn";
-            btnImportPgn.Size = new Size(124, 30);
+            btnImportPgn.Size = new Size(114, 30);
             btnImportPgn.TabIndex = 2;
             btnImportPgn.Text = "Import PGN";
             btnImportPgn.Click += BtnImportPgn_Click;
-            //
+            // 
             // lblMoves
-            //
+            // 
             lblMoves.Dock = DockStyle.Top;
             lblMoves.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
             lblMoves.Location = new Point(5, 5);
             lblMoves.Name = "lblMoves";
-            lblMoves.Size = new Size(124, 25);
+            lblMoves.Size = new Size(114, 25);
             lblMoves.TabIndex = 0;
             lblMoves.Text = "Moves";
             // 
@@ -397,10 +383,10 @@ namespace ChessDroid
             rightPanel.Controls.Add(grpEngineMatch);
             rightPanel.Controls.Add(lblAnalysis);
             rightPanel.Dock = DockStyle.Fill;
-            rightPanel.Location = new Point(652, 8);
+            rightPanel.Location = new Point(713, 8);
             rightPanel.Name = "rightPanel";
             rightPanel.Padding = new Padding(5);
-            rightPanel.Size = new Size(408, 630);
+            rightPanel.Size = new Size(347, 630);
             rightPanel.TabIndex = 2;
             // 
             // analysisOutput
@@ -408,11 +394,11 @@ namespace ChessDroid
             analysisOutput.BorderStyle = BorderStyle.FixedSingle;
             analysisOutput.Dock = DockStyle.Fill;
             analysisOutput.Font = new Font("Consolas", 10F);
-            analysisOutput.Location = new Point(5, 240);
+            analysisOutput.Location = new Point(5, 265);
             analysisOutput.Name = "analysisOutput";
             analysisOutput.ReadOnly = true;
             analysisOutput.ScrollBars = RichTextBoxScrollBars.Vertical;
-            analysisOutput.Size = new Size(398, 258);
+            analysisOutput.Size = new Size(337, 360);
             analysisOutput.TabIndex = 1;
             analysisOutput.Text = "";
             // 
@@ -434,12 +420,12 @@ namespace ChessDroid
             grpEngineMatch.Font = new Font("Courier New", 9F, FontStyle.Bold, GraphicsUnit.Point, 0);
             grpEngineMatch.Location = new Point(5, 25);
             grpEngineMatch.Name = "grpEngineMatch";
-            grpEngineMatch.Size = new Size(398, 240);
+            grpEngineMatch.Size = new Size(337, 240);
             grpEngineMatch.TabIndex = 2;
             grpEngineMatch.TabStop = false;
             grpEngineMatch.Text = "Engine Match";
             grpEngineMatch.Resize += GrpEngineMatch_Resize;
-            //
+            // 
             // lblWhiteEngine
             // 
             lblWhiteEngine.Font = new Font("Courier New", 9F);
@@ -509,7 +495,7 @@ namespace ChessDroid
             pnlTimeParams.Font = new Font("Segoe UI", 9F);
             pnlTimeParams.Location = new Point(10, 103);
             pnlTimeParams.Name = "pnlTimeParams";
-            pnlTimeParams.Size = new Size(375, 30);
+            pnlTimeParams.Size = new Size(321, 30);
             pnlTimeParams.TabIndex = 6;
             // 
             // lblDepth
@@ -640,23 +626,24 @@ namespace ChessDroid
             btnStopMatch.Text = "Stop";
             btnStopMatch.Visible = false;
             btnStopMatch.Click += BtnStopMatch_Click;
-            //
+            // 
             // chkFromPosition
-            //
+            // 
             chkFromPosition.AutoSize = true;
             chkFromPosition.Font = new Font("Courier New", 9F);
             chkFromPosition.Location = new Point(10, 212);
             chkFromPosition.Name = "chkFromPosition";
+            chkFromPosition.Size = new Size(215, 19);
             chkFromPosition.TabIndex = 11;
             chkFromPosition.Text = "Start from current position";
-            //
+            // 
             // lblAnalysis
             // 
             lblAnalysis.Dock = DockStyle.Top;
             lblAnalysis.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
             lblAnalysis.Location = new Point(5, 5);
             lblAnalysis.Name = "lblAnalysis";
-            lblAnalysis.Size = new Size(398, 20);
+            lblAnalysis.Size = new Size(337, 20);
             lblAnalysis.TabIndex = 0;
             lblAnalysis.Text = "Engine Analysis";
             // 
@@ -676,8 +663,10 @@ namespace ChessDroid
             leftPanel.ResumeLayout(false);
             leftPanel.PerformLayout();
             middlePanel.ResumeLayout(false);
+            pnlPgnButtons.ResumeLayout(false);
             rightPanel.ResumeLayout(false);
             grpEngineMatch.ResumeLayout(false);
+            grpEngineMatch.PerformLayout();
             pnlTimeParams.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)numDepth).EndInit();
             ((System.ComponentModel.ISupportInitialize)numMoveTime).EndInit();
@@ -700,13 +689,12 @@ namespace ChessDroid
         private Label lblTurn;
         private Label lblPieces;
         private ComboBox cmbPieces;
+        private Button btnSettings;
         private Button btnNewGame;
         private Button btnFlipBoard;
         private Button btnTakeBack;
         private Button btnPrevMove;
         private Button btnNextMove;
-        private Button btnAnalyze;
-        private CheckBox chkAutoAnalyze;
         private Label lblFen;
         private TextBox txtFen;
         private Button btnLoadFen;
