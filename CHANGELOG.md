@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [3.0.0] - 2026-02-05
+
+### Major Change — Pure Analysis Board
+chessdroid v3.0.0 is a complete pivot from a screen-reading tool to a pure analysis board application. All screen detection, computer vision, and auto-monitoring features have been removed. The Analysis Board (previously a secondary feature) is now the main and only entry point.
+
+### Removed
+- **Screen Capture & Board Detection** — Removed `ScreenCaptureService.cs`, `BoardDetectionService.cs`, `PieceRecognitionService.cs`, `BoardMonitorService.cs` (~1,400 lines)
+- **MainForm** — Removed `MainForm.cs` and `MainForm.Designer.cs` (~900 lines). AnalysisBoardForm is now the main form
+- **BoardVisualizer** — Removed debug visualization for detection (~100 lines)
+- **Computer Vision Dependencies** — Removed Emgu.CV and OpenCvSharp4 NuGet packages (~50MB binary savings)
+- **Global Hotkeys** — Removed Alt+X (analyze) and Alt+K (auto-monitor) since analysis is now automatic
+- **Detection Settings** — Removed match threshold, Canny thresholds, min board area, debug cells, site selection from Settings
+- **Website/Site Selection** — Removed site combobox and `PopulateSitesComboBox()` from SettingsForm
+
+### Added
+- **Zwischenzug Detection** — Detects intermediate moves (in-between moves) in tactical sequences
+- **Blunder Explanations** — Shows WHY moves are bad with detailed reasoning, not just that they are blunders
+- **Tactical Explanations for Implicit Sacrifices** — Explains sacrifices that aren't immediately obvious
+- **Pin Checkbox** — Toggle pin detection display in settings
+
+### Improved
+- **Brilliant Move Detection** — Improved accuracy with better false positive filtering
+  - Enhanced detection with more sophisticated sacrifice validation
+  - Preserved real-time brilliant detection through ClassifyMoves
+- **Mate Sorting** — Fixed sorting of mate-in-N evaluations in analysis output
+- **Piece Set Persistence** — Piece set selection now persists across sessions
+- **Binary Size** — ~50MB smaller without OpenCV dependencies
+- **Startup** — Faster launch, no screen detection initialization needed
+
+### Changed
+- **Entry Point** — `Program.cs` now launches `AnalysisBoardForm(config)` directly instead of `MainForm`
+- **Window Title** — Changed to `chessdroid v3.0.0`
+- **Auto-Analysis** — Always on by default, no toggle needed
+- **AppConfig** — Removed detection-related properties (MatchThreshold, CannyThresholds, MinBoardArea, ShowDebugCells, AutoMonitorBoard)
+- **ThemeService** — Removed MainForm-specific `ApplyTheme()` overload
+- **Settings Button** — Now accessible via ⚙ button directly on the Analysis Board
+
+---
+
 ## [2.9.0] - 2026-02-01
 
 ### Added
