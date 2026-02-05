@@ -9,7 +9,7 @@
 
 chessdroid is a desktop application built for focused chess study. Analyze positions, explore ideas, and learn with your favorite UCI engines — all on your computer, no internet required.
 
-![chessdroid Analysis Board](analysisboard.png)
+![chessdroid Analysis Board](chessdroid.png)
 
 ## Features
 
