@@ -63,6 +63,7 @@ namespace ChessDroid
             chkMoveQuality = new CheckBox();
             chkBookMoves = new CheckBox();
             grpLc0Features = new GroupBox();
+            chkPlayStyleEnabled = new CheckBox();
             lblAggressiveness = new Label();
             trkAggressiveness = new TrackBar();
             lblAggressivenessValue = new Label();
@@ -480,44 +481,57 @@ namespace ChessDroid
             // 
             // grpLc0Features
             // 
+            grpLc0Features.Controls.Add(chkPlayStyleEnabled);
             grpLc0Features.Controls.Add(lblAggressiveness);
             grpLc0Features.Controls.Add(trkAggressiveness);
             grpLc0Features.Controls.Add(lblAggressivenessValue);
             grpLc0Features.ForeColor = Color.White;
             grpLc0Features.Location = new Point(317, 327);
             grpLc0Features.Name = "grpLc0Features";
-            grpLc0Features.Size = new Size(255, 122);
+            grpLc0Features.Size = new Size(255, 146);
             grpLc0Features.TabIndex = 9;
             grpLc0Features.TabStop = false;
             grpLc0Features.Text = "Play Style";
-            // 
+            //
+            // chkPlayStyleEnabled
+            //
+            chkPlayStyleEnabled.AutoSize = true;
+            chkPlayStyleEnabled.Location = new Point(10, 23);
+            chkPlayStyleEnabled.Name = "chkPlayStyleEnabled";
+            chkPlayStyleEnabled.Size = new Size(69, 18);
+            chkPlayStyleEnabled.TabIndex = 0;
+            chkPlayStyleEnabled.Text = "Enabled";
+            toolTip1.SetToolTip(chkPlayStyleEnabled, "Enable play style recommendations based on aggressiveness preference");
+            chkPlayStyleEnabled.UseVisualStyleBackColor = true;
+            chkPlayStyleEnabled.CheckedChanged += ChkPlayStyleEnabled_CheckedChanged;
+            //
             // lblAggressiveness
-            // 
-            lblAggressiveness.Location = new Point(10, 23);
+            //
+            lblAggressiveness.Location = new Point(10, 47);
             lblAggressiveness.Name = "lblAggressiveness";
             lblAggressiveness.Size = new Size(100, 19);
-            lblAggressiveness.TabIndex = 0;
+            lblAggressiveness.TabIndex = 1;
             lblAggressiveness.Text = "Choose:";
             toolTip1.SetToolTip(lblAggressiveness, "0=Very Solid (avoid risk), 50=Balanced, 100=Very Aggressive (seek complications)");
-            // 
+            //
             // trkAggressiveness
-            // 
-            trkAggressiveness.Location = new Point(10, 42);
+            //
+            trkAggressiveness.Location = new Point(10, 66);
             trkAggressiveness.Maximum = 100;
             trkAggressiveness.Name = "trkAggressiveness";
             trkAggressiveness.Size = new Size(229, 45);
-            trkAggressiveness.TabIndex = 1;
+            trkAggressiveness.TabIndex = 2;
             trkAggressiveness.TickFrequency = 25;
             toolTip1.SetToolTip(trkAggressiveness, "0=Very Solid (avoid risk), 50=Balanced, 100=Very Aggressive (seek complications)");
             trkAggressiveness.Value = 50;
             trkAggressiveness.Scroll += TrkAggressiveness_Scroll;
-            // 
+            //
             // lblAggressivenessValue
-            // 
-            lblAggressivenessValue.Location = new Point(42, 84);
+            //
+            lblAggressivenessValue.Location = new Point(42, 108);
             lblAggressivenessValue.Name = "lblAggressivenessValue";
             lblAggressivenessValue.Size = new Size(191, 19);
-            lblAggressivenessValue.TabIndex = 2;
+            lblAggressivenessValue.TabIndex = 3;
             lblAggressivenessValue.Text = "50 (Balanced)";
             // 
             // btnSave
@@ -664,6 +678,7 @@ namespace ChessDroid
         private System.Windows.Forms.CheckBox chkThreats;
         private System.Windows.Forms.CheckBox chkWDL;
         private System.Windows.Forms.GroupBox grpLc0Features;
+        private System.Windows.Forms.CheckBox chkPlayStyleEnabled;
         private System.Windows.Forms.Label lblAggressiveness;
         private System.Windows.Forms.TrackBar trkAggressiveness;
         private System.Windows.Forms.Label lblAggressivenessValue;

@@ -375,13 +375,11 @@ namespace ChessDroid
                 txtFen.Width = fenInputWidth;
                 btnLoadFen.Location = new Point(txtFen.Right + 5, fenY);
                 btnCopyFen.Location = new Point(btnLoadFen.Right + 5, fenY);
+                btnSettings.Location = new Point(btnCopyFen.Right + 5, fenY);
 
                 // Status label
                 lblStatus.Location = new Point(boardX, fenY + 30);
                 lblStatus.Width = boardSize;
-
-                // Settings button (below status, aligned with board)
-                btnSettings.Location = new Point(boardX, lblStatus.Bottom + 5);
 
                 // Let middle and right panels fill the full form height
                 // (they use Dock.Fill in the TableLayoutPanel)
@@ -1321,7 +1319,7 @@ namespace ChessDroid
             int aggressiveness = config?.Aggressiveness ?? 50;
             string recommendedMove = bestMove;
 
-            if (candidates.Count >= 2 && aggressiveness != 50)
+            if (candidates.Count >= 2 && aggressiveness != 50 && config?.PlayStyleEnabled == true)
             {
                 int selectedIndex = sharpnessAnalyzer.SelectMoveByAggressiveness(candidates, aggressiveness, 0.30);
                 if (selectedIndex >= 0 && selectedIndex < candidates.Count)
@@ -1351,7 +1349,7 @@ namespace ChessDroid
                 }
             }
 
-            // Display results
+            // Display results (respect user's line visibility settings)
             consoleFormatter?.DisplayAnalysisResults(
                 recommendedMove,
                 evaluation,
@@ -1359,9 +1357,9 @@ namespace ChessDroid
                 evals,
                 fen,
                 null, // No previous eval for blunder detection
-                true, // Show best line
-                true, // Show second line
-                true, // Show third line
+                config.ShowBestLine,
+                config.ShowSecondLine,
+                config.ShowThirdLine,
                 wdl,
                 bookMoves);
 

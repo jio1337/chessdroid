@@ -105,7 +105,9 @@ namespace ChessDroid
             chkWDL.Checked = config.ShowWDL;
 
             // Play style and display features
+            chkPlayStyleEnabled.Checked = config.PlayStyleEnabled;
             trkAggressiveness.Value = Math.Clamp(config.Aggressiveness, 0, 100);
+            trkAggressiveness.Enabled = config.PlayStyleEnabled;
             UpdateAggressivenessLabel();
             chkOpeningName.Checked = config.ShowOpeningName;
             chkMoveQuality.Checked = config.ShowMoveQuality;
@@ -151,6 +153,7 @@ namespace ChessDroid
             config.ShowWDL = chkWDL.Checked;
 
             // Play style and display features
+            config.PlayStyleEnabled = chkPlayStyleEnabled.Checked;
             config.Aggressiveness = trkAggressiveness.Value;
             config.ShowOpeningName = chkOpeningName.Checked;
             config.ShowMoveQuality = chkMoveQuality.Checked;
@@ -429,6 +432,11 @@ namespace ChessDroid
 
             // Resume layout to apply all changes at once
             this.ResumeLayout();
+        }
+
+        private void ChkPlayStyleEnabled_CheckedChanged(object? sender, EventArgs e)
+        {
+            trkAggressiveness.Enabled = chkPlayStyleEnabled.Checked;
         }
 
         private void TrkAggressiveness_Scroll(object? sender, EventArgs e)

@@ -2085,8 +2085,9 @@ namespace ChessDroid.Services
             // 2. All three lines are hidden (user only wants style recommendation), OR
             // 3. A non-balanced style is active (shows style confirmation even when recommendation = best)
             bool allLinesHidden = !showBestLine && !showSecondLine && !showThirdLine;
-            bool hasNonBalancedStyle = config != null && (config.Aggressiveness <= 40 || config.Aggressiveness >= 61);
-            bool showRecommendedSection = recommendedDiffersFromBest || allLinesHidden || hasNonBalancedStyle;
+            bool playStyleEnabled = config?.PlayStyleEnabled == true;
+            bool hasNonBalancedStyle = playStyleEnabled && config != null && (config.Aggressiveness <= 40 || config.Aggressiveness >= 61);
+            bool showRecommendedSection = playStyleEnabled && (recommendedDiffersFromBest || allLinesHidden || hasNonBalancedStyle);
 
             if (showRecommendedSection)
             {

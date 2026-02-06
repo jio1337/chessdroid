@@ -33,6 +33,7 @@ namespace ChessDroid
         public bool ShowWDL { get; set; } = true; // Show Win/Draw/Loss probabilities (Lc0-inspired)
 
         // Lc0-inspired features
+        public bool PlayStyleEnabled { get; set; } = true; // Enable play style recommendations
         public int Aggressiveness { get; set; } = 50; // 0=Solid (avoid risk), 50=Balanced, 100=Aggressive (seek complications)
         public bool ShowOpeningName { get; set; } = true; // Show opening name when in known theory
         public bool ShowMoveQuality { get; set; } = true; // Show move quality indicators (brilliant, best, good, etc.)
@@ -150,6 +151,7 @@ namespace ChessDroid
             ShowSEEValues = other.ShowSEEValues;
             ShowThreats = other.ShowThreats;
             ShowWDL = other.ShowWDL;
+            PlayStyleEnabled = other.PlayStyleEnabled;
             Aggressiveness = other.Aggressiveness;
             ShowOpeningName = other.ShowOpeningName;
             ShowMoveQuality = other.ShowMoveQuality;
