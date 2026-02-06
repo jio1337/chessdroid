@@ -103,6 +103,9 @@ config.json
 Templates/
 Engines/
 
+# Puzzle database (user downloads or included in release)
+Puzzles/
+
 # Website folder (separate deployment)
 chessdroid-website/
 

@@ -68,6 +68,11 @@ namespace ChessDroid.Controls
         /// </summary>
         public bool InteractionEnabled { get; set; } = true;
 
+        /// <summary>
+        /// Squares to highlight as puzzle hints (rendered as orange circles).
+        /// </summary>
+        public List<(int row, int col)> HintSquares { get; set; } = new();
+
         // Events
         public event EventHandler<MoveEventArgs>? MoveMade;
         public event EventHandler? BoardChanged;
@@ -309,6 +314,15 @@ namespace ChessDroid.Controls
         }
 
         /// <summary>
+        /// Gets the piece character at the given internal coordinates (0=rank8, 7=rank1).
+        /// </summary>
+        public char GetPieceAt(int row, int col)
+        {
+            if (row < 0 || row > 7 || col < 0 || col > 7) return '.';
+            return board.GetPiece(row, col);
+        }
+
+        /// <summary>
         /// Makes a move on the board (for external use, e.g., from move list)
         /// </summary>
         public bool MakeMove(string uciMove)
@@ -403,6 +417,17 @@ namespace ChessDroid.Controls
                                 int offset = (squareSize - dotSize) / 2;
                                 g.FillEllipse(brush, rect.X + offset, rect.Y + offset, dotSize, dotSize);
                             }
+                        }
+                    }
+
+                    // Draw puzzle hint indicators (orange circles)
+                    if (HintSquares.Contains((row, col)))
+                    {
+                        using (Pen pen = new Pen(Color.FromArgb(200, 255, 180, 50), 4))
+                        {
+                            int margin = squareSize / 8;
+                            g.DrawEllipse(pen, rect.X + margin, rect.Y + margin,
+                                rect.Width - 2 * margin, rect.Height - 2 * margin);
                         }
                     }
 

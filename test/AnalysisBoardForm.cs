@@ -129,7 +129,7 @@ namespace ChessDroid
             cmbPieces.ForeColor = scheme.TextColor;
 
             // Standard buttons
-            foreach (var btn in new[] { btnSettings, btnNewGame, btnFlipBoard, btnTakeBack, btnPrevMove,
+            foreach (var btn in new[] { btnSettings, btnPuzzles, btnNewGame, btnFlipBoard, btnTakeBack, btnPrevMove,
                                         btnNextMove, btnLoadFen, btnCopyFen, btnClassifyMoves,
                                         btnExportPgn, btnImportPgn })
             {
@@ -364,6 +364,9 @@ namespace ChessDroid
                 btnNextMove.Location = new Point(navX + navButtonWidth + 2, buttonY);
                 btnNextMove.Width = navButtonWidth;
 
+                // Puzzles button
+                btnPuzzles.Location = new Point(btnNextMove.Right + buttonSpacing, buttonY);
+
                 // FEN input row
                 int fenY = buttonY + 32;
                 int fenLabelWidth = 35;
@@ -451,6 +454,22 @@ namespace ChessDroid
             UpdateFenDisplay();
             UpdateTurnLabel();
             lblStatus.Text = "New game started";
+        }
+
+        private void BtnPuzzles_Click(object? sender, EventArgs e)
+        {
+            var puzzleForm = new PuzzleForm(config);
+            puzzleForm.OnAnalyzePosition = (fen) =>
+            {
+                txtFen.Text = fen;
+                BtnLoadFen_Click(null, EventArgs.Empty);
+                _ = TriggerAutoAnalysis();
+                if (this.WindowState == FormWindowState.Minimized)
+                    this.WindowState = FormWindowState.Normal;
+                this.BringToFront();
+                this.Activate();
+            };
+            puzzleForm.Show();
         }
 
         private async void BtnSettings_Click(object? sender, EventArgs e)
@@ -1357,9 +1376,9 @@ namespace ChessDroid
                 evals,
                 fen,
                 null, // No previous eval for blunder detection
-                config.ShowBestLine,
-                config.ShowSecondLine,
-                config.ShowThirdLine,
+                config?.ShowBestLine ?? true,
+                config?.ShowSecondLine ?? true,
+                config?.ShowThirdLine ?? true,
                 wdl,
                 bookMoves);
 
