@@ -41,6 +41,10 @@ namespace ChessDroid.Services
         public static readonly Color BlunderColor = Color.FromArgb(202, 52, 49);      // Red
         public static readonly Color InaccuracyColor = Color.FromArgb(247, 199, 72);  // Yellow
         public static readonly Color MistakeColor = Color.FromArgb(232, 106, 51);     // Orange
+        public static readonly Color OnlyMoveColor = Color.FromArgb(91, 139, 245);    // Blue
+        public static readonly Color BestMoveColor = Color.FromArgb(120, 210, 80);    // Vivid green
+        public static readonly Color ExcellentMoveColor = Color.FromArgb(160, 190, 100); // Muted green
+        public static readonly Color GoodMoveColor = Color.FromArgb(140, 160, 120);   // Sage/gray-green
     }
 
     /// <summary>

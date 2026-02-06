@@ -40,6 +40,9 @@ namespace ChessDroid
         private ConcurrentDictionary<string, CachedAnalysis> _analysisCache = new();
         private int _cachedDepth = 0; // Track the depth used for cached analyses
 
+        // Classification lookup for O(1) DrawItem color lookups
+        private Dictionary<MoveNode, MoveReviewResult>? _classificationLookup;
+
         // Auto-analysis
         private CancellationTokenSource? autoAnalysisCts;
 
@@ -377,6 +380,9 @@ namespace ChessDroid
                 lblStatus.Location = new Point(boardX, fenY + 30);
                 lblStatus.Width = boardSize;
 
+                // Settings button (below status, aligned with board)
+                btnSettings.Location = new Point(boardX, lblStatus.Bottom + 5);
+
                 // Let middle and right panels fill the full form height
                 // (they use Dock.Fill in the TableLayoutPanel)
             }
@@ -442,6 +448,8 @@ namespace ChessDroid
             analysisOutput.Clear();
             evalBar?.Reset();
             _analysisCache.Clear(); // Clear analysis cache for new game
+            _currentClassification = null;
+            _classificationLookup = null;
             UpdateFenDisplay();
             UpdateTurnLabel();
             lblStatus.Text = "New game started";
@@ -625,11 +633,43 @@ namespace ChessDroid
                 moveText = text[..^1].TrimEnd();
                 symbolColor = ColorScheme.MistakeColor;
             }
+            else if (text.EndsWith("!") && !text.EndsWith("!!"))
+            {
+                symbol = "!";
+                moveText = text[..^1].TrimEnd();
+                symbolColor = ColorScheme.OnlyMoveColor;
+            }
 
             // Determine text color based on selection and theme
             Color textColor = (e.State & DrawItemState.Selected) == DrawItemState.Selected
                 ? (isDark ? Color.White : SystemColors.HighlightText)
                 : (isDark ? Color.White : Color.Black);
+
+            // Color the whole move text to match the symbol for annotated moves
+            if ((e.State & DrawItemState.Selected) != DrawItemState.Selected && !string.IsNullOrEmpty(symbol))
+            {
+                textColor = symbolColor;
+            }
+
+            // Color move text based on classification quality (Best/Excellent/Good)
+            if ((e.State & DrawItemState.Selected) != DrawItemState.Selected &&
+                string.IsNullOrEmpty(symbol) &&
+                _classificationLookup != null && e.Index < displayedNodes.Count &&
+                _classificationLookup.TryGetValue(displayedNodes[e.Index], out var classResult))
+            {
+                switch (classResult.Quality)
+                {
+                    case MoveQualityAnalyzer.MoveQuality.Best:
+                        textColor = isDark ? ColorScheme.BestMoveColor : Color.ForestGreen;
+                        break;
+                    case MoveQualityAnalyzer.MoveQuality.Excellent:
+                        textColor = isDark ? ColorScheme.ExcellentMoveColor : Color.SeaGreen;
+                        break;
+                    case MoveQualityAnalyzer.MoveQuality.Good:
+                        textColor = isDark ? ColorScheme.GoodMoveColor : Color.OliveDrab;
+                        break;
+                }
+            }
 
             // Draw move text
             using (var brush = new SolidBrush(textColor))
@@ -717,6 +757,12 @@ namespace ChessDroid
                     return true;
                 case Keys.End:
                     NavigateToEnd();
+                    return true;
+                case Keys.N | Keys.Control:
+                    BtnNewGame_Click(this, EventArgs.Empty);
+                    return true;
+                case Keys.F | Keys.Control:
+                    BtnFlipBoard_Click(this, EventArgs.Empty);
                     return true;
             }
             return base.ProcessCmdKey(ref msg, keyData);
@@ -1182,11 +1228,9 @@ namespace ChessDroid
                 _cachedDepth = depth;
             }
 
-            // Check cache first - must have enough PVs (3 for analysis board)
-            int requiredPVs = 3;
+            // Check cache first (depth check only - PV count varies by position)
             if (_analysisCache.TryGetValue(cacheKey, out var cached) &&
-                cached.Depth >= depth &&
-                cached.PVs.Count >= requiredPVs)
+                cached.Depth >= depth)
             {
                 // Use cached result - instant display
                 DisplayAnalysisResult(fen, cached.BestMove, cached.Evaluation,
@@ -2205,6 +2249,45 @@ namespace ChessDroid
                         finalQuality = MoveQualityAnalyzer.MoveQuality.Brilliant;
                     }
 
+                    // Detect "only winning move" — best move where alternatives lose the advantage
+                    if (isBestMove && finalSymbol == "" && finalQuality == MoveQualityAnalyzer.MoveQuality.Best)
+                    {
+                        if (_analysisCache.TryGetValue(cacheKey, out var beforeCached) &&
+                            beforeCached.Evaluations.Count >= 2)
+                        {
+                            double? bestPvEval = ParseEvalNullable(beforeCached.Evaluations[0]);
+                            double? secondPvEval = ParseEvalNullable(beforeCached.Evaluations[1]);
+
+                            if (bestPvEval.HasValue && secondPvEval.HasValue)
+                            {
+                                double evalSwing = Math.Abs(bestPvEval.Value - secondPvEval.Value);
+                                string[] fenParts = beforeFen.Split(' ');
+                                bool whiteToMove = fenParts.Length > 1 && fenParts[1] == "w";
+
+                                bool isOnlyWinningMove;
+                                if (whiteToMove)
+                                {
+                                    bool basicTrigger = bestPvEval.Value >= 0.70 && secondPvEval.Value <= 0.27;
+                                    bool swingTrigger = evalSwing >= 2.0 && bestPvEval.Value >= 0.27 && secondPvEval.Value <= 0.0;
+                                    bool disasterTrigger = bestPvEval.Value >= 0.0 && secondPvEval.Value <= -1.50;
+                                    isOnlyWinningMove = basicTrigger || swingTrigger || disasterTrigger;
+                                }
+                                else
+                                {
+                                    bool basicTrigger = bestPvEval.Value <= -0.70 && secondPvEval.Value >= -0.27;
+                                    bool swingTrigger = evalSwing >= 2.0 && bestPvEval.Value <= -0.27 && secondPvEval.Value >= 0.0;
+                                    bool disasterTrigger = bestPvEval.Value <= 0.0 && secondPvEval.Value >= 1.50;
+                                    isOnlyWinningMove = basicTrigger || swingTrigger || disasterTrigger;
+                                }
+
+                                if (isOnlyWinningMove)
+                                {
+                                    finalSymbol = "!";
+                                }
+                            }
+                        }
+                    }
+
                     // Store the result
                     var moveResult = new MoveReviewResult
                     {
@@ -2315,6 +2398,9 @@ namespace ChessDroid
 
             // Build dictionary for O(1) lookup instead of O(n) FirstOrDefault per item
             var resultLookup = _currentClassification.MoveResults.ToDictionary(r => r.Node, r => r);
+
+            // Cache for DrawItem color lookups
+            _classificationLookup = resultLookup;
 
             // Rebuild the move list items with classification symbols
             moveListBox.BeginUpdate();
