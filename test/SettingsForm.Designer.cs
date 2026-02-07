@@ -29,6 +29,7 @@ namespace ChessDroid
         private void InitializeComponent()
         {
             components = new System.ComponentModel.Container();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(SettingsForm));
             grpEngine = new GroupBox();
             cmbEngineDepth = new ComboBox();
             numMinAnalysisTime = new NumericUpDown();
@@ -492,30 +493,30 @@ namespace ChessDroid
             grpLc0Features.TabIndex = 9;
             grpLc0Features.TabStop = false;
             grpLc0Features.Text = "Play Style";
-            //
+            // 
             // chkPlayStyleEnabled
-            //
+            // 
             chkPlayStyleEnabled.AutoSize = true;
             chkPlayStyleEnabled.Location = new Point(10, 23);
             chkPlayStyleEnabled.Name = "chkPlayStyleEnabled";
-            chkPlayStyleEnabled.Size = new Size(69, 18);
+            chkPlayStyleEnabled.Size = new Size(75, 18);
             chkPlayStyleEnabled.TabIndex = 0;
             chkPlayStyleEnabled.Text = "Enabled";
             toolTip1.SetToolTip(chkPlayStyleEnabled, "Enable play style recommendations based on aggressiveness preference");
             chkPlayStyleEnabled.UseVisualStyleBackColor = true;
             chkPlayStyleEnabled.CheckedChanged += ChkPlayStyleEnabled_CheckedChanged;
-            //
+            // 
             // lblAggressiveness
-            //
+            // 
             lblAggressiveness.Location = new Point(10, 47);
             lblAggressiveness.Name = "lblAggressiveness";
             lblAggressiveness.Size = new Size(100, 19);
             lblAggressiveness.TabIndex = 1;
             lblAggressiveness.Text = "Choose:";
             toolTip1.SetToolTip(lblAggressiveness, "0=Very Solid (avoid risk), 50=Balanced, 100=Very Aggressive (seek complications)");
-            //
+            // 
             // trkAggressiveness
-            //
+            // 
             trkAggressiveness.Location = new Point(10, 66);
             trkAggressiveness.Maximum = 100;
             trkAggressiveness.Name = "trkAggressiveness";
@@ -525,9 +526,9 @@ namespace ChessDroid
             toolTip1.SetToolTip(trkAggressiveness, "0=Very Solid (avoid risk), 50=Balanced, 100=Very Aggressive (seek complications)");
             trkAggressiveness.Value = 50;
             trkAggressiveness.Scroll += TrkAggressiveness_Scroll;
-            //
+            // 
             // lblAggressivenessValue
-            //
+            // 
             lblAggressivenessValue.Location = new Point(42, 108);
             lblAggressivenessValue.Name = "lblAggressivenessValue";
             lblAggressivenessValue.Size = new Size(191, 19);
@@ -617,6 +618,7 @@ namespace ChessDroid
             Controls.Add(grpEngine);
             Font = new Font("Courier New", 8.25F, FontStyle.Regular, GraphicsUnit.Point, 0);
             FormBorderStyle = FormBorderStyle.FixedDialog;
+            Icon = (Icon)resources.GetObject("$this.Icon");
             MaximizeBox = false;
             MinimizeBox = false;
             Name = "SettingsForm";

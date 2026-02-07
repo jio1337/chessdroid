@@ -64,6 +64,7 @@ namespace ChessDroid.Models
 
         public Dictionary<string, ThemeStats> ThemePerformance { get; set; } = new();
         public HashSet<string> AttemptedPuzzleIds { get; set; } = new();
+        public HashSet<string> SolvedPuzzleIds { get; set; } = new();
 
         public double SuccessRate => TotalAttempted > 0
             ? (double)TotalSolved / TotalAttempted * 100 : 0;

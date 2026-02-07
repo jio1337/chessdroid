@@ -173,12 +173,12 @@ namespace ChessDroid.Services
             if (candidateList.Count == 0)
                 return null;
 
-            // Try to exclude already-attempted puzzles
+            // Try to exclude already-solved puzzles (failed ones can reappear)
             var fresh = candidateList
-                .Where(i => !_stats.AttemptedPuzzleIds.Contains(_puzzles[i].PuzzleId))
+                .Where(i => !_stats.SolvedPuzzleIds.Contains(_puzzles[i].PuzzleId))
                 .ToList();
 
-            // If all have been attempted, allow repeats
+            // If all have been solved, allow repeats
             var pool = fresh.Count > 0 ? fresh : candidateList;
 
             // Random selection
@@ -230,6 +230,7 @@ namespace ChessDroid.Services
             if (solved)
             {
                 _stats.TotalSolved++;
+                _stats.SolvedPuzzleIds.Add(puzzleId);
                 _stats.CurrentStreak++;
                 if (_stats.CurrentStreak > _stats.BestStreak)
                     _stats.BestStreak = _stats.CurrentStreak;

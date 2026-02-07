@@ -19,6 +19,7 @@ namespace ChessDroid
 
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(PuzzleForm));
             mainLayout = new TableLayoutPanel();
             leftPanel = new Panel();
             boardControl = new ChessBoardControl();
@@ -51,21 +52,19 @@ namespace ChessDroid
             lblStatsStreak = new Label();
             lblStatsHints = new Label();
             lblStatsAccuracy = new Label();
-
             mainLayout.SuspendLayout();
             leftPanel.SuspendLayout();
             rightPanel.SuspendLayout();
             grpPuzzleInfo.SuspendLayout();
             grpFeedback.SuspendLayout();
             grpFilters.SuspendLayout();
-            grpStats.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)numMinRating).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numMaxRating).BeginInit();
+            grpStats.SuspendLayout();
             SuspendLayout();
-
-            //
+            // 
             // mainLayout
-            //
+            // 
             mainLayout.ColumnCount = 2;
             mainLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 62F));
             mainLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 38F));
@@ -77,12 +76,11 @@ namespace ChessDroid
             mainLayout.Padding = new Padding(5);
             mainLayout.RowCount = 1;
             mainLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            mainLayout.Size = new Size(900, 650);
+            mainLayout.Size = new Size(900, 616);
             mainLayout.TabIndex = 0;
-
-            //
+            // 
             // leftPanel
-            //
+            // 
             leftPanel.Controls.Add(boardControl);
             leftPanel.Controls.Add(lblTurn);
             leftPanel.Controls.Add(btnHint);
@@ -95,202 +93,186 @@ namespace ChessDroid
             leftPanel.Dock = DockStyle.Fill;
             leftPanel.Location = new Point(8, 8);
             leftPanel.Name = "leftPanel";
-            leftPanel.Size = new Size(543, 634);
+            leftPanel.Size = new Size(545, 600);
             leftPanel.TabIndex = 0;
             leftPanel.Resize += LeftPanel_Resize;
-
-            //
+            // 
             // boardControl
-            //
+            // 
             boardControl.InteractionEnabled = true;
             boardControl.Location = new Point(10, 10);
             boardControl.Name = "boardControl";
             boardControl.Size = new Size(480, 480);
             boardControl.TabIndex = 0;
             boardControl.MoveMade += BoardControl_MoveMade;
-
-            //
+            // 
             // lblTurn
-            //
+            // 
             lblTurn.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
             lblTurn.Location = new Point(10, 500);
             lblTurn.Name = "lblTurn";
             lblTurn.Size = new Size(200, 25);
             lblTurn.TabIndex = 1;
             lblTurn.Text = "White to move";
-
-            //
+            // 
             // btnHint
-            //
+            // 
             btnHint.FlatStyle = FlatStyle.Flat;
-            btnHint.Font = new Font("Segoe UI", 9F);
+            btnHint.Font = new Font("Courier New", 8.25F);
             btnHint.Location = new Point(10, 530);
             btnHint.Name = "btnHint";
-            btnHint.Size = new Size(90, 30);
+            btnHint.Size = new Size(90, 36);
             btnHint.TabIndex = 2;
             btnHint.Text = "Hint (0/3)";
             btnHint.Click += BtnHint_Click;
-
-            //
-            // btnRetry
-            //
-            btnRetry.FlatStyle = FlatStyle.Flat;
-            btnRetry.Font = new Font("Segoe UI", 9F);
-            btnRetry.Location = new Point(105, 530);
-            btnRetry.Name = "btnRetry";
-            btnRetry.Size = new Size(70, 30);
-            btnRetry.TabIndex = 3;
-            btnRetry.Text = "Retry";
-            btnRetry.Visible = false;
-            btnRetry.Click += BtnRetry_Click;
-
-            //
+            // 
             // btnSkip
-            //
+            // 
             btnSkip.FlatStyle = FlatStyle.Flat;
-            btnSkip.Font = new Font("Segoe UI", 9F);
+            btnSkip.Font = new Font("Courier New", 8.25F);
             btnSkip.Location = new Point(180, 530);
             btnSkip.Name = "btnSkip";
-            btnSkip.Size = new Size(70, 30);
+            btnSkip.Size = new Size(70, 36);
             btnSkip.TabIndex = 4;
             btnSkip.Text = "Skip";
             btnSkip.Click += BtnSkip_Click;
-
-            //
+            // 
             // btnNext
-            //
+            // 
             btnNext.FlatStyle = FlatStyle.Flat;
-            btnNext.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            btnNext.Font = new Font("Courier New", 8.25F);
             btnNext.Location = new Point(255, 530);
             btnNext.Name = "btnNext";
-            btnNext.Size = new Size(100, 30);
+            btnNext.Size = new Size(100, 36);
             btnNext.TabIndex = 5;
             btnNext.Text = "Next Puzzle";
             btnNext.Visible = false;
             btnNext.Click += BtnNext_Click;
-
-            //
+            // 
             // btnFlipBoard
-            //
+            // 
             btnFlipBoard.FlatStyle = FlatStyle.Flat;
-            btnFlipBoard.Font = new Font("Segoe UI", 9F);
+            btnFlipBoard.Font = new Font("Courier New", 8.25F);
             btnFlipBoard.Location = new Point(360, 530);
             btnFlipBoard.Name = "btnFlipBoard";
-            btnFlipBoard.Size = new Size(50, 30);
+            btnFlipBoard.Size = new Size(50, 36);
             btnFlipBoard.TabIndex = 6;
             btnFlipBoard.Text = "Flip";
             btnFlipBoard.Click += BtnFlipBoard_Click;
-
-            //
+            // 
+            // btnRetry
+            // 
+            btnRetry.FlatStyle = FlatStyle.Flat;
+            btnRetry.Font = new Font("Courier New", 8.25F);
+            btnRetry.Location = new Point(105, 530);
+            btnRetry.Name = "btnRetry";
+            btnRetry.Size = new Size(70, 36);
+            btnRetry.TabIndex = 3;
+            btnRetry.Text = "Retry";
+            btnRetry.Visible = false;
+            btnRetry.Click += BtnRetry_Click;
+            // 
             // btnAnalyze
-            //
+            // 
             btnAnalyze.FlatStyle = FlatStyle.Flat;
-            btnAnalyze.Font = new Font("Segoe UI", 9F);
+            btnAnalyze.Font = new Font("Courier New", 9F, FontStyle.Bold, GraphicsUnit.Point, 0);
             btnAnalyze.Location = new Point(415, 530);
             btnAnalyze.Name = "btnAnalyze";
-            btnAnalyze.Size = new Size(75, 30);
+            btnAnalyze.Size = new Size(75, 36);
             btnAnalyze.TabIndex = 8;
             btnAnalyze.Text = "Analyze";
             btnAnalyze.Visible = false;
             btnAnalyze.Click += BtnAnalyze_Click;
-
-            //
+            // 
             // lblStatus
-            //
-            lblStatus.Font = new Font("Segoe UI", 9F);
+            // 
+            lblStatus.Font = new Font("Courier New", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
             lblStatus.Location = new Point(10, 570);
             lblStatus.Name = "lblStatus";
-            lblStatus.Size = new Size(480, 25);
+            lblStatus.Size = new Size(370, 25);
             lblStatus.TabIndex = 7;
             lblStatus.Text = "Loading puzzles...";
-
-            //
+            // 
             // rightPanel
-            //
+            // 
             rightPanel.AutoScroll = true;
             rightPanel.Controls.Add(grpPuzzleInfo);
             rightPanel.Controls.Add(grpFeedback);
             rightPanel.Controls.Add(grpFilters);
             rightPanel.Controls.Add(grpStats);
             rightPanel.Dock = DockStyle.Fill;
-            rightPanel.Location = new Point(554, 8);
+            rightPanel.Font = new Font("Courier New", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            rightPanel.Location = new Point(559, 8);
             rightPanel.Name = "rightPanel";
-            rightPanel.Size = new Size(338, 634);
+            rightPanel.Size = new Size(333, 600);
             rightPanel.TabIndex = 1;
-
-            //
+            // 
             // grpPuzzleInfo
-            //
+            // 
             grpPuzzleInfo.Controls.Add(lblPuzzleRating);
             grpPuzzleInfo.Controls.Add(lblPuzzleThemes);
             grpPuzzleInfo.Controls.Add(lblPuzzleProgress);
             grpPuzzleInfo.Dock = DockStyle.Top;
             grpPuzzleInfo.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
-            grpPuzzleInfo.Location = new Point(0, 0);
+            grpPuzzleInfo.Location = new Point(0, 365);
             grpPuzzleInfo.Name = "grpPuzzleInfo";
             grpPuzzleInfo.Padding = new Padding(8, 4, 8, 4);
-            grpPuzzleInfo.Size = new Size(338, 100);
+            grpPuzzleInfo.Size = new Size(333, 100);
             grpPuzzleInfo.TabIndex = 0;
             grpPuzzleInfo.TabStop = false;
             grpPuzzleInfo.Text = "Puzzle Info";
-
-            //
+            // 
             // lblPuzzleRating
-            //
-            lblPuzzleRating.Font = new Font("Segoe UI", 10F);
+            // 
+            lblPuzzleRating.Font = new Font("Courier New", 9.75F);
             lblPuzzleRating.Location = new Point(10, 22);
             lblPuzzleRating.Name = "lblPuzzleRating";
             lblPuzzleRating.Size = new Size(310, 22);
             lblPuzzleRating.TabIndex = 0;
             lblPuzzleRating.Text = "Rating: —";
-
-            //
+            // 
             // lblPuzzleThemes
-            //
-            lblPuzzleThemes.Font = new Font("Segoe UI", 9F);
+            // 
+            lblPuzzleThemes.Font = new Font("Courier New", 9.75F);
             lblPuzzleThemes.Location = new Point(10, 46);
             lblPuzzleThemes.Name = "lblPuzzleThemes";
             lblPuzzleThemes.Size = new Size(310, 22);
             lblPuzzleThemes.TabIndex = 1;
             lblPuzzleThemes.Text = "Themes: —";
-
-            //
+            // 
             // lblPuzzleProgress
-            //
-            lblPuzzleProgress.Font = new Font("Segoe UI", 9F);
+            // 
+            lblPuzzleProgress.Font = new Font("Courier New", 9.75F);
             lblPuzzleProgress.Location = new Point(10, 70);
             lblPuzzleProgress.Name = "lblPuzzleProgress";
             lblPuzzleProgress.Size = new Size(310, 22);
             lblPuzzleProgress.TabIndex = 2;
             lblPuzzleProgress.Text = "Move — of —";
-
-            //
+            // 
             // grpFeedback
-            //
+            // 
             grpFeedback.Controls.Add(lblFeedback);
             grpFeedback.Dock = DockStyle.Top;
             grpFeedback.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
-            grpFeedback.Location = new Point(0, 100);
+            grpFeedback.Location = new Point(0, 265);
             grpFeedback.Name = "grpFeedback";
             grpFeedback.Padding = new Padding(8, 4, 8, 4);
-            grpFeedback.Size = new Size(338, 100);
+            grpFeedback.Size = new Size(333, 100);
             grpFeedback.TabIndex = 1;
             grpFeedback.TabStop = false;
             grpFeedback.Text = "Feedback";
-
-            //
+            // 
             // lblFeedback
-            //
-            lblFeedback.Font = new Font("Segoe UI", 10F);
+            // 
+            lblFeedback.Font = new Font("Courier New", 9.75F);
             lblFeedback.Location = new Point(10, 22);
             lblFeedback.Name = "lblFeedback";
             lblFeedback.Size = new Size(310, 68);
             lblFeedback.TabIndex = 0;
             lblFeedback.Text = "Waiting for puzzle...";
-
-            //
+            // 
             // grpFilters
-            //
+            // 
             grpFilters.Controls.Add(lblMinRating);
             grpFilters.Controls.Add(numMinRating);
             grpFilters.Controls.Add(lblMaxRating);
@@ -299,83 +281,76 @@ namespace ChessDroid
             grpFilters.Controls.Add(cmbThemeFilter);
             grpFilters.Dock = DockStyle.Top;
             grpFilters.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
-            grpFilters.Location = new Point(0, 200);
+            grpFilters.Location = new Point(0, 150);
             grpFilters.Name = "grpFilters";
             grpFilters.Padding = new Padding(8, 4, 8, 4);
-            grpFilters.Size = new Size(338, 115);
+            grpFilters.Size = new Size(333, 115);
             grpFilters.TabIndex = 2;
             grpFilters.TabStop = false;
             grpFilters.Text = "Filters";
-
-            //
+            // 
             // lblMinRating
-            //
-            lblMinRating.Font = new Font("Segoe UI", 9F);
+            // 
+            lblMinRating.Font = new Font("Courier New", 9.75F);
             lblMinRating.Location = new Point(10, 24);
             lblMinRating.Name = "lblMinRating";
             lblMinRating.Size = new Size(70, 20);
             lblMinRating.TabIndex = 0;
             lblMinRating.Text = "Min Rating:";
-
-            //
+            // 
             // numMinRating
-            //
+            // 
             numMinRating.Font = new Font("Segoe UI", 9F);
-            numMinRating.Increment = 50;
+            numMinRating.Increment = new decimal(new int[] { 50, 0, 0, 0 });
             numMinRating.Location = new Point(85, 22);
-            numMinRating.Maximum = 3300;
-            numMinRating.Minimum = 400;
+            numMinRating.Maximum = new decimal(new int[] { 3300, 0, 0, 0 });
+            numMinRating.Minimum = new decimal(new int[] { 400, 0, 0, 0 });
             numMinRating.Name = "numMinRating";
             numMinRating.Size = new Size(70, 23);
             numMinRating.TabIndex = 1;
-            numMinRating.Value = 800;
-
-            //
+            numMinRating.Value = new decimal(new int[] { 800, 0, 0, 0 });
+            // 
             // lblMaxRating
-            //
-            lblMaxRating.Font = new Font("Segoe UI", 9F);
+            // 
+            lblMaxRating.Font = new Font("Courier New", 9.75F);
             lblMaxRating.Location = new Point(170, 24);
             lblMaxRating.Name = "lblMaxRating";
             lblMaxRating.Size = new Size(73, 20);
             lblMaxRating.TabIndex = 2;
             lblMaxRating.Text = "Max Rating:";
-
-            //
+            // 
             // numMaxRating
-            //
+            // 
             numMaxRating.Font = new Font("Segoe UI", 9F);
-            numMaxRating.Increment = 50;
+            numMaxRating.Increment = new decimal(new int[] { 50, 0, 0, 0 });
             numMaxRating.Location = new Point(248, 22);
-            numMaxRating.Maximum = 3300;
-            numMaxRating.Minimum = 400;
+            numMaxRating.Maximum = new decimal(new int[] { 3300, 0, 0, 0 });
+            numMaxRating.Minimum = new decimal(new int[] { 400, 0, 0, 0 });
             numMaxRating.Name = "numMaxRating";
             numMaxRating.Size = new Size(70, 23);
             numMaxRating.TabIndex = 3;
-            numMaxRating.Value = 2000;
-
-            //
+            numMaxRating.Value = new decimal(new int[] { 2000, 0, 0, 0 });
+            // 
             // lblThemeFilter
-            //
-            lblThemeFilter.Font = new Font("Segoe UI", 9F);
+            // 
+            lblThemeFilter.Font = new Font("Courier New", 9.75F);
             lblThemeFilter.Location = new Point(10, 56);
             lblThemeFilter.Name = "lblThemeFilter";
             lblThemeFilter.Size = new Size(50, 20);
             lblThemeFilter.TabIndex = 4;
             lblThemeFilter.Text = "Theme:";
-
-            //
+            // 
             // cmbThemeFilter
-            //
+            // 
             cmbThemeFilter.DropDownStyle = ComboBoxStyle.DropDownList;
-            cmbThemeFilter.Font = new Font("Segoe UI", 9F);
+            cmbThemeFilter.Font = new Font("Courier New", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
             cmbThemeFilter.Location = new Point(65, 53);
             cmbThemeFilter.Name = "cmbThemeFilter";
             cmbThemeFilter.Size = new Size(253, 23);
             cmbThemeFilter.TabIndex = 5;
-
-            //
+            // 
             // grpStats
-            //
+            // 
             grpStats.Controls.Add(btnResetStats);
             grpStats.Controls.Add(lblStatsRating);
             grpStats.Controls.Add(lblStatsSolved);
@@ -384,98 +359,91 @@ namespace ChessDroid
             grpStats.Controls.Add(lblStatsAccuracy);
             grpStats.Dock = DockStyle.Top;
             grpStats.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
-            grpStats.Location = new Point(0, 315);
+            grpStats.Location = new Point(0, 0);
             grpStats.Name = "grpStats";
             grpStats.Padding = new Padding(8, 4, 8, 4);
-            grpStats.Size = new Size(338, 150);
+            grpStats.Size = new Size(333, 150);
             grpStats.TabIndex = 3;
             grpStats.TabStop = false;
             grpStats.Text = "Statistics";
-
-            //
+            // 
             // btnResetStats
-            //
+            // 
             btnResetStats.FlatStyle = FlatStyle.Flat;
-            btnResetStats.Font = new Font("Segoe UI", 8F);
-            btnResetStats.Location = new Point(258, 0);
+            btnResetStats.Font = new Font("Courier New", 8.25F);
+            btnResetStats.Location = new Point(253, 0);
             btnResetStats.Name = "btnResetStats";
-            btnResetStats.Size = new Size(60, 20);
+            btnResetStats.Size = new Size(70, 26);
             btnResetStats.TabIndex = 5;
             btnResetStats.Text = "Reset";
             btnResetStats.Click += BtnResetStats_Click;
-
-            //
+            // 
             // lblStatsRating
-            //
-            lblStatsRating.Font = new Font("Segoe UI", 10F);
+            // 
+            lblStatsRating.Font = new Font("Courier New", 9.75F);
             lblStatsRating.Location = new Point(10, 24);
             lblStatsRating.Name = "lblStatsRating";
             lblStatsRating.Size = new Size(310, 22);
             lblStatsRating.TabIndex = 0;
             lblStatsRating.Text = "Puzzle Rating: 1200";
-
-            //
+            // 
             // lblStatsSolved
-            //
-            lblStatsSolved.Font = new Font("Segoe UI", 9F);
+            // 
+            lblStatsSolved.Font = new Font("Courier New", 9.75F);
             lblStatsSolved.Location = new Point(10, 48);
             lblStatsSolved.Name = "lblStatsSolved";
             lblStatsSolved.Size = new Size(310, 22);
             lblStatsSolved.TabIndex = 1;
             lblStatsSolved.Text = "Solved: 0 / 0";
-
-            //
-            // lblStatsAccuracy
-            //
-            lblStatsAccuracy.Font = new Font("Segoe UI", 9F);
-            lblStatsAccuracy.Location = new Point(10, 72);
-            lblStatsAccuracy.Name = "lblStatsAccuracy";
-            lblStatsAccuracy.Size = new Size(310, 22);
-            lblStatsAccuracy.TabIndex = 2;
-            lblStatsAccuracy.Text = "Accuracy: —";
-
-            //
+            // 
             // lblStatsStreak
-            //
-            lblStatsStreak.Font = new Font("Segoe UI", 9F);
+            // 
+            lblStatsStreak.Font = new Font("Courier New", 9.75F);
             lblStatsStreak.Location = new Point(10, 96);
             lblStatsStreak.Name = "lblStatsStreak";
             lblStatsStreak.Size = new Size(310, 22);
             lblStatsStreak.TabIndex = 3;
             lblStatsStreak.Text = "Streak: 0 (Best: 0)";
-
-            //
+            // 
             // lblStatsHints
-            //
-            lblStatsHints.Font = new Font("Segoe UI", 9F);
+            // 
+            lblStatsHints.Font = new Font("Courier New", 9.75F);
             lblStatsHints.Location = new Point(10, 120);
             lblStatsHints.Name = "lblStatsHints";
             lblStatsHints.Size = new Size(310, 22);
             lblStatsHints.TabIndex = 4;
             lblStatsHints.Text = "Hints used: 0";
-
-            //
+            // 
+            // lblStatsAccuracy
+            // 
+            lblStatsAccuracy.Font = new Font("Courier New", 9.75F);
+            lblStatsAccuracy.Location = new Point(10, 72);
+            lblStatsAccuracy.Name = "lblStatsAccuracy";
+            lblStatsAccuracy.Size = new Size(310, 22);
+            lblStatsAccuracy.TabIndex = 2;
+            lblStatsAccuracy.Text = "Accuracy: —";
+            // 
             // PuzzleForm
-            //
+            // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(900, 650);
+            ClientSize = new Size(900, 616);
             Controls.Add(mainLayout);
+            Icon = (Icon)resources.GetObject("$this.Icon");
             MinimumSize = new Size(750, 550);
             Name = "PuzzleForm";
             StartPosition = FormStartPosition.CenterScreen;
             Text = "Puzzle Mode — chessdroid";
             FormClosing += PuzzleForm_FormClosing;
-
             mainLayout.ResumeLayout(false);
             leftPanel.ResumeLayout(false);
             rightPanel.ResumeLayout(false);
             grpPuzzleInfo.ResumeLayout(false);
             grpFeedback.ResumeLayout(false);
             grpFilters.ResumeLayout(false);
-            grpStats.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)numMinRating).EndInit();
             ((System.ComponentModel.ISupportInitialize)numMaxRating).EndInit();
+            grpStats.ResumeLayout(false);
             ResumeLayout(false);
         }
 

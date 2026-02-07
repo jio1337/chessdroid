@@ -41,6 +41,14 @@ namespace ChessDroid.Controls
         private Point mouseDownPosition = Point.Empty;
         private bool mouseDownOnPiece = false;
 
+        // Right-click arrow drawing
+        private List<(int fromRow, int fromCol, int toRow, int toCol)> userArrows = new();
+        private bool isDrawingArrow = false;
+        private int arrowFromRow = -1;
+        private int arrowFromCol = -1;
+        private Point arrowDragPosition = Point.Empty;
+        private static readonly Color ArrowColor = Color.FromArgb(180, 0, 180, 80);
+
         // Visual settings
         private Color lightSquareColor = Color.FromArgb(240, 217, 181);
         private Color darkSquareColor = Color.FromArgb(181, 136, 99);
@@ -71,6 +79,8 @@ namespace ChessDroid.Controls
         /// <summary>
         /// Squares to highlight as puzzle hints (rendered as orange circles).
         /// </summary>
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+        [Browsable(false)]
         public List<(int row, int col)> HintSquares { get; set; } = new();
 
         // Events
@@ -244,6 +254,7 @@ namespace ChessDroid.Controls
         {
             try
             {
+                userArrows.Clear();
                 board = ChessBoard.FromFEN(fen);
                 string[] parts = fen.Split(' ');
                 whiteToMove = parts.Length > 1 ? parts[1] == "w" : true;
@@ -311,6 +322,18 @@ namespace ChessDroid.Controls
         public void FlipBoard()
         {
             IsFlipped = !IsFlipped;
+        }
+
+        /// <summary>
+        /// Clears all user-drawn arrows from the board.
+        /// </summary>
+        public void ClearArrows()
+        {
+            if (userArrows.Count > 0)
+            {
+                userArrows.Clear();
+                Invalidate();
+            }
         }
 
         /// <summary>
@@ -441,6 +464,9 @@ namespace ChessDroid.Controls
                 }
             }
 
+            // Draw user arrows
+            DrawArrows(g, squareSize);
+
             // Draw dragged piece at cursor (on top of everything)
             if (isDragging && dragPiece != '.')
             {
@@ -482,6 +508,59 @@ namespace ChessDroid.Controls
                     g.DrawString(rank, coordFont, brush, 2, i * squareSize + 2);
                 }
             }
+        }
+
+        private void DrawArrows(Graphics g, int squareSize)
+        {
+            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+
+            // Draw finalized arrows
+            foreach (var arrow in userArrows)
+            {
+                DrawArrow(g, squareSize, arrow.fromRow, arrow.fromCol, arrow.toRow, arrow.toCol, ArrowColor);
+            }
+
+            // Draw in-progress arrow while dragging (snap to target square center if legal)
+            if (isDrawingArrow && arrowFromRow >= 0)
+            {
+                int hoverCol = arrowDragPosition.X / squareSize;
+                int hoverRow = arrowDragPosition.Y / squareSize;
+                int hoverBoardRow = isFlipped ? 7 - hoverRow : hoverRow;
+                int hoverBoardCol = isFlipped ? 7 - hoverCol : hoverCol;
+
+                bool isLegalTarget = false;
+                if (hoverBoardRow >= 0 && hoverBoardRow <= 7 && hoverBoardCol >= 0 && hoverBoardCol <= 7
+                    && !(hoverBoardRow == arrowFromRow && hoverBoardCol == arrowFromCol))
+                {
+                    char piece = board.GetPiece(arrowFromRow, arrowFromCol);
+                    if (piece != '.')
+                    {
+                        var legalMoves = GetLegalMovesForPiece(arrowFromRow, arrowFromCol);
+                        isLegalTarget = legalMoves.Contains((hoverBoardRow, hoverBoardCol));
+                    }
+                }
+
+                if (isLegalTarget)
+                {
+                    // Snap to target square center
+                    DrawArrow(g, squareSize, arrowFromRow, arrowFromCol, hoverBoardRow, hoverBoardCol, ArrowColor);
+                }
+            }
+
+            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.Default;
+        }
+
+        private void DrawArrow(Graphics g, int squareSize, int fromRow, int fromCol, int toRow, int toCol, Color color)
+        {
+            int x1 = (isFlipped ? 7 - fromCol : fromCol) * squareSize + squareSize / 2;
+            int y1 = (isFlipped ? 7 - fromRow : fromRow) * squareSize + squareSize / 2;
+            int x2 = (isFlipped ? 7 - toCol : toCol) * squareSize + squareSize / 2;
+            int y2 = (isFlipped ? 7 - toRow : toRow) * squareSize + squareSize / 2;
+
+            float lineWidth = squareSize * 0.22f;
+            using var pen = new Pen(color, lineWidth);
+            pen.EndCap = System.Drawing.Drawing2D.LineCap.ArrowAnchor;
+            g.DrawLine(pen, x1, y1, x2, y2);
         }
 
         private void DrawPiece(Graphics g, char piece, Rectangle rect, int squareSize)
@@ -571,6 +650,19 @@ namespace ChessDroid.Controls
         {
             base.OnMouseDown(e);
 
+            if (e.Button == MouseButtons.Right)
+            {
+                HandleRightMouseDown(e);
+                return;
+            }
+
+            // Left-click clears arrows
+            if (e.Button == MouseButtons.Left && userArrows.Count > 0)
+            {
+                userArrows.Clear();
+                Invalidate();
+            }
+
             if (!InteractionEnabled) return;
             if (e.Button != MouseButtons.Left) return;
 
@@ -609,6 +701,13 @@ namespace ChessDroid.Controls
         {
             base.OnMouseMove(e);
 
+            if (e.Button == MouseButtons.Right && isDrawingArrow)
+            {
+                arrowDragPosition = e.Location;
+                Invalidate();
+                return;
+            }
+
             if (!InteractionEnabled) return;
             if (e.Button != MouseButtons.Left || !mouseDownOnPiece)
                 return;
@@ -636,6 +735,12 @@ namespace ChessDroid.Controls
         protected override void OnMouseUp(MouseEventArgs e)
         {
             base.OnMouseUp(e);
+
+            if (e.Button == MouseButtons.Right && isDrawingArrow)
+            {
+                HandleRightMouseUp(e);
+                return;
+            }
 
             if (!InteractionEnabled) return;
             if (e.Button != MouseButtons.Left) return;
@@ -694,6 +799,63 @@ namespace ChessDroid.Controls
             }
 
             mouseDownOnPiece = false;
+        }
+
+        private (int row, int col) GetBoardSquare(MouseEventArgs e)
+        {
+            int squareSize = Math.Min(Width, Height) / 8;
+            int clickCol = e.X / squareSize;
+            int clickRow = e.Y / squareSize;
+            int boardRow = isFlipped ? 7 - clickRow : clickRow;
+            int boardCol = isFlipped ? 7 - clickCol : clickCol;
+            return (boardRow, boardCol);
+        }
+
+        private void HandleRightMouseDown(MouseEventArgs e)
+        {
+            var (boardRow, boardCol) = GetBoardSquare(e);
+            if (boardRow >= 0 && boardRow <= 7 && boardCol >= 0 && boardCol <= 7)
+            {
+                isDrawingArrow = true;
+                arrowFromRow = boardRow;
+                arrowFromCol = boardCol;
+                arrowDragPosition = e.Location;
+            }
+        }
+
+        private void HandleRightMouseUp(MouseEventArgs e)
+        {
+            isDrawingArrow = false;
+            var (boardRow, boardCol) = GetBoardSquare(e);
+
+            if (boardRow >= 0 && boardRow <= 7 && boardCol >= 0 && boardCol <= 7)
+            {
+                if (boardRow == arrowFromRow && boardCol == arrowFromCol)
+                {
+                    userArrows.Clear();
+                }
+                else
+                {
+                    // Only allow arrows for legal moves from that square
+                    char piece = board.GetPiece(arrowFromRow, arrowFromCol);
+                    if (piece != '.')
+                    {
+                        var legalMoves = GetLegalMovesForPiece(arrowFromRow, arrowFromCol);
+                        if (legalMoves.Contains((boardRow, boardCol)))
+                        {
+                            var arrow = (arrowFromRow, arrowFromCol, boardRow, boardCol);
+                            if (userArrows.Contains(arrow))
+                                userArrows.Remove(arrow);
+                            else
+                                userArrows.Add(arrow);
+                        }
+                    }
+                }
+            }
+
+            arrowFromRow = -1;
+            arrowFromCol = -1;
+            Invalidate();
         }
 
         private void HandleSquareClick(int row, int col)
@@ -1060,6 +1222,8 @@ namespace ChessDroid.Controls
 
         private bool ExecuteMove(int fromRow, int fromCol, int toRow, int toCol, char? promotion)
         {
+            userArrows.Clear();
+
             char movingPiece = board.GetPiece(fromRow, fromCol);
 
             // Check for pawn promotion

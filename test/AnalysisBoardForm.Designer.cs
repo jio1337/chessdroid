@@ -30,6 +30,7 @@ namespace ChessDroid
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(AnalysisBoardForm));
             mainLayout = new TableLayoutPanel();
             leftPanel = new Panel();
             evalBar = new EvalBarControl();
@@ -247,9 +248,9 @@ namespace ChessDroid
             btnNextMove.TabIndex = 13;
             btnNextMove.Text = "▶";
             btnNextMove.Click += BtnNextMove_Click;
-            //
+            // 
             // btnPuzzles
-            //
+            // 
             btnPuzzles.FlatStyle = FlatStyle.Flat;
             btnPuzzles.Font = new Font("Segoe UI", 10F);
             btnPuzzles.Location = new Point(408, 530);
@@ -258,7 +259,7 @@ namespace ChessDroid
             btnPuzzles.TabIndex = 24;
             btnPuzzles.Text = "♟";
             btnPuzzles.Click += BtnPuzzles_Click;
-            //
+            // 
             // lblFen
             // 
             lblFen.Font = new Font("Courier New", 8.25F, FontStyle.Regular, GraphicsUnit.Point, 0);
@@ -666,6 +667,7 @@ namespace ChessDroid
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1068, 646);
             Controls.Add(mainLayout);
+            Icon = (Icon)resources.GetObject("$this.Icon");
             KeyPreview = true;
             MinimumSize = new Size(1000, 600);
             Name = "AnalysisBoardForm";
