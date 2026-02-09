@@ -1,4 +1,4 @@
-## ChessDroid v3.0.0 — User Guide
+## ChessDroid v3.1.0 — User Guide
 
 ### Welcome to ChessDroid!
 
@@ -24,8 +24,11 @@ The Analysis Board is the heart of chessdroid — a complete interactive workspa
 
 **Capabilities:**
 - **Interactive Board** — Click to make moves with legal move validation
+- **Engine Arrows** — Colored arrows on the board showing engine recommended moves (green=best, yellow=2nd, red=3rd)
+- **[See line]** — Click to load any PV line into the move tree as a variation with animated playback
+- **Free-Draw Arrows** — Right-click and drag to draw arrows from any square to any square for your own analysis
 - **Move Tree** — All moves tracked in a navigable list with variation branching
-- **Auto-Analysis** — Engine analysis runs automatically after every move, with caching for instant results on revisited positions
+- **Auto-Analysis** — Engine analysis runs automatically on every move, new game, and form open, with caching for instant results
 - **FEN Support** — Load any position via FEN string or start from the standard position
 - **Flip Board** — View from White or Black's perspective
 - **PGN Import/Export** — Import games from any source, export your analysis to standard PGN format
@@ -161,7 +164,7 @@ Choose your preferred explanation detail:
 
 - **Beginner** — Simple, clear language (e.g., "knight in good position")
 - **Intermediate** — Moderate detail with chess terminology (default)
-- **Advanced** — Full technical details with SEE values
+- **Advanced** — Full technical details with chess terminology
 - **Master** — Maximum detail with annotations
 
 ---
@@ -171,11 +174,11 @@ Choose your preferred explanation detail:
 Customize which analysis features you want to see:
 
 - **Show Best/Second/Third Line** — Multi-PV control
+- **Show Engine Arrows** — Colored arrows on the board for engine recommendations
 - **Tactical Analysis** — Pins, forks, skewers, discovered attacks
 - **Positional Analysis** — Pawn structure, outposts, mobility
 - **Endgame Analysis** — Zugzwang, patterns, endgame techniques
 - **Opening Principles** — Center control, development
-- **SEE Values** — Static Exchange Evaluation
 - **Show Threats** — Threat and defense information
 - **Show WDL** — Win/Draw/Loss probabilities
 - **Show Opening Name** — Detected opening
@@ -207,8 +210,7 @@ Click the **⚙** button on the Analysis Board to open Settings.
 **Beginner (< 1200 rating):**
 - Complexity: Beginner
 - Aggressiveness: 50 (Balanced)
-- Enable: Tactical Analysis, Opening Principles
-- Disable: SEE Values
+- Enable: Tactical Analysis, Opening Principles, Engine Arrows
 
 **Intermediate (1200-1800 rating):**
 - Complexity: Intermediate (Default)
@@ -220,7 +222,6 @@ Click the **⚙** button on the Analysis Board to open Settings.
 - Complexity: Advanced
 - Aggressiveness: Adjust to your style
 - Enable: All features
-- SEE Values: ON
 
 **Expert (2200+ rating):**
 - Complexity: Master
@@ -311,7 +312,7 @@ Create a folder in `Templates/` with 12 PNG files (wK, wQ, wR, wB, wN, wP, bK, b
 
 ## Glossary
 
-**SEE (Static Exchange Evaluation)** — Calculation showing material won/lost after all captures on a square
+**SEE (Static Exchange Evaluation)** — Internal calculation for sacrifice and brilliant move detection (not shown in UI)
 
 **WDL (Win/Draw/Loss)** — Probabilities for each game outcome based on engine evaluation
 
@@ -339,7 +340,13 @@ Create a folder in `Templates/` with 12 PNG files (wK, wQ, wR, wB, wN, wP, bK, b
 
 ## Version History
 
-**v3.0.0** — Pure Analysis Board (Current)
+**v3.1.0** — Engine Arrows & Visual Analysis (Current)
+- Engine arrows on board (green/yellow/red per PV line)
+- [See line] — load PV into move tree with animated playback
+- Free-draw right-click arrows, auto-analysis on form open
+- Removed SEE display and Puzzle Mode
+
+**v3.0.0** — Pure Analysis Board
 - Complete pivot: removed all screen detection and computer vision
 - AnalysisBoardForm is now the main and only entry point
 - Auto-analysis on every move, no manual trigger needed
@@ -401,5 +408,5 @@ ChessDroid is released under the MIT License. Free and open-source forever!
 
 **Enjoy analyzing with ChessDroid!**
 
-*Last Updated: 2026-02-05*
-*Version: 3.0.0 (Pure Analysis Board)*
+*Last Updated: 2026-02-09*
+*Version: 3.1.0 (Engine Arrows & Visual Analysis)*

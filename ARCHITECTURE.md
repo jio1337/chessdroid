@@ -2,11 +2,11 @@
 
 ## Overview
 
-ChessDroid is a pure offline chess analysis application that combines tactical pattern recognition with deep positional understanding inspired by world-class chess engines (Ethereal and Stockfish). As of v3.0.0, the application is centered around the Analysis Board — an interactive workspace for deep chess analysis.
+ChessDroid is a pure offline chess analysis application that combines tactical pattern recognition with deep positional understanding inspired by world-class chess engines (Ethereal and Stockfish). As of v3.1.0, the application is centered around the Analysis Board — an interactive workspace for deep chess analysis with visual engine arrows, PV line exploration, and free-draw annotation.
 
 ---
 
-## System Architecture (v3.0.0)
+## System Architecture (v3.1.0)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -80,8 +80,11 @@ ChessDroid is a pure offline chess analysis application that combines tactical p
 
 **Key Responsibilities:**
 - Interactive chess board with click-to-move
+- Engine arrows on board (green/yellow/red per PV line, separate from user arrows)
+- [See line] PV loading into move tree with animated playback
+- Free-draw right-click arrows (any square to any square)
 - Move tree navigation with variation branching
-- Auto-analysis on every move with result caching
+- Auto-analysis on every move, new game, and form open with result caching
 - PGN import/export
 - Move classification (Brilliant, Blunder, Mistake, Inaccuracy)
 - Evaluation bar with smooth transitions
@@ -90,7 +93,7 @@ ChessDroid is a pure offline chess analysis application that combines tactical p
 - Settings access via ⚙ button
 
 **Supporting Controls:**
-- `ChessBoardControl` — Renders pieces using PNG templates with Unicode fallback
+- `ChessBoardControl` — Renders pieces, engine arrows, and user arrows using PNG templates with Unicode fallback
 - `MoveTree.cs` / `MoveNode.cs` — Variation tree data structure
 - `MoveQualityAnalyzer.cs` — Centipawn loss classification
 
@@ -562,13 +565,20 @@ Create a folder in `Templates/` with 12 PNG files named: wK, wQ, wR, wB, wN, wP,
 
 ## Version History
 
-**v3.0.0** — Pure Analysis Board (Current)
+**v3.1.0** — Engine Arrows & Visual Analysis (Current)
+- Engine arrows on board (green/yellow/red per PV line)
+- [See line] PV loading into move tree with animated playback
+- Free-draw right-click arrows, auto-analysis on form open
+- Removed SEE display from UI, removed Puzzle Mode (~2,100 lines)
+- Variation tree fix for [See line] at end of move tree
+- Window title: `chessdroid v3.1.0`
+
+**v3.0.0** — Pure Analysis Board
 - Removed all screen detection, computer vision, and auto-monitoring
 - AnalysisBoardForm is now the main and only entry point
 - Removed Emgu.CV and OpenCvSharp4 dependencies (~50MB savings)
 - Added zwischenzug detection, blunder explanations, improved brilliant move detection
 - Auto-analysis always on, no manual trigger needed
-- Window title: `chessdroid v3.0.0`
 
 **v2.9.0** — Engine Match Enhancements
 - Start from current position in engine matches
@@ -615,5 +625,5 @@ https://github.com/jio1337/chessdroid/issues
 
 ---
 
-**Last Updated:** 2026-02-05
-**Document Version:** 3.0.0 (Pure Analysis Board)
+**Last Updated:** 2026-02-09
+**Document Version:** 3.1.0 (Engine Arrows & Visual Analysis)

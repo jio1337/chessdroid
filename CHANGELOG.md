@@ -7,6 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [3.1.0] - 2026-02-09
+
+### Added
+- **Engine Arrows on Board** — Colored arrows showing engine recommended moves directly on the board
+  - Green (best line), Yellow (2nd line), Red (3rd line) — matches PV line visibility settings
+  - Toggle on/off via `ShowEngineArrows` checkbox in Settings > Display Options
+  - Arrows clear on New Game, on move made, and during PV animation
+- **[See line] — Load PV into Move Tree** — Clickable cyan `[See line]` link after each PV line
+  - Loads the full PV as a variation branch in the move tree
+  - Animated playback stepping through each move (400ms per move)
+  - Cancels previous animation on new click, navigation, or board move
+- **Free-Draw Right-Click Arrows** — Right-click arrows can now be drawn from any square to any square (no longer restricted to legal moves)
+- **Auto-Analysis on Form Open** — Engine starts analyzing the starting position immediately when the form opens
+- **Auto-Analysis on New Game** — Clicking New Game triggers auto-analysis instead of showing blank panel
+
+### Changed
+- **[See line] always creates variation** — PV lines inserted via [See line] now always create a variation branch, even when at the end of the move tree (previously appended to main line)
+- **Engine arrows suppressed during animation** — Arrows hide during [See line] playback to avoid visual clutter
+
+### Removed
+- **Puzzle Mode** — Removed entirely to keep chessdroid focused as a pure analysis board
+  - Deleted PuzzleForm, Puzzle model, PuzzleService, PuzzleExtractor (~2,100 lines)
+  - Removed puzzle button, HintSquares rendering, puzzle config settings
+  - Removed Puzzles folder copy rule from project file
+- **SEE Display** — Removed `(SEE +X)` text from move explanations
+  - No more misleading "wins knight (SEE +3)" on equal trades
+  - SEE calculation still runs internally for sacrifice and brilliant move detection
+  - Removed SEE checkbox from Settings form
+  - `AppConfig.ShowSEEValues` kept for JSON backwards compatibility, defaults to `false`
+
+### Fixed
+- **Brilliant move false positives** — Fork safety check (forking piece must survive) and already-hanging piece check
+- **Engine arrows persist after New Game** — Fixed by clearing arrows in `BtnNewGame_Click`
+
+---
+
 ## [3.0.0] - 2026-02-05
 
 ### Major Change — Pure Analysis Board

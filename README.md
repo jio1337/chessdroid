@@ -3,7 +3,7 @@
 [![.NET](https://img.shields.io/badge/.NET-8.0-blue.svg)](https://dotnet.microsoft.com/download/dotnet/8.0)
 [![Platform](https://img.shields.io/badge/platform-Windows-lightgrey.svg)](https://www.microsoft.com/windows)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-3.0.0-brightgreen.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-3.1.0-brightgreen.svg)](CHANGELOG.md)
 
 **Offline chess analysis & training for Windows**
 
@@ -15,8 +15,11 @@ chessdroid is a desktop application built for focused chess study. Analyze posit
 
 ### Analysis Board
 - **Interactive Chess Board** — Click to make moves with legal move validation
+- **Engine Arrows** — Colored arrows on the board showing engine recommended moves (green/yellow/red per PV line)
+- **[See line]** — Click to load any PV line into the move tree as a variation with animated playback
+- **Free-Draw Arrows** — Right-click to draw arrows from any square to any square for your own analysis
 - **Move Tree with Variations** — Navigate through game history with full variation support
-- **Auto-Analysis** — Engine analysis runs automatically after every move, with caching for instant results
+- **Auto-Analysis** — Engine analysis runs automatically on every move, new game, and form open
 - **PGN Import/Export** — Import games from any source, export your analysis
 - **Move Classification** — Review games with Chess.com-style quality symbols (Brilliant !!, Blunder ??, Mistake ?, Inaccuracy ?!)
 - **Evaluation Bar** — Visual representation of position evaluation with smooth transitions
@@ -34,7 +37,7 @@ chessdroid is a desktop application built for focused chess study. Analyze posit
 - **Blunder Explanations** — Shows WHY moves are bad, not just that they are
 - **Threat Detection** — Shows NEW threats created by each move
 - **Defense Detection** — Shows defensive aspects of moves (protecting, blocking, escaping)
-- **Static Exchange Evaluation (SEE)** — See exactly what you'll win or lose after all captures on a square
+- **Static Exchange Evaluation (SEE)** — Internal evaluation for sacrifice and brilliant move detection
 
 ### Play Style & Analysis
 - **Play Style Recommendations** — Style-based move suggestions (Very Solid → Very Aggressive)
@@ -51,7 +54,7 @@ chessdroid is a desktop application built for focused chess study. Analyze posit
 ### Customization
 - **Dark/Light Themes** — Fully-featured dark mode with automatic theme persistence
 - **Complexity Levels** — Choose from Beginner, Intermediate, Advanced, or Master explanations
-- **Feature Toggles** — Customize analysis display (Tactical, Positional, Endgame, Opening, Win%, SEE, WDL, etc.)
+- **Feature Toggles** — Customize analysis display (Tactical, Positional, Endgame, Opening, Win%, WDL, Engine Arrows, etc.)
 - **Multiple Piece Sets** — Switch between Chess.com, Lichess, or custom piece templates
 
 ## Requirements
