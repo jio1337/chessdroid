@@ -41,7 +41,7 @@ namespace ChessDroid.Services
             Features.ShowPositionalAnalysis = config.ShowPositionalAnalysis;
             Features.ShowEndgameAnalysis = config.ShowEndgameAnalysis;
             Features.ShowOpeningPrinciples = config.ShowOpeningPrinciples;
-            Features.ShowSEEValues = config.ShowSEEValues;
+            Features.ShowSEEValues = false; // SEE runs internally but never displayed
         }
 
         /// <summary>
@@ -71,9 +71,6 @@ namespace ChessDroid.Services
         {
             // Remove technical terms
             return explanation
-                .Replace("SEE +", "wins ")
-                .Replace("SEE -", "loses ")
-                .Replace("(SEE ", "(")
                 .Replace("singular move", "best move")
                 .Replace("only good move", "best move")
                 .Replace("knight on strong outpost", "knight in good position")

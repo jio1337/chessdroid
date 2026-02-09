@@ -59,7 +59,6 @@ namespace ChessDroid
             chkPositional = new CheckBox();
             chkEndgame = new CheckBox();
             chkOpening = new CheckBox();
-            chkSEE = new CheckBox();
             chkThreats = new CheckBox();
             chkWDL = new CheckBox();
             chkOpeningName = new CheckBox();
@@ -330,7 +329,6 @@ namespace ChessDroid
             grpExplanations.Controls.Add(chkPositional);
             grpExplanations.Controls.Add(chkEndgame);
             grpExplanations.Controls.Add(chkOpening);
-            grpExplanations.Controls.Add(chkSEE);
             grpExplanations.Controls.Add(chkThreats);
             grpExplanations.Controls.Add(chkWDL);
             grpExplanations.Controls.Add(chkOpeningName);
@@ -419,28 +417,14 @@ namespace ChessDroid
             chkOpening.Text = "Opening Principles";
             toolTip1.SetToolTip(chkOpening, "Show center control, development");
             chkOpening.UseVisualStyleBackColor = true;
-            // 
-            // chkSEE
-            // 
-            chkSEE.AutoSize = true;
-            chkSEE.Checked = true;
-            chkSEE.CheckState = CheckState.Checked;
-            chkSEE.ForeColor = Color.White;
-            chkSEE.Location = new Point(10, 152);
-            chkSEE.Name = "chkSEE";
-            chkSEE.Size = new Size(96, 18);
-            chkSEE.TabIndex = 8;
-            chkSEE.Text = "SEE Values";
-            toolTip1.SetToolTip(chkSEE, "Static Exchange Evaluation for captures");
-            chkSEE.UseVisualStyleBackColor = true;
-            // 
+            //
             // chkThreats
-            // 
+            //
             chkThreats.AutoSize = true;
             chkThreats.Checked = true;
             chkThreats.CheckState = CheckState.Checked;
             chkThreats.ForeColor = Color.White;
-            chkThreats.Location = new Point(10, 177);
+            chkThreats.Location = new Point(10, 152);
             chkThreats.Name = "chkThreats";
             chkThreats.Size = new Size(138, 18);
             chkThreats.TabIndex = 9;
@@ -454,7 +438,7 @@ namespace ChessDroid
             chkWDL.Checked = true;
             chkWDL.CheckState = CheckState.Checked;
             chkWDL.ForeColor = Color.White;
-            chkWDL.Location = new Point(10, 202);
+            chkWDL.Location = new Point(10, 177);
             chkWDL.Name = "chkWDL";
             chkWDL.Size = new Size(166, 18);
             chkWDL.TabIndex = 10;
@@ -468,7 +452,7 @@ namespace ChessDroid
             chkOpeningName.Checked = true;
             chkOpeningName.CheckState = CheckState.Checked;
             chkOpeningName.ForeColor = Color.White;
-            chkOpeningName.Location = new Point(10, 227);
+            chkOpeningName.Location = new Point(10, 202);
             chkOpeningName.Name = "chkOpeningName";
             chkOpeningName.Size = new Size(145, 18);
             chkOpeningName.TabIndex = 11;
@@ -482,7 +466,7 @@ namespace ChessDroid
             chkMoveQuality.Checked = true;
             chkMoveQuality.CheckState = CheckState.Checked;
             chkMoveQuality.ForeColor = Color.White;
-            chkMoveQuality.Location = new Point(10, 252);
+            chkMoveQuality.Location = new Point(10, 227);
             chkMoveQuality.Name = "chkMoveQuality";
             chkMoveQuality.Size = new Size(229, 18);
             chkMoveQuality.TabIndex = 12;
@@ -496,7 +480,7 @@ namespace ChessDroid
             chkBookMoves.Checked = true;
             chkBookMoves.CheckState = CheckState.Checked;
             chkBookMoves.ForeColor = Color.White;
-            chkBookMoves.Location = new Point(10, 277);
+            chkBookMoves.Location = new Point(10, 252);
             chkBookMoves.Name = "chkBookMoves";
             chkBookMoves.Size = new Size(131, 18);
             chkBookMoves.TabIndex = 13;
@@ -702,7 +686,6 @@ namespace ChessDroid
         private System.Windows.Forms.CheckBox chkPositional;
         private System.Windows.Forms.CheckBox chkEndgame;
         private System.Windows.Forms.CheckBox chkOpening;
-        private System.Windows.Forms.CheckBox chkSEE;
         private System.Windows.Forms.CheckBox chkThreats;
         private System.Windows.Forms.CheckBox chkWDL;
         private System.Windows.Forms.GroupBox grpLc0Features;

@@ -101,6 +101,7 @@ namespace ChessDroid
                 string enginePath = Path.Combine(config.GetEnginesPath(), config.SelectedEngine);
                 await engineService!.InitializeAsync(enginePath);
                 lblStatus.Text = "Engine ready";
+                _ = TriggerAutoAnalysis();
             }
             catch (Exception ex)
             {

@@ -29,7 +29,7 @@ namespace ChessDroid
         public bool ShowPositionalAnalysis { get; set; } = true; // Show positional evaluation
         public bool ShowEndgameAnalysis { get; set; } = true; // Show endgame patterns
         public bool ShowOpeningPrinciples { get; set; } = true; // Show opening principles
-        public bool ShowSEEValues { get; set; } = true; // Static Exchange Evaluation
+        public bool ShowSEEValues { get; set; } = false; // SEE runs internally, no longer displayed
         public bool ShowThreats { get; set; } = true; // Show threats analysis
         public bool ShowWDL { get; set; } = true; // Show Win/Draw/Loss probabilities (Lc0-inspired)
 

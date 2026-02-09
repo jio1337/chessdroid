@@ -414,9 +414,6 @@ namespace ChessDroid.Services
                 // Without move history, we can't know if this is a recapture
                 // But we can be smarter about what we report
 
-                // Check if SEE values should be displayed
-                bool showSEE = ExplanationFormatter.Features.ShowSEEValues;
-
                 if (seeValue > 0)
                 {
                     // We win material after full exchange
@@ -437,14 +434,11 @@ namespace ChessDroid.Services
                         if (hangingValue >= seeValue)
                         {
                             // We're leaving a piece hanging worth at least what we're gaining
-                            // Example: Rxc7 "wins" queen (SEE +9) but leaves our queen on b1 hanging (-9)
-                            // Net is 0 or worse - don't say "wins"
                             return $"captures {ChessUtilities.GetPieceName(capturedType)}";
                         }
 
                         // Actually winning material
-                        string seeInfo = showSEE ? $" (SEE +{seeValue})" : "";
-                        return $"wins {ChessUtilities.GetPieceName(capturedType)}{seeInfo}";
+                        return $"wins {ChessUtilities.GetPieceName(capturedType)}";
                     }
                 }
                 else if (seeValue == 0)

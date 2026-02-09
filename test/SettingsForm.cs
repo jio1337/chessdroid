@@ -101,7 +101,6 @@ namespace ChessDroid
             chkPositional.Checked = config.ShowPositionalAnalysis;
             chkEndgame.Checked = config.ShowEndgameAnalysis;
             chkOpening.Checked = config.ShowOpeningPrinciples;
-            chkSEE.Checked = config.ShowSEEValues;
             chkThreats.Checked = config.ShowThreats;
             chkWDL.Checked = config.ShowWDL;
 
@@ -150,7 +149,6 @@ namespace ChessDroid
             config.ShowPositionalAnalysis = chkPositional.Checked;
             config.ShowEndgameAnalysis = chkEndgame.Checked;
             config.ShowOpeningPrinciples = chkOpening.Checked;
-            config.ShowSEEValues = chkSEE.Checked;
             config.ShowThreats = chkThreats.Checked;
             config.ShowWDL = chkWDL.Checked;
 
@@ -471,7 +469,7 @@ namespace ChessDroid
                     chkPositional.Checked = false;
                     chkEndgame.Checked = false;
                     chkOpening.Checked = true;
-                    chkSEE.Checked = false;
+
                     chkThreats.Checked = false;
                     chkWDL.Checked = true;
                     chkOpeningName.Checked = true;
@@ -485,7 +483,7 @@ namespace ChessDroid
                     chkPositional.Checked = true;
                     chkEndgame.Checked = false;
                     chkOpening.Checked = true;
-                    chkSEE.Checked = false;
+
                     chkThreats.Checked = true;
                     chkWDL.Checked = true;
                     chkOpeningName.Checked = true;
@@ -494,12 +492,12 @@ namespace ChessDroid
                     break;
 
                 case "Advanced":
-                    // Advanced (1800-2200): All features, SEE Values
+                    // Advanced (1800-2200): All features
                     chkTactical.Checked = true;
                     chkPositional.Checked = true;
                     chkEndgame.Checked = true;
                     chkOpening.Checked = true;
-                    chkSEE.Checked = true;
+
                     chkThreats.Checked = true;
                     chkWDL.Checked = true;
                     chkOpeningName.Checked = true;
@@ -513,7 +511,7 @@ namespace ChessDroid
                     chkPositional.Checked = true;
                     chkEndgame.Checked = true;
                     chkOpening.Checked = true;
-                    chkSEE.Checked = true;
+
                     chkThreats.Checked = true;
                     chkWDL.Checked = true;
                     chkOpeningName.Checked = true;
