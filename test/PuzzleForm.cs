@@ -118,7 +118,7 @@ namespace ChessDroid
             int maxRating = (int)numMaxRating.Value;
             string? theme = cmbThemeFilter.SelectedItem?.ToString();
 
-            _currentPuzzle = _puzzleService.GetNextPuzzle(minRating, maxRating, theme);
+            _currentPuzzle = _puzzleService.GetNextPuzzle(minRating, maxRating, theme, _currentPuzzle?.PuzzleId);
             if (_currentPuzzle == null)
             {
                 lblFeedback.Text = "No puzzles match your filters.";
@@ -349,6 +349,10 @@ namespace ChessDroid
             btnSkip.Enabled = false;
 
             RevealPuzzleInfo();
+
+            // Always mark completed puzzles for skip purposes (even with mistakes)
+            // Failed/skipped puzzles from OnPuzzleFailed do NOT get added here
+            _puzzleService.MarkPuzzleCompleted(_currentPuzzle!.PuzzleId);
 
             // Record stats
             _puzzleService.RecordAttempt(

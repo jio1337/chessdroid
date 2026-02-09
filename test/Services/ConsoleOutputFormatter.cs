@@ -13,6 +13,14 @@ namespace ChessDroid.Services
         private readonly AppConfig config;
         private readonly Func<string, string, List<string>, string, string> generateExplanation;
 
+        // [See line] clickable markers: character range → PV data
+        private readonly List<(int start, int length, string pvUci, string fen)> _seeLineMarkers = new();
+
+        /// <summary>
+        /// Fired when user clicks a [See line] link. Parameters: (pvUci, startFen)
+        /// </summary>
+        public Action<string, string>? OnSeeLineClicked;
+
         public ConsoleOutputFormatter(
             RichTextBox richTextBox,
             AppConfig config,
@@ -21,6 +29,38 @@ namespace ChessDroid.Services
             this.richTextBox = richTextBox;
             this.config = config;
             this.generateExplanation = generateExplanation;
+
+            // Wire up mouse events for [See line] click detection
+            richTextBox.MouseClick += RichTextBox_MouseClick;
+            richTextBox.MouseMove += RichTextBox_MouseMove;
+        }
+
+        private void RichTextBox_MouseClick(object? sender, MouseEventArgs e)
+        {
+            int charIndex = richTextBox.GetCharIndexFromPosition(e.Location);
+            foreach (var marker in _seeLineMarkers)
+            {
+                if (charIndex >= marker.start && charIndex < marker.start + marker.length)
+                {
+                    OnSeeLineClicked?.Invoke(marker.pvUci, marker.fen);
+                    return;
+                }
+            }
+        }
+
+        private void RichTextBox_MouseMove(object? sender, MouseEventArgs e)
+        {
+            int charIndex = richTextBox.GetCharIndexFromPosition(e.Location);
+            bool onMarker = false;
+            foreach (var marker in _seeLineMarkers)
+            {
+                if (charIndex >= marker.start && charIndex < marker.start + marker.length)
+                {
+                    onMarker = true;
+                    break;
+                }
+            }
+            richTextBox.Cursor = onMarker ? Cursors.Hand : Cursors.Default;
         }
 
         /// <summary>
@@ -71,7 +111,8 @@ namespace ChessDroid.Services
             bool showThreats = false,
             bool isOnlyWinningMove = false,
             (string label, string symbol, Color color)? classification = null,
-            string? overrideExplanation = null)
+            string? overrideExplanation = null,
+            string? pvUciLine = null)
         {
             // Display header with foreground color only (no background highlight)
             // Include classification symbol if provided (e.g., "??" for Blunder)
@@ -80,8 +121,21 @@ namespace ChessDroid.Services
             {
                 classificationSuffix = $" {classification.Value.symbol}";
             }
-            AppendTextWithFormat($"{label}: {sanMove} {evaluation}{classificationSuffix}{Environment.NewLine}",
+            AppendTextWithFormat($"{label}: {sanMove} {evaluation}{classificationSuffix}",
                 richTextBox.BackColor, headerForeColor, FontStyle.Bold);
+
+            // Append clickable [See line] link if PV data is available
+            if (!string.IsNullOrEmpty(pvUciLine))
+            {
+                AppendTextWithFormat(" ", richTextBox.BackColor, headerForeColor, FontStyle.Regular);
+                int markerStart = richTextBox.TextLength;
+                Color linkColor = GetThemeColor(Color.Cyan, Color.Blue);
+                AppendTextWithFormat("[See line]", richTextBox.BackColor, linkColor, FontStyle.Underline);
+                int markerLength = richTextBox.TextLength - markerStart;
+                _seeLineMarkers.Add((markerStart, markerLength, pvUciLine, completeFen));
+            }
+
+            AppendTextWithFormat(Environment.NewLine, richTextBox.BackColor, headerForeColor, FontStyle.Regular);
 
             // Generate and display explanation
             // Use override explanation (e.g., for Brilliant moves) if provided, otherwise generate normally
@@ -796,6 +850,14 @@ namespace ChessDroid.Services
                         if (!deliversCheck) continue; // Piece not giving check, not truly hanging
                     }
 
+                    // Check if this piece was ALREADY hanging before the move.
+                    // If it was already undefended and capturable, the move didn't create a sacrifice.
+                    // Example: Kg8 when bishop on c5 was already en prise — not a sacrifice.
+                    bool wasDefendedBefore = IsSquareDefendedExcluding(board, r, c, whiteToMove, r, c);
+                    bool couldBeCapturedBefore = ChessUtilities.IsSquareAttackedBy(board, r, c, !whiteToMove);
+                    if (!wasDefendedBefore && couldBeCapturedBefore)
+                        continue; // Piece was already hanging — not a new sacrifice
+
                     // This piece is hanging! Track the highest value one
                     if (hangingPiece == null || pieceValue > hangingPiece.Value.value)
                     {
@@ -938,6 +1000,14 @@ namespace ChessDroid.Services
                             // Found a fork! (check + attacks the capturing piece)
                             if (givesCheck && attacksCaptor && bestCaptureValue >= 5)
                             {
+                                // Verify the forking piece isn't immediately capturable
+                                // If opponent can take the forking piece, the fork doesn't work
+                                // (e.g., Qf2+ looks like a fork but Rxf2 captures the queen)
+                                bool forkingPieceSafe = !ChessUtilities.IsSquareAttackedBy(
+                                    afterResponse, destR, destC, !weAreWhite);
+                                if (!forkingPieceSafe)
+                                    continue; // Fork fails — piece gets captured
+
                                 // Format: "if Qxb5 → Nc7+ wins the queen"
                                 string captorName = GetPieceSymbol(bestCapture.Value.piece);
                                 string targetSquare = GetSquareName(hangingRow, hangingCol);
@@ -1854,6 +1924,7 @@ namespace ChessDroid.Services
             string fen = completeFen ?? throw new ArgumentNullException(nameof(completeFen));
 
             Clear();
+            _seeLineMarkers.Clear();
 
             // Check for blunders
             double? currentEval = MovesExplanation.ParseEvaluation(evaluation);
@@ -2003,7 +2074,8 @@ namespace ChessDroid.Services
                     showThreats: true,
                     isOnlyWinningMove: isOnlyWinningMove,
                     classification: bestMoveClassification,
-                    overrideExplanation: brilliantExplanation);
+                    overrideExplanation: brilliantExplanation,
+                    pvUciLine: pvs.Count > 0 ? pvs[0] : null);
             }
 
             // Second best - show threats if enabled
@@ -2040,7 +2112,8 @@ namespace ChessDroid.Services
                     isDarkMode ? Color.LightGoldenrodYellow : Color.Sienna,
                     showThreats: true,
                     isOnlyWinningMove: false,
-                    classification: secondClassification);
+                    classification: secondClassification,
+                    pvUciLine: pvs[1]);
             }
 
             // Third best - show threats if enabled
@@ -2077,7 +2150,8 @@ namespace ChessDroid.Services
                     isDarkMode ? Color.Salmon : Color.DarkRed,
                     showThreats: true,
                     isOnlyWinningMove: false,
-                    classification: thirdClassification);
+                    classification: thirdClassification,
+                    pvUciLine: pvs[2]);
             }
 
             // Display recommended move (based on aggressiveness) if:

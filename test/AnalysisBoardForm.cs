@@ -45,6 +45,7 @@ namespace ChessDroid
 
         // Auto-analysis
         private CancellationTokenSource? autoAnalysisCts;
+        private CancellationTokenSource? _pvAnimationCts;
 
         // Services
         private ChessEngineService? engineService;
@@ -197,6 +198,7 @@ namespace ChessDroid
                 analysisOutput,
                 config,
                 MovesExplanation.GenerateMoveExplanation);
+            consoleFormatter.OnSeeLineClicked += InsertPvIntoMoveTree;
 
             // Initialize opening book service
             openingBookService = new PolyglotBookService();
@@ -397,6 +399,12 @@ namespace ChessDroid
 
         private void BoardControl_MoveMade(object? sender, MoveEventArgs e)
         {
+            // Cancel any PV animation in progress
+            _pvAnimationCts?.Cancel();
+
+            // Clear engine arrows (new analysis will redraw them)
+            boardControl.ClearEngineArrows();
+
             // Skip if we're navigating (not making a new move)
             if (isNavigating) return;
 
@@ -442,6 +450,7 @@ namespace ChessDroid
 
         private void BtnNewGame_Click(object? sender, EventArgs e)
         {
+            boardControl.ClearEngineArrows();
             boardControl.ResetBoard();
             moveTree.Clear(boardControl.GetFEN());
             moveListBox.Items.Clear();
@@ -519,6 +528,7 @@ namespace ChessDroid
 
         private void BtnPrevMove_Click(object? sender, EventArgs e)
         {
+            _pvAnimationCts?.Cancel();
             if (moveTree.GoBack())
             {
                 isNavigating = true;
@@ -551,6 +561,7 @@ namespace ChessDroid
 
         private void BtnNextMove_Click(object? sender, EventArgs e)
         {
+            _pvAnimationCts?.Cancel();
             if (moveTree.GoForward())
             {
                 isNavigating = true;
@@ -1382,11 +1393,53 @@ namespace ChessDroid
                 wdl,
                 bookMoves);
 
+            // Update engine arrows on board
+            if (config?.ShowEngineArrows == true)
+                UpdateEngineArrows(pvs);
+            else
+                boardControl.ClearEngineArrows();
+
             // Update eval bar with the evaluation
             UpdateEvalBar(evaluation);
 
             string cacheIndicator = fromCache ? " (cached)" : "";
             lblStatus.Text = $"Analysis complete (depth {depth}){cacheIndicator}";
+        }
+
+        private (int fromRow, int fromCol, int toRow, int toCol) UciToSquares(string uci)
+        {
+            int fromCol = uci[0] - 'a';
+            int fromRow = 7 - (uci[1] - '1');
+            int toCol = uci[2] - 'a';
+            int toRow = 7 - (uci[3] - '1');
+            return (fromRow, fromCol, toRow, toCol);
+        }
+
+        private void UpdateEngineArrows(List<string> pvs)
+        {
+            var arrows = new List<(int fromRow, int fromCol, int toRow, int toCol, Color color)>();
+
+            var lineConfigs = new[]
+            {
+                (enabled: config?.ShowBestLine ?? true, index: 0, color: Color.FromArgb(180, 0, 200, 80)),      // Green
+                (enabled: config?.ShowSecondLine ?? false, index: 1, color: Color.FromArgb(180, 200, 200, 0)),   // Yellow
+                (enabled: config?.ShowThirdLine ?? false, index: 2, color: Color.FromArgb(180, 200, 60, 60))     // Red
+            };
+
+            foreach (var line in lineConfigs)
+            {
+                if (line.enabled && line.index < pvs.Count && !string.IsNullOrEmpty(pvs[line.index]))
+                {
+                    string firstMove = pvs[line.index].Split(' ')[0];
+                    if (firstMove.Length >= 4)
+                    {
+                        var sq = UciToSquares(firstMove);
+                        arrows.Add((sq.fromRow, sq.fromCol, sq.toRow, sq.toCol, line.color));
+                    }
+                }
+            }
+
+            boardControl.SetEngineArrows(arrows);
         }
 
         /// <summary>
@@ -1579,6 +1632,114 @@ namespace ChessDroid
             }
         }
 
+        /// <summary>
+        /// Inserts an engine PV line into the move tree as a variation branch,
+        /// then animates through the line on the board.
+        /// Called when the user clicks [See line] in the analysis output.
+        /// </summary>
+        private void InsertPvIntoMoveTree(string pvUci, string startFen)
+        {
+            if (string.IsNullOrEmpty(pvUci)) return;
+
+            // Verify we're still at the position the PV was computed for
+            if (moveTree.CurrentNode.FEN != startFen)
+                return;
+
+            // Cancel any running PV animation
+            _pvAnimationCts?.Cancel();
+            _pvAnimationCts = new CancellationTokenSource();
+
+            var savedNode = moveTree.CurrentNode;
+            string currentFen = startFen;
+            string[] uciMoves = pvUci.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            var insertedNodes = new List<MoveNode>();
+
+            try
+            {
+                foreach (string uciMove in uciMoves)
+                {
+                    if (uciMove.Length < 4) break;
+
+                    // Convert UCI to SAN for display
+                    string san;
+                    try
+                    {
+                        san = ChessNotationService.ConvertUCIToSAN(
+                            uciMove, currentFen,
+                            ChessRulesService.CanReachSquare,
+                            ChessRulesService.FindAllPiecesOfSameType);
+                    }
+                    catch
+                    {
+                        san = uciMove;
+                    }
+
+                    // Compute new FEN by applying the move to a temp board
+                    var fenParts = currentFen.Split(' ');
+                    string castling = fenParts.Length > 2 ? fenParts[2] : "-";
+                    string enPassant = fenParts.Length > 3 ? fenParts[3] : "-";
+                    bool whiteToMove = fenParts.Length > 1 && fenParts[1] == "w";
+
+                    var tempBoard = ChessBoard.FromFEN(currentFen);
+                    ChessRulesService.ApplyUciMove(tempBoard, uciMove, ref castling, ref enPassant);
+
+                    string nextSide = whiteToMove ? "b" : "w";
+                    string newFen = $"{tempBoard.ToFEN()} {nextSide} {castling} {enPassant} 0 1";
+
+                    // Add to move tree (auto-creates variation if main line exists)
+                    var node = moveTree.AddMove(uciMove, san, newFen);
+                    insertedNodes.Add(node);
+                    currentFen = newFen;
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"InsertPvIntoMoveTree error: {ex.Message}");
+            }
+
+            // Navigate back to start, update move list to show the new variation
+            moveTree.GoToNode(savedNode);
+            UpdateMoveList();
+
+            // Animate through the variation on the board
+            if (insertedNodes.Count > 0)
+            {
+                _ = AnimatePvLineAsync(insertedNodes, _pvAnimationCts.Token);
+            }
+        }
+
+        /// <summary>
+        /// Animates through a list of PV nodes on the board, stepping through each move with a delay.
+        /// </summary>
+        private async Task AnimatePvLineAsync(List<MoveNode> nodes, CancellationToken ct)
+        {
+            isNavigating = true;
+            try
+            {
+                foreach (var node in nodes)
+                {
+                    await Task.Delay(400, ct);
+                    if (ct.IsCancellationRequested) return;
+
+                    moveTree.GoToNode(node);
+                    boardControl.LoadFEN(node.FEN);
+                    UpdateMoveListSelection();
+                    UpdateFenDisplay();
+                    UpdateTurnLabel();
+
+                    string statusText = $"Move {node.MoveNumber}";
+                    if (node.VariationDepth > 0)
+                        statusText += " (variation)";
+                    lblStatus.Text = statusText;
+                }
+            }
+            catch (TaskCanceledException) { }
+            finally
+            {
+                isNavigating = false;
+            }
+        }
+
         #endregion
 
         #region PGN Import/Export
@@ -1610,7 +1771,7 @@ namespace ChessDroid
 
         private void BtnImportPgn_Click(object? sender, EventArgs e)
         {
-            // Show a dialog to paste PGN
+            // Show a dialog to paste PGN or open from file
             using var inputForm = new Form
             {
                 Text = "Import PGN",
@@ -1626,9 +1787,19 @@ namespace ChessDroid
 
             var lblInstructions = new Label
             {
-                Text = "Paste PGN content below:",
+                Text = "Paste PGN content below or open a file:",
                 Location = new Point(10, 10),
-                Size = new Size(460, 20),
+                Size = new Size(360, 20),
+                ForeColor = isDark ? Color.White : Color.Black
+            };
+
+            var btnOpenFile = new Button
+            {
+                Text = "Open File...",
+                Location = new Point(380, 6),
+                Size = new Size(90, 26),
+                FlatStyle = FlatStyle.Flat,
+                BackColor = isDark ? Color.FromArgb(50, 50, 58) : Color.FromArgb(230, 230, 230),
                 ForeColor = isDark ? Color.White : Color.Black
             };
 
@@ -1641,6 +1812,27 @@ namespace ChessDroid
                 Font = new Font("Consolas", 9F),
                 BackColor = isDark ? Color.FromArgb(30, 30, 35) : Color.White,
                 ForeColor = isDark ? Color.White : Color.Black
+            };
+
+            btnOpenFile.Click += (s, args) =>
+            {
+                using var openDialog = new OpenFileDialog
+                {
+                    Filter = "PGN Files (*.pgn)|*.pgn|All Files (*.*)|*.*",
+                    Title = "Open PGN File"
+                };
+                if (openDialog.ShowDialog(inputForm) == DialogResult.OK)
+                {
+                    try
+                    {
+                        txtPgn.Text = File.ReadAllText(openDialog.FileName);
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Error reading file: {ex.Message}", "Error",
+                            MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
             };
 
             var btnOk = new Button
@@ -1665,7 +1857,7 @@ namespace ChessDroid
                 ForeColor = isDark ? Color.White : Color.Black
             };
 
-            inputForm.Controls.AddRange(new Control[] { lblInstructions, txtPgn, btnOk, btnCancel });
+            inputForm.Controls.AddRange(new Control[] { lblInstructions, btnOpenFile, txtPgn, btnOk, btnCancel });
             inputForm.AcceptButton = btnOk;
             inputForm.CancelButton = btnCancel;
 

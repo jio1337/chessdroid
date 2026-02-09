@@ -20,6 +20,7 @@ namespace ChessDroid
         public bool ShowBestLine { get; set; } = true; // Show best line
         public bool ShowSecondLine { get; set; } = false; // Show 2nd best line
         public bool ShowThirdLine { get; set; } = false; // Show 3rd best line
+        public bool ShowEngineArrows { get; set; } = true; // Show engine move arrows on board
 
         // Explanation settings
         public string ExplanationComplexity { get; set; } = "Intermediate"; // Beginner, Intermediate, Advanced, Master
@@ -148,6 +149,7 @@ namespace ChessDroid
             ShowBestLine = other.ShowBestLine;
             ShowSecondLine = other.ShowSecondLine;
             ShowThirdLine = other.ShowThirdLine;
+            ShowEngineArrows = other.ShowEngineArrows;
             ExplanationComplexity = other.ExplanationComplexity;
             ShowTacticalAnalysis = other.ShowTacticalAnalysis;
             ShowPositionalAnalysis = other.ShowPositionalAnalysis;

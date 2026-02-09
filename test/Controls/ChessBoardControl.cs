@@ -49,6 +49,9 @@ namespace ChessDroid.Controls
         private Point arrowDragPosition = Point.Empty;
         private static readonly Color ArrowColor = Color.FromArgb(180, 0, 180, 80);
 
+        // Engine analysis arrows (separate from user arrows)
+        private List<(int fromRow, int fromCol, int toRow, int toCol, Color color)> engineArrows = new();
+
         // Visual settings
         private Color lightSquareColor = Color.FromArgb(240, 217, 181);
         private Color darkSquareColor = Color.FromArgb(181, 136, 99);
@@ -336,6 +339,21 @@ namespace ChessDroid.Controls
             }
         }
 
+        public void SetEngineArrows(List<(int fromRow, int fromCol, int toRow, int toCol, Color color)> arrows)
+        {
+            engineArrows = arrows;
+            Invalidate();
+        }
+
+        public void ClearEngineArrows()
+        {
+            if (engineArrows.Count > 0)
+            {
+                engineArrows.Clear();
+                Invalidate();
+            }
+        }
+
         /// <summary>
         /// Gets the piece character at the given internal coordinates (0=rank8, 7=rank1).
         /// </summary>
@@ -514,13 +532,19 @@ namespace ChessDroid.Controls
         {
             g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
 
-            // Draw finalized arrows
+            // Draw engine analysis arrows (underneath user arrows)
+            foreach (var arrow in engineArrows)
+            {
+                DrawArrow(g, squareSize, arrow.fromRow, arrow.fromCol, arrow.toRow, arrow.toCol, arrow.color);
+            }
+
+            // Draw user arrows
             foreach (var arrow in userArrows)
             {
                 DrawArrow(g, squareSize, arrow.fromRow, arrow.fromCol, arrow.toRow, arrow.toCol, ArrowColor);
             }
 
-            // Draw in-progress arrow while dragging (snap to target square center if legal)
+            // Draw in-progress arrow while dragging (snap to target square center)
             if (isDrawingArrow && arrowFromRow >= 0)
             {
                 int hoverCol = arrowDragPosition.X / squareSize;
@@ -528,21 +552,9 @@ namespace ChessDroid.Controls
                 int hoverBoardRow = isFlipped ? 7 - hoverRow : hoverRow;
                 int hoverBoardCol = isFlipped ? 7 - hoverCol : hoverCol;
 
-                bool isLegalTarget = false;
                 if (hoverBoardRow >= 0 && hoverBoardRow <= 7 && hoverBoardCol >= 0 && hoverBoardCol <= 7
                     && !(hoverBoardRow == arrowFromRow && hoverBoardCol == arrowFromCol))
                 {
-                    char piece = board.GetPiece(arrowFromRow, arrowFromCol);
-                    if (piece != '.')
-                    {
-                        var legalMoves = GetLegalMovesForPiece(arrowFromRow, arrowFromCol);
-                        isLegalTarget = legalMoves.Contains((hoverBoardRow, hoverBoardCol));
-                    }
-                }
-
-                if (isLegalTarget)
-                {
-                    // Snap to target square center
                     DrawArrow(g, squareSize, arrowFromRow, arrowFromCol, hoverBoardRow, hoverBoardCol, ArrowColor);
                 }
             }
@@ -836,20 +848,11 @@ namespace ChessDroid.Controls
                 }
                 else
                 {
-                    // Only allow arrows for legal moves from that square
-                    char piece = board.GetPiece(arrowFromRow, arrowFromCol);
-                    if (piece != '.')
-                    {
-                        var legalMoves = GetLegalMovesForPiece(arrowFromRow, arrowFromCol);
-                        if (legalMoves.Contains((boardRow, boardCol)))
-                        {
-                            var arrow = (arrowFromRow, arrowFromCol, boardRow, boardCol);
-                            if (userArrows.Contains(arrow))
-                                userArrows.Remove(arrow);
-                            else
-                                userArrows.Add(arrow);
-                        }
-                    }
+                    var arrow = (arrowFromRow, arrowFromCol, boardRow, boardCol);
+                    if (userArrows.Contains(arrow))
+                        userArrows.Remove(arrow);
+                    else
+                        userArrows.Add(arrow);
                 }
             }
 

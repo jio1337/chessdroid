@@ -148,7 +148,7 @@ namespace ChessDroid.Services
         /// Gets the next puzzle matching the given filters.
         /// Excludes already-attempted puzzles unless all matching ones have been attempted.
         /// </summary>
-        public Puzzle? GetNextPuzzle(int minRating, int maxRating, string? theme = null)
+        public Puzzle? GetNextPuzzle(int minRating, int maxRating, string? theme = null, string? excludePuzzleId = null)
         {
             if (!_loaded || _puzzles.Count == 0)
                 return null;
@@ -173,13 +173,19 @@ namespace ChessDroid.Services
             if (candidateList.Count == 0)
                 return null;
 
-            // Try to exclude already-solved puzzles (failed ones can reappear)
+            // Exclude all previously attempted puzzles (solved, failed, or skipped)
             var fresh = candidateList
-                .Where(i => !_stats.SolvedPuzzleIds.Contains(_puzzles[i].PuzzleId))
+                .Where(i => !_stats.AttemptedPuzzleIds.Contains(_puzzles[i].PuzzleId))
                 .ToList();
 
-            // If all have been solved, allow repeats
+            // If all have been attempted, allow repeats
             var pool = fresh.Count > 0 ? fresh : candidateList;
+
+            // Avoid showing the same puzzle twice in a row
+            if (!string.IsNullOrEmpty(excludePuzzleId) && pool.Count > 1)
+            {
+                pool = pool.Where(i => _puzzles[i].PuzzleId != excludePuzzleId).ToList();
+            }
 
             // Random selection
             int idx = _random.Next(pool.Count);
@@ -200,6 +206,16 @@ namespace ChessDroid.Services
         /// Gets the current puzzle stats.
         /// </summary>
         public PuzzleStats GetStats() => _stats;
+
+        /// <summary>
+        /// Marks a puzzle as completed for skip-tracking purposes.
+        /// Called when user finishes all moves (even with mistakes).
+        /// Skipped/failed puzzles are NOT marked here — they can reappear.
+        /// </summary>
+        public void MarkPuzzleCompleted(string puzzleId)
+        {
+            _stats.SolvedPuzzleIds.Add(puzzleId);
+        }
 
         /// <summary>
         /// Resets all puzzle statistics and deletes the stats file.
