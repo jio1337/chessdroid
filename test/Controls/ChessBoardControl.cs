@@ -79,12 +79,6 @@ namespace ChessDroid.Controls
         /// </summary>
         public bool InteractionEnabled { get; set; } = true;
 
-        /// <summary>
-        /// Squares to highlight as puzzle hints (rendered as orange circles).
-        /// </summary>
-        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        [Browsable(false)]
-        public List<(int row, int col)> HintSquares { get; set; } = new();
 
         // Events
         public event EventHandler<MoveEventArgs>? MoveMade;
@@ -458,17 +452,6 @@ namespace ChessDroid.Controls
                                 int offset = (squareSize - dotSize) / 2;
                                 g.FillEllipse(brush, rect.X + offset, rect.Y + offset, dotSize, dotSize);
                             }
-                        }
-                    }
-
-                    // Draw puzzle hint indicators (orange circles)
-                    if (HintSquares.Contains((row, col)))
-                    {
-                        using (Pen pen = new Pen(Color.FromArgb(200, 255, 180, 50), 4))
-                        {
-                            int margin = squareSize / 8;
-                            g.DrawEllipse(pen, rect.X + margin, rect.Y + margin,
-                                rect.Width - 2 * margin, rect.Height - 2 * margin);
                         }
                     }
 

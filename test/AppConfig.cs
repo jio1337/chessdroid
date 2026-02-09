@@ -39,10 +39,6 @@ namespace ChessDroid
         public bool ShowOpeningName { get; set; } = true; // Show opening name when in known theory
         public bool ShowMoveQuality { get; set; } = true; // Show move quality indicators (brilliant, best, good, etc.)
 
-        // Puzzle settings
-        public int PuzzleMinRating { get; set; } = 800;
-        public int PuzzleMaxRating { get; set; } = 2000;
-        public string PuzzleThemeFilter { get; set; } = "All Themes";
 
         // Opening book settings (Polyglot .bin format)
         public string OpeningBooksFolder { get; set; } = "Books"; // Folder containing Polyglot .bin files (loads all)
@@ -162,9 +158,7 @@ namespace ChessDroid
             Aggressiveness = other.Aggressiveness;
             ShowOpeningName = other.ShowOpeningName;
             ShowMoveQuality = other.ShowMoveQuality;
-            PuzzleMinRating = other.PuzzleMinRating;
-            PuzzleMaxRating = other.PuzzleMaxRating;
-            PuzzleThemeFilter = other.PuzzleThemeFilter;
+
             OpeningBooksFolder = other.OpeningBooksFolder;
             UseOpeningBook = other.UseOpeningBook;
             ShowBookMoves = other.ShowBookMoves;

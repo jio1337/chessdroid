@@ -56,11 +56,5 @@
     </None>
   </ItemGroup>
 
-  <!-- Copy Puzzles folder to output -->
-  <ItemGroup>
-    <None Include="Puzzles\**\*.*">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
 
 </Project>

@@ -44,7 +44,7 @@ namespace ChessDroid
             btnTakeBack = new Button();
             btnPrevMove = new Button();
             btnNextMove = new Button();
-            btnPuzzles = new Button();
+
             lblFen = new Label();
             txtFen = new TextBox();
             btnLoadFen = new Button();
@@ -125,7 +125,7 @@ namespace ChessDroid
             leftPanel.Controls.Add(btnTakeBack);
             leftPanel.Controls.Add(btnPrevMove);
             leftPanel.Controls.Add(btnNextMove);
-            leftPanel.Controls.Add(btnPuzzles);
+
             leftPanel.Controls.Add(lblFen);
             leftPanel.Controls.Add(txtFen);
             leftPanel.Controls.Add(btnLoadFen);
@@ -248,17 +248,7 @@ namespace ChessDroid
             btnNextMove.TabIndex = 13;
             btnNextMove.Text = "▶";
             btnNextMove.Click += BtnNextMove_Click;
-            // 
-            // btnPuzzles
-            // 
-            btnPuzzles.FlatStyle = FlatStyle.Flat;
-            btnPuzzles.Font = new Font("Segoe UI", 10F);
-            btnPuzzles.Location = new Point(408, 530);
-            btnPuzzles.Name = "btnPuzzles";
-            btnPuzzles.Size = new Size(28, 28);
-            btnPuzzles.TabIndex = 24;
-            btnPuzzles.Text = "♟";
-            btnPuzzles.Click += BtnPuzzles_Click;
+
             // 
             // lblFen
             // 
@@ -710,7 +700,7 @@ namespace ChessDroid
         private Button btnTakeBack;
         private Button btnPrevMove;
         private Button btnNextMove;
-        private Button btnPuzzles;
+
         private Label lblFen;
         private TextBox txtFen;
         private Button btnLoadFen;

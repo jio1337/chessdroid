@@ -8,7 +8,7 @@ namespace ChessDroid.Services
     ///
     /// USAGE:
     /// - Call StartTracking() when user wants to track a game/session
-    /// - Call StopTracking() when switching to puzzle solving or new position
+    /// - Call StopTracking() when switching to a new position
     /// - Automatically detects invalid position jumps using smart heuristics
     /// </summary>
     public class BlunderTracker
@@ -30,7 +30,7 @@ namespace ChessDroid.Services
 
         /// <summary>
         /// Stops tracking blunders
-        /// Call this when switching to puzzle solving or manual position entry
+        /// Call this when switching to manual position entry
         /// </summary>
         public void StopTracking()
         {
@@ -78,7 +78,7 @@ namespace ChessDroid.Services
                     // - Castling: 4 squares (king + rook move)
                     // - En passant: 3 squares
                     // - Promotion: 2 squares
-                    // Anything > 6 is likely a position jump (puzzle/manual edit)
+                    // Anything > 6 is likely a position jump (manual edit)
                     bool isNaturalMove = differences >= 2 && differences <= 6;
 
                     if (isNaturalMove)
@@ -105,7 +105,7 @@ namespace ChessDroid.Services
                     }
                     else
                     {
-                        // Too many changes - likely new puzzle or manual position edit
+                        // Too many changes - likely manual position edit
                         Debug.WriteLine($"BlunderTracker: Position jump detected ({differences} changes) - resetting");
                         Reset(); // Reset to avoid false positives
                         lastAnalyzedFEN = currentFEN; // Still store current FEN for next comparison
