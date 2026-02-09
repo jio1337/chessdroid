@@ -1395,11 +1395,14 @@ namespace ChessDroid
                 wdl,
                 bookMoves);
 
-            // Update engine arrows on board
-            if (config?.ShowEngineArrows == true)
-                UpdateEngineArrows(pvs);
-            else
-                boardControl.ClearEngineArrows();
+            // Update engine arrows on board (suppress during PV animation)
+            if (!isNavigating)
+            {
+                if (config?.ShowEngineArrows == true)
+                    UpdateEngineArrows(pvs);
+                else
+                    boardControl.ClearEngineArrows();
+            }
 
             // Update eval bar with the evaluation
             UpdateEvalBar(evaluation);
@@ -1688,8 +1691,27 @@ namespace ChessDroid
                     string nextSide = whiteToMove ? "b" : "w";
                     string newFen = $"{tempBoard.ToFEN()} {nextSide} {castling} {enPassant} 0 1";
 
-                    // Add to move tree (auto-creates variation if main line exists)
-                    var node = moveTree.AddMove(uciMove, san, newFen);
+                    // First move always starts a variation; rest chain naturally
+                    MoveNode node;
+                    if (insertedNodes.Count == 0)
+                    {
+                        // Check if this exact move already exists as a child
+                        var existing = moveTree.CurrentNode.FindChild(uciMove);
+                        if (existing != null)
+                        {
+                            node = existing;
+                            moveTree.GoToNode(existing);
+                        }
+                        else
+                        {
+                            node = moveTree.CurrentNode.AddChild(uciMove, san, newFen, forceVariation: true);
+                            moveTree.GoToNode(node);
+                        }
+                    }
+                    else
+                    {
+                        node = moveTree.AddMove(uciMove, san, newFen);
+                    }
                     insertedNodes.Add(node);
                     currentFen = newFen;
                 }
@@ -1706,6 +1728,7 @@ namespace ChessDroid
             // Animate through the variation on the board
             if (insertedNodes.Count > 0)
             {
+                boardControl.ClearEngineArrows();
                 _ = AnimatePvLineAsync(insertedNodes, _pvAnimationCts.Token);
             }
         }

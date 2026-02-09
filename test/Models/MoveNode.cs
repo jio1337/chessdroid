@@ -46,7 +46,7 @@ namespace ChessDroid.Models
         /// <summary>
         /// Add a child node (variation)
         /// </summary>
-        public MoveNode AddChild(string uciMove, string sanMove, string fen)
+        public MoveNode AddChild(string uciMove, string sanMove, string fen, bool forceVariation = false)
         {
             var child = new MoveNode
             {
@@ -60,7 +60,7 @@ namespace ChessDroid.Models
             };
 
             // If this is not the first child, it's a variation and goes deeper
-            if (Children.Count > 0)
+            if (Children.Count > 0 || forceVariation)
             {
                 child.VariationDepth = this.VariationDepth + 1;
             }
