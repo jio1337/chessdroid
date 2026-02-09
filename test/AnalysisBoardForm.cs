@@ -464,6 +464,7 @@ namespace ChessDroid
             UpdateFenDisplay();
             UpdateTurnLabel();
             lblStatus.Text = "New game started";
+            _ = TriggerAutoAnalysis();
         }
 
         private void BtnPuzzles_Click(object? sender, EventArgs e)
