@@ -769,6 +769,13 @@ namespace ChessDroid.Services
             }
         }
 
+        public async Task SetSkillLevelAsync(int level)
+        {
+            if (!IsEngineAlive() || State != EngineState.Ready) return;
+            level = Math.Clamp(level, 0, 20);
+            await SafeWriteLineAsync($"{UCI_CMD_SETOPTION} Skill Level value {level}");
+        }
+
         private void CleanupProcess()
         {
             try

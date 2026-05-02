@@ -44,6 +44,7 @@ namespace ChessDroid
             btnTakeBack = new Button();
             btnPrevMove = new Button();
             btnNextMove = new Button();
+            btnPlayBot = new Button();
 
             lblFen = new Label();
             txtFen = new TextBox();
@@ -125,6 +126,7 @@ namespace ChessDroid
             leftPanel.Controls.Add(btnTakeBack);
             leftPanel.Controls.Add(btnPrevMove);
             leftPanel.Controls.Add(btnNextMove);
+            leftPanel.Controls.Add(btnPlayBot);
 
             leftPanel.Controls.Add(lblFen);
             leftPanel.Controls.Add(txtFen);
@@ -248,8 +250,19 @@ namespace ChessDroid
             btnNextMove.TabIndex = 13;
             btnNextMove.Text = "▶";
             btnNextMove.Click += BtnNextMove_Click;
+            //
+            // btnPlayBot
+            //
+            btnPlayBot.FlatStyle = FlatStyle.Flat;
+            btnPlayBot.Font = new Font("Courier New", 8.25F);
+            btnPlayBot.Location = new Point(408, 530);
+            btnPlayBot.Name = "btnPlayBot";
+            btnPlayBot.Size = new Size(65, 28);
+            btnPlayBot.TabIndex = 24;
+            btnPlayBot.Text = "vs Bot";
+            btnPlayBot.Click += BtnPlayBot_Click;
 
-            // 
+            //
             // lblFen
             // 
             lblFen.Font = new Font("Courier New", 8.25F, FontStyle.Regular, GraphicsUnit.Point, 0);
@@ -700,6 +713,7 @@ namespace ChessDroid
         private Button btnTakeBack;
         private Button btnPrevMove;
         private Button btnNextMove;
+        private Button btnPlayBot;
 
         private Label lblFen;
         private TextBox txtFen;

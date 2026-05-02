@@ -67,6 +67,12 @@ namespace ChessDroid
         private bool matchRunning = false;
         private double? _previousMatchEval; // Track previous eval for brilliant move detection
 
+        // Bot mode
+        private bool _botModeActive = false;
+        private BotSettings? _botSettings;
+        private ChessEngineService? _botEngine;
+        private CancellationTokenSource? _botMoveCts;
+
         public AnalysisBoardForm(AppConfig config, ChessEngineService? sharedEngineService = null)
         {
             this.config = config;
@@ -132,7 +138,7 @@ namespace ChessDroid
 
             // Standard buttons
             foreach (var btn in new[] { btnSettings, btnNewGame, btnFlipBoard, btnTakeBack, btnPrevMove,
-                                        btnNextMove, btnLoadFen, btnCopyFen, btnClassifyMoves,
+                                        btnNextMove, btnPlayBot, btnLoadFen, btnCopyFen, btnClassifyMoves,
                                         btnExportPgn, btnImportPgn })
             {
                 btn.BackColor = scheme.ButtonBackColor;
@@ -312,7 +318,9 @@ namespace ChessDroid
                 // Eval bar dimensions
                 const int evalBarWidth = 24;
                 const int evalBarGap = 4;
-                int evalBarTotal = evalBarWidth + evalBarGap; // 28px reserved for eval bar
+                bool showEvalBar = config?.ShowEvalBar != false;
+                evalBar.Visible = showEvalBar;
+                int evalBarTotal = showEvalBar ? evalBarWidth + evalBarGap : 0;
 
                 // Calculate the largest square that fits in the available space
                 // Leave room for eval bar on the left and controls below (about 110 pixels)
@@ -366,6 +374,11 @@ namespace ChessDroid
                 btnPrevMove.Width = navButtonWidth;
                 btnNextMove.Location = new Point(navX + navButtonWidth + 2, buttonY);
                 btnNextMove.Width = navButtonWidth;
+
+                // Bot button (after nav buttons)
+                int botX = btnNextMove.Right + buttonSpacing;
+                btnPlayBot.Location = new Point(botX, buttonY);
+                btnPlayBot.Width = Math.Max(60, boardX + boardSize - botX);
 
                 // FEN input row
                 int fenY = buttonY + 32;
@@ -422,6 +435,12 @@ namespace ChessDroid
             {
                 _ = TriggerAutoAnalysis();
             }
+
+            // Bot mode: trigger bot's response after user's move
+            if (_botModeActive && !matchRunning)
+            {
+                _ = MakeBotMoveAsync();
+            }
         }
 
         private async Task TriggerAutoAnalysis()
@@ -448,6 +467,7 @@ namespace ChessDroid
 
         private void BtnNewGame_Click(object? sender, EventArgs e)
         {
+            if (_botModeActive) StopBotMode();
             boardControl.ClearEngineArrows();
             boardControl.ResetBoard();
             moveTree.Clear(boardControl.GetFEN());
@@ -475,6 +495,7 @@ namespace ChessDroid
                 engineService = new ChessEngineService(config);
                 InitializeServices();
                 ApplyTheme();
+                LeftPanel_Resize(leftPanel, EventArgs.Empty);
                 _analysisCache.Clear(); // Clear cache when settings change
 
                 // Initialize the engine immediately
@@ -489,25 +510,32 @@ namespace ChessDroid
 
         private void BtnTakeBack_Click(object? sender, EventArgs e)
         {
-            // Take back removes the current move from the tree
-            if (moveTree.CurrentNode != moveTree.Root)
+            // Cancel any pending bot move
+            _botMoveCts?.Cancel();
+
+            // In bot mode, take back 2 moves (bot's move + user's move)
+            int movesToTakeBack = _botModeActive ? 2 : 1;
+
+            for (int i = 0; i < movesToTakeBack; i++)
             {
-                var parent = moveTree.CurrentNode.Parent;
-                if (parent != null)
+                if (moveTree.CurrentNode != moveTree.Root)
                 {
-                    // Remove this node from parent's children
-                    parent.Children.Remove(moveTree.CurrentNode);
-                    moveTree.CurrentNode = parent;
-
-                    // Load previous position
-                    boardControl.LoadFEN(parent.FEN);
-
-                    UpdateMoveList();
-                    UpdateFenDisplay();
-                    UpdateTurnLabel();
-                    lblStatus.Text = "Move taken back";
+                    var parent = moveTree.CurrentNode.Parent;
+                    if (parent != null)
+                    {
+                        parent.Children.Remove(moveTree.CurrentNode);
+                        moveTree.CurrentNode = parent;
+                    }
                 }
             }
+
+            // Load the position we landed on
+            boardControl.LoadFEN(moveTree.CurrentNode.FEN);
+            UpdateMoveList();
+            UpdateFenDisplay();
+            UpdateTurnLabel();
+            boardControl.InteractionEnabled = true;
+            lblStatus.Text = _botModeActive ? "Your turn — move taken back" : "Move taken back";
         }
 
         private void BtnPrevMove_Click(object? sender, EventArgs e)
@@ -906,6 +934,12 @@ namespace ChessDroid
 
         private async void BtnStartMatch_Click(object? sender, EventArgs e)
         {
+            if (_botModeActive)
+            {
+                lblStatus.Text = "Stop bot mode first";
+                return;
+            }
+
             if (cmbWhiteEngine.SelectedItem == null || cmbBlackEngine.SelectedItem == null)
             {
                 lblStatus.Text = "Select both engines first";
@@ -1195,6 +1229,7 @@ namespace ChessDroid
             btnNewGame.Enabled = !running;
             btnTakeBack.Enabled = !running;
             btnLoadFen.Enabled = !running;
+            btnPlayBot.Enabled = !running;
             boardControl.InteractionEnabled = !running;
 
             // Match controls
@@ -1215,6 +1250,431 @@ namespace ChessDroid
             {
                 autoAnalysisCts?.Cancel();
             }
+        }
+
+        #endregion
+
+        #region Bot Mode
+
+        private async void BtnPlayBot_Click(object? sender, EventArgs e)
+        {
+            if (_botModeActive)
+            {
+                StopBotMode();
+                return;
+            }
+
+            if (matchRunning)
+            {
+                lblStatus.Text = "Stop the engine match first";
+                return;
+            }
+
+            if (string.IsNullOrEmpty(config?.SelectedEngine))
+            {
+                lblStatus.Text = "No engine configured — click ⚙ to set up";
+                return;
+            }
+
+            using var dialog = new BotSettingsDialog(config?.Theme == "Dark");
+            if (dialog.ShowDialog() != DialogResult.OK)
+                return;
+
+            _botSettings = dialog.Settings;
+
+            // Reset the board for a new game
+            boardControl.ClearEngineArrows();
+            boardControl.ResetBoard();
+            moveTree.Clear(boardControl.GetFEN());
+            moveListBox.Items.Clear();
+            displayedNodes.Clear();
+            _analysisCache.Clear();
+            _currentClassification = null;
+            _classificationLookup = null;
+            analysisOutput.Clear();
+            evalBar?.Reset();
+
+            // Flip board if user plays Black
+            bool userPlaysBlack = _botSettings.BotPlaysWhite;
+            if (userPlaysBlack && !boardControl.IsFlipped)
+                boardControl.FlipBoard();
+            else if (!userPlaysBlack && boardControl.IsFlipped)
+                boardControl.FlipBoard();
+
+            // Initialize bot engine
+            try
+            {
+                lblStatus.Text = "Starting bot engine...";
+                string enginesPath = config!.GetEnginesPath();
+                string enginePath = Path.Combine(enginesPath, config.SelectedEngine);
+
+                _botEngine = new ChessEngineService(config);
+                await _botEngine.InitializeAsync(enginePath);
+
+                if (_botEngine.State != EngineState.Ready)
+                {
+                    lblStatus.Text = "Failed to start bot engine";
+                    _botEngine.Dispose();
+                    _botEngine = null;
+                    return;
+                }
+
+                // Set skill level
+                await _botEngine.SetSkillLevelAsync(_botSettings.GetSkillLevel());
+            }
+            catch (Exception ex)
+            {
+                lblStatus.Text = $"Bot engine error: {ex.Message}";
+                _botEngine?.Dispose();
+                _botEngine = null;
+                return;
+            }
+
+            _botModeActive = true;
+            _botMoveCts = new CancellationTokenSource();
+            btnPlayBot.Text = "Stop Bot";
+            boardControl.InteractionEnabled = true;
+
+            string diffLabel = _botSettings.GetDifficultyLabel();
+            string colorLabel = userPlaysBlack ? "Black" : "White";
+            analysisOutput.AppendText($"Bot Mode: You play {colorLabel}\n");
+            analysisOutput.AppendText($"Difficulty: {diffLabel}\n\n");
+            lblStatus.Text = $"Bot mode — {diffLabel}";
+
+            // Disable engine match controls during bot mode
+            btnStartMatch.Enabled = false;
+
+            // If bot plays White, make the first move
+            if (_botSettings.BotPlaysWhite)
+            {
+                _ = MakeBotMoveAsync();
+            }
+            else
+            {
+                // Trigger analysis for the starting position
+                _ = TriggerAutoAnalysis();
+            }
+        }
+
+        private async Task MakeBotMoveAsync()
+        {
+            if (!_botModeActive || _botEngine == null || _botSettings == null)
+                return;
+
+            // Brief delay so user can see their move before bot responds
+            try
+            {
+                await Task.Delay(300, _botMoveCts?.Token ?? CancellationToken.None);
+            }
+            catch (OperationCanceledException) { return; }
+
+            boardControl.InteractionEnabled = false;
+            lblStatus.Text = "Bot thinking...";
+
+            try
+            {
+                string fen = boardControl.GetFEN();
+                string goCommand = $"go movetime {_botSettings.GetMoveTimeMs()}";
+                int timeoutMs = _botSettings.GetMoveTimeMs() + 5000;
+                var token = _botMoveCts?.Token ?? CancellationToken.None;
+
+                var (bestMove, eval) = await _botEngine.GetMoveForMatchAsync(fen, goCommand, timeoutMs, token);
+
+                if (string.IsNullOrEmpty(bestMove))
+                {
+                    // No legal moves — game over
+                    HandleBotGameEnd(fen);
+                    return;
+                }
+
+                // Apply bot's move to the board
+                isNavigating = true;
+                try
+                {
+                    string fenBeforeMove = moveTree.CurrentNode.FEN;
+                    boardControl.MakeMove(bestMove);
+
+                    string san = ConvertUciToSan(bestMove, fenBeforeMove);
+                    string newFen = boardControl.GetFEN();
+                    moveTree.AddMove(bestMove, san, newFen);
+
+                    UpdateMoveList();
+                    UpdateFenDisplay();
+                    UpdateTurnLabel();
+
+                    if (!string.IsNullOrEmpty(eval))
+                        UpdateEvalBar(eval);
+                }
+                finally
+                {
+                    isNavigating = false;
+                }
+
+                // Check if user has any legal moves after bot's move
+                string currentFen = boardControl.GetFEN();
+                if (!HasAnyLegalMoveFromFen(currentFen))
+                {
+                    HandleBotGameEnd(currentFen);
+                    return;
+                }
+
+                boardControl.InteractionEnabled = true;
+                string diffLabel = _botSettings.GetDifficultyLabel();
+                lblStatus.Text = $"Your turn — {diffLabel}";
+
+                // Trigger analysis for the new position
+                _ = TriggerAutoAnalysis();
+            }
+            catch (OperationCanceledException)
+            {
+                // Bot move was cancelled (take back, stop, etc.)
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"BotMove error: {ex.Message}");
+                lblStatus.Text = "Bot error — try again";
+                boardControl.InteractionEnabled = true;
+            }
+        }
+
+        private void HandleBotGameEnd(string fen)
+        {
+            _botModeActive = false;
+
+            // Determine result by checking if king is in check
+            var fenParts = fen.Split(' ');
+            bool whiteToMove = fenParts.Length >= 2 && fenParts[1] == "w";
+
+            // Use board control to check if king is in check
+            // If in check with no legal moves = checkmate, otherwise stalemate
+            bool inCheck = false;
+            try
+            {
+                // Try to detect check from the FEN by attempting a null analysis
+                // Simple heuristic: if the engine returned no move, it's either checkmate or stalemate
+                // We can check by seeing if the position evaluation is mate
+                inCheck = IsSideInCheck(whiteToMove);
+            }
+            catch { }
+
+            string result;
+            if (inCheck)
+            {
+                // Checkmate
+                bool botWins = (_botSettings?.BotPlaysWhite == true && !whiteToMove) ||
+                               (_botSettings?.BotPlaysWhite == false && whiteToMove);
+                if (botWins)
+                    result = "Checkmate — Bot wins!";
+                else
+                    result = "Checkmate — You win!";
+            }
+            else
+            {
+                result = "Stalemate — Draw!";
+            }
+
+            analysisOutput.AppendText($"\n{result}\n");
+            lblStatus.Text = result;
+            boardControl.InteractionEnabled = false;
+            btnPlayBot.Text = "vs Bot";
+            btnStartMatch.Enabled = true;
+
+            _botEngine?.Dispose();
+            _botEngine = null;
+        }
+
+        private bool IsSideInCheck(bool whiteKing)
+        {
+            // Check if the king of the given color is in check on the current board
+            var board = boardControl.GetBoardState();
+            if (board == null) return false;
+
+            char king = whiteKing ? 'K' : 'k';
+            int kingRow = -1, kingCol = -1;
+
+            for (int r = 0; r < 8; r++)
+            {
+                for (int c = 0; c < 8; c++)
+                {
+                    if (board.GetPiece(r, c) == king)
+                    {
+                        kingRow = r;
+                        kingCol = c;
+                        break;
+                    }
+                }
+                if (kingRow != -1) break;
+            }
+
+            if (kingRow == -1) return false;
+
+            // Check if any enemy piece attacks the king
+            for (int r = 0; r < 8; r++)
+            {
+                for (int c = 0; c < 8; c++)
+                {
+                    char piece = board.GetPiece(r, c);
+                    if (piece == '.') continue;
+                    bool isEnemy = whiteKing ? char.IsLower(piece) : char.IsUpper(piece);
+                    if (isEnemy && ChessRulesService.CanReachSquare(board, r, c, piece, kingRow, kingCol))
+                    {
+                        // For sliding pieces, also check path is clear
+                        char pl = char.ToLower(piece);
+                        if (pl == 'n' || pl == 'k' || pl == 'p')
+                        {
+                            if (pl == 'p' && c == kingCol) continue; // Pawns don't attack forward
+                            return true;
+                        }
+                        // Sliding piece — check path
+                        int dr = Math.Sign(kingRow - r);
+                        int dc = Math.Sign(kingCol - c);
+                        int cr = r + dr, cc = c + dc;
+                        bool pathClear = true;
+                        while (cr != kingRow || cc != kingCol)
+                        {
+                            if (board.GetPiece(cr, cc) != '.') { pathClear = false; break; }
+                            cr += dr; cc += dc;
+                        }
+                        if (pathClear) return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        private bool HasAnyLegalMoveFromFen(string fen)
+        {
+            // Quick check: ask the board control if the current side has any legal moves
+            // by checking all pieces of the current side
+            var fenParts = fen.Split(' ');
+            bool whiteToMove = fenParts.Length >= 2 && fenParts[1] == "w";
+            var board = boardControl.GetBoardState();
+            if (board == null) return true;
+
+            for (int r = 0; r < 8; r++)
+            {
+                for (int c = 0; c < 8; c++)
+                {
+                    char piece = board.GetPiece(r, c);
+                    if (piece == '.') continue;
+                    bool isOwn = whiteToMove ? char.IsUpper(piece) : char.IsLower(piece);
+                    if (!isOwn) continue;
+
+                    // Check all target squares for this piece
+                    for (int tr = 0; tr < 8; tr++)
+                    {
+                        for (int tc = 0; tc < 8; tc++)
+                        {
+                            if (r == tr && c == tc) continue;
+                            char target = board.GetPiece(tr, tc);
+                            // Can't capture own piece
+                            if (target != '.' && ((whiteToMove && char.IsUpper(target)) ||
+                                                   (!whiteToMove && char.IsLower(target))))
+                                continue;
+
+                            if (ChessRulesService.CanReachSquare(board, r, c, piece, tr, tc))
+                            {
+                                // Verify path is clear for sliding pieces
+                                char pl = char.ToLower(piece);
+                                if (pl != 'n' && pl != 'k' && pl != 'p')
+                                {
+                                    int dr = Math.Sign(tr - r);
+                                    int dc = Math.Sign(tc - c);
+                                    int cr = r + dr, cc = c + dc;
+                                    bool blocked = false;
+                                    while (cr != tr || cc != tc)
+                                    {
+                                        if (board.GetPiece(cr, cc) != '.') { blocked = true; break; }
+                                        cr += dr; cc += dc;
+                                    }
+                                    if (blocked) continue;
+                                }
+
+                                // Simulate the move and check if king is safe
+                                using var pooled = BoardPool.Rent(board);
+                                var testBoard = pooled.Board;
+                                testBoard.SetPiece(tr, tc, piece);
+                                testBoard.SetPiece(r, c, '.');
+
+                                // Check en passant capture
+                                if (pl == 'p' && c != tc && target == '.')
+                                    testBoard.SetPiece(r, tc, '.');
+
+                                if (!IsKingInCheckOnBoard(testBoard, whiteToMove))
+                                    return true;
+                            }
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        private bool IsKingInCheckOnBoard(ChessBoard testBoard, bool whiteKing)
+        {
+            char king = whiteKing ? 'K' : 'k';
+            int kingRow = -1, kingCol = -1;
+
+            for (int r = 0; r < 8; r++)
+            {
+                for (int c = 0; c < 8; c++)
+                {
+                    if (testBoard.GetPiece(r, c) == king)
+                    {
+                        kingRow = r; kingCol = c; break;
+                    }
+                }
+                if (kingRow != -1) break;
+            }
+            if (kingRow == -1) return false;
+
+            for (int r = 0; r < 8; r++)
+            {
+                for (int c = 0; c < 8; c++)
+                {
+                    char piece = testBoard.GetPiece(r, c);
+                    if (piece == '.') continue;
+                    bool isEnemy = whiteKing ? char.IsLower(piece) : char.IsUpper(piece);
+                    if (!isEnemy) continue;
+
+                    if (!ChessRulesService.CanReachSquare(testBoard, r, c, piece, kingRow, kingCol))
+                        continue;
+
+                    char pl = char.ToLower(piece);
+                    if (pl == 'n' || pl == 'k')
+                        return true;
+                    if (pl == 'p')
+                        return c != kingCol; // Pawns only attack diagonally
+
+                    // Sliding piece path check
+                    int dr = Math.Sign(kingRow - r);
+                    int dc = Math.Sign(kingCol - c);
+                    int cr = r + dr, cc = c + dc;
+                    bool pathClear = true;
+                    while (cr != kingRow || cc != kingCol)
+                    {
+                        if (testBoard.GetPiece(cr, cc) != '.') { pathClear = false; break; }
+                        cr += dr; cc += dc;
+                    }
+                    if (pathClear) return true;
+                }
+            }
+            return false;
+        }
+
+        private void StopBotMode()
+        {
+            _botMoveCts?.Cancel();
+            _botModeActive = false;
+
+            _botEngine?.Dispose();
+            _botEngine = null;
+            _botSettings = null;
+
+            btnPlayBot.Text = "vs Bot";
+            btnStartMatch.Enabled = true;
+            boardControl.InteractionEnabled = true;
+            lblStatus.Text = "Bot mode stopped";
         }
 
         #endregion

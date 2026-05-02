@@ -191,6 +191,8 @@ namespace ChessDroid.Controls
             }
         }
 
+        public ChessBoard GetBoardState() => board;
+
         /// <summary>
         /// Gets or sets whether it's white's turn to move
         /// </summary>
@@ -704,6 +706,7 @@ namespace ChessDroid.Controls
             }
 
             if (!InteractionEnabled) return;
+
             if (e.Button != MouseButtons.Left || !mouseDownOnPiece)
                 return;
 
@@ -714,10 +717,7 @@ namespace ChessDroid.Controls
                 int dy = Math.Abs(e.Y - mouseDownPosition.Y);
 
                 if (dx > DRAG_THRESHOLD || dy > DRAG_THRESHOLD)
-                {
                     isDragging = true;
-                    this.Cursor = Cursors.Hand;
-                }
             }
 
             if (isDragging)
@@ -751,7 +751,6 @@ namespace ChessDroid.Controls
             {
                 // End drag - try to execute move
                 isDragging = false;
-                this.Cursor = Cursors.Default;
 
                 if (boardRow >= 0 && boardRow <= 7 && boardCol >= 0 && boardCol <= 7)
                 {
