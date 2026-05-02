@@ -93,6 +93,7 @@ namespace ChessDroid
             chkShowSecond.Checked = config.ShowSecondLine;
             chkShowThird.Checked = config.ShowThirdLine;
             chkEngineArrows.Checked = config.ShowEngineArrows;
+            chkEvalBar.Checked = config.ShowEvalBar;
 
             // Explanation settings
             PopulateComplexityComboBox();
@@ -142,6 +143,7 @@ namespace ChessDroid
             config.ShowSecondLine = chkShowSecond.Checked;
             config.ShowThirdLine = chkShowThird.Checked;
             config.ShowEngineArrows = chkEngineArrows.Checked;
+            config.ShowEvalBar = chkEvalBar.Checked;
 
             // Save explanation settings
             config.ExplanationComplexity = cmbComplexity.SelectedItem?.ToString() ?? "Intermediate";

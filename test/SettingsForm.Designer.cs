@@ -52,6 +52,8 @@ namespace ChessDroid
             lblBest = new Label();
             chkEngineArrows = new CheckBox();
             lblEngineArrows = new Label();
+            chkEvalBar = new CheckBox();
+            lblEvalBar = new Label();
             grpExplanations = new GroupBox();
             cmbComplexity = new ComboBox();
             lblComplexity = new Label();
@@ -213,6 +215,8 @@ namespace ChessDroid
             grpDisplay.Controls.Add(lblEngine);
             grpDisplay.Controls.Add(chkEngineArrows);
             grpDisplay.Controls.Add(lblEngineArrows);
+            grpDisplay.Controls.Add(chkEvalBar);
+            grpDisplay.Controls.Add(lblEvalBar);
             grpDisplay.Controls.Add(chkShowThird);
             grpDisplay.Controls.Add(lblThird);
             grpDisplay.Controls.Add(chkShowSecond);
@@ -222,7 +226,7 @@ namespace ChessDroid
             grpDisplay.ForeColor = Color.White;
             grpDisplay.Location = new Point(13, 204);
             grpDisplay.Name = "grpDisplay";
-            grpDisplay.Size = new Size(298, 139);
+            grpDisplay.Size = new Size(298, 159);
             grpDisplay.TabIndex = 2;
             grpDisplay.TabStop = false;
             grpDisplay.Text = "Display Options";
@@ -282,6 +286,26 @@ namespace ChessDroid
             lblEngineArrows.Size = new Size(170, 19);
             lblEngineArrows.TabIndex = 8;
             lblEngineArrows.Text = "Show Engine Arrows:";
+            //
+            // chkEvalBar
+            //
+            chkEvalBar.AutoSize = true;
+            chkEvalBar.Checked = true;
+            chkEvalBar.CheckState = CheckState.Checked;
+            chkEvalBar.Location = new Point(182, 128);
+            chkEvalBar.Name = "chkEvalBar";
+            chkEvalBar.Size = new Size(15, 14);
+            chkEvalBar.TabIndex = 11;
+            toolTip1.SetToolTip(chkEvalBar, "Show the evaluation bar on the left of the board");
+            chkEvalBar.UseVisualStyleBackColor = true;
+            //
+            // lblEvalBar
+            //
+            lblEvalBar.Location = new Point(10, 126);
+            lblEvalBar.Name = "lblEvalBar";
+            lblEvalBar.Size = new Size(170, 19);
+            lblEvalBar.TabIndex = 10;
+            lblEvalBar.Text = "Show Eval Bar:";
             //
             // chkShowSecond
             // 
@@ -673,6 +697,8 @@ namespace ChessDroid
         private System.Windows.Forms.Label lblBest;
         private System.Windows.Forms.CheckBox chkEngineArrows;
         private System.Windows.Forms.Label lblEngineArrows;
+        private System.Windows.Forms.CheckBox chkEvalBar;
+        private System.Windows.Forms.Label lblEvalBar;
         private System.Windows.Forms.Button btnSave;
         private System.Windows.Forms.Button btnReset;
         private System.Windows.Forms.Button btnHelp;
