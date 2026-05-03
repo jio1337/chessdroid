@@ -23,6 +23,10 @@ namespace ChessDroid
         public bool ShowEngineArrows { get; set; } = true; // Show engine move arrows on board
         public bool ShowEvalBar { get; set; } = true; // Show evaluation bar
 
+        // Board square colors (hex strings e.g. "#F0D9B5")
+        public string LightSquareColor { get; set; } = "#F0D9B5";
+        public string DarkSquareColor { get; set; } = "#B58863";
+
         // Explanation settings
         public string ExplanationComplexity { get; set; } = "Intermediate"; // Beginner, Intermediate, Advanced, Master
 
@@ -148,6 +152,8 @@ namespace ChessDroid
             ShowThirdLine = other.ShowThirdLine;
             ShowEngineArrows = other.ShowEngineArrows;
             ShowEvalBar = other.ShowEvalBar;
+            LightSquareColor = other.LightSquareColor;
+            DarkSquareColor = other.DarkSquareColor;
             ExplanationComplexity = other.ExplanationComplexity;
             ShowTacticalAnalysis = other.ShowTacticalAnalysis;
             ShowPositionalAnalysis = other.ShowPositionalAnalysis;

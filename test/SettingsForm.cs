@@ -95,6 +95,10 @@ namespace ChessDroid
             chkEngineArrows.Checked = config.ShowEngineArrows;
             chkEvalBar.Checked = config.ShowEvalBar;
 
+            // Board colors
+            try { btnLightColor.BackColor = ColorTranslator.FromHtml(config.LightSquareColor); } catch { btnLightColor.BackColor = Color.FromArgb(240, 217, 181); }
+            try { btnDarkColor.BackColor = ColorTranslator.FromHtml(config.DarkSquareColor); } catch { btnDarkColor.BackColor = Color.FromArgb(181, 136, 99); }
+
             // Explanation settings
             PopulateComplexityComboBox();
             cmbComplexity.SelectedItem = config.ExplanationComplexity ?? "Intermediate";
@@ -144,6 +148,8 @@ namespace ChessDroid
             config.ShowThirdLine = chkShowThird.Checked;
             config.ShowEngineArrows = chkEngineArrows.Checked;
             config.ShowEvalBar = chkEvalBar.Checked;
+            config.LightSquareColor = ColorTranslator.ToHtml(btnLightColor.BackColor);
+            config.DarkSquareColor = ColorTranslator.ToHtml(btnDarkColor.BackColor);
 
             // Save explanation settings
             config.ExplanationComplexity = cmbComplexity.SelectedItem?.ToString() ?? "Intermediate";
@@ -199,6 +205,20 @@ namespace ChessDroid
         private void BtnCancel_Click(object? sender, EventArgs e)
         {
             this.Close();
+        }
+
+        private void BtnLightColor_Click(object? sender, EventArgs e)
+        {
+            using var dlg = new ColorDialog { Color = btnLightColor.BackColor, FullOpen = true };
+            if (dlg.ShowDialog(this) == DialogResult.OK)
+                btnLightColor.BackColor = dlg.Color;
+        }
+
+        private void BtnDarkColor_Click(object? sender, EventArgs e)
+        {
+            using var dlg = new ColorDialog { Color = btnDarkColor.BackColor, FullOpen = true };
+            if (dlg.ShowDialog(this) == DialogResult.OK)
+                btnDarkColor.BackColor = dlg.Color;
         }
 
         private void ChkDarkMode_CheckedChanged(object? sender, EventArgs e)
@@ -284,6 +304,14 @@ namespace ChessDroid
                         chk.BackColor = Color.FromArgb(45, 45, 48);
                     }
                 }
+
+                // Board Colors GroupBox
+                grpBoardColors.ForeColor = Color.White;
+                grpBoardColors.BackColor = Color.FromArgb(45, 45, 48);
+                lblLightSquares.ForeColor = Color.White;
+                lblLightSquares.BackColor = Color.FromArgb(45, 45, 48);
+                lblDarkSquares.ForeColor = Color.White;
+                lblDarkSquares.BackColor = Color.FromArgb(45, 45, 48);
 
                 // Play Style GroupBox
                 grpLc0Features.ForeColor = Color.Cyan;
@@ -394,6 +422,14 @@ namespace ChessDroid
                         chk.BackColor = Color.WhiteSmoke;
                     }
                 }
+
+                // Board Colors GroupBox
+                grpBoardColors.ForeColor = Color.Black;
+                grpBoardColors.BackColor = Color.WhiteSmoke;
+                lblLightSquares.ForeColor = Color.Black;
+                lblLightSquares.BackColor = Color.WhiteSmoke;
+                lblDarkSquares.ForeColor = Color.Black;
+                lblDarkSquares.BackColor = Color.WhiteSmoke;
 
                 // Play Style GroupBox
                 grpLc0Features.ForeColor = Color.DarkCyan;

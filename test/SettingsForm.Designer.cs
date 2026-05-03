@@ -44,6 +44,11 @@ namespace ChessDroid
             grpDisplay = new GroupBox();
             cmbEngine = new ComboBox();
             lblEngine = new Label();
+            grpBoardColors = new GroupBox();
+            lblLightSquares = new Label();
+            btnLightColor = new Button();
+            lblDarkSquares = new Label();
+            btnDarkColor = new Button();
             chkShowThird = new CheckBox();
             lblThird = new Label();
             chkShowSecond = new CheckBox();
@@ -77,6 +82,7 @@ namespace ChessDroid
             btnCancel = new Button();
             chkDarkMode = new CheckBox();
             toolTip1 = new ToolTip(components);
+            grpBoardColors.SuspendLayout();
             grpEngine.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)numMinAnalysisTime).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numMoveTimeout).BeginInit();
@@ -344,9 +350,67 @@ namespace ChessDroid
             lblBest.Size = new Size(150, 19);
             lblBest.TabIndex = 0;
             lblBest.Text = "Show Best Line:";
-            // 
+            //
+            // grpBoardColors
+            //
+            grpBoardColors.Controls.Add(lblLightSquares);
+            grpBoardColors.Controls.Add(btnLightColor);
+            grpBoardColors.Controls.Add(lblDarkSquares);
+            grpBoardColors.Controls.Add(btnDarkColor);
+            grpBoardColors.ForeColor = Color.White;
+            grpBoardColors.Location = new Point(13, 369);
+            grpBoardColors.Name = "grpBoardColors";
+            grpBoardColors.Size = new Size(298, 75);
+            grpBoardColors.TabIndex = 12;
+            grpBoardColors.TabStop = false;
+            grpBoardColors.Text = "Board Colors";
+            //
+            // lblLightSquares
+            //
+            lblLightSquares.Location = new Point(10, 22);
+            lblLightSquares.Name = "lblLightSquares";
+            lblLightSquares.Size = new Size(105, 19);
+            lblLightSquares.TabIndex = 0;
+            lblLightSquares.Text = "Light Squares:";
+            //
+            // btnLightColor
+            //
+            btnLightColor.FlatStyle = FlatStyle.Flat;
+            btnLightColor.FlatAppearance.BorderColor = Color.Gray;
+            btnLightColor.BackColor = Color.FromArgb(240, 217, 181);
+            btnLightColor.Location = new Point(120, 18);
+            btnLightColor.Name = "btnLightColor";
+            btnLightColor.Size = new Size(130, 22);
+            btnLightColor.TabIndex = 1;
+            btnLightColor.Text = "";
+            btnLightColor.Cursor = Cursors.Hand;
+            toolTip1.SetToolTip(btnLightColor, "Click to choose light square color");
+            btnLightColor.Click += BtnLightColor_Click;
+            //
+            // lblDarkSquares
+            //
+            lblDarkSquares.Location = new Point(10, 50);
+            lblDarkSquares.Name = "lblDarkSquares";
+            lblDarkSquares.Size = new Size(105, 19);
+            lblDarkSquares.TabIndex = 2;
+            lblDarkSquares.Text = "Dark Squares:";
+            //
+            // btnDarkColor
+            //
+            btnDarkColor.FlatStyle = FlatStyle.Flat;
+            btnDarkColor.FlatAppearance.BorderColor = Color.Gray;
+            btnDarkColor.BackColor = Color.FromArgb(181, 136, 99);
+            btnDarkColor.Location = new Point(120, 46);
+            btnDarkColor.Name = "btnDarkColor";
+            btnDarkColor.Size = new Size(130, 22);
+            btnDarkColor.TabIndex = 3;
+            btnDarkColor.Text = "";
+            btnDarkColor.Cursor = Cursors.Hand;
+            toolTip1.SetToolTip(btnDarkColor, "Click to choose dark square color");
+            btnDarkColor.Click += BtnDarkColor_Click;
+            //
             // grpExplanations
-            // 
+            //
             grpExplanations.Controls.Add(cmbComplexity);
             grpExplanations.Controls.Add(lblComplexity);
             grpExplanations.Controls.Add(chkTactical);
@@ -571,7 +635,7 @@ namespace ChessDroid
             // 
             btnSave.FlatStyle = FlatStyle.Popup;
             btnSave.ForeColor = SystemColors.ControlLightLight;
-            btnSave.Location = new Point(12, 386);
+            btnSave.Location = new Point(12, 466);
             btnSave.Name = "btnSave";
             btnSave.Size = new Size(100, 28);
             btnSave.TabIndex = 4;
@@ -583,7 +647,7 @@ namespace ChessDroid
             // 
             btnReset.FlatStyle = FlatStyle.Popup;
             btnReset.ForeColor = SystemColors.ControlLightLight;
-            btnReset.Location = new Point(12, 421);
+            btnReset.Location = new Point(12, 501);
             btnReset.Name = "btnReset";
             btnReset.Size = new Size(100, 28);
             btnReset.TabIndex = 5;
@@ -595,7 +659,7 @@ namespace ChessDroid
             // 
             btnHelp.FlatStyle = FlatStyle.Popup;
             btnHelp.ForeColor = SystemColors.ControlLightLight;
-            btnHelp.Location = new Point(195, 386);
+            btnHelp.Location = new Point(195, 466);
             btnHelp.Name = "btnHelp";
             btnHelp.Size = new Size(100, 28);
             btnHelp.TabIndex = 6;
@@ -608,7 +672,7 @@ namespace ChessDroid
             btnCancel.DialogResult = DialogResult.Cancel;
             btnCancel.FlatStyle = FlatStyle.Popup;
             btnCancel.ForeColor = SystemColors.ControlLightLight;
-            btnCancel.Location = new Point(195, 421);
+            btnCancel.Location = new Point(195, 501);
             btnCancel.Name = "btnCancel";
             btnCancel.Size = new Size(100, 28);
             btnCancel.TabIndex = 7;
@@ -622,7 +686,7 @@ namespace ChessDroid
             chkDarkMode.Checked = true;
             chkDarkMode.CheckState = CheckState.Checked;
             chkDarkMode.ForeColor = Color.White;
-            chkDarkMode.Location = new Point(13, 370);
+            chkDarkMode.Location = new Point(13, 450);
             chkDarkMode.Name = "chkDarkMode";
             chkDarkMode.Size = new Size(89, 18);
             chkDarkMode.TabIndex = 8;
@@ -638,7 +702,7 @@ namespace ChessDroid
             AutoSizeMode = AutoSizeMode.GrowAndShrink;
             BackColor = Color.FromArgb(45, 45, 48);
             CancelButton = btnCancel;
-            ClientSize = new Size(585, 483);
+            ClientSize = new Size(585, 543);
             Controls.Add(chkDarkMode);
             Controls.Add(btnCancel);
             Controls.Add(btnHelp);
@@ -646,6 +710,7 @@ namespace ChessDroid
             Controls.Add(btnSave);
             Controls.Add(grpLc0Features);
             Controls.Add(grpExplanations);
+            Controls.Add(grpBoardColors);
             Controls.Add(grpDisplay);
             Controls.Add(grpEngine);
             Font = new Font("Courier New", 8.25F, FontStyle.Regular, GraphicsUnit.Point, 0);
@@ -661,6 +726,7 @@ namespace ChessDroid
             ((System.ComponentModel.ISupportInitialize)numMoveTimeout).EndInit();
             ((System.ComponentModel.ISupportInitialize)numMaxRetries).EndInit();
             ((System.ComponentModel.ISupportInitialize)numEngineTimeout).EndInit();
+            grpBoardColors.ResumeLayout(false);
             grpDisplay.ResumeLayout(false);
             grpDisplay.PerformLayout();
             grpExplanations.ResumeLayout(false);
@@ -699,6 +765,11 @@ namespace ChessDroid
         private System.Windows.Forms.Label lblEngineArrows;
         private System.Windows.Forms.CheckBox chkEvalBar;
         private System.Windows.Forms.Label lblEvalBar;
+        private System.Windows.Forms.GroupBox grpBoardColors;
+        private System.Windows.Forms.Label lblLightSquares;
+        private System.Windows.Forms.Button btnLightColor;
+        private System.Windows.Forms.Label lblDarkSquares;
+        private System.Windows.Forms.Button btnDarkColor;
         private System.Windows.Forms.Button btnSave;
         private System.Windows.Forms.Button btnReset;
         private System.Windows.Forms.Button btnHelp;

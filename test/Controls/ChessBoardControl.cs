@@ -63,6 +63,11 @@ namespace ChessDroid.Controls
         // Last move tracking
         private (int fromRow, int fromCol, int toRow, int toCol)? lastMove;
 
+        // Move annotation badge (e.g. "!!", "?", "??")
+        private string _moveAnnotationSymbol = "";
+        private int _annotationRow = -1;
+        private int _annotationCol = -1;
+
         // Piece images
         private Dictionary<char, Image?> pieceImages = new Dictionary<char, Image?>();
         private string currentTemplateSet = "Lichess";
@@ -221,6 +226,29 @@ namespace ChessDroid.Controls
                 lastMove = value;
                 Invalidate();
             }
+        }
+
+        public void SetSquareColors(Color light, Color dark)
+        {
+            lightSquareColor = light;
+            darkSquareColor = dark;
+            Invalidate();
+        }
+
+        public void SetMoveAnnotation(string symbol, int row, int col)
+        {
+            _moveAnnotationSymbol = symbol;
+            _annotationRow = row;
+            _annotationCol = col;
+            Invalidate();
+        }
+
+        public void ClearMoveAnnotation()
+        {
+            _moveAnnotationSymbol = "";
+            _annotationRow = -1;
+            _annotationCol = -1;
+            Invalidate();
         }
 
         #endregion
@@ -509,6 +537,43 @@ namespace ChessDroid.Controls
                 using (SolidBrush brush = new SolidBrush(isLight ? darkSquareColor : lightSquareColor))
                 {
                     g.DrawString(rank, coordFont, brush, 2, i * squareSize + 2);
+                }
+            }
+
+            // Draw move annotation badge (e.g. "!!", "?", "??")
+            if (!string.IsNullOrEmpty(_moveAnnotationSymbol) && _annotationRow >= 0)
+            {
+                int displayRow = isFlipped ? 7 - _annotationRow : _annotationRow;
+                int displayCol = isFlipped ? 7 - _annotationCol : _annotationCol;
+
+                Color badgeColor = _moveAnnotationSymbol switch
+                {
+                    "!!" => Color.FromArgb(26, 179, 148),   // teal  — brilliant
+                    "!"  => Color.FromArgb(91, 139, 245),   // blue  — only move
+                    "?!" => Color.FromArgb(247, 199, 72),   // yellow — inaccuracy
+                    "?"  => Color.FromArgb(232, 106, 51),   // orange — mistake
+                    "??" => Color.FromArgb(202, 52, 49),    // red   — blunder
+                    _    => Color.FromArgb(150, 150, 150),
+                };
+
+                int badgeSize = Math.Max(14, squareSize / 3);
+                int badgeX = (displayCol + 1) * squareSize - badgeSize - 2;
+                int badgeY = displayRow * squareSize + 2;
+
+                using (SolidBrush bg = new SolidBrush(badgeColor))
+                    g.FillEllipse(bg, badgeX, badgeY, badgeSize, badgeSize);
+
+                float fontSize = Math.Max(6f, badgeSize * 0.42f);
+                using (Font badgeFont = new Font("Segoe UI", fontSize, FontStyle.Bold))
+                using (SolidBrush fg = new SolidBrush(Color.White))
+                {
+                    var sf = new System.Drawing.StringFormat
+                    {
+                        Alignment = System.Drawing.StringAlignment.Center,
+                        LineAlignment = System.Drawing.StringAlignment.Center
+                    };
+                    g.DrawString(_moveAnnotationSymbol, badgeFont, fg,
+                        new RectangleF(badgeX, badgeY, badgeSize, badgeSize), sf);
                 }
             }
         }

@@ -81,6 +81,9 @@ namespace ChessDroid
 
             InitializeComponent();
             ApplyTheme();
+            boardControl.SetSquareColors(
+                ColorTranslator.FromHtml(config.LightSquareColor),
+                ColorTranslator.FromHtml(config.DarkSquareColor));
             InitializeServices();
             InitializeMatchControls();
             PopulatePiecesComboBox();
@@ -425,6 +428,8 @@ namespace ChessDroid
             // Add move to tree (handles variations automatically)
             moveTree.AddMove(e.UciMove, san, e.FEN);
 
+            UpdateMoveAnnotation(moveTree.CurrentNode);
+
             // Update move list display
             UpdateMoveList();
             UpdateFenDisplay();
@@ -469,6 +474,7 @@ namespace ChessDroid
         {
             if (_botModeActive) StopBotMode();
             boardControl.ClearEngineArrows();
+            boardControl.ClearMoveAnnotation();
             boardControl.ResetBoard();
             moveTree.Clear(boardControl.GetFEN());
             moveListBox.Items.Clear();
@@ -496,6 +502,9 @@ namespace ChessDroid
                 InitializeServices();
                 ApplyTheme();
                 LeftPanel_Resize(leftPanel, EventArgs.Empty);
+                boardControl.SetSquareColors(
+                    ColorTranslator.FromHtml(config.LightSquareColor),
+                    ColorTranslator.FromHtml(config.DarkSquareColor));
                 _analysisCache.Clear(); // Clear cache when settings change
 
                 // Initialize the engine immediately
@@ -547,6 +556,7 @@ namespace ChessDroid
                 try
                 {
                     boardControl.LoadFEN(moveTree.CurrentNode.FEN);
+                    UpdateMoveAnnotation(moveTree.CurrentNode);
                     UpdateFenDisplay();
                     UpdateTurnLabel();
                     UpdateMoveListSelection();
@@ -580,6 +590,7 @@ namespace ChessDroid
                 try
                 {
                     boardControl.LoadFEN(moveTree.CurrentNode.FEN);
+                    UpdateMoveAnnotation(moveTree.CurrentNode);
                     UpdateFenDisplay();
                     UpdateTurnLabel();
                     UpdateMoveListSelection();
@@ -749,6 +760,7 @@ namespace ChessDroid
                     var node = displayedNodes[selected];
                     moveTree.GoToNode(node);
                     boardControl.LoadFEN(node.FEN);
+                    UpdateMoveAnnotation(node);
                     UpdateFenDisplay();
                     UpdateTurnLabel();
 
@@ -815,6 +827,7 @@ namespace ChessDroid
             {
                 moveTree.GoToStart();
                 boardControl.LoadFEN(moveTree.CurrentNode.FEN);
+                boardControl.ClearMoveAnnotation();
                 UpdateFenDisplay();
                 UpdateTurnLabel();
                 UpdateMoveListSelection();
@@ -839,6 +852,7 @@ namespace ChessDroid
             {
                 moveTree.GoToEnd();
                 boardControl.LoadFEN(moveTree.CurrentNode.FEN);
+                UpdateMoveAnnotation(moveTree.CurrentNode);
                 UpdateFenDisplay();
                 UpdateTurnLabel();
                 UpdateMoveListSelection();
@@ -874,6 +888,7 @@ namespace ChessDroid
                 {
                     moveTree.GoToNode(target);
                     boardControl.LoadFEN(target.FEN);
+                    UpdateMoveAnnotation(target);
                     UpdateFenDisplay();
                     UpdateTurnLabel();
                     UpdateMoveListSelection();
@@ -891,6 +906,30 @@ namespace ChessDroid
                 {
                     isNavigating = false;
                 }
+            }
+        }
+
+        private void UpdateMoveAnnotation(MoveNode? node)
+        {
+            if (node == null || node == moveTree.Root ||
+                _classificationLookup == null ||
+                !_classificationLookup.TryGetValue(node, out var result) ||
+                string.IsNullOrEmpty(result.Symbol))
+            {
+                boardControl.ClearMoveAnnotation();
+                return;
+            }
+
+            // Decode destination square from UCI move (e.g. "e2e4" -> col=4, row=4)
+            if (node.UciMove.Length >= 4)
+            {
+                int toCol = node.UciMove[2] - 'a';
+                int toRow = 7 - (node.UciMove[3] - '1');
+                boardControl.SetMoveAnnotation(result.Symbol, toRow, toCol);
+            }
+            else
+            {
+                boardControl.ClearMoveAnnotation();
             }
         }
 
