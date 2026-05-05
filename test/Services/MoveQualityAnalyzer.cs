@@ -138,7 +138,23 @@ namespace ChessDroid.Services
                 };
             }
 
-            // Standard quality classification based on centipawn loss
+            // If it's the engine's best move it cannot be an inaccuracy/mistake/blunder.
+            // Two independent engine searches (before and after the move) may disagree by
+            // 30-100cp due to different search paths — that eval delta is noise, not a real
+            // mistake. Always trust isBestMove over the raw centipawn loss.
+            if (isBestMove)
+            {
+                return new MoveQualityResult
+                {
+                    Quality = MoveQuality.Best,
+                    Symbol = "",
+                    Description = "Best",
+                    Color = Color.FromArgb(150, 194, 90),
+                    CentipawnLoss = cpLoss
+                };
+            }
+
+            // Standard quality classification based on centipawn loss (non-best moves only)
             double blunderThreshold = 300 * aggressivenessMultiplier;
             double mistakeThreshold = 100 * aggressivenessMultiplier;
             double inaccuracyThreshold = 30 * aggressivenessMultiplier;
@@ -151,7 +167,7 @@ namespace ChessDroid.Services
                     Quality = MoveQuality.Blunder,
                     Symbol = "??",
                     Description = "Blunder",
-                    Color = Color.FromArgb(202, 52, 49), // Red
+                    Color = Color.FromArgb(202, 52, 49),
                     CentipawnLoss = cpLoss
                 };
             }
@@ -163,7 +179,7 @@ namespace ChessDroid.Services
                     Quality = MoveQuality.Mistake,
                     Symbol = "?",
                     Description = "Mistake",
-                    Color = Color.FromArgb(232, 106, 51), // Orange
+                    Color = Color.FromArgb(232, 106, 51),
                     CentipawnLoss = cpLoss
                 };
             }
@@ -175,19 +191,7 @@ namespace ChessDroid.Services
                     Quality = MoveQuality.Inaccuracy,
                     Symbol = "?!",
                     Description = "Inaccuracy",
-                    Color = Color.FromArgb(247, 199, 72), // Yellow
-                    CentipawnLoss = cpLoss
-                };
-            }
-
-            if (isBestMove)
-            {
-                return new MoveQualityResult
-                {
-                    Quality = MoveQuality.Best,
-                    Symbol = "",
-                    Description = "Best",
-                    Color = Color.FromArgb(150, 194, 90), // Green
+                    Color = Color.FromArgb(247, 199, 72),
                     CentipawnLoss = cpLoss
                 };
             }
@@ -199,7 +203,7 @@ namespace ChessDroid.Services
                     Quality = MoveQuality.Excellent,
                     Symbol = "",
                     Description = "Excellent",
-                    Color = Color.FromArgb(150, 194, 90), // Light green
+                    Color = Color.FromArgb(150, 194, 90),
                     CentipawnLoss = cpLoss
                 };
             }
@@ -209,7 +213,7 @@ namespace ChessDroid.Services
                 Quality = MoveQuality.Good,
                 Symbol = "",
                 Description = "Good",
-                Color = Color.FromArgb(119, 171, 89), // Darker green
+                Color = Color.FromArgb(119, 171, 89),
                 CentipawnLoss = cpLoss
             };
         }

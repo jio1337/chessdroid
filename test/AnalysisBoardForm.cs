@@ -430,13 +430,16 @@ namespace ChessDroid
 
             UpdateMoveAnnotation(moveTree.CurrentNode);
 
-            // Update move list display
-            UpdateMoveList();
+            // Update move list display — guard with isNavigating so the SelectedIndexChanged
+            // event fired by UpdateMoveListSelection() doesn't trigger a spurious analysis.
+            isNavigating = true;
+            try { UpdateMoveList(); }
+            finally { isNavigating = false; }
             UpdateFenDisplay();
             UpdateTurnLabel();
 
-            // Auto-analyze if enabled
-            if (!matchRunning)
+            // Auto-analyze if enabled (skip in bot mode — analysis runs after bot responds)
+            if (!matchRunning && !_botModeActive)
             {
                 _ = TriggerAutoAnalysis();
             }
@@ -455,12 +458,13 @@ namespace ChessDroid
             autoAnalysisCts = new CancellationTokenSource();
             var token = autoAnalysisCts.Token;
 
-            // Small delay to avoid analyzing during rapid moves
-            await Task.Delay(150);
+            // Debounce — pass token so rapid navigation cancels the sleep immediately
+            try { await Task.Delay(150, token); }
+            catch (OperationCanceledException) { return; }
 
             if (!token.IsCancellationRequested)
             {
-                await AnalyzeCurrentPosition();
+                await AnalyzeCurrentPosition(token);
             }
         }
 
@@ -1461,7 +1465,7 @@ namespace ChessDroid
                 string diffLabel = _botSettings.GetDifficultyLabel();
                 lblStatus.Text = $"Your turn — {diffLabel}";
 
-                // Trigger analysis for the new position
+                // Trigger analysis for the new position (human's turn)
                 _ = TriggerAutoAnalysis();
             }
             catch (OperationCanceledException)
@@ -1720,7 +1724,7 @@ namespace ChessDroid
 
         #region Analysis
 
-        private async Task AnalyzeCurrentPosition()
+        private async Task AnalyzeCurrentPosition(CancellationToken ct = default)
         {
             if (engineService == null)
             {
@@ -1769,7 +1773,7 @@ namespace ChessDroid
                 var pvs = result.pvs ?? new List<string>();
                 var evals = result.evaluations ?? new List<string>();
 
-                // Cache the result
+                // Cache the result regardless — it's valid for this position
                 _analysisCache[cacheKey] = new CachedAnalysis
                 {
                     BestMove = result.bestMove,
@@ -1779,6 +1783,10 @@ namespace ChessDroid
                     WDL = result.wdl,
                     Depth = depth
                 };
+
+                // Stale check: discard if user navigated away while engine was thinking.
+                if (ct.IsCancellationRequested || GetPositionKey(boardControl.GetFEN()) != cacheKey)
+                    return;
 
                 // Display results
                 DisplayAnalysisResult(fen, result.bestMove, result.evaluation,
