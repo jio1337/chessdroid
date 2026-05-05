@@ -1,4 +1,4 @@
-## ChessDroid v3.1.0 — User Guide
+## ChessDroid v3.2.1 — User Guide
 
 ### Welcome to ChessDroid!
 
@@ -33,6 +33,7 @@ The Analysis Board is the heart of chessdroid — a complete interactive workspa
 - **Flip Board** — View from White or Black's perspective
 - **PGN Import/Export** — Import games from any source, export your analysis to standard PGN format
 - **Move Classification** — Review games with colored quality symbols — Brilliant (!!), Blunder (??), Mistake (?), Inaccuracy (?!)
+- **Move Quality Badge** — Colored badge overlaid on the destination square while navigating moves (teal=Brilliant !!, yellow=Inaccuracy ?!, orange=Mistake ?, red=Blunder ??)
 - **Evaluation Bar** — Visual position assessment with smooth transitions
 
 **Navigation:**
@@ -43,7 +44,29 @@ The Analysis Board is the heart of chessdroid — a complete interactive workspa
 
 ---
 
-### **2. Engine vs Engine Matches**
+### **2. Play vs Bot**
+
+Challenge a Stockfish engine directly on the Analysis Board.
+
+**Starting a game:**
+1. Click the **vs Bot** button on the Analysis Board
+2. Choose your difficulty: Easy, Medium, Hard, Expert, or Master
+3. Pick your color (White or Black)
+4. Click Start — the board auto-flips if you play Black
+
+**During the game:**
+- Analysis keeps running in the background so you can see engine recommendations for your own moves
+- Engine arrows only appear for **your** turn — not the bot's
+- Click **Take Back** to undo your last move and the bot's response (goes back 2 moves)
+- Click **Stop Bot** to exit bot mode at any time
+
+**Game end:** ChessDroid correctly identifies checkmate vs stalemate and shows the result.
+
+**Note:** Bot mode and engine match mode are mutually exclusive — starting one stops the other.
+
+---
+
+### **3. Engine vs Engine Matches**
 
 Watch chess engines battle head-to-head on the Analysis Board.
 
@@ -58,7 +81,7 @@ The match runs automatically until checkmate, stalemate, or you click Stop. All 
 
 ---
 
-### **3. Move Classification**
+### **4. Move Classification**
 
 ChessDroid uses Chess.com-inspired move classification based on win probability calculations:
 
@@ -85,7 +108,7 @@ Best line: Nf6+ Kh8 Qg8 +5.20
 
 ---
 
-### **4. Win/Draw/Loss Display (WDL)**
+### **5. Win/Draw/Loss Display (WDL)**
 
 See your winning chances with detailed WDL probabilities:
 
@@ -102,7 +125,7 @@ Position: W:72% D:20% L:8% (clear advantage)
 
 ---
 
-### **5. Play Style Recommendations**
+### **6. Play Style Recommendations**
 
 Choose your preferred playing style from **Very Solid** to **Very Aggressive**.
 
@@ -117,7 +140,7 @@ When your play style differs from the engine's top choice, ChessDroid shows a "R
 
 ---
 
-### **6. Tactical Pattern Detection**
+### **7. Tactical Pattern Detection**
 
 ChessDroid detects 30+ tactical patterns automatically:
 
@@ -132,7 +155,7 @@ ChessDroid detects 30+ tactical patterns automatically:
 
 ---
 
-### **7. Threat & Defense Display**
+### **8. Threat & Defense Display**
 
 **Threats** — NEW threats created by the move:
 - Attacks on undefended pieces
@@ -150,7 +173,7 @@ Threats show only what CHANGED — if your piece was already attacking something
 
 ---
 
-### **8. Opening Book & ECO Database**
+### **9. Opening Book & ECO Database**
 
 - **12,379+ ECO positions** — Shows opening name with ECO code (e.g., "B01: Scandinavian Defense")
 - **Polyglot Opening Books** — 1M+ positions from grandmaster games with book move percentages
@@ -158,7 +181,7 @@ Threats show only what CHANGED — if your piece was already attacking something
 
 ---
 
-### **9. Complexity Levels**
+### **10. Complexity Levels**
 
 Choose your preferred explanation detail:
 
@@ -169,7 +192,7 @@ Choose your preferred explanation detail:
 
 ---
 
-### **10. Feature Toggles**
+### **11. Feature Toggles**
 
 Customize which analysis features you want to see:
 
@@ -204,6 +227,10 @@ Customize which analysis features you want to see:
 ### **Accessing Settings**
 
 Click the **⚙** button on the Analysis Board to open Settings.
+
+### **Board Colors**
+
+Under the **Board Colors** group in Settings, click the color buttons next to "Light Squares" and "Dark Squares" to open the full Windows RGB color picker. Your chosen colors are applied immediately when you click **Save** and persist across sessions.
 
 ### **Recommended Settings by Skill Level**
 
@@ -340,7 +367,18 @@ Create a folder in `Templates/` with 12 PNG files (wK, wQ, wR, wB, wN, wP, bK, b
 
 ## Version History
 
-**v3.1.0** — Engine Arrows & Visual Analysis (Current)
+**v3.2.1** — Bug Fixes (Current)
+- Bot mode no longer shows engine arrows for the bot's position
+- Best move no longer misclassified as inaccuracy
+- Stale analysis discarded when navigating quickly
+- Spurious analysis from move list selection suppressed
+
+**v3.2.0** — Bot Mode & Board Customization
+- Play vs Bot with 5 difficulty levels (Easy → Master)
+- Move quality badge overlaid on board during game navigation
+- Custom board color picker (full RGB) for light and dark squares
+
+**v3.1.0** — Engine Arrows & Visual Analysis
 - Engine arrows on board (green/yellow/red per PV line)
 - [See line] — load PV into move tree with animated playback
 - Free-draw right-click arrows, auto-analysis on form open
@@ -408,5 +446,5 @@ ChessDroid is released under the MIT License. Free and open-source forever!
 
 **Enjoy analyzing with ChessDroid!**
 
-*Last Updated: 2026-02-09*
-*Version: 3.1.0 (Engine Arrows & Visual Analysis)*
+*Last Updated: 2026-05-05*
+*Version: 3.2.1*

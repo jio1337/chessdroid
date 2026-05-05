@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [3.2.1] - 2026-05-05
+
+### Fixed
+- **Bot Mode — Spoiler Arrows** — Engine no longer shows arrows for the bot's position after the human's move. `TriggerAutoAnalysis` is now skipped in bot mode after `BoardControl_MoveMade`; analysis only fires after the bot responds, showing arrows for the human's next turn
+- **Spurious Analysis via Move List** — `UpdateMoveList()` inside `BoardControl_MoveMade` was changing the listbox selection, which fired `MoveListBox_SelectedIndexChanged` and triggered a second `TriggerAutoAnalysis` call before the bot-mode skip check ran. Fixed by wrapping `UpdateMoveList()` with `isNavigating = true`
+- **Move Classification — Best Move Marked as Inaccuracy** — `isBestMove` guard was checked *after* the centipawn-loss thresholds in `MoveQualityAnalyzer`. Two independent engine searches can disagree by 30–100 cp due to different hash paths — that delta is noise, not a mistake. Moved `isBestMove` return before all threshold checks
+- **Stale Analysis on Fast Navigation / Bot Mode** — `Task.Delay(150)` debounce was not receiving the cancellation token, so rapid navigation couldn't wake it up early. Added stale position check after `GetBestMoveAsync` returns: result is cached but discarded if the user navigated away during the engine search
+
+---
+
+## [3.2.0] - 2026-05-04
+
+### Added
+- **Move Quality Badge on Board** — Colored symbol badge (!! ?! ? ??) overlaid at the destination square during move navigation
+  - Colors match the classification scheme: teal (Brilliant), yellow (Inaccuracy), orange (Mistake), red (Blunder)
+  - Updates on every navigation action (prev/next, listbox click, variation jump)
+  - Clears at start position and when no classification exists
+- **Bot Mode — Play vs Engine** — Play a game against Stockfish directly on the analysis board
+  - Difficulty presets: Easy (Skill 3), Medium (Skill 8), Hard (Skill 14), Expert (Skill 18), Master (Skill 20)
+  - Choose your color (White or Black); board auto-flips when playing as Black
+  - Separate engine instance for the bot — analysis engine keeps running in background
+  - Take Back goes back 2 moves (your move + bot's response)
+  - Bot mode and engine match are mutually exclusive
+  - Game end detection: checkmate vs stalemate with correct message
+- **Custom Board Colors** — Full RGB color picker for light and dark squares in Settings
+  - Uses Windows `ColorDialog` with `FullOpen = true` for the full RGB picker
+  - Colors persist across sessions via `LightSquareColor` / `DarkSquareColor` in `config.json` (hex strings)
+  - Applied immediately on Settings save
+
+### Changed
+- **`MoveQualityAnalyzer`** — `isBestMove` check now placed before centipawn thresholds (classification correctness improvement, see v3.2.1 fix notes)
+
+---
+
 ## [3.1.0] - 2026-02-09
 
 ### Added

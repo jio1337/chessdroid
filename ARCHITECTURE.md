@@ -2,11 +2,11 @@
 
 ## Overview
 
-ChessDroid is a pure offline chess analysis application that combines tactical pattern recognition with deep positional understanding inspired by world-class chess engines (Ethereal and Stockfish). As of v3.1.0, the application is centered around the Analysis Board — an interactive workspace for deep chess analysis with visual engine arrows, PV line exploration, and free-draw annotation.
+ChessDroid is a pure offline chess analysis application that combines tactical pattern recognition with deep positional understanding inspired by world-class chess engines (Ethereal and Stockfish). As of v3.2.1, the application is centered around the Analysis Board — an interactive workspace for deep chess analysis with visual engine arrows, PV line exploration, free-draw annotation, bot mode, and full board customization.
 
 ---
 
-## System Architecture (v3.1.0)
+## System Architecture (v3.2.1)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -83,19 +83,24 @@ ChessDroid is a pure offline chess analysis application that combines tactical p
 - Engine arrows on board (green/yellow/red per PV line, separate from user arrows)
 - [See line] PV loading into move tree with animated playback
 - Free-draw right-click arrows (any square to any square)
+- Move quality badge overlaid on destination square during navigation
 - Move tree navigation with variation branching
 - Auto-analysis on every move, new game, and form open with result caching
+- Analysis debounce with cancellation token; stale-position check discards engine results that arrive after navigation
 - PGN import/export
 - Move classification (Brilliant, Blunder, Mistake, Inaccuracy)
 - Evaluation bar with smooth transitions
 - Engine match management (engine vs engine)
+- Bot mode — play vs Stockfish with configurable skill level; separate `ChessEngineService` instance so analysis engine keeps running
+- Custom board colors (light/dark squares) via `ColorDialog`, persisted as hex in `AppConfig`
 - FEN loading and copying
 - Settings access via ⚙ button
 
 **Supporting Controls:**
-- `ChessBoardControl` — Renders pieces, engine arrows, and user arrows using PNG templates with Unicode fallback
+- `ChessBoardControl` — Renders pieces, engine arrows, user arrows, and move quality badge using PNG templates with Unicode fallback; `SetSquareColors()` applies custom board colors
 - `MoveTree.cs` / `MoveNode.cs` — Variation tree data structure
-- `MoveQualityAnalyzer.cs` — Centipawn loss classification
+- `MoveQualityAnalyzer.cs` — Centipawn loss classification; `isBestMove` checked before centipawn thresholds to prevent noise from two independent engine searches misclassifying the best move
+- `BotSettings.cs` / `BotSettingsDialog.cs` — Bot difficulty presets and programmatic settings dialog
 
 ---
 
@@ -460,12 +465,15 @@ chessdroid/
 │   ├── Models/
 │   │   ├── MoveTree.cs            # Variation tree
 │   │   ├── MoveNode.cs            # Tree node
+│   │   ├── BotSettings.cs         # Bot difficulty presets + BotDifficulty enum
 │   │   ├── BookMove.cs            # Opening book move
 │   │   └── ...
+│   ├── BotSettingsDialog.cs       # Programmatic bot config dialog (no designer)
 │   └── Services/
-│       ├── ChessEngineService.cs  # UCI engine communication
+│       ├── ChessEngineService.cs  # UCI engine communication + SetSkillLevelAsync()
 │       ├── ThemeService.cs        # Dark/light theme management
 │       ├── EnginePathResolver.cs  # Engine discovery
+│       ├── MoveQualityAnalyzer.cs # Centipawn loss classification
 │       ├── OpeningDatabase.cs     # ECO lookups
 │       ├── PolyglotBookService.cs # Opening book lookups
 │       └── ...
@@ -483,6 +491,12 @@ chessdroid/
 ---
 
 ## Configuration & Tuning
+
+### AppConfig.cs — Key Properties (v3.2.x additions):
+```csharp
+public string LightSquareColor { get; set; } = "#F0D9B5"; // hex, persisted to config.json
+public string DarkSquareColor  { get; set; } = "#B58863"; // hex, persisted to config.json
+```
 
 ### Adjustable Thresholds:
 
@@ -565,7 +579,21 @@ Create a folder in `Templates/` with 12 PNG files named: wK, wQ, wR, wB, wN, wP,
 
 ## Version History
 
-**v3.1.0** — Engine Arrows & Visual Analysis (Current)
+**v3.2.1** — Bug Fixes (Current)
+- Bot mode: `TriggerAutoAnalysis` skipped in `BoardControl_MoveMade` when `_botModeActive`; only fires after bot responds
+- `UpdateMoveList()` wrapped with `isNavigating = true` to suppress spurious `MoveListBox_SelectedIndexChanged` analysis
+- `isBestMove` guard moved before centipawn thresholds in `MoveQualityAnalyzer`
+- Cancellation token plumbed through debounce; stale-position check added after `GetBestMoveAsync`
+- Window title: `chessdroid v3.2.1`
+
+**v3.2.0** — Bot Mode & Board Customization
+- Bot mode: play vs Stockfish with 5 difficulty presets; separate engine instance; board interaction disabled during bot turn
+- Move quality badge: colored overlay on destination square during navigation (`ChessBoardControl.SetMoveAnnotation`)
+- Custom board colors: `ColorDialog` in SettingsForm; `LightSquareColor`/`DarkSquareColor` in `AppConfig`; `ChessBoardControl.SetSquareColors()`
+- New files: `Models/BotSettings.cs`, `BotSettingsDialog.cs`
+- Window title: `chessdroid v3.2.0`
+
+**v3.1.0** — Engine Arrows & Visual Analysis
 - Engine arrows on board (green/yellow/red per PV line)
 - [See line] PV loading into move tree with animated playback
 - Free-draw right-click arrows, auto-analysis on form open
@@ -625,5 +653,5 @@ https://github.com/jio1337/chessdroid/issues
 
 ---
 
-**Last Updated:** 2026-02-09
-**Document Version:** 3.1.0 (Engine Arrows & Visual Analysis)
+**Last Updated:** 2026-05-05
+**Document Version:** 3.2.1
