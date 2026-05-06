@@ -836,9 +836,14 @@ namespace ChessDroid.Services
                     bool isDefended = IsSquareDefendedExcluding(afterMove, r, c, whiteToMove, r, c);
                     if (isDefended) continue; // Piece is defended, not hanging
 
-                    // Check if enemy can capture this piece
-                    bool canBeCaptured = ChessUtilities.IsSquareAttackedBy(afterMove, r, c, !whiteToMove);
-                    if (!canBeCaptured) continue; // Enemy can't take it
+                    // Check if enemy can LEGALLY capture this piece.
+                    // Raw attack detection (IsSquareAttackedBy) is not enough — a pinned attacker
+                    // shows up as "attacking" the square but cannot legally move.
+                    // Example: Bg7 pins to Kg8 by Rg1 — Bg7 "attacks" d4 and h6 but cannot capture
+                    // because doing so would expose Kg8 to the rook. Without this check, Qd4 and
+                    // Rh6 are falsely detected as brilliant sacrifices.
+                    bool canBeCaptured = CanBeLegallyCaptured(afterMove, r, c, !whiteToMove);
+                    if (!canBeCaptured) continue; // Enemy has no legal capture
 
                     // If the move gives check, only pieces DELIVERING check are truly hanging
                     // (because taking them addresses the check). Other pieces aren't en prise
@@ -851,10 +856,9 @@ namespace ChessDroid.Services
                     }
 
                     // Check if this piece was ALREADY hanging before the move.
-                    // If it was already undefended and capturable, the move didn't create a sacrifice.
-                    // Example: Kg8 when bishop on c5 was already en prise — not a sacrifice.
+                    // If it was already undefended and legally capturable, the move didn't create a sacrifice.
                     bool wasDefendedBefore = IsSquareDefendedExcluding(board, r, c, whiteToMove, r, c);
-                    bool couldBeCapturedBefore = ChessUtilities.IsSquareAttackedBy(board, r, c, !whiteToMove);
+                    bool couldBeCapturedBefore = CanBeLegallyCaptured(board, r, c, !whiteToMove);
                     if (!wasDefendedBefore && couldBeCapturedBefore)
                         continue; // Piece was already hanging — not a new sacrifice
 
@@ -894,6 +898,47 @@ namespace ChessDroid.Services
             // Fallback to generic explanation
             PieceType sacrificedType = PieceHelper.GetPieceType(hangingPiece.Value.piece);
             return GenerateBrilliantExplanation(sacrificedType, whiteToMove, evalAfter, isImplicit: true);
+        }
+
+        /// <summary>
+        /// Returns true if at least one piece of color <paramref name="byWhite"/> can LEGALLY capture
+        /// the piece on (targetRow, targetCol) — i.e., the capture does not leave the capturing
+        /// side's own king in check. Pinned attackers are correctly excluded.
+        /// </summary>
+        private static bool CanBeLegallyCaptured(ChessBoard board, int targetRow, int targetCol, bool byWhite)
+        {
+            // Locate the capturing side's king up-front (needed for legality check)
+            char ownKing = byWhite ? 'K' : 'k';
+            int kingRow = -1, kingCol = -1;
+            for (int r = 0; r < 8; r++)
+                for (int c = 0; c < 8; c++)
+                    if (board.GetPiece(r, c) == ownKing) { kingRow = r; kingCol = c; }
+
+            for (int r = 0; r < 8; r++)
+            {
+                for (int c = 0; c < 8; c++)
+                {
+                    char piece = board.GetPiece(r, c);
+                    if (piece == '.') continue;
+                    if (char.IsUpper(piece) != byWhite) continue;
+                    if (!ChessUtilities.CanAttackSquare(board, r, c, piece, targetRow, targetCol)) continue;
+
+                    // Simulate the capture and verify the capturing side's king is not in check
+                    using var pooled = BoardPool.Rent(board);
+                    ChessBoard testBoard = pooled.Board;
+                    testBoard.SetPiece(r, c, '.');
+                    testBoard.SetPiece(targetRow, targetCol, piece);
+
+                    // If the king itself is capturing, its position changes
+                    int kRow = (char.ToUpper(piece) == 'K') ? targetRow : kingRow;
+                    int kCol = (char.ToUpper(piece) == 'K') ? targetCol : kingCol;
+
+                    if (kRow < 0) continue; // No king found — skip
+                    if (!ChessUtilities.IsSquareAttackedBy(testBoard, kRow, kCol, !byWhite))
+                        return true; // Legal capture found
+                }
+            }
+            return false;
         }
 
         /// <summary>
