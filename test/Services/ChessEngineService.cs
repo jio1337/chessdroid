@@ -107,7 +107,7 @@ namespace ChessDroid.Services
                 {
                     try
                     {
-                        string? line = await engineOutput!.ReadLineAsync().WaitAsync(cts.Token);
+                        string? line = await engineOutput!.ReadLineAsync(cts.Token);
                         if (line != null && line.StartsWith("readyok"))
                         {
                             Debug.WriteLine("SyncWithEngine: Received readyok - engine synchronized");
@@ -232,7 +232,7 @@ namespace ChessDroid.Services
                     {
                         try
                         {
-                            string? line = await engineOutput.ReadLineAsync().WaitAsync(cts.Token);
+                            string? line = await engineOutput.ReadLineAsync(cts.Token);
                             if (line != null && line.StartsWith("uciok"))
                             {
                                 receivedUciOk = true;
@@ -269,7 +269,7 @@ namespace ChessDroid.Services
                     {
                         try
                         {
-                            string? line = await engineOutput.ReadLineAsync().WaitAsync(cts2.Token);
+                            string? line = await engineOutput.ReadLineAsync(cts2.Token);
                             if (line != null && line.StartsWith("readyok"))
                             {
                                 receivedReadyOk = true;
@@ -413,7 +413,7 @@ namespace ChessDroid.Services
                     {
                         while (IsEngineAlive())
                         {
-                            string? line = await engineOutput!.ReadLineAsync().WaitAsync(linkedCts.Token);
+                            string? line = await engineOutput!.ReadLineAsync(linkedCts.Token);
 
                             if (line == null) continue;
 
@@ -522,7 +522,23 @@ namespace ChessDroid.Services
                 {
                     if (ct.IsCancellationRequested)
                     {
-                        Debug.WriteLine("[Analysis] Cancelled by caller — stopping retries");
+                        Debug.WriteLine("[Analysis] Cancelled by caller — draining engine");
+                        // Send stop and drain bestmove so the next caller gets a clean engine
+                        if (IsEngineAlive() && State == EngineState.Analyzing)
+                        {
+                            await SafeWriteLineAsync("stop");
+                            try
+                            {
+                                using var drainCts = new CancellationTokenSource(1500);
+                                while (IsEngineAlive())
+                                {
+                                    string? dl = await engineOutput!.ReadLineAsync(drainCts.Token);
+                                    if (dl?.StartsWith(UCI_RESPONSE_BESTMOVE) == true) break;
+                                }
+                            }
+                            catch { }
+                            State = EngineState.Ready;
+                        }
                         break;
                     }
                     Debug.WriteLine($"Engine response timeout (attempt {retryCount + 1}/{config.MaxEngineRetries})");
@@ -740,7 +756,7 @@ namespace ChessDroid.Services
                 {
                     while (IsEngineAlive())
                     {
-                        string? line = await engineOutput!.ReadLineAsync().WaitAsync(ct);
+                        string? line = await engineOutput!.ReadLineAsync(ct);
                         if (line == null) continue;
                         if (line.StartsWith(UCI_RESPONSE_BESTMOVE)) break;
                         if (!line.StartsWith(UCI_RESPONSE_INFO) || !line.Contains(UCI_TOKEN_PV)) continue;
@@ -821,7 +837,7 @@ namespace ChessDroid.Services
                             using var drain = new CancellationTokenSource(2000);
                             while (IsEngineAlive())
                             {
-                                var l = await engineOutput!.ReadLineAsync().WaitAsync(drain.Token);
+                                var l = await engineOutput!.ReadLineAsync(drain.Token);
                                 if (l != null && l.StartsWith(UCI_RESPONSE_BESTMOVE)) break;
                             }
                         }
@@ -874,7 +890,7 @@ namespace ChessDroid.Services
 
                 while (IsEngineAlive())
                 {
-                    string? line = await engineOutput!.ReadLineAsync().WaitAsync(cts.Token);
+                    string? line = await engineOutput!.ReadLineAsync(cts.Token);
                     if (line == null) continue;
 
                     // Parse info lines to capture evaluation

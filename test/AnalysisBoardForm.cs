@@ -211,13 +211,19 @@ namespace ChessDroid
             string family = config?.ConsoleFontFamily ?? "Consolas";
             float size = config?.ConsoleFontSize ?? 10.0f;
 
-            var newFont = new Font(family, size);
-            _consoleFont?.Dispose();
-            _consoleFont = newFont;
+            var oldFont = _consoleFont;
+            _consoleFont = new Font(family, size);
 
             analysisOutput.Font = _consoleFont;
             moveListBox.Font = _consoleFont;
             moveListBox.ItemHeight = Math.Max(14, (int)Math.Ceiling(_consoleFont.GetHeight()));
+
+            // Defer disposal so any in-flight WM_DRAWITEM messages finish before the font is freed.
+            // If the handle doesn't exist yet (startup), dispose immediately — no draw messages possible.
+            if (IsHandleCreated)
+                BeginInvoke(() => oldFont?.Dispose());
+            else
+                oldFont?.Dispose();
         }
 
         private void InitializeServices()
@@ -805,27 +811,41 @@ namespace ChessDroid
                 }
             }
 
-            // Draw move text
-            using (var brush = new SolidBrush(textColor))
+            try
             {
-                e.Graphics.DrawString(moveText, drawFont, brush, e.Bounds.Left + 2, e.Bounds.Top + 1);
-            }
-
-            // Draw symbol in color if present
-            if (!string.IsNullOrEmpty(symbol))
-            {
-                var moveSize = e.Graphics.MeasureString(moveText + " ", drawFont);
-
-                using (var symbolBrush = new SolidBrush(symbolColor))
-                using (var boldFont = new Font(drawFont.FontFamily, drawFont.Size, FontStyle.Bold))
+                // Draw move text
+                using (var brush = new SolidBrush(textColor))
                 {
-                    e.Graphics.DrawString(symbol, boldFont, symbolBrush,
-                        e.Bounds.Left + 2 + moveSize.Width - 4, e.Bounds.Top + 1);
+                    e.Graphics.DrawString(moveText, drawFont, brush, e.Bounds.Left + 2, e.Bounds.Top + 1);
                 }
-            }
 
-            // Draw focus rectangle if focused
-            e.DrawFocusRectangle();
+                // Draw symbol in color if present
+                if (!string.IsNullOrEmpty(symbol))
+                {
+                    var moveSize = e.Graphics.MeasureString(moveText + " ", drawFont);
+
+                    using (var symbolBrush = new SolidBrush(symbolColor))
+                    using (var boldFont = new Font(drawFont.FontFamily, drawFont.Size, FontStyle.Bold))
+                    {
+                        e.Graphics.DrawString(symbol, boldFont, symbolBrush,
+                            e.Bounds.Left + 2 + moveSize.Width - 4, e.Bounds.Top + 1);
+                    }
+                }
+
+                // Draw focus rectangle if focused
+                e.DrawFocusRectangle();
+            }
+            catch (ArgumentException)
+            {
+                // Font in invalid state; render with safe fallback so items remain visible
+                try
+                {
+                    using var fallbackBrush = new SolidBrush(e.ForeColor);
+                    e.Graphics.DrawString(moveText, SystemFonts.DefaultFont, fallbackBrush,
+                        e.Bounds.Left + 2, e.Bounds.Top + 1);
+                }
+                catch { }
+            }
         }
 
         private void MoveListBox_SelectedIndexChanged(object? sender, EventArgs e)
