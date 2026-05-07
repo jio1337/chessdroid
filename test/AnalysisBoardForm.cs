@@ -727,11 +727,13 @@ namespace ChessDroid
 
         private void MoveListBox_DrawItem(object? sender, DrawItemEventArgs e)
         {
-            if (e.Index < 0) return;
+            if (e.Index < 0 || e.Index >= moveListBox.Items.Count) return;
+            if (e.Bounds.Width <= 0 || e.Bounds.Height <= 0) return;
 
             // Draw background
             e.DrawBackground();
 
+            Font drawFont = e.Font ?? moveListBox.Font;
             string text = moveListBox.Items[e.Index]?.ToString() ?? "";
             bool isDark = config?.Theme == "Dark";
 
@@ -806,17 +808,16 @@ namespace ChessDroid
             // Draw move text
             using (var brush = new SolidBrush(textColor))
             {
-                e.Graphics.DrawString(moveText, e.Font!, brush, e.Bounds.Left + 2, e.Bounds.Top + 1);
+                e.Graphics.DrawString(moveText, drawFont, brush, e.Bounds.Left + 2, e.Bounds.Top + 1);
             }
 
             // Draw symbol in color if present
             if (!string.IsNullOrEmpty(symbol))
             {
-                // Measure move text width to position symbol
-                var moveSize = e.Graphics.MeasureString(moveText + " ", e.Font!);
+                var moveSize = e.Graphics.MeasureString(moveText + " ", drawFont);
 
                 using (var symbolBrush = new SolidBrush(symbolColor))
-                using (var boldFont = new Font(e.Font!.FontFamily, e.Font.Size, FontStyle.Bold))
+                using (var boldFont = new Font(drawFont.FontFamily, drawFont.Size, FontStyle.Bold))
                 {
                     e.Graphics.DrawString(symbol, boldFont, symbolBrush,
                         e.Bounds.Left + 2 + moveSize.Width - 4, e.Bounds.Top + 1);
