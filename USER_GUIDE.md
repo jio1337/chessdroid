@@ -1,4 +1,4 @@
-## ChessDroid v3.2.1 — User Guide
+## ChessDroid v3.3.0 — User Guide
 
 ### Welcome to ChessDroid!
 
@@ -367,7 +367,16 @@ Create a folder in `Templates/` with 12 PNG files (wK, wQ, wR, wB, wN, wP, bK, b
 
 ## Version History
 
-**v3.2.1** — Bug Fixes (Current)
+**v3.3.0** — Continuous Analysis & Stability (Current)
+- Continuous analysis mode: live PV streaming with compact display; full annotated result at max depth
+- Configurable max depth for continuous analysis (default 50, range 10–100)
+- Custom position editor: set up arbitrary positions for analysis
+- Font settings: configure analysis panel and move list font family and size
+- Engine freeze after move 2 fixed
+- MoveListBox crash and empty move list fixed
+- Brilliant move detection: pinned attackers no longer cause false positives
+
+**v3.2.1** — Bug Fixes
 - Bot mode no longer shows engine arrows for the bot's position
 - Best move no longer misclassified as inaccuracy
 - Stale analysis discarded when navigating quickly
@@ -446,5 +455,5 @@ ChessDroid is released under the MIT License. Free and open-source forever!
 
 **Enjoy analyzing with ChessDroid!**
 
-*Last Updated: 2026-05-05*
+*Last Updated: 2026-05-07*
 *Version: 3.2.1*

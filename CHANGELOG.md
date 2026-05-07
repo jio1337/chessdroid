@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [3.3.0] - 2026-05-07
+
+### Added
+- **Continuous Analysis Mode** — Live depth-by-depth analysis that streams raw PV lines as the engine thinks
+  - Compact header shows depth, eval, and side to move; optional WDL bar; up to 3 PV lines updated in real time
+  - Full annotated analysis (explanations + `[See line]` links) shown once the engine reaches max depth
+  - `[See line]` links suppressed during live depth updates — only appear in the final result
+- **Continuous Analysis Max Depth** — Configurable max depth for continuous analysis in Settings (default 50, range 10–100); sits on the same row as the continuous analysis toggle
+- **Custom Position Editor** — Set up arbitrary board positions for custom analysis scenarios
+- **Font Settings** — Configure the analysis panel and move list font family and size; font changes applied live
+
+### Fixed
+- **Engine Freeze After Move 2** — `ReadLineAsync().WaitAsync(token)` replaced with `ReadLineAsync(token)` throughout `ChessEngineService` to prevent orphaned background reads from stealing stream data; added stop+drain+`State=Ready` in `GetBestMoveAsync` cancellation path so the engine is left clean after each move analysis
+- **MoveListBox Crash (ArgumentException)** — Fixed font disposal race between `ApplyConsoleFont` and in-flight `WM_DRAWITEM` messages; old font now deferred-disposed via `BeginInvoke` with `IsHandleCreated` guard; catch block falls back to `moveListBox.Font` (already updated) so items always render in the correct font
+- **Empty Move List** — Move list items rendered as invisible blank rows when primary font was temporarily invalid; fallback rendering with the control's current valid font ensures moves are always visible
+- **Brilliant Move Detection — Pinned Attackers** — Pinned pieces correctly excluded from the attacker list, eliminating false positives in positions with pinned defenders
+
+---
+
 ## [3.2.1] - 2026-05-05
 
 ### Fixed

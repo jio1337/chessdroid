@@ -2,11 +2,11 @@
 
 ## Overview
 
-ChessDroid is a pure offline chess analysis application that combines tactical pattern recognition with deep positional understanding inspired by world-class chess engines (Ethereal and Stockfish). As of v3.2.1, the application is centered around the Analysis Board — an interactive workspace for deep chess analysis with visual engine arrows, PV line exploration, free-draw annotation, bot mode, and full board customization.
+ChessDroid is a pure offline chess analysis application that combines tactical pattern recognition with deep positional understanding inspired by world-class chess engines (Ethereal and Stockfish). As of v3.3.0, the application is centered around the Analysis Board — an interactive workspace for deep chess analysis with visual engine arrows, PV line exploration, free-draw annotation, bot mode, continuous analysis, and full board customization.
 
 ---
 
-## System Architecture (v3.2.1)
+## System Architecture (v3.3.0)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -579,7 +579,17 @@ Create a folder in `Templates/` with 12 PNG files named: wK, wQ, wR, wB, wN, wP,
 
 ## Version History
 
-**v3.2.1** — Bug Fixes (Current)
+**v3.3.0** — Continuous Analysis & Stability (Current)
+- Continuous analysis mode: live depth-by-depth PV streaming via `go depth N`; compact display during analysis, full annotated result at max depth; `[See line]` suppressed during live updates
+- Continuous analysis max depth setting (default 50, range 10–100); `ContinuousAnalysisMaxDepth` in `AppConfig`
+- Custom position editor: arbitrary board setup for analysis
+- Font settings: configurable font family and size for analysis panel and move list; deferred font disposal via `BeginInvoke` + `IsHandleCreated` guard
+- Engine freeze fix: `ReadLineAsync(token)` throughout `ChessEngineService`; stop+drain in `GetBestMoveAsync` cancellation path
+- MoveListBox crash fix: font disposal race eliminated; fallback rendering uses `moveListBox.Font` (current valid font)
+- Brilliant move detection: pinned attackers excluded from attacker list
+- Window title: `chessdroid v3.3.0`
+
+**v3.2.1** — Bug Fixes
 - Bot mode: `TriggerAutoAnalysis` skipped in `BoardControl_MoveMade` when `_botModeActive`; only fires after bot responds
 - `UpdateMoveList()` wrapped with `isNavigating = true` to suppress spurious `MoveListBox_SelectedIndexChanged` analysis
 - `isBestMove` guard moved before centipawn thresholds in `MoveQualityAnalyzer`
@@ -653,5 +663,5 @@ https://github.com/jio1337/chessdroid/issues
 
 ---
 
-**Last Updated:** 2026-05-05
-**Document Version:** 3.2.1
+**Last Updated:** 2026-05-07
+**Document Version:** 3.3.0
