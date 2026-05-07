@@ -73,6 +73,9 @@ namespace ChessDroid
         private ChessEngineService? _botEngine;
         private CancellationTokenSource? _botMoveCts;
 
+        // Console font (managed here to allow proper disposal on change)
+        private Font _consoleFont = new Font("Consolas", 10f);
+
         public AnalysisBoardForm(AppConfig config, ChessEngineService? sharedEngineService = null)
         {
             this.config = config;
@@ -141,7 +144,7 @@ namespace ChessDroid
 
             // Standard buttons
             foreach (var btn in new[] { btnSettings, btnNewGame, btnFlipBoard, btnTakeBack, btnPrevMove,
-                                        btnNextMove, btnPlayBot, btnLoadFen, btnCopyFen, btnClassifyMoves,
+                                        btnNextMove, btnPlayBot, btnEditPosition, btnLoadFen, btnCopyFen, btnClassifyMoves,
                                         btnExportPgn, btnImportPgn })
             {
                 btn.BackColor = scheme.ButtonBackColor;
@@ -199,6 +202,22 @@ namespace ChessDroid
 
             // Update FEN display
             UpdateFenDisplay();
+
+            ApplyConsoleFont();
+        }
+
+        private void ApplyConsoleFont()
+        {
+            string family = config?.ConsoleFontFamily ?? "Consolas";
+            float size = config?.ConsoleFontSize ?? 10.0f;
+
+            var newFont = new Font(family, size);
+            _consoleFont?.Dispose();
+            _consoleFont = newFont;
+
+            analysisOutput.Font = _consoleFont;
+            moveListBox.Font = _consoleFont;
+            moveListBox.ItemHeight = Math.Max(14, (int)Math.Ceiling(_consoleFont.GetHeight()));
         }
 
         private void InitializeServices()
@@ -313,7 +332,7 @@ namespace ChessDroid
         private void LeftPanel_Resize(object? sender, EventArgs e)
         {
             // Guard against resize during initialization
-            if (boardControl == null || lblTurn == null || btnNewGame == null || lblPieces == null || cmbPieces == null)
+            if (boardControl == null || lblTurn == null || btnNewGame == null || lblPieces == null || cmbPieces == null || btnEditPosition == null)
                 return;
 
             if (sender is Panel panel)
@@ -380,8 +399,13 @@ namespace ChessDroid
 
                 // Bot button (after nav buttons)
                 int botX = btnNextMove.Right + buttonSpacing;
+                int editBtnWidth = 28;
                 btnPlayBot.Location = new Point(botX, buttonY);
-                btnPlayBot.Width = Math.Max(60, boardX + boardSize - botX);
+                btnPlayBot.Width = Math.Max(60, boardX + boardSize - botX - editBtnWidth - buttonSpacing);
+
+                // Edit position button (pencil icon, rightmost)
+                btnEditPosition.Location = new Point(btnPlayBot.Right + buttonSpacing, buttonY);
+                btnEditPosition.Width = editBtnWidth;
 
                 // FEN input row
                 int fenY = buttonY + 32;
@@ -638,6 +662,59 @@ namespace ChessDroid
                 {
                     lblStatus.Text = $"Invalid FEN: {ex.Message}";
                 }
+            }
+        }
+
+        private void LoadFenIntoBoard(string fen)
+        {
+            try
+            {
+                boardControl.LoadFEN(fen);
+                moveTree.Clear(fen);
+                moveListBox.Items.Clear();
+                displayedNodes.Clear();
+                analysisOutput.Clear();
+                evalBar?.Reset();
+                _analysisCache.Clear();
+                UpdateTurnLabel();
+                UpdateFenDisplay();
+                lblStatus.Text = "Position loaded";
+            }
+            catch (Exception ex)
+            {
+                lblStatus.Text = $"Invalid position: {ex.Message}";
+            }
+        }
+
+        private async void BtnEditPosition_Click(object? sender, EventArgs e)
+        {
+            if (matchRunning || _botModeActive)
+            {
+                lblStatus.Text = "Stop current mode before editing position";
+                return;
+            }
+
+            string currentFen = boardControl.GetFEN();
+            bool isDark = config?.Theme == "Dark";
+            string templateSet = config?.SelectedSite ?? "Lichess";
+            string templatesPath = config?.GetTemplatesPath() ?? "Templates";
+
+            using var editor = new PositionEditorForm(currentFen, templateSet, isDark, templatesPath);
+            if (editor.ShowDialog(this) == DialogResult.OK)
+            {
+                // Cancel any in-progress analysis
+                autoAnalysisCts?.Cancel();
+
+                LoadFenIntoBoard(editor.ResultFen);
+
+                // Restart engine clean — guarantees fresh state for any custom position
+                if (engineService != null)
+                {
+                    lblStatus.Text = "Restarting engine...";
+                    await engineService.RestartAsync();
+                }
+
+                _ = TriggerAutoAnalysis();
             }
         }
 
@@ -1728,11 +1805,13 @@ namespace ChessDroid
         {
             if (engineService == null)
             {
+                Debug.WriteLine("[Analysis] FAILED — engineService is null");
                 lblStatus.Text = "Engine not available";
                 return;
             }
 
             string fen = boardControl.GetFEN();
+            Debug.WriteLine($"[Analysis] Starting — FEN: {fen}  State: {engineService.State}");
             string cacheKey = GetPositionKey(fen);
             int depth = config?.EngineDepth ?? 15;
 
@@ -1761,10 +1840,11 @@ namespace ChessDroid
                 // Get engine analysis
                 int multiPV = 3; // Always get 3 lines for analysis board
 
-                var result = await engineService.GetBestMoveAsync(fen, depth, multiPV);
+                var result = await engineService.GetBestMoveAsync(fen, depth, multiPV, ct: ct);
 
                 if (string.IsNullOrEmpty(result.bestMove))
                 {
+                    Debug.WriteLine($"[Analysis] FAILED — bestMove empty. Engine state: {engineService.State}. FEN: {fen}");
                     lblStatus.Text = "Analysis failed";
 
                     return;
@@ -1887,8 +1967,9 @@ namespace ChessDroid
             // Update engine arrows on board (suppress during PV animation)
             if (!isNavigating)
             {
-                if (config?.ShowEngineArrows == true)
-                    UpdateEngineArrows(pvs);
+                int arrowCount = config?.EngineArrowCount ?? 1;
+                if (arrowCount > 0)
+                    UpdateEngineArrows(pvs, arrowCount);
                 else
                     boardControl.ClearEngineArrows();
             }
@@ -1909,26 +1990,26 @@ namespace ChessDroid
             return (fromRow, fromCol, toRow, toCol);
         }
 
-        private void UpdateEngineArrows(List<string> pvs)
+        private void UpdateEngineArrows(List<string> pvs, int arrowCount)
         {
             var arrows = new List<(int fromRow, int fromCol, int toRow, int toCol, Color color)>();
 
-            var lineConfigs = new[]
+            var colors = new[]
             {
-                (enabled: config?.ShowBestLine ?? true, index: 0, color: Color.FromArgb(180, 0, 200, 80)),      // Green
-                (enabled: config?.ShowSecondLine ?? false, index: 1, color: Color.FromArgb(180, 200, 200, 0)),   // Yellow
-                (enabled: config?.ShowThirdLine ?? false, index: 2, color: Color.FromArgb(180, 200, 60, 60))     // Red
+                Color.FromArgb(180, 0, 200, 80),    // Green  — best
+                Color.FromArgb(180, 200, 200, 0),   // Yellow — 2nd
+                Color.FromArgb(180, 200, 60, 60)    // Red    — 3rd
             };
 
-            foreach (var line in lineConfigs)
+            for (int i = 0; i < arrowCount && i < pvs.Count; i++)
             {
-                if (line.enabled && line.index < pvs.Count && !string.IsNullOrEmpty(pvs[line.index]))
+                if (!string.IsNullOrEmpty(pvs[i]))
                 {
-                    string firstMove = pvs[line.index].Split(' ')[0];
+                    string firstMove = pvs[i].Split(' ')[0];
                     if (firstMove.Length >= 4)
                     {
                         var sq = UciToSquares(firstMove);
-                        arrows.Add((sq.fromRow, sq.fromCol, sq.toRow, sq.toCol, line.color));
+                        arrows.Add((sq.fromRow, sq.fromCol, sq.toRow, sq.toCol, colors[i]));
                     }
                 }
             }

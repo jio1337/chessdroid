@@ -24,6 +24,7 @@ namespace ChessDroid.Services
         private string? lastEnginePath;
         private EngineState state = EngineState.Uninitialized;
         private readonly object stateLock = new object();
+        private readonly SemaphoreSlim _analysisSemaphore = new SemaphoreSlim(1, 1);
 
         // UCI Protocol Commands
         private const string UCI_CMD_UCI = "uci";
@@ -305,7 +306,7 @@ namespace ChessDroid.Services
         }
 
         public async Task<(string bestMove, string evaluation, List<string> pvs, List<string> evaluations, WDLInfo? wdl)> GetBestMoveAsync(
-            string fen, int depth, int multiPV, bool preserveHashTables = true)
+            string fen, int depth, int multiPV, bool preserveHashTables = true, CancellationToken ct = default)
         {
             string bestMove = "";
             string evaluation = "";
@@ -319,6 +320,16 @@ namespace ChessDroid.Services
             string[] fenParts = fen.Split(' ');
             bool whiteToMove = fenParts.Length > 1 && fenParts[1] == "w";
 
+            // Tell any running analysis to stop so the semaphore holder exits fast
+            if (State == EngineState.Analyzing && IsEngineAlive())
+                await SafeWriteLineAsync("stop");
+
+            // Serialize: only one GetBestMoveAsync at a time
+            try { await _analysisSemaphore.WaitAsync(ct); }
+            catch (OperationCanceledException) { return (bestMove, evaluation, pvs, evaluations, wdlInfo); }
+
+            try
+            {
             while (retryCount < config.MaxEngineRetries)
             {
                 // Check engine health before each attempt
@@ -397,11 +408,12 @@ namespace ChessDroid.Services
                     }
 
                     // Read analysis results
-                    using (var cts = new CancellationTokenSource(effectiveTimeout))
+                    using var timeoutCts = new CancellationTokenSource(effectiveTimeout);
+                    using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(timeoutCts.Token, ct);
                     {
                         while (IsEngineAlive())
                         {
-                            string? line = await engineOutput!.ReadLineAsync().WaitAsync(cts.Token);
+                            string? line = await engineOutput!.ReadLineAsync().WaitAsync(linkedCts.Token);
 
                             if (line == null) continue;
 
@@ -508,6 +520,11 @@ namespace ChessDroid.Services
                 }
                 catch (OperationCanceledException)
                 {
+                    if (ct.IsCancellationRequested)
+                    {
+                        Debug.WriteLine("[Analysis] Cancelled by caller — stopping retries");
+                        break;
+                    }
                     Debug.WriteLine($"Engine response timeout (attempt {retryCount + 1}/{config.MaxEngineRetries})");
                     State = EngineState.Error;
                 }
@@ -533,6 +550,8 @@ namespace ChessDroid.Services
                     await Task.Delay(200); // Give engine time to initialize
                 }
             }
+            } // end try
+            finally { _analysisSemaphore.Release(); }
 
             // Trim to requested count using GetRange (faster than LINQ Take.ToList)
             if (pvs.Count > multiPV)

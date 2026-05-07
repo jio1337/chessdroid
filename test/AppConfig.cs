@@ -20,7 +20,8 @@ namespace ChessDroid
         public bool ShowBestLine { get; set; } = true; // Show best line
         public bool ShowSecondLine { get; set; } = false; // Show 2nd best line
         public bool ShowThirdLine { get; set; } = false; // Show 3rd best line
-        public bool ShowEngineArrows { get; set; } = true; // Show engine move arrows on board
+        public bool ShowEngineArrows { get; set; } = true; // Kept for JSON backward compatibility
+        public int EngineArrowCount { get; set; } = 1;    // 0=none, 1=best only, 2=best+2nd, 3=all 3
         public bool ShowEvalBar { get; set; } = true; // Show evaluation bar
 
         // Board square colors (hex strings e.g. "#F0D9B5")
@@ -44,6 +45,10 @@ namespace ChessDroid
         public bool ShowOpeningName { get; set; } = true; // Show opening name when in known theory
         public bool ShowMoveQuality { get; set; } = true; // Show move quality indicators (brilliant, best, good, etc.)
 
+
+        // Console font settings
+        public string ConsoleFontFamily { get; set; } = "Consolas";
+        public float ConsoleFontSize { get; set; } = 10.0f;
 
         // Opening book settings (Polyglot .bin format)
         public string OpeningBooksFolder { get; set; } = "Books"; // Folder containing Polyglot .bin files (loads all)
@@ -151,6 +156,7 @@ namespace ChessDroid
             ShowSecondLine = other.ShowSecondLine;
             ShowThirdLine = other.ShowThirdLine;
             ShowEngineArrows = other.ShowEngineArrows;
+            EngineArrowCount = other.EngineArrowCount;
             ShowEvalBar = other.ShowEvalBar;
             LightSquareColor = other.LightSquareColor;
             DarkSquareColor = other.DarkSquareColor;
@@ -166,6 +172,9 @@ namespace ChessDroid
             Aggressiveness = other.Aggressiveness;
             ShowOpeningName = other.ShowOpeningName;
             ShowMoveQuality = other.ShowMoveQuality;
+
+            ConsoleFontFamily = other.ConsoleFontFamily;
+            ConsoleFontSize = other.ConsoleFontSize;
 
             OpeningBooksFolder = other.OpeningBooksFolder;
             UseOpeningBook = other.UseOpeningBook;

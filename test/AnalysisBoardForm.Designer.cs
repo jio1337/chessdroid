@@ -45,7 +45,7 @@ namespace ChessDroid
             btnPrevMove = new Button();
             btnNextMove = new Button();
             btnPlayBot = new Button();
-
+            btnEditPosition = new Button();
             lblFen = new Label();
             txtFen = new TextBox();
             btnLoadFen = new Button();
@@ -127,7 +127,7 @@ namespace ChessDroid
             leftPanel.Controls.Add(btnPrevMove);
             leftPanel.Controls.Add(btnNextMove);
             leftPanel.Controls.Add(btnPlayBot);
-
+            leftPanel.Controls.Add(btnEditPosition);
             leftPanel.Controls.Add(lblFen);
             leftPanel.Controls.Add(txtFen);
             leftPanel.Controls.Add(btnLoadFen);
@@ -250,9 +250,9 @@ namespace ChessDroid
             btnNextMove.TabIndex = 13;
             btnNextMove.Text = "▶";
             btnNextMove.Click += BtnNextMove_Click;
-            //
+            // 
             // btnPlayBot
-            //
+            // 
             btnPlayBot.FlatStyle = FlatStyle.Flat;
             btnPlayBot.Font = new Font("Courier New", 8.25F);
             btnPlayBot.Location = new Point(408, 530);
@@ -261,8 +261,18 @@ namespace ChessDroid
             btnPlayBot.TabIndex = 24;
             btnPlayBot.Text = "vs Bot";
             btnPlayBot.Click += BtnPlayBot_Click;
-
-            //
+            // 
+            // btnEditPosition
+            // 
+            btnEditPosition.FlatStyle = FlatStyle.Flat;
+            btnEditPosition.Font = new Font("Segoe UI", 10F);
+            btnEditPosition.Location = new Point(478, 530);
+            btnEditPosition.Name = "btnEditPosition";
+            btnEditPosition.Size = new Size(28, 28);
+            btnEditPosition.TabIndex = 25;
+            btnEditPosition.Text = "✏";
+            btnEditPosition.Click += BtnEditPosition_Click;
+            // 
             // lblFen
             // 
             lblFen.Font = new Font("Courier New", 8.25F, FontStyle.Regular, GraphicsUnit.Point, 0);
@@ -357,7 +367,7 @@ namespace ChessDroid
             btnClassifyMoves.Name = "btnClassifyMoves";
             btnClassifyMoves.Size = new Size(114, 37);
             btnClassifyMoves.TabIndex = 0;
-            btnClassifyMoves.Text = "Classify";
+            btnClassifyMoves.Text = "Analyze";
             btnClassifyMoves.Click += BtnClassifyMoves_Click;
             // 
             // btnExportPgn
@@ -714,6 +724,7 @@ namespace ChessDroid
         private Button btnPrevMove;
         private Button btnNextMove;
         private Button btnPlayBot;
+        private Button btnEditPosition;
 
         private Label lblFen;
         private TextBox txtFen;

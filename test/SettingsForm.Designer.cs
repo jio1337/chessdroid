@@ -44,21 +44,23 @@ namespace ChessDroid
             grpDisplay = new GroupBox();
             cmbEngine = new ComboBox();
             lblEngine = new Label();
-            grpBoardColors = new GroupBox();
-            lblLightSquares = new Label();
-            btnLightColor = new Button();
-            lblDarkSquares = new Label();
-            btnDarkColor = new Button();
+            cmbArrowCount = new ComboBox();
+            lblEngineArrows = new Label();
+            chkEvalBar = new CheckBox();
+            lblEvalBar = new Label();
             chkShowThird = new CheckBox();
             lblThird = new Label();
             chkShowSecond = new CheckBox();
             lblSecond = new Label();
             chkShowBest = new CheckBox();
             lblBest = new Label();
-            chkEngineArrows = new CheckBox();
-            lblEngineArrows = new Label();
-            chkEvalBar = new CheckBox();
-            lblEvalBar = new Label();
+            lblConsoleFont = new Label();
+            btnChooseFont = new Button();
+            grpBoardColors = new GroupBox();
+            lblLightSquares = new Label();
+            btnLightColor = new Button();
+            lblDarkSquares = new Label();
+            btnDarkColor = new Button();
             grpExplanations = new GroupBox();
             cmbComplexity = new ComboBox();
             lblComplexity = new Label();
@@ -82,13 +84,13 @@ namespace ChessDroid
             btnCancel = new Button();
             chkDarkMode = new CheckBox();
             toolTip1 = new ToolTip(components);
-            grpBoardColors.SuspendLayout();
             grpEngine.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)numMinAnalysisTime).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numMoveTimeout).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numMaxRetries).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numEngineTimeout).BeginInit();
             grpDisplay.SuspendLayout();
+            grpBoardColors.SuspendLayout();
             grpExplanations.SuspendLayout();
             grpLc0Features.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)trkAggressiveness).BeginInit();
@@ -219,7 +221,7 @@ namespace ChessDroid
             // 
             grpDisplay.Controls.Add(cmbEngine);
             grpDisplay.Controls.Add(lblEngine);
-            grpDisplay.Controls.Add(chkEngineArrows);
+            grpDisplay.Controls.Add(cmbArrowCount);
             grpDisplay.Controls.Add(lblEngineArrows);
             grpDisplay.Controls.Add(chkEvalBar);
             grpDisplay.Controls.Add(lblEvalBar);
@@ -229,10 +231,12 @@ namespace ChessDroid
             grpDisplay.Controls.Add(lblSecond);
             grpDisplay.Controls.Add(chkShowBest);
             grpDisplay.Controls.Add(lblBest);
+            grpDisplay.Controls.Add(lblConsoleFont);
+            grpDisplay.Controls.Add(btnChooseFont);
             grpDisplay.ForeColor = Color.White;
             grpDisplay.Location = new Point(13, 204);
             grpDisplay.Name = "grpDisplay";
-            grpDisplay.Size = new Size(298, 159);
+            grpDisplay.Size = new Size(298, 181);
             grpDisplay.TabIndex = 2;
             grpDisplay.TabStop = false;
             grpDisplay.Text = "Display Options";
@@ -241,9 +245,9 @@ namespace ChessDroid
             // 
             cmbEngine.DropDownStyle = ComboBoxStyle.DropDownList;
             cmbEngine.FormattingEnabled = true;
-            cmbEngine.Location = new Point(182, 18);
+            cmbEngine.Location = new Point(166, 18);
             cmbEngine.Name = "cmbEngine";
-            cmbEngine.Size = new Size(100, 22);
+            cmbEngine.Size = new Size(116, 22);
             cmbEngine.TabIndex = 7;
             toolTip1.SetToolTip(cmbEngine, "Select chess engine to use for analysis");
             // 
@@ -255,68 +259,66 @@ namespace ChessDroid
             lblEngine.TabIndex = 6;
             lblEngine.Text = "Chess Engine:";
             // 
-            // chkShowThird
+            // cmbArrowCount
             // 
-            chkShowThird.AutoSize = true;
-            chkShowThird.Location = new Point(182, 88);
-            chkShowThird.Name = "chkShowThird";
-            chkShowThird.Size = new Size(15, 14);
-            chkShowThird.TabIndex = 5;
-            toolTip1.SetToolTip(chkShowThird, "Show 3rd best move line");
-            chkShowThird.UseVisualStyleBackColor = true;
-            //
-            // lblThird
-            //
-            lblThird.Location = new Point(10, 86);
-            lblThird.Name = "lblThird";
-            lblThird.Size = new Size(150, 19);
-            lblThird.TabIndex = 4;
-            lblThird.Text = "Show 3rd Best Line:";
-            //
-            // chkEngineArrows
-            //
-            chkEngineArrows.AutoSize = true;
-            chkEngineArrows.Checked = true;
-            chkEngineArrows.CheckState = CheckState.Checked;
-            chkEngineArrows.Location = new Point(182, 108);
-            chkEngineArrows.Name = "chkEngineArrows";
-            chkEngineArrows.Size = new Size(15, 14);
-            chkEngineArrows.TabIndex = 9;
-            toolTip1.SetToolTip(chkEngineArrows, "Show engine move arrows on the board");
-            chkEngineArrows.UseVisualStyleBackColor = true;
-            //
+            cmbArrowCount.DropDownStyle = ComboBoxStyle.DropDownList;
+            cmbArrowCount.Items.AddRange(new object[] { "None", "Best only", "Best + 2nd", "All 3" });
+            cmbArrowCount.Location = new Point(166, 102);
+            cmbArrowCount.Name = "cmbArrowCount";
+            cmbArrowCount.Size = new Size(116, 22);
+            cmbArrowCount.TabIndex = 9;
+            toolTip1.SetToolTip(cmbArrowCount, "Number of engine move arrows shown on the board (independent of lines in output)");
+            // 
             // lblEngineArrows
-            //
-            lblEngineArrows.Location = new Point(10, 106);
+            // 
+            lblEngineArrows.Location = new Point(10, 104);
             lblEngineArrows.Name = "lblEngineArrows";
-            lblEngineArrows.Size = new Size(170, 19);
+            lblEngineArrows.Size = new Size(140, 19);
             lblEngineArrows.TabIndex = 8;
-            lblEngineArrows.Text = "Show Engine Arrows:";
-            //
+            lblEngineArrows.Text = "Engine Arrows:";
+            // 
             // chkEvalBar
-            //
+            // 
             chkEvalBar.AutoSize = true;
             chkEvalBar.Checked = true;
             chkEvalBar.CheckState = CheckState.Checked;
-            chkEvalBar.Location = new Point(182, 128);
+            chkEvalBar.Location = new Point(166, 130);
             chkEvalBar.Name = "chkEvalBar";
             chkEvalBar.Size = new Size(15, 14);
             chkEvalBar.TabIndex = 11;
             toolTip1.SetToolTip(chkEvalBar, "Show the evaluation bar on the left of the board");
             chkEvalBar.UseVisualStyleBackColor = true;
-            //
+            // 
             // lblEvalBar
-            //
-            lblEvalBar.Location = new Point(10, 126);
+            // 
+            lblEvalBar.Location = new Point(10, 128);
             lblEvalBar.Name = "lblEvalBar";
-            lblEvalBar.Size = new Size(170, 19);
+            lblEvalBar.Size = new Size(150, 19);
             lblEvalBar.TabIndex = 10;
             lblEvalBar.Text = "Show Eval Bar:";
-            //
+            // 
+            // chkShowThird
+            // 
+            chkShowThird.AutoSize = true;
+            chkShowThird.Location = new Point(166, 83);
+            chkShowThird.Name = "chkShowThird";
+            chkShowThird.Size = new Size(15, 14);
+            chkShowThird.TabIndex = 5;
+            toolTip1.SetToolTip(chkShowThird, "Show 3rd best move line");
+            chkShowThird.UseVisualStyleBackColor = true;
+            // 
+            // lblThird
+            // 
+            lblThird.Location = new Point(10, 82);
+            lblThird.Name = "lblThird";
+            lblThird.Size = new Size(150, 19);
+            lblThird.TabIndex = 4;
+            lblThird.Text = "Show 3rd Best Line:";
+            // 
             // chkShowSecond
             // 
             chkShowSecond.AutoSize = true;
-            chkShowSecond.Location = new Point(182, 70);
+            chkShowSecond.Location = new Point(166, 65);
             chkShowSecond.Name = "chkShowSecond";
             chkShowSecond.Size = new Size(15, 14);
             chkShowSecond.TabIndex = 3;
@@ -325,7 +327,7 @@ namespace ChessDroid
             // 
             // lblSecond
             // 
-            lblSecond.Location = new Point(10, 68);
+            lblSecond.Location = new Point(10, 64);
             lblSecond.Name = "lblSecond";
             lblSecond.Size = new Size(150, 19);
             lblSecond.TabIndex = 2;
@@ -336,7 +338,7 @@ namespace ChessDroid
             chkShowBest.AutoSize = true;
             chkShowBest.Checked = true;
             chkShowBest.CheckState = CheckState.Checked;
-            chkShowBest.Location = new Point(182, 52);
+            chkShowBest.Location = new Point(166, 47);
             chkShowBest.Name = "chkShowBest";
             chkShowBest.Size = new Size(15, 14);
             chkShowBest.TabIndex = 1;
@@ -345,72 +347,93 @@ namespace ChessDroid
             // 
             // lblBest
             // 
-            lblBest.Location = new Point(10, 50);
+            lblBest.Location = new Point(10, 46);
             lblBest.Name = "lblBest";
             lblBest.Size = new Size(150, 19);
             lblBest.TabIndex = 0;
             lblBest.Text = "Show Best Line:";
-            //
+            // 
+            // lblConsoleFont
+            // 
+            lblConsoleFont.Location = new Point(10, 150);
+            lblConsoleFont.Name = "lblConsoleFont";
+            lblConsoleFont.Size = new Size(104, 19);
+            lblConsoleFont.TabIndex = 12;
+            lblConsoleFont.Text = "Console Font:";
+            toolTip1.SetToolTip(lblConsoleFont, "Font used in analysis output and move list");
+            // 
+            // btnChooseFont
+            // 
+            btnChooseFont.FlatStyle = FlatStyle.Flat;
+            btnChooseFont.Location = new Point(166, 148);
+            btnChooseFont.Name = "btnChooseFont";
+            btnChooseFont.Size = new Size(116, 22);
+            btnChooseFont.TabIndex = 13;
+            btnChooseFont.Text = "Consolas 10pt";
+            btnChooseFont.TextAlign = ContentAlignment.MiddleLeft;
+            toolTip1.SetToolTip(btnChooseFont, "Click to choose font for analysis output and move list");
+            btnChooseFont.Click += BtnChooseFont_Click;
+            // 
             // grpBoardColors
-            //
+            // 
             grpBoardColors.Controls.Add(lblLightSquares);
             grpBoardColors.Controls.Add(btnLightColor);
             grpBoardColors.Controls.Add(lblDarkSquares);
             grpBoardColors.Controls.Add(btnDarkColor);
             grpBoardColors.ForeColor = Color.White;
-            grpBoardColors.Location = new Point(13, 369);
+            grpBoardColors.Location = new Point(13, 391);
             grpBoardColors.Name = "grpBoardColors";
-            grpBoardColors.Size = new Size(298, 75);
+            grpBoardColors.Size = new Size(298, 79);
             grpBoardColors.TabIndex = 12;
             grpBoardColors.TabStop = false;
             grpBoardColors.Text = "Board Colors";
-            //
+            // 
             // lblLightSquares
-            //
+            // 
             lblLightSquares.Location = new Point(10, 22);
             lblLightSquares.Name = "lblLightSquares";
             lblLightSquares.Size = new Size(105, 19);
             lblLightSquares.TabIndex = 0;
             lblLightSquares.Text = "Light Squares:";
-            //
+            // 
             // btnLightColor
-            //
-            btnLightColor.FlatStyle = FlatStyle.Flat;
-            btnLightColor.FlatAppearance.BorderColor = Color.Gray;
+            // 
             btnLightColor.BackColor = Color.FromArgb(240, 217, 181);
+            btnLightColor.Cursor = Cursors.Hand;
+            btnLightColor.FlatAppearance.BorderColor = Color.Gray;
+            btnLightColor.FlatStyle = FlatStyle.Flat;
             btnLightColor.Location = new Point(120, 18);
             btnLightColor.Name = "btnLightColor";
-            btnLightColor.Size = new Size(130, 22);
+            btnLightColor.Size = new Size(162, 22);
             btnLightColor.TabIndex = 1;
-            btnLightColor.Text = "";
-            btnLightColor.Cursor = Cursors.Hand;
             toolTip1.SetToolTip(btnLightColor, "Click to choose light square color");
+            btnLightColor.UseVisualStyleBackColor = false;
             btnLightColor.Click += BtnLightColor_Click;
-            //
+            // 
             // lblDarkSquares
-            //
+            // 
             lblDarkSquares.Location = new Point(10, 50);
             lblDarkSquares.Name = "lblDarkSquares";
             lblDarkSquares.Size = new Size(105, 19);
             lblDarkSquares.TabIndex = 2;
             lblDarkSquares.Text = "Dark Squares:";
-            //
+            // 
             // btnDarkColor
-            //
-            btnDarkColor.FlatStyle = FlatStyle.Flat;
-            btnDarkColor.FlatAppearance.BorderColor = Color.Gray;
+            // 
             btnDarkColor.BackColor = Color.FromArgb(181, 136, 99);
+            btnDarkColor.Cursor = Cursors.Hand;
+            btnDarkColor.FlatAppearance.BorderColor = Color.Gray;
+            btnDarkColor.FlatStyle = FlatStyle.Flat;
             btnDarkColor.Location = new Point(120, 46);
             btnDarkColor.Name = "btnDarkColor";
-            btnDarkColor.Size = new Size(130, 22);
+            btnDarkColor.Size = new Size(162, 22);
             btnDarkColor.TabIndex = 3;
-            btnDarkColor.Text = "";
-            btnDarkColor.Cursor = Cursors.Hand;
             toolTip1.SetToolTip(btnDarkColor, "Click to choose dark square color");
+            btnDarkColor.UseVisualStyleBackColor = false;
             btnDarkColor.Click += BtnDarkColor_Click;
-            //
+            // 
             // grpExplanations
-            //
+            // 
             grpExplanations.Controls.Add(cmbComplexity);
             grpExplanations.Controls.Add(lblComplexity);
             grpExplanations.Controls.Add(chkTactical);
@@ -425,7 +448,7 @@ namespace ChessDroid
             grpExplanations.ForeColor = Color.White;
             grpExplanations.Location = new Point(317, 13);
             grpExplanations.Name = "grpExplanations";
-            grpExplanations.Size = new Size(255, 308);
+            grpExplanations.Size = new Size(255, 278);
             grpExplanations.TabIndex = 3;
             grpExplanations.TabStop = false;
             grpExplanations.Text = "Explanation Settings";
@@ -505,9 +528,9 @@ namespace ChessDroid
             chkOpening.Text = "Opening Principles";
             toolTip1.SetToolTip(chkOpening, "Show center control, development");
             chkOpening.UseVisualStyleBackColor = true;
-            //
+            // 
             // chkThreats
-            //
+            // 
             chkThreats.AutoSize = true;
             chkThreats.Checked = true;
             chkThreats.CheckState = CheckState.Checked;
@@ -583,7 +606,7 @@ namespace ChessDroid
             grpLc0Features.Controls.Add(trkAggressiveness);
             grpLc0Features.Controls.Add(lblAggressivenessValue);
             grpLc0Features.ForeColor = Color.White;
-            grpLc0Features.Location = new Point(317, 327);
+            grpLc0Features.Location = new Point(317, 301);
             grpLc0Features.Name = "grpLc0Features";
             grpLc0Features.Size = new Size(255, 146);
             grpLc0Features.TabIndex = 9;
@@ -635,7 +658,7 @@ namespace ChessDroid
             // 
             btnSave.FlatStyle = FlatStyle.Popup;
             btnSave.ForeColor = SystemColors.ControlLightLight;
-            btnSave.Location = new Point(12, 466);
+            btnSave.Location = new Point(344, 462);
             btnSave.Name = "btnSave";
             btnSave.Size = new Size(100, 28);
             btnSave.TabIndex = 4;
@@ -647,7 +670,7 @@ namespace ChessDroid
             // 
             btnReset.FlatStyle = FlatStyle.Popup;
             btnReset.ForeColor = SystemColors.ControlLightLight;
-            btnReset.Location = new Point(12, 501);
+            btnReset.Location = new Point(344, 497);
             btnReset.Name = "btnReset";
             btnReset.Size = new Size(100, 28);
             btnReset.TabIndex = 5;
@@ -659,7 +682,7 @@ namespace ChessDroid
             // 
             btnHelp.FlatStyle = FlatStyle.Popup;
             btnHelp.ForeColor = SystemColors.ControlLightLight;
-            btnHelp.Location = new Point(195, 466);
+            btnHelp.Location = new Point(450, 462);
             btnHelp.Name = "btnHelp";
             btnHelp.Size = new Size(100, 28);
             btnHelp.TabIndex = 6;
@@ -672,7 +695,7 @@ namespace ChessDroid
             btnCancel.DialogResult = DialogResult.Cancel;
             btnCancel.FlatStyle = FlatStyle.Popup;
             btnCancel.ForeColor = SystemColors.ControlLightLight;
-            btnCancel.Location = new Point(195, 501);
+            btnCancel.Location = new Point(450, 497);
             btnCancel.Name = "btnCancel";
             btnCancel.Size = new Size(100, 28);
             btnCancel.TabIndex = 7;
@@ -686,7 +709,7 @@ namespace ChessDroid
             chkDarkMode.Checked = true;
             chkDarkMode.CheckState = CheckState.Checked;
             chkDarkMode.ForeColor = Color.White;
-            chkDarkMode.Location = new Point(13, 450);
+            chkDarkMode.Location = new Point(13, 497);
             chkDarkMode.Name = "chkDarkMode";
             chkDarkMode.Size = new Size(89, 18);
             chkDarkMode.TabIndex = 8;
@@ -702,7 +725,7 @@ namespace ChessDroid
             AutoSizeMode = AutoSizeMode.GrowAndShrink;
             BackColor = Color.FromArgb(45, 45, 48);
             CancelButton = btnCancel;
-            ClientSize = new Size(585, 543);
+            ClientSize = new Size(585, 541);
             Controls.Add(chkDarkMode);
             Controls.Add(btnCancel);
             Controls.Add(btnHelp);
@@ -726,9 +749,9 @@ namespace ChessDroid
             ((System.ComponentModel.ISupportInitialize)numMoveTimeout).EndInit();
             ((System.ComponentModel.ISupportInitialize)numMaxRetries).EndInit();
             ((System.ComponentModel.ISupportInitialize)numEngineTimeout).EndInit();
-            grpBoardColors.ResumeLayout(false);
             grpDisplay.ResumeLayout(false);
             grpDisplay.PerformLayout();
+            grpBoardColors.ResumeLayout(false);
             grpExplanations.ResumeLayout(false);
             grpExplanations.PerformLayout();
             grpLc0Features.ResumeLayout(false);
@@ -761,10 +784,12 @@ namespace ChessDroid
         private System.Windows.Forms.Label lblSecond;
         private System.Windows.Forms.CheckBox chkShowBest;
         private System.Windows.Forms.Label lblBest;
-        private System.Windows.Forms.CheckBox chkEngineArrows;
+        private System.Windows.Forms.ComboBox cmbArrowCount;
         private System.Windows.Forms.Label lblEngineArrows;
         private System.Windows.Forms.CheckBox chkEvalBar;
         private System.Windows.Forms.Label lblEvalBar;
+        private System.Windows.Forms.Label lblConsoleFont;
+        private System.Windows.Forms.Button btnChooseFont;
         private System.Windows.Forms.GroupBox grpBoardColors;
         private System.Windows.Forms.Label lblLightSquares;
         private System.Windows.Forms.Button btnLightColor;

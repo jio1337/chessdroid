@@ -4,6 +4,8 @@ namespace ChessDroid
     {
         private AppConfig config;
         private readonly Action? onConfigChanged;
+        private string _selectedFontFamily = "Consolas";
+        private float _selectedFontSize = 10.0f;
 
         public SettingsForm(AppConfig config, Action? onConfigChanged = null)
         {
@@ -92,8 +94,12 @@ namespace ChessDroid
             chkShowBest.Checked = config.ShowBestLine;
             chkShowSecond.Checked = config.ShowSecondLine;
             chkShowThird.Checked = config.ShowThirdLine;
-            chkEngineArrows.Checked = config.ShowEngineArrows;
+            cmbArrowCount.SelectedIndex = Math.Clamp(config.EngineArrowCount, 0, 3);
             chkEvalBar.Checked = config.ShowEvalBar;
+
+            _selectedFontFamily = config.ConsoleFontFamily;
+            _selectedFontSize = config.ConsoleFontSize;
+            btnChooseFont.Text = $"{_selectedFontFamily} {_selectedFontSize:0.#}pt";
 
             // Board colors
             try { btnLightColor.BackColor = ColorTranslator.FromHtml(config.LightSquareColor); } catch { btnLightColor.BackColor = Color.FromArgb(240, 217, 181); }
@@ -146,8 +152,10 @@ namespace ChessDroid
             config.ShowBestLine = chkShowBest.Checked;
             config.ShowSecondLine = chkShowSecond.Checked;
             config.ShowThirdLine = chkShowThird.Checked;
-            config.ShowEngineArrows = chkEngineArrows.Checked;
+            config.EngineArrowCount = cmbArrowCount.SelectedIndex;
             config.ShowEvalBar = chkEvalBar.Checked;
+            config.ConsoleFontFamily = _selectedFontFamily;
+            config.ConsoleFontSize = _selectedFontSize;
             config.LightSquareColor = ColorTranslator.ToHtml(btnLightColor.BackColor);
             config.DarkSquareColor = ColorTranslator.ToHtml(btnDarkColor.BackColor);
 
@@ -205,6 +213,22 @@ namespace ChessDroid
         private void BtnCancel_Click(object? sender, EventArgs e)
         {
             this.Close();
+        }
+
+        private void BtnChooseFont_Click(object? sender, EventArgs e)
+        {
+            using var dlg = new FontDialog
+            {
+                Font = new Font(_selectedFontFamily, _selectedFontSize),
+                ShowEffects = false,
+                AllowScriptChange = false
+            };
+            if (dlg.ShowDialog(this) == DialogResult.OK)
+            {
+                _selectedFontFamily = dlg.Font.FontFamily.Name;
+                _selectedFontSize = dlg.Font.Size;
+                btnChooseFont.Text = $"{_selectedFontFamily} {_selectedFontSize:0.#}pt";
+            }
         }
 
         private void BtnLightColor_Click(object? sender, EventArgs e)
@@ -279,6 +303,11 @@ namespace ChessDroid
                     {
                         chk.ForeColor = Color.White;
                         chk.BackColor = Color.FromArgb(45, 45, 48);
+                    }
+                    else if (ctrl is Button btn)
+                    {
+                        btn.ForeColor = Color.White;
+                        btn.BackColor = Color.FromArgb(60, 60, 65);
                     }
                 }
 
@@ -397,6 +426,11 @@ namespace ChessDroid
                     {
                         chk.ForeColor = Color.Black;
                         chk.BackColor = Color.WhiteSmoke;
+                    }
+                    else if (ctrl is Button btn)
+                    {
+                        btn.ForeColor = Color.Black;
+                        btn.BackColor = Color.White;
                     }
                 }
 
