@@ -2442,13 +2442,6 @@ namespace ChessDroid.Services
                 richTextBox.AppendText($" {prefix} {FormatEvaluation(evals[i])}  ");
                 richTextBox.SelectionColor = GetThemeColor(Color.LightGray, Color.Black);
                 richTextBox.AppendText(san);
-                richTextBox.AppendText("  ");
-
-                int start = richTextBox.TextLength;
-                richTextBox.SelectionColor = GetThemeColor(Color.Cyan, Color.RoyalBlue);
-                richTextBox.AppendText("[See line]");
-                _seeLineMarkers.Add((start, richTextBox.TextLength - start, pvs[i], fen));
-
                 richTextBox.AppendText(Environment.NewLine);
                 ResetFormatting();
             }
