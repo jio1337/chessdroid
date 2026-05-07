@@ -1812,8 +1812,47 @@ namespace ChessDroid
 
             string fen = boardControl.GetFEN();
             Debug.WriteLine($"[Analysis] Starting — FEN: {fen}  State: {engineService.State}");
-            string cacheKey = GetPositionKey(fen);
             int depth = config?.EngineDepth ?? 15;
+            int multiPV = 3;
+
+            if (config?.ContinuousAnalysis == true)
+            {
+                lblStatus.Text = "Analyzing...";
+                try
+                {
+                    await engineService.RunContinuousAnalysisAsync(fen, multiPV,
+                        (bestMove, eval, pvs, evals, wdl, currentDepth) =>
+                        {
+                            if (ct.IsCancellationRequested) return;
+                            if (InvokeRequired)
+                            {
+                                BeginInvoke(() =>
+                                {
+                                    if (ct.IsCancellationRequested) return;
+                                    lblStatus.Text = $"Analyzing... depth {currentDepth}";
+                                    DisplayAnalysisResult(fen, bestMove, eval, pvs, evals, wdl, currentDepth, fromCache: false);
+                                });
+                            }
+                            else
+                            {
+                                lblStatus.Text = $"Analyzing... depth {currentDepth}";
+                                DisplayAnalysisResult(fen, bestMove, eval, pvs, evals, wdl, currentDepth, fromCache: false);
+                            }
+                        }, ct);
+                }
+                catch (Exception ex)
+                {
+                    if (!ct.IsCancellationRequested)
+                    {
+                        lblStatus.Text = $"Analysis error: {ex.Message}";
+                        Debug.WriteLine($"Analysis error: {ex}");
+                    }
+                }
+                return;
+            }
+
+            // Fixed-depth mode
+            string cacheKey = GetPositionKey(fen);
 
             // Check if depth setting changed - invalidate cache if so
             if (_cachedDepth != depth)
@@ -1826,7 +1865,6 @@ namespace ChessDroid
             if (_analysisCache.TryGetValue(cacheKey, out var cached) &&
                 cached.Depth >= depth)
             {
-                // Use cached result - instant display
                 DisplayAnalysisResult(fen, cached.BestMove, cached.Evaluation,
                     cached.PVs, cached.Evaluations, cached.WDL, cached.Depth, fromCache: true);
                 return;
@@ -1834,26 +1872,20 @@ namespace ChessDroid
 
             lblStatus.Text = "Analyzing...";
 
-
             try
             {
-                // Get engine analysis
-                int multiPV = 3; // Always get 3 lines for analysis board
-
                 var result = await engineService.GetBestMoveAsync(fen, depth, multiPV, ct: ct);
 
                 if (string.IsNullOrEmpty(result.bestMove))
                 {
                     Debug.WriteLine($"[Analysis] FAILED — bestMove empty. Engine state: {engineService.State}. FEN: {fen}");
                     lblStatus.Text = "Analysis failed";
-
                     return;
                 }
 
                 var pvs = result.pvs ?? new List<string>();
                 var evals = result.evaluations ?? new List<string>();
 
-                // Cache the result regardless — it's valid for this position
                 _analysisCache[cacheKey] = new CachedAnalysis
                 {
                     BestMove = result.bestMove,
@@ -1868,17 +1900,16 @@ namespace ChessDroid
                 if (ct.IsCancellationRequested || GetPositionKey(boardControl.GetFEN()) != cacheKey)
                     return;
 
-                // Display results
                 DisplayAnalysisResult(fen, result.bestMove, result.evaluation,
                     pvs, evals, result.wdl, depth, fromCache: false);
             }
             catch (Exception ex)
             {
-                lblStatus.Text = $"Analysis error: {ex.Message}";
-                Debug.WriteLine($"Analysis error: {ex}");
-            }
-            finally
-            {
+                if (!ct.IsCancellationRequested)
+                {
+                    lblStatus.Text = $"Analysis error: {ex.Message}";
+                    Debug.WriteLine($"Analysis error: {ex}");
+                }
             }
         }
 

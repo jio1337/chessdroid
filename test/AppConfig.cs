@@ -46,6 +46,9 @@ namespace ChessDroid
         public bool ShowMoveQuality { get; set; } = true; // Show move quality indicators (brilliant, best, good, etc.)
 
 
+        // Analysis mode
+        public bool ContinuousAnalysis { get; set; } = false; // true = go infinite (live depth updates), false = fixed depth
+
         // Console font settings
         public string ConsoleFontFamily { get; set; } = "Consolas";
         public float ConsoleFontSize { get; set; } = 10.0f;
@@ -173,6 +176,7 @@ namespace ChessDroid
             ShowOpeningName = other.ShowOpeningName;
             ShowMoveQuality = other.ShowMoveQuality;
 
+            ContinuousAnalysis = other.ContinuousAnalysis;
             ConsoleFontFamily = other.ConsoleFontFamily;
             ConsoleFontSize = other.ConsoleFontSize;
 

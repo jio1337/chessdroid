@@ -124,6 +124,8 @@ namespace ChessDroid
             chkMoveQuality.Checked = config.ShowMoveQuality;
             chkBookMoves.Checked = config.ShowBookMoves;
 
+            chkContinuousAnalysis.Checked = config.ContinuousAnalysis;
+
             // Load theme preference
             chkDarkMode.Checked = config.Theme == "Dark";
             ApplyTheme(config.Theme == "Dark");
@@ -174,6 +176,7 @@ namespace ChessDroid
             config.ShowOpeningName = chkOpeningName.Checked;
             config.ShowMoveQuality = chkMoveQuality.Checked;
             config.ShowBookMoves = chkBookMoves.Checked;
+            config.ContinuousAnalysis = chkContinuousAnalysis.Checked;
 
             config.Save();
 
@@ -280,6 +283,11 @@ namespace ChessDroid
                     {
                         cmb.BackColor = Color.FromArgb(60, 60, 65);
                         cmb.ForeColor = Color.White;
+                    }
+                    else if (ctrl is CheckBox chk)
+                    {
+                        chk.ForeColor = Color.White;
+                        chk.BackColor = Color.FromArgb(45, 45, 48);
                     }
                 }
 
@@ -403,6 +411,11 @@ namespace ChessDroid
                     {
                         cmb.BackColor = Color.White;
                         cmb.ForeColor = Color.Black;
+                    }
+                    else if (ctrl is CheckBox chk)
+                    {
+                        chk.ForeColor = Color.Black;
+                        chk.BackColor = Color.WhiteSmoke;
                     }
                 }
 

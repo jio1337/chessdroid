@@ -686,6 +686,153 @@ namespace ChessDroid.Services
         }
 
         /// <summary>
+        /// Sends "go infinite" and streams live analysis updates as the engine searches deeper.
+        /// onUpdate(bestMove, eval, pvs, evals, wdl, depth) is called each time a full depth
+        /// completes. Cancelling ct sends "stop" and drains the bestmove response cleanly.
+        /// </summary>
+        public async Task RunContinuousAnalysisAsync(
+            string fen,
+            int multiPV,
+            Action<string, string, List<string>, List<string>, WDLInfo?, int> onUpdate,
+            CancellationToken ct)
+        {
+            if (State == EngineState.Analyzing && IsEngineAlive())
+                await SafeWriteLineAsync("stop");
+
+            try { await _analysisSemaphore.WaitAsync(ct); }
+            catch (OperationCanceledException) { return; }
+
+            try
+            {
+                if (!IsEngineAlive())
+                {
+                    await RestartAsync();
+                    if (!IsEngineAlive()) return;
+                }
+                if (!await SyncWithEngineAsync()) return;
+
+                await SafeWriteLineAsync($"{UCI_CMD_SETOPTION} MultiPV value {multiPV}");
+                await SafeWriteLineAsync($"{UCI_CMD_POSITION} {fen}");
+
+                bool whiteToMove = fen.Split(' ') is { Length: > 1 } p && p[1] == "w";
+
+                State = EngineState.Analyzing;
+                await SafeWriteLineAsync("go infinite");
+
+                int    currentDepth    = 0;
+                int    highestMpvSeen  = 0;
+                var    pvBuffer        = new string[multiPV];
+                var    evalBuffer      = new string[multiPV];
+                string bestMove        = "";
+                string bestEval        = "";
+                WDLInfo? wdl           = null;
+
+                void FireUpdate(int depth)
+                {
+                    if (string.IsNullOrEmpty(bestMove)) return;
+                    var pvs   = pvBuffer.Take(Math.Max(1, highestMpvSeen)).ToList();
+                    var evals = evalBuffer.Take(Math.Max(1, highestMpvSeen)).ToList();
+                    onUpdate(bestMove, bestEval, pvs, evals, wdl, depth);
+                }
+
+                try
+                {
+                    while (IsEngineAlive())
+                    {
+                        string? line = await engineOutput!.ReadLineAsync().WaitAsync(ct);
+                        if (line == null) continue;
+                        if (line.StartsWith(UCI_RESPONSE_BESTMOVE)) break;
+                        if (!line.StartsWith(UCI_RESPONSE_INFO) || !line.Contains(UCI_TOKEN_PV)) continue;
+
+                        var tokens = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                        int    depth    = currentDepth;
+                        int    mpv      = 1;
+                        string lineEval = "";
+                        var    pvMoves  = new List<string>();
+                        WDLInfo? lineWdl = null;
+
+                        for (int i = 0; i < tokens.Length; i++)
+                        {
+                            if (tokens[i] == "depth"        && i + 1 < tokens.Length && int.TryParse(tokens[i + 1], out int d))  depth = d;
+                            if (tokens[i] == UCI_TOKEN_MULTIPV && i + 1 < tokens.Length && int.TryParse(tokens[i + 1], out int m)) mpv   = m;
+
+                            if (tokens[i] == UCI_TOKEN_SCORE && i + 2 < tokens.Length)
+                            {
+                                if (tokens[i + 1] == UCI_TOKEN_CP && double.TryParse(tokens[i + 2], out double cp))
+                                {
+                                    double dcp = whiteToMove ? cp : -cp;
+                                    lineEval = (dcp / 100.0 >= 0 ? "+" : "") + (dcp / 100.0).ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
+                                }
+                                else if (tokens[i + 1] == UCI_TOKEN_MATE && i + 2 < tokens.Length && int.TryParse(tokens[i + 2], out int mate))
+                                {
+                                    int dm = whiteToMove ? mate : -mate;
+                                    lineEval = dm > 0 ? $"Mate in +{dm}" : dm < 0 ? $"Mate in {dm}" : "Mate in 0";
+                                }
+                            }
+
+                            if (tokens[i] == UCI_TOKEN_WDL && i + 3 < tokens.Length && mpv == 1 &&
+                                int.TryParse(tokens[i + 1], out int w) &&
+                                int.TryParse(tokens[i + 2], out int dr) &&
+                                int.TryParse(tokens[i + 3], out int l))
+                                lineWdl = new WDLInfo(w, dr, l);
+
+                            if (tokens[i] == UCI_TOKEN_PV)
+                            {
+                                for (int j = i + 1; j < tokens.Length; j++) pvMoves.Add(tokens[j]);
+                                break;
+                            }
+                        }
+
+                        // New depth: flush completed previous depth, reset buffers
+                        if (depth > currentDepth)
+                        {
+                            if (currentDepth > 0) FireUpdate(currentDepth);
+                            currentDepth   = depth;
+                            pvBuffer       = new string[multiPV];
+                            evalBuffer     = new string[multiPV];
+                            highestMpvSeen = 0;
+                        }
+
+                        int idx = mpv - 1;
+                        if (idx >= 0 && idx < multiPV)
+                        {
+                            pvBuffer[idx]   = string.Join(" ", pvMoves);
+                            evalBuffer[idx] = lineEval;
+                            if (mpv == 1) { bestEval = lineEval; bestMove = pvMoves.Count > 0 ? pvMoves[0] : bestMove; wdl = lineWdl ?? wdl; }
+                            highestMpvSeen = Math.Max(highestMpvSeen, mpv);
+                        }
+
+                        // All multiPV lines for this depth received — push live update
+                        if (highestMpvSeen >= multiPV) FireUpdate(currentDepth);
+                    }
+                }
+                catch (OperationCanceledException) { }
+                finally
+                {
+                    // Flush final depth on stop
+                    if (currentDepth > 0) FireUpdate(currentDepth);
+
+                    if (IsEngineAlive())
+                    {
+                        await SafeWriteLineAsync("stop");
+                        try
+                        {
+                            using var drain = new CancellationTokenSource(2000);
+                            while (IsEngineAlive())
+                            {
+                                var l = await engineOutput!.ReadLineAsync().WaitAsync(drain.Token);
+                                if (l != null && l.StartsWith(UCI_RESPONSE_BESTMOVE)) break;
+                            }
+                        }
+                        catch { }
+                    }
+                    State = EngineState.Ready;
+                }
+            }
+            finally { _analysisSemaphore.Release(); }
+        }
+
+        /// <summary>
         /// Streamlined move request for engine-vs-engine matches.
         /// Unlike GetBestMoveAsync, does NOT send ucinewgame (preserves hash tables),
         /// uses MultiPV=1, and accepts an explicit go command string.

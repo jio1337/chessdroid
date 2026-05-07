@@ -34,6 +34,7 @@ namespace ChessDroid
             cmbEngineDepth = new ComboBox();
             numMinAnalysisTime = new NumericUpDown();
             lblMinAnalysisTime = new Label();
+            chkContinuousAnalysis = new CheckBox();
             numMoveTimeout = new NumericUpDown();
             numMaxRetries = new NumericUpDown();
             numEngineTimeout = new NumericUpDown();
@@ -101,6 +102,7 @@ namespace ChessDroid
             grpEngine.Controls.Add(cmbEngineDepth);
             grpEngine.Controls.Add(numMinAnalysisTime);
             grpEngine.Controls.Add(lblMinAnalysisTime);
+            grpEngine.Controls.Add(chkContinuousAnalysis);
             grpEngine.Controls.Add(numMoveTimeout);
             grpEngine.Controls.Add(numMaxRetries);
             grpEngine.Controls.Add(numEngineTimeout);
@@ -111,7 +113,7 @@ namespace ChessDroid
             grpEngine.ForeColor = Color.White;
             grpEngine.Location = new Point(13, 13);
             grpEngine.Name = "grpEngine";
-            grpEngine.Size = new Size(298, 185);
+            grpEngine.Size = new Size(298, 207);
             grpEngine.TabIndex = 1;
             grpEngine.TabStop = false;
             grpEngine.Text = "Chess Engine";
@@ -145,7 +147,16 @@ namespace ChessDroid
             lblMinAnalysisTime.TabIndex = 7;
             lblMinAnalysisTime.Text = "Min Analysis Time (ms):";
             toolTip1.SetToolTip(lblMinAnalysisTime, "Minimum analysis time in ms (0 = no minimum). Ensures engine thinks for at least this long.");
-            // 
+            //
+            // chkContinuousAnalysis
+            //
+            chkContinuousAnalysis.Location = new Point(10, 178);
+            chkContinuousAnalysis.Name = "chkContinuousAnalysis";
+            chkContinuousAnalysis.Size = new Size(272, 18);
+            chkContinuousAnalysis.TabIndex = 9;
+            chkContinuousAnalysis.Text = "Continuous analysis (live depth updates)";
+            toolTip1.SetToolTip(chkContinuousAnalysis, "When enabled, engine analyzes infinitely and updates results live as depth increases. When disabled, engine stops at the configured depth.");
+            //
             // numMoveTimeout
             // 
             numMoveTimeout.Increment = new decimal(new int[] { 5000, 0, 0, 0 });
@@ -234,7 +245,7 @@ namespace ChessDroid
             grpDisplay.Controls.Add(lblConsoleFont);
             grpDisplay.Controls.Add(btnChooseFont);
             grpDisplay.ForeColor = Color.White;
-            grpDisplay.Location = new Point(13, 204);
+            grpDisplay.Location = new Point(13, 226);
             grpDisplay.Name = "grpDisplay";
             grpDisplay.Size = new Size(298, 181);
             grpDisplay.TabIndex = 2;
@@ -381,7 +392,7 @@ namespace ChessDroid
             grpBoardColors.Controls.Add(lblDarkSquares);
             grpBoardColors.Controls.Add(btnDarkColor);
             grpBoardColors.ForeColor = Color.White;
-            grpBoardColors.Location = new Point(13, 391);
+            grpBoardColors.Location = new Point(13, 413);
             grpBoardColors.Name = "grpBoardColors";
             grpBoardColors.Size = new Size(298, 79);
             grpBoardColors.TabIndex = 12;
@@ -658,7 +669,7 @@ namespace ChessDroid
             // 
             btnSave.FlatStyle = FlatStyle.Popup;
             btnSave.ForeColor = SystemColors.ControlLightLight;
-            btnSave.Location = new Point(344, 462);
+            btnSave.Location = new Point(344, 484);
             btnSave.Name = "btnSave";
             btnSave.Size = new Size(100, 28);
             btnSave.TabIndex = 4;
@@ -670,7 +681,7 @@ namespace ChessDroid
             // 
             btnReset.FlatStyle = FlatStyle.Popup;
             btnReset.ForeColor = SystemColors.ControlLightLight;
-            btnReset.Location = new Point(344, 497);
+            btnReset.Location = new Point(344, 519);
             btnReset.Name = "btnReset";
             btnReset.Size = new Size(100, 28);
             btnReset.TabIndex = 5;
@@ -682,7 +693,7 @@ namespace ChessDroid
             // 
             btnHelp.FlatStyle = FlatStyle.Popup;
             btnHelp.ForeColor = SystemColors.ControlLightLight;
-            btnHelp.Location = new Point(450, 462);
+            btnHelp.Location = new Point(450, 484);
             btnHelp.Name = "btnHelp";
             btnHelp.Size = new Size(100, 28);
             btnHelp.TabIndex = 6;
@@ -695,7 +706,7 @@ namespace ChessDroid
             btnCancel.DialogResult = DialogResult.Cancel;
             btnCancel.FlatStyle = FlatStyle.Popup;
             btnCancel.ForeColor = SystemColors.ControlLightLight;
-            btnCancel.Location = new Point(450, 497);
+            btnCancel.Location = new Point(450, 519);
             btnCancel.Name = "btnCancel";
             btnCancel.Size = new Size(100, 28);
             btnCancel.TabIndex = 7;
@@ -709,7 +720,7 @@ namespace ChessDroid
             chkDarkMode.Checked = true;
             chkDarkMode.CheckState = CheckState.Checked;
             chkDarkMode.ForeColor = Color.White;
-            chkDarkMode.Location = new Point(13, 497);
+            chkDarkMode.Location = new Point(13, 519);
             chkDarkMode.Name = "chkDarkMode";
             chkDarkMode.Size = new Size(89, 18);
             chkDarkMode.TabIndex = 8;
@@ -725,7 +736,7 @@ namespace ChessDroid
             AutoSizeMode = AutoSizeMode.GrowAndShrink;
             BackColor = Color.FromArgb(45, 45, 48);
             CancelButton = btnCancel;
-            ClientSize = new Size(585, 541);
+            ClientSize = new Size(585, 563);
             Controls.Add(chkDarkMode);
             Controls.Add(btnCancel);
             Controls.Add(btnHelp);
@@ -818,5 +829,6 @@ namespace ChessDroid
         private System.Windows.Forms.CheckBox chkOpeningName;
         private System.Windows.Forms.CheckBox chkMoveQuality;
         private System.Windows.Forms.CheckBox chkBookMoves;
+        private System.Windows.Forms.CheckBox chkContinuousAnalysis;
     }
 }
