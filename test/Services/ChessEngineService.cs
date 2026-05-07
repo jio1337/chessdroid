@@ -693,6 +693,7 @@ namespace ChessDroid.Services
         public async Task RunContinuousAnalysisAsync(
             string fen,
             int multiPV,
+            int maxDepth,
             Action<string, string, List<string>, List<string>, WDLInfo?, int> onUpdate,
             CancellationToken ct)
         {
@@ -717,7 +718,7 @@ namespace ChessDroid.Services
                 bool whiteToMove = fen.Split(' ') is { Length: > 1 } p && p[1] == "w";
 
                 State = EngineState.Analyzing;
-                await SafeWriteLineAsync("go infinite");
+                await SafeWriteLineAsync($"go depth {maxDepth}");
 
                 int    currentDepth    = 0;
                 int    highestMpvSeen  = 0;

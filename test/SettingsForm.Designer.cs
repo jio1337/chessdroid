@@ -35,6 +35,8 @@ namespace ChessDroid
             numMinAnalysisTime = new NumericUpDown();
             lblMinAnalysisTime = new Label();
             chkContinuousAnalysis = new CheckBox();
+            lblContinuousMaxDepth = new Label();
+            numContinuousMaxDepth = new NumericUpDown();
             numMoveTimeout = new NumericUpDown();
             numMaxRetries = new NumericUpDown();
             numEngineTimeout = new NumericUpDown();
@@ -87,6 +89,7 @@ namespace ChessDroid
             toolTip1 = new ToolTip(components);
             grpEngine.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)numMinAnalysisTime).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)numContinuousMaxDepth).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numMoveTimeout).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numMaxRetries).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numEngineTimeout).BeginInit();
@@ -103,6 +106,8 @@ namespace ChessDroid
             grpEngine.Controls.Add(numMinAnalysisTime);
             grpEngine.Controls.Add(lblMinAnalysisTime);
             grpEngine.Controls.Add(chkContinuousAnalysis);
+            grpEngine.Controls.Add(lblContinuousMaxDepth);
+            grpEngine.Controls.Add(numContinuousMaxDepth);
             grpEngine.Controls.Add(numMoveTimeout);
             grpEngine.Controls.Add(numMaxRetries);
             grpEngine.Controls.Add(numEngineTimeout);
@@ -152,10 +157,30 @@ namespace ChessDroid
             //
             chkContinuousAnalysis.Location = new Point(10, 178);
             chkContinuousAnalysis.Name = "chkContinuousAnalysis";
-            chkContinuousAnalysis.Size = new Size(272, 18);
+            chkContinuousAnalysis.Size = new Size(148, 18);
             chkContinuousAnalysis.TabIndex = 9;
-            chkContinuousAnalysis.Text = "Continuous analysis (live depth updates)";
-            toolTip1.SetToolTip(chkContinuousAnalysis, "When enabled, engine analyzes infinitely and updates results live as depth increases. When disabled, engine stops at the configured depth.");
+            chkContinuousAnalysis.Text = "Continuous analysis";
+            toolTip1.SetToolTip(chkContinuousAnalysis, "When enabled, engine analyzes to max depth and updates results live as depth increases. When disabled, engine stops at the configured depth.");
+            //
+            // lblContinuousMaxDepth
+            //
+            lblContinuousMaxDepth.Location = new Point(162, 181);
+            lblContinuousMaxDepth.Name = "lblContinuousMaxDepth";
+            lblContinuousMaxDepth.Size = new Size(62, 15);
+            lblContinuousMaxDepth.TabIndex = 10;
+            lblContinuousMaxDepth.Text = "Max depth:";
+            toolTip1.SetToolTip(lblContinuousMaxDepth, "Maximum depth for continuous analysis (10-100).");
+            //
+            // numContinuousMaxDepth
+            //
+            numContinuousMaxDepth.Location = new Point(228, 178);
+            numContinuousMaxDepth.Minimum = new decimal(new int[] { 10, 0, 0, 0 });
+            numContinuousMaxDepth.Maximum = new decimal(new int[] { 100, 0, 0, 0 });
+            numContinuousMaxDepth.Name = "numContinuousMaxDepth";
+            numContinuousMaxDepth.Size = new Size(54, 20);
+            numContinuousMaxDepth.TabIndex = 11;
+            numContinuousMaxDepth.Value = new decimal(new int[] { 50, 0, 0, 0 });
+            toolTip1.SetToolTip(numContinuousMaxDepth, "Maximum depth for continuous analysis (10-100).");
             //
             // numMoveTimeout
             // 
@@ -757,6 +782,7 @@ namespace ChessDroid
             Text = "chessdroid://settings";
             grpEngine.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)numMinAnalysisTime).EndInit();
+            ((System.ComponentModel.ISupportInitialize)numContinuousMaxDepth).EndInit();
             ((System.ComponentModel.ISupportInitialize)numMoveTimeout).EndInit();
             ((System.ComponentModel.ISupportInitialize)numMaxRetries).EndInit();
             ((System.ComponentModel.ISupportInitialize)numEngineTimeout).EndInit();
@@ -830,5 +856,7 @@ namespace ChessDroid
         private System.Windows.Forms.CheckBox chkMoveQuality;
         private System.Windows.Forms.CheckBox chkBookMoves;
         private System.Windows.Forms.CheckBox chkContinuousAnalysis;
+        private System.Windows.Forms.Label lblContinuousMaxDepth;
+        private System.Windows.Forms.NumericUpDown numContinuousMaxDepth;
     }
 }

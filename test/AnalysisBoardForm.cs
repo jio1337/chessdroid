@@ -1812,33 +1812,65 @@ namespace ChessDroid
 
             string fen = boardControl.GetFEN();
             Debug.WriteLine($"[Analysis] Starting — FEN: {fen}  State: {engineService.State}");
+            string cacheKey = GetPositionKey(fen);
             int depth = config?.EngineDepth ?? 15;
             int multiPV = 3;
 
             if (config?.ContinuousAnalysis == true)
             {
                 lblStatus.Text = "Analyzing...";
+                int maxDepth = config?.ContinuousAnalysisMaxDepth ?? 50;
+
+                string lastBestMove = "", lastEval = "";
+                List<string> lastPvs = new(), lastEvals = new();
+                WDLInfo? lastWdl = null;
+                int lastDepth = 0;
+
                 try
                 {
-                    await engineService.RunContinuousAnalysisAsync(fen, multiPV,
+                    await engineService.RunContinuousAnalysisAsync(fen, multiPV, maxDepth,
                         (bestMove, eval, pvs, evals, wdl, currentDepth) =>
                         {
                             if (ct.IsCancellationRequested) return;
-                            if (InvokeRequired)
+                            lastBestMove = bestMove; lastEval = eval;
+                            lastPvs = pvs; lastEvals = evals;
+                            lastWdl = wdl; lastDepth = currentDepth;
+
+                            void Update()
                             {
-                                BeginInvoke(() =>
-                                {
-                                    if (ct.IsCancellationRequested) return;
-                                    lblStatus.Text = $"Analyzing... depth {currentDepth}";
-                                    DisplayAnalysisResult(fen, bestMove, eval, pvs, evals, wdl, currentDepth, fromCache: false);
-                                });
-                            }
-                            else
-                            {
+                                if (ct.IsCancellationRequested) return;
                                 lblStatus.Text = $"Analyzing... depth {currentDepth}";
-                                DisplayAnalysisResult(fen, bestMove, eval, pvs, evals, wdl, currentDepth, fromCache: false);
+                                consoleFormatter?.DisplayLiveLines(fen, eval, pvs, evals, wdl, currentDepth);
+                                if (!isNavigating)
+                                {
+                                    int arrowCount = config?.EngineArrowCount ?? 1;
+                                    if (arrowCount > 0) UpdateEngineArrows(pvs, arrowCount);
+                                }
+                                UpdateEvalBar(eval);
                             }
+                            if (InvokeRequired) BeginInvoke(Update); else Update();
                         }, ct);
+
+                    // Engine finished at max depth — switch to full analysis display
+                    if (!ct.IsCancellationRequested && !string.IsNullOrEmpty(lastBestMove))
+                    {
+                        _analysisCache[cacheKey] = new CachedAnalysis
+                        {
+                            BestMove = lastBestMove,
+                            Evaluation = lastEval,
+                            PVs = new List<string>(lastPvs),
+                            Evaluations = new List<string>(lastEvals),
+                            WDL = lastWdl,
+                            Depth = lastDepth
+                        };
+
+                        void ShowFull()
+                        {
+                            if (ct.IsCancellationRequested) return;
+                            DisplayAnalysisResult(fen, lastBestMove, lastEval, lastPvs, lastEvals, lastWdl, lastDepth, fromCache: false);
+                        }
+                        if (InvokeRequired) Invoke(ShowFull); else ShowFull();
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -1852,7 +1884,6 @@ namespace ChessDroid
             }
 
             // Fixed-depth mode
-            string cacheKey = GetPositionKey(fen);
 
             // Check if depth setting changed - invalidate cache if so
             if (_cachedDepth != depth)

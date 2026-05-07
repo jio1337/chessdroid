@@ -47,7 +47,8 @@ namespace ChessDroid
 
 
         // Analysis mode
-        public bool ContinuousAnalysis { get; set; } = false; // true = go infinite (live depth updates), false = fixed depth
+        public bool ContinuousAnalysis { get; set; } = false; // true = live depth updates, false = fixed depth
+        public int ContinuousAnalysisMaxDepth { get; set; } = 50; // Max depth when continuous analysis is enabled
 
         // Console font settings
         public string ConsoleFontFamily { get; set; } = "Consolas";
@@ -177,6 +178,7 @@ namespace ChessDroid
             ShowMoveQuality = other.ShowMoveQuality;
 
             ContinuousAnalysis = other.ContinuousAnalysis;
+            ContinuousAnalysisMaxDepth = other.ContinuousAnalysisMaxDepth;
             ConsoleFontFamily = other.ConsoleFontFamily;
             ConsoleFontSize = other.ConsoleFontSize;
 

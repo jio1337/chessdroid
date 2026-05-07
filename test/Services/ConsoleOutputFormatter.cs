@@ -2403,6 +2403,58 @@ namespace ChessDroid.Services
         }
 
         /// <summary>
+        /// Compact live display for continuous analysis — PV lines only, no explanation text.
+        /// Shows depth header, optional WDL bar, and up to 3 lines with eval + SAN + [See line].
+        /// </summary>
+        public void DisplayLiveLines(string fen, string evaluation, List<string> pvs, List<string> evals, WDLInfo? wdl, int depth)
+        {
+            Clear();
+            _seeLineMarkers.Clear();
+
+            bool isDark = config?.Theme == "Dark";
+            bool whiteToMove = fen.Split(' ') is { Length: > 1 } p && p[1] == "w";
+            string side = whiteToMove ? "White" : "Black";
+
+            // Header
+            richTextBox.SelectionColor = GetThemeColor(Color.Silver, Color.DimGray);
+            richTextBox.AppendText($" depth {depth}  │  {FormatEvaluation(evaluation)}  │  {side}{Environment.NewLine}");
+            richTextBox.SelectionColor = GetThemeColor(Color.FromArgb(75, 75, 75), Color.LightGray);
+            richTextBox.AppendText(new string('─', 38) + Environment.NewLine);
+            ResetFormatting();
+
+            // WDL bar (reuse existing method)
+            if (config?.ShowWDL == true && wdl != null)
+                DisplayWDLInfo(wdl, whiteToMove);
+
+            Color[] lineColors = isDark
+                ? new[] { Color.PaleGreen, Color.Khaki, Color.LightCoral }
+                : new[] { Color.DarkGreen, Color.SaddleBrown, Color.Maroon };
+
+            int count = Math.Min(Math.Min(pvs.Count, evals.Count), 3);
+            for (int i = 0; i < count; i++)
+            {
+                if (string.IsNullOrWhiteSpace(pvs[i])) continue;
+
+                string san = ConvertPvToSan(pvs, i, pvs[i].Split(' ')[0], fen);
+                string prefix = i == 0 ? "►" : " ";
+
+                richTextBox.SelectionColor = lineColors[i];
+                richTextBox.AppendText($" {prefix} {FormatEvaluation(evals[i])}  ");
+                richTextBox.SelectionColor = GetThemeColor(Color.LightGray, Color.Black);
+                richTextBox.AppendText(san);
+                richTextBox.AppendText("  ");
+
+                int start = richTextBox.TextLength;
+                richTextBox.SelectionColor = GetThemeColor(Color.Cyan, Color.RoyalBlue);
+                richTextBox.AppendText("[See line]");
+                _seeLineMarkers.Add((start, richTextBox.TextLength - start, pvs[i], fen));
+
+                richTextBox.AppendText(Environment.NewLine);
+                ResetFormatting();
+            }
+        }
+
+        /// <summary>
         /// Converts PV to SAN notation with fallback
         /// </summary>
         private static string ConvertPvToSan(List<string> pvs, int index, string fallbackMove, string completeFen)
