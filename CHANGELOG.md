@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [3.4.0] - 2026-05-08
+
+### Performance
+- **Eliminated Redundant Board Scans** — `EndgameAnalysis` int-based overloads added for `IsEndgame`, `IsLateEndgame`, `IsMiddlegame`, and `GetGamePhase`; callers in `MovesExplanation`, `AdvancedAnalysis`, and `ConsoleOutputFormatter` now compute `CountTotalPieces` once and reuse the result, removing up to 4 redundant 64-square scans per analysis
+- **SEE King Scan Optimization** — `FilterPinnedAttackers` now locates both king positions in a single combined board pass before iterating attackers; `IsPiecePinnedToKing` accepts precomputed positions, eliminating N×64 redundant square reads per SEE filter call (was one full board scan per attacker)
+- **Engine Line Parsing** — Split separator `new[] { ' ' }` in `ChessEngineService` replaced with a `static readonly` field, removing a heap allocation on every engine info line parsed during continuous analysis
+
+---
+
 ## [3.3.0] - 2026-05-07
 
 ### Added

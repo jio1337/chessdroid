@@ -2,11 +2,11 @@
 
 ## Overview
 
-ChessDroid is a pure offline chess analysis application that combines tactical pattern recognition with deep positional understanding inspired by world-class chess engines (Ethereal and Stockfish). As of v3.3.0, the application is centered around the Analysis Board — an interactive workspace for deep chess analysis with visual engine arrows, PV line exploration, free-draw annotation, bot mode, continuous analysis, and full board customization.
+ChessDroid is a pure offline chess analysis application that combines tactical pattern recognition with deep positional understanding inspired by world-class chess engines (Ethereal and Stockfish). As of v3.4.0, the application is centered around the Analysis Board — an interactive workspace for deep chess analysis with visual engine arrows, PV line exploration, free-draw annotation, bot mode, continuous analysis, and full board customization.
 
 ---
 
-## System Architecture (v3.3.0)
+## System Architecture (v3.4.0)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -579,7 +579,13 @@ Create a folder in `Templates/` with 12 PNG files named: wK, wQ, wR, wB, wN, wP,
 
 ## Version History
 
-**v3.3.0** — Continuous Analysis & Stability (Current)
+**v3.4.0** — Analysis Performance (Current)
+- `EndgameAnalysis` int-based overloads: `IsEndgame(int)`, `IsLateEndgame(int)`, `IsMiddlegame(int)`, `GetGamePhase(int)` — callers compute `CountTotalPieces` once and reuse
+- `FilterPinnedAttackers` in SEE: single combined board pass finds both king positions; `IsPiecePinnedToKing` accepts precomputed coords, eliminating N×64 redundant scans per filter call
+- `ChessEngineService`: `_spaceSep` static readonly replaces `new[] { ' ' }` allocation per engine line
+- Window title: `chessdroid v3.4.0`
+
+**v3.3.0** — Continuous Analysis & Stability
 - Continuous analysis mode: live depth-by-depth PV streaming via `go depth N`; compact display during analysis, full annotated result at max depth; `[See line]` suppressed during live updates
 - Continuous analysis max depth setting (default 50, range 10–100); `ContinuousAnalysisMaxDepth` in `AppConfig`
 - Custom position editor: arbitrary board setup for analysis
@@ -663,5 +669,5 @@ https://github.com/jio1337/chessdroid/issues
 
 ---
 
-**Last Updated:** 2026-05-07
-**Document Version:** 3.3.0
+**Last Updated:** 2026-05-08
+**Document Version:** 3.4.0

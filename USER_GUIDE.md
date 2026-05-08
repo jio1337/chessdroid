@@ -1,4 +1,4 @@
-## ChessDroid v3.3.0 — User Guide
+## ChessDroid v3.4.0 — User Guide
 
 ### Welcome to ChessDroid!
 
@@ -367,7 +367,12 @@ Create a folder in `Templates/` with 12 PNG files (wK, wQ, wR, wB, wN, wP, bK, b
 
 ## Version History
 
-**v3.3.0** — Continuous Analysis & Stability (Current)
+**v3.4.0** — Analysis Performance (Current)
+- Significantly faster analysis: redundant board scans eliminated across the analysis pipeline
+- SEE (Static Exchange Evaluation) king lookup optimized: single combined scan per filter call
+- Engine line parsing: cached split separator removes allocations during continuous analysis
+
+**v3.3.0** — Continuous Analysis & Stability
 - Continuous analysis mode: live PV streaming with compact display; full annotated result at max depth
 - Configurable max depth for continuous analysis (default 50, range 10–100)
 - Custom position editor: set up arbitrary positions for analysis
@@ -455,5 +460,5 @@ ChessDroid is released under the MIT License. Free and open-source forever!
 
 **Enjoy analyzing with ChessDroid!**
 
-*Last Updated: 2026-05-07*
-*Version: 3.2.1*
+*Last Updated: 2026-05-08*
+*Version: 3.4.0*
