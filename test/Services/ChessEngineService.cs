@@ -26,6 +26,8 @@ namespace ChessDroid.Services
         private readonly object stateLock = new object();
         private readonly SemaphoreSlim _analysisSemaphore = new SemaphoreSlim(1, 1);
 
+        private static readonly char[] _spaceSep = { ' ' };
+
         // UCI Protocol Commands
         private const string UCI_CMD_UCI = "uci";
 
@@ -420,7 +422,7 @@ namespace ChessDroid.Services
                             // Parse info lines containing PV
                             if (line.StartsWith(UCI_RESPONSE_INFO) && line.Contains(UCI_TOKEN_PV))
                             {
-                                var tokens = line.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                                var tokens = line.Split(_spaceSep, StringSplitOptions.RemoveEmptyEntries);
                                 int mpvIndex = 1;
                                 string evalStr = "";
                                 var pvList = new List<string>();
@@ -896,7 +898,7 @@ namespace ChessDroid.Services
                     // Parse info lines to capture evaluation
                     if (line.StartsWith(UCI_RESPONSE_INFO) && line.Contains(UCI_TOKEN_SCORE))
                     {
-                        var tokens = line.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                        var tokens = line.Split(_spaceSep, StringSplitOptions.RemoveEmptyEntries);
                         for (int i = 0; i < tokens.Length; i++)
                         {
                             if (tokens[i] == UCI_TOKEN_SCORE && i + 2 < tokens.Length)

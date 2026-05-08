@@ -64,43 +64,32 @@ namespace ChessDroid.Services
         /// Detect if position is in endgame phase
         /// Endgame: 6 or fewer pieces (excluding kings)
         /// </summary>
-        public static bool IsEndgame(ChessBoard board)
-        {
-            return CountTotalPieces(board) <= 6;
-        }
+        public static bool IsEndgame(ChessBoard board) => CountTotalPieces(board) <= 6;
+        public static bool IsEndgame(int pieceCount) => pieceCount <= 6;
 
         /// <summary>
         /// Detect if position is in late endgame (tablebase territory)
         /// Late endgame: 5 or fewer pieces (excluding kings)
         /// </summary>
-        public static bool IsLateEndgame(ChessBoard board)
-        {
-            return CountTotalPieces(board) <= 5;
-        }
+        public static bool IsLateEndgame(ChessBoard board) => CountTotalPieces(board) <= 5;
+        public static bool IsLateEndgame(int pieceCount) => pieceCount <= 5;
 
         /// <summary>
         /// Detect if position is in middlegame
         /// </summary>
-        public static bool IsMiddlegame(ChessBoard board)
-        {
-            return CountTotalPieces(board) >= 12;
-        }
+        public static bool IsMiddlegame(ChessBoard board) => CountTotalPieces(board) >= 12;
+        public static bool IsMiddlegame(int pieceCount) => pieceCount >= 12;
 
         /// <summary>
         /// Get game phase description
         /// </summary>
-        public static string GetGamePhase(ChessBoard board)
+        public static string GetGamePhase(ChessBoard board) => GetGamePhase(CountTotalPieces(board));
+        public static string GetGamePhase(int pieceCount)
         {
-            int pieces = CountTotalPieces(board);
-
-            if (pieces <= 5)
-                return "late endgame";
-            else if (pieces <= 6)
-                return "endgame";
-            else if (pieces <= 11)
-                return "transition";
-            else
-                return "middlegame";
+            if (pieceCount <= 5) return "late endgame";
+            if (pieceCount <= 6) return "endgame";
+            if (pieceCount <= 11) return "transition";
+            return "middlegame";
         }
 
         // =============================

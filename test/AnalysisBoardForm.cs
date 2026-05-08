@@ -837,11 +837,11 @@ namespace ChessDroid
             }
             catch (ArgumentException)
             {
-                // Font in invalid state; render with safe fallback so items remain visible
+                // e.Font may be stale/disposed; re-read the control's current font which is already updated
                 try
                 {
                     using var fallbackBrush = new SolidBrush(e.ForeColor);
-                    e.Graphics.DrawString(moveText, SystemFonts.DefaultFont, fallbackBrush,
+                    e.Graphics.DrawString(moveText, moveListBox.Font, fallbackBrush,
                         e.Bounds.Left + 2, e.Bounds.Top + 1);
                 }
                 catch { }

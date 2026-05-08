@@ -343,14 +343,14 @@ namespace ChessDroid.Services
                 }
 
                 // Evaluation context fallback
+                int materialCount = EndgameAnalysis.CountTotalPieces(tempBoard);
                 if (reasons.Count == 0)
                 {
                     double? eval = ParseEvaluation(evaluation);
                     if (eval.HasValue)
                     {
-                        string gamePhase = EndgameAnalysis.GetGamePhase(tempBoard);
-                        bool isEndgame = EndgameAnalysis.IsEndgame(tempBoard);
-                        int materialCount = EndgameAnalysis.CountTotalPieces(tempBoard);
+                        bool isEndgame = EndgameAnalysis.IsEndgame(materialCount);
+                        string gamePhase = EndgameAnalysis.GetGamePhase(materialCount);
 
                         // WIN RATE MODEL INTEGRATION (Stockfish-style)
                         // Convert eval to winning percentage for user-friendly explanations
@@ -432,7 +432,7 @@ namespace ChessDroid.Services
                 if (reasons.Count == 0)
                 {
                     // Context-aware generic response
-                    if (EndgameAnalysis.IsEndgame(tempBoard))
+                    if (EndgameAnalysis.IsEndgame(materialCount))
                         return "improves endgame position";
                     else
                         return "improves position";

@@ -2306,7 +2306,8 @@ namespace ChessDroid.Services
                 ChessBoard board = ChessBoard.FromFEN(completeFen);
 
                 // Only show insights in endgame positions
-                if (!EndgameAnalysis.IsEndgame(board))
+                int pieceCount = EndgameAnalysis.CountTotalPieces(board);
+                if (!EndgameAnalysis.IsEndgame(pieceCount))
                     return;
 
                 string[] fenParts = completeFen.Split(' ');
@@ -2319,7 +2320,7 @@ namespace ChessDroid.Services
                     richTextBox.AppendText(Environment.NewLine);
 
                     // Game phase header
-                    string phase = EndgameAnalysis.GetGamePhase(board);
+                    string phase = EndgameAnalysis.GetGamePhase(pieceCount);
                     AppendTextWithFormat($"♟ Endgame Analysis ({phase}):{Environment.NewLine}",
                         richTextBox.BackColor, GetThemeColor(Color.Cyan, Color.Teal), FontStyle.Bold);
 

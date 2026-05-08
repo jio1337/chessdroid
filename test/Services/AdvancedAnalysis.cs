@@ -180,21 +180,17 @@ namespace ChessDroid.Services
         /// </summary>
         public static bool IsSharpPosition(ChessBoard board, double currentEval)
         {
+            return IsSharpPosition(board, EndgameAnalysis.CountTotalPieces(board), currentEval);
+        }
+
+        private static bool IsSharpPosition(ChessBoard board, int totalPieces, double currentEval)
+        {
             try
             {
-                // Sharp positions have:
-                // 1. Many pieces still on board
-                // 2. High material imbalance
-                // 3. Exposed kings
-                // 4. Unstable eval
-
-                int totalPieces = EndgameAnalysis.CountTotalPieces(board);
                 int materialBalance = Math.Abs(EndgameAnalysis.CalculateMaterialBalance(board));
-
                 bool manyPieces = totalPieces >= 12;
                 bool materialImbalance = materialBalance >= 3;
                 bool unstableEval = Math.Abs(currentEval) > 2.0;
-
                 return manyPieces && (materialImbalance || unstableEval);
             }
             catch
@@ -208,8 +204,9 @@ namespace ChessDroid.Services
         /// </summary>
         public static string? GetComplexityDescription(ChessBoard board, double eval)
         {
-            bool isSharp = IsSharpPosition(board, eval);
-            bool isEndgame = EndgameAnalysis.IsEndgame(board);
+            int pieceCount = EndgameAnalysis.CountTotalPieces(board);
+            bool isSharp = IsSharpPosition(board, pieceCount, eval);
+            bool isEndgame = EndgameAnalysis.IsEndgame(pieceCount);
 
             if (isSharp)
                 return "sharp tactical position";

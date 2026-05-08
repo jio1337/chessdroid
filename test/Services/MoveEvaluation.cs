@@ -150,10 +150,25 @@ namespace ChessDroid.Services
         {
             var legalAttackers = new List<(int row, int col, char piece, int value)>();
 
+            // Find both king positions in one pass — reused for every pin check below
+            int wKingRow = -1, wKingCol = -1, bKingRow = -1, bKingCol = -1;
+            for (int r = 0; r < 8; r++)
+            {
+                for (int c = 0; c < 8; c++)
+                {
+                    char p = board.GetPiece(r, c);
+                    if (p == 'K') { wKingRow = r; wKingCol = c; }
+                    else if (p == 'k') { bKingRow = r; bKingCol = c; }
+                }
+            }
+
             foreach (var attacker in attackers)
             {
-                // Check if this piece is pinned
-                if (!IsPiecePinnedToKing(board, attacker.row, attacker.col, attacker.piece, targetRow, targetCol))
+                bool attackerIsWhite = char.IsUpper(attacker.piece);
+                int kingRow = attackerIsWhite ? wKingRow : bKingRow;
+                int kingCol = attackerIsWhite ? wKingCol : bKingCol;
+
+                if (!IsPiecePinnedToKing(board, attacker.row, attacker.col, attacker.piece, targetRow, targetCol, kingRow, kingCol))
                 {
                     legalAttackers.Add(attacker);
                 }
@@ -220,37 +235,20 @@ namespace ChessDroid.Services
         }
 
         /// <summary>
-        /// Check if a piece is pinned to its king and can't move to the target square
+        /// Check if a piece is pinned to its king and can't move to the target square.
+        /// kingRow/kingCol are precomputed by the caller to avoid rescanning the board.
         /// </summary>
-        private static bool IsPiecePinnedToKing(ChessBoard board, int pieceRow, int pieceCol, char piece, int targetRow, int targetCol)
+        private static bool IsPiecePinnedToKing(ChessBoard board, int pieceRow, int pieceCol, char piece,
+            int targetRow, int targetCol, int kingRow, int kingCol)
         {
-            bool isWhite = char.IsUpper(piece);
-            char king = isWhite ? 'K' : 'k';
+            if (kingRow < 0) return false;
 
-            // Find our king
-            int kingRow = -1, kingCol = -1;
-            for (int r = 0; r < 8 && kingRow < 0; r++)
-            {
-                for (int c = 0; c < 8; c++)
-                {
-                    if (board.GetPiece(r, c) == king)
-                    {
-                        kingRow = r;
-                        kingCol = c;
-                        break;
-                    }
-                }
-            }
-
-            if (kingRow < 0) return false; // King not found
-
-            // Simulate moving this piece to the target
             using var pooled = BoardPool.Rent(board);
             ChessBoard testBoard = pooled.Board;
             testBoard.SetPiece(pieceRow, pieceCol, '.');
             testBoard.SetPiece(targetRow, targetCol, piece);
 
-            // Check if our king is now attacked (would be illegal)
+            bool isWhite = char.IsUpper(piece);
             return ChessUtilities.IsSquareAttackedBy(testBoard, kingRow, kingCol, !isWhite);
         }
 
