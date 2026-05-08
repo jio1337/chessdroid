@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using ChessDroid.Controls;
 using ChessDroid.Models;
@@ -736,10 +737,15 @@ namespace ChessDroid
             if (e.Index < 0 || e.Index >= moveListBox.Items.Count) return;
             if (e.Bounds.Width <= 0 || e.Bounds.Height <= 0) return;
 
-            // Draw background
-            e.DrawBackground();
+            // Draw background manually so the color is always our theme color,
+            // not whatever the system might have cached.
+            bool isSelected = (e.State & DrawItemState.Selected) == DrawItemState.Selected;
+            using (var bgBrush = new SolidBrush(isSelected ? SystemColors.Highlight : moveListBox.BackColor))
+                e.Graphics.FillRectangle(bgBrush, e.Bounds);
 
-            Font drawFont = e.Font ?? moveListBox.Font;
+            // Always use the control's live Font property — e.Font can be a stale
+            // reference to a previously-disposed font object.
+            Font drawFont = moveListBox.Font;
             string text = moveListBox.Items[e.Index]?.ToString() ?? "";
             bool isDark = config?.Theme == "Dark";
 
@@ -781,19 +787,18 @@ namespace ChessDroid
             }
 
             // Determine text color based on selection and theme
-            Color textColor = (e.State & DrawItemState.Selected) == DrawItemState.Selected
+            Color textColor = isSelected
                 ? (isDark ? Color.White : SystemColors.HighlightText)
                 : (isDark ? Color.White : Color.Black);
 
             // Color the whole move text to match the symbol for annotated moves
-            if ((e.State & DrawItemState.Selected) != DrawItemState.Selected && !string.IsNullOrEmpty(symbol))
+            if (!isSelected && !string.IsNullOrEmpty(symbol))
             {
                 textColor = symbolColor;
             }
 
             // Color move text based on classification quality (Best/Excellent/Good)
-            if ((e.State & DrawItemState.Selected) != DrawItemState.Selected &&
-                string.IsNullOrEmpty(symbol) &&
+            if (!isSelected && string.IsNullOrEmpty(symbol) &&
                 _classificationLookup != null && e.Index < displayedNodes.Count &&
                 _classificationLookup.TryGetValue(displayedNodes[e.Index], out var classResult))
             {
@@ -835,13 +840,18 @@ namespace ChessDroid
                 // Draw focus rectangle if focused
                 e.DrawFocusRectangle();
             }
-            catch (ArgumentException)
+            catch (Exception ex) when (ex is ArgumentException or ExternalException or ObjectDisposedException)
             {
-                // e.Font may be stale/disposed; re-read the control's current font which is already updated
+                // Font or GDI resource in bad state — create a fresh local font that cannot
+                // be externally disposed, and use explicit theme-correct colors.
                 try
                 {
-                    using var fallbackBrush = new SolidBrush(e.ForeColor);
-                    e.Graphics.DrawString(moveText, moveListBox.Font, fallbackBrush,
+                    using var safeFont = new Font(FontFamily.GenericMonospace, 9f);
+                    Color safeColor = isSelected
+                        ? SystemColors.HighlightText
+                        : (isDark ? Color.White : Color.Black);
+                    using var safeBrush = new SolidBrush(safeColor);
+                    e.Graphics.DrawString(moveText, safeFont, safeBrush,
                         e.Bounds.Left + 2, e.Bounds.Top + 1);
                 }
                 catch { }
@@ -1837,6 +1847,18 @@ namespace ChessDroid
             int depth = config?.EngineDepth ?? 15;
             int multiPV = 3;
 
+            // If a classification is active and the cache already has this position's result,
+            // show it directly — skip continuous analysis entirely.
+            if (_classificationLookup != null &&
+                _analysisCache.TryGetValue(cacheKey, out var classifiedCache) &&
+                classifiedCache.Depth >= depth)
+            {
+                DisplayAnalysisResult(fen, classifiedCache.BestMove, classifiedCache.Evaluation,
+                    classifiedCache.PVs, classifiedCache.Evaluations, classifiedCache.WDL,
+                    classifiedCache.Depth, fromCache: true);
+                return;
+            }
+
             if (config?.ContinuousAnalysis == true)
             {
                 lblStatus.Text = "Analyzing...";
@@ -2133,11 +2155,19 @@ namespace ChessDroid
 
         private void UpdateMoveList()
         {
-            moveListBox.Items.Clear();
-            displayedNodes.Clear();
+            moveListBox.BeginUpdate();
+            try
+            {
+                moveListBox.Items.Clear();
+                displayedNodes.Clear();
 
-            // Build the display list with variations
-            BuildMoveListRecursive(moveTree.Root, 0);
+                // Build the display list with variations
+                BuildMoveListRecursive(moveTree.Root, 0);
+            }
+            finally
+            {
+                moveListBox.EndUpdate();
+            }
 
             // Scroll to current position
             UpdateMoveListSelection();
