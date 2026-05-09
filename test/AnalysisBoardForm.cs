@@ -853,7 +853,8 @@ namespace ChessDroid
                     using var safeFont = new Font(safeFamily, safeSize);
                     Color safeTextColor = isSelected
                         ? (isDark ? Color.White : SystemColors.HighlightText)
-                        : (!string.IsNullOrEmpty(symbol) ? symbolColor : (isDark ? Color.White : Color.Black));
+                        : (!string.IsNullOrEmpty(symbol) ? symbolColor : GetQualityColor(e.Index, isDark));
+
                     using (var safeBrush = new SolidBrush(safeTextColor))
                         e.Graphics.DrawString(moveText, safeFont, safeBrush,
                             e.Bounds.Left + 2, e.Bounds.Top + 1);
@@ -868,6 +869,22 @@ namespace ChessDroid
                 }
                 catch { }
             }
+        }
+
+        private Color GetQualityColor(int index, bool isDark)
+        {
+            if (_classificationLookup != null && index < displayedNodes.Count &&
+                _classificationLookup.TryGetValue(displayedNodes[index], out var classResult))
+            {
+                return classResult.Quality switch
+                {
+                    MoveQualityAnalyzer.MoveQuality.Best => isDark ? ColorScheme.BestMoveColor : Color.ForestGreen,
+                    MoveQualityAnalyzer.MoveQuality.Excellent => isDark ? ColorScheme.ExcellentMoveColor : Color.SeaGreen,
+                    MoveQualityAnalyzer.MoveQuality.Good => isDark ? ColorScheme.GoodMoveColor : Color.OliveDrab,
+                    _ => isDark ? Color.White : Color.Black
+                };
+            }
+            return isDark ? Color.White : Color.Black;
         }
 
         private void MoveListBox_SelectedIndexChanged(object? sender, EventArgs e)

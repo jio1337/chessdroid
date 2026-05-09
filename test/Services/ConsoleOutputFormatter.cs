@@ -1914,8 +1914,8 @@ namespace ChessDroid.Services
         {
             if (draw >= 70) return "very drawish";
             if (draw >= 50) return "drawish";
-            if (win >= 80) return "decisive";
-            if (loss >= 80) return "decisive";
+            if (win >= 80) return "completely winning";
+            if (loss >= 80) return "completely losing";
             if (win >= 65) return "clear advantage";
             if (loss >= 65) return "clear disadvantage";
             if (win >= 55) return "slight edge";
