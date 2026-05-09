@@ -2,11 +2,11 @@
 
 ## Overview
 
-ChessDroid is a pure offline chess analysis application that combines tactical pattern recognition with deep positional understanding inspired by world-class chess engines (Ethereal and Stockfish). As of v3.4.0, the application is centered around the Analysis Board — an interactive workspace for deep chess analysis with visual engine arrows, PV line exploration, free-draw annotation, bot mode, continuous analysis, and full board customization.
+ChessDroid is a pure offline chess analysis application that combines tactical pattern recognition with deep positional understanding inspired by world-class chess engines (Ethereal and Stockfish). As of v3.5.0, the application is centered around the Analysis Board — an interactive workspace for deep chess analysis with visual engine arrows, PV line exploration, free-draw annotation, bot mode, continuous analysis, annotated PGN round-trips, square highlighting, and full board customization.
 
 ---
 
-## System Architecture (v3.4.0)
+## System Architecture (v3.5.0)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -579,7 +579,16 @@ Create a folder in `Templates/` with 12 PNG files named: wK, wQ, wR, wB, wN, wP,
 
 ## Version History
 
-**v3.4.0** — Analysis Performance (Current)
+**v3.5.0** — Annotated PGN & Polish (Current)
+- Annotated PGN export/import: NAGs, eval comments, engine cache data embedded per move; import restores classification and analysis instantly
+- Right-click square highlighting: tap toggles orange highlight; drag draws arrows; left-click clears all
+- Challenge/Friendly bot mode selector added to `BotSettingsDialog`
+- WDL labels perspective-corrected: "completely winning/losing", "clear disadvantage" etc. reflect the side to move
+- `MoveListBox_DrawItem` catch path: classification quality colors (Best/Excellent/Good) now restored via `GetQualityColor()`
+- `AnimatePvLineAsync`: `boardControl.LastMove` set per move + `Refresh()` for immediate repaint; `TriggerAutoAnalysis()` fires on completion
+- Window title: `chessdroid v3.5.0`
+
+**v3.4.0** — Analysis Performance
 - `EndgameAnalysis` int-based overloads: `IsEndgame(int)`, `IsLateEndgame(int)`, `IsMiddlegame(int)`, `GetGamePhase(int)` — callers compute `CountTotalPieces` once and reuse
 - `FilterPinnedAttackers` in SEE: single combined board pass finds both king positions; `IsPiecePinnedToKing` accepts precomputed coords, eliminating N×64 redundant scans per filter call
 - `ChessEngineService`: `_spaceSep` static readonly replaces `new[] { ' ' }` allocation per engine line
@@ -669,5 +678,5 @@ https://github.com/jio1337/chessdroid/issues
 
 ---
 
-**Last Updated:** 2026-05-08
-**Document Version:** 3.4.0
+**Last Updated:** 2026-05-09
+**Document Version:** 3.5.0

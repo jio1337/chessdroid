@@ -1,4 +1,4 @@
-## ChessDroid v3.4.0 — User Guide
+## ChessDroid v3.5.0 — User Guide
 
 ### Welcome to ChessDroid!
 
@@ -367,7 +367,14 @@ Create a folder in `Templates/` with 12 PNG files (wK, wQ, wR, wB, wN, wP, bK, b
 
 ## Version History
 
-**v3.4.0** — Analysis Performance (Current)
+**v3.5.0** — Annotated PGN & Polish (Current)
+- Annotated PGN export/import: move symbols, eval comments, and engine cache embedded in PGN; importing a classified game restores all colors and analysis instantly
+- Right-click square highlighting: tap any square to toggle an orange highlight; right-click drag still draws arrows
+- WDL labels now reflect the side to move: "completely winning", "completely losing", "clear disadvantage" etc.
+- [See line] animation: first move now visible with highlight; engine analyzes the final position automatically
+- Bot mode Challenge/Friendly selector added
+
+**v3.4.0** — Analysis Performance
 - Significantly faster analysis: redundant board scans eliminated across the analysis pipeline
 - SEE (Static Exchange Evaluation) king lookup optimized: single combined scan per filter call
 - Engine line parsing: cached split separator removes allocations during continuous analysis
@@ -460,5 +467,5 @@ ChessDroid is released under the MIT License. Free and open-source forever!
 
 **Enjoy analyzing with ChessDroid!**
 
-*Last Updated: 2026-05-08*
-*Version: 3.4.0*
+*Last Updated: 2026-05-09*
+*Version: 3.5.0*

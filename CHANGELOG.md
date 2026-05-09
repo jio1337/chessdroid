@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [3.5.0] - 2026-05-09
+
+### Added
+- **Annotated PGN Export/Import** — Exported PGN now embeds NAGs (`$1`–`$6`), eval comments (`{ [+0.50] Best }`), and engine cache data per move; importing a classified game instantly restores move colors, symbols, and analysis output for every position without re-analyzing
+- **Right-Click Square Highlighting** — Right-click tap on any square toggles an orange highlight; right-click drag still draws arrows as before; left-click, making a move, or loading a FEN clears all highlights and arrows
+- **Challenge / Friendly Bot Mode** — Bot settings dialog now includes a mode selector (Friendly vs Challenge) in addition to difficulty and color
+
+### Fixed
+- **WDL Labels Now Reflect Current Side** — Position character labels ("completely winning", "completely losing", "clear disadvantage", etc.) now describe the side to move rather than always White's perspective; "decisive" replaced with "completely winning" / "completely losing" for clarity
+- **WDL Perspective Inversion in Continuous Analysis** — Black-to-move positions were displaying inverted W/L values; Stockfish's side-to-move WDL is now correctly converted to White's perspective before display
+- **Move Quality Colors Lost After Font Change** — Best/Excellent/Good green shading was dropped in the `MoveListBox_DrawItem` catch path when a GDI exception occurred during a font swap; the fallback now mirrors the full classification lookup, restoring green shades correctly
+- **[See line] First Move Invisible** — First PV move now shows with a move highlight (`boardControl.LastMove`) and a forced `Refresh()`; previously the first move was invisible until the second appeared
+- **[See line] No Analysis After Variation Ends** — Engine now auto-analyzes the final position once the animation completes naturally; previously the user had to re-click the last move to trigger analysis
+
+---
+
 ## [3.4.0] - 2026-05-08
 
 ### Performance
