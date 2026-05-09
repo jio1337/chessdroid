@@ -73,6 +73,7 @@ namespace ChessDroid
         private BotSettings? _botSettings;
         private ChessEngineService? _botEngine;
         private CancellationTokenSource? _botMoveCts;
+        private AppConfig? _challengeSnapshot; // non-null while challenge mode is active
 
         // Console font (managed here to allow proper disposal on change)
         private Font _consoleFont = new Font("Consolas", 10f);
@@ -842,17 +843,27 @@ namespace ChessDroid
             }
             catch (Exception ex) when (ex is ArgumentException or ExternalException or ObjectDisposedException)
             {
-                // Font or GDI resource in bad state — create a fresh local font that cannot
-                // be externally disposed, and use explicit theme-correct colors.
+                // GDI resource in a bad state — recreate font from config strings (cannot be
+                // externally disposed), preserve symbol colors, and draw symbol separately.
                 try
                 {
-                    using var safeFont = new Font(FontFamily.GenericMonospace, 9f);
-                    Color safeColor = isSelected
-                        ? SystemColors.HighlightText
-                        : (isDark ? Color.White : Color.Black);
-                    using var safeBrush = new SolidBrush(safeColor);
-                    e.Graphics.DrawString(moveText, safeFont, safeBrush,
-                        e.Bounds.Left + 2, e.Bounds.Top + 1);
+                    string safeFamily = config?.ConsoleFontFamily ?? "Consolas";
+                    float safeSize = config?.ConsoleFontSize ?? 10f;
+                    using var safeFont = new Font(safeFamily, safeSize);
+                    Color safeTextColor = isSelected
+                        ? (isDark ? Color.White : SystemColors.HighlightText)
+                        : (!string.IsNullOrEmpty(symbol) ? symbolColor : (isDark ? Color.White : Color.Black));
+                    using (var safeBrush = new SolidBrush(safeTextColor))
+                        e.Graphics.DrawString(moveText, safeFont, safeBrush,
+                            e.Bounds.Left + 2, e.Bounds.Top + 1);
+                    if (!string.IsNullOrEmpty(symbol))
+                    {
+                        var sz = e.Graphics.MeasureString(moveText + " ", safeFont);
+                        using var symBrush = new SolidBrush(symbolColor);
+                        using var boldFont = new Font(safeFont.FontFamily, safeSize, FontStyle.Bold);
+                        e.Graphics.DrawString(symbol, boldFont, symBrush,
+                            e.Bounds.Left + 2 + sz.Width - 4, e.Bounds.Top + 1);
+                    }
                 }
                 catch { }
             }
@@ -1486,10 +1497,14 @@ namespace ChessDroid
             btnPlayBot.Text = "Stop Bot";
             boardControl.InteractionEnabled = true;
 
+            if (_botSettings.ChallengeMode)
+                ApplyChallengeMode();
+
             string diffLabel = _botSettings.GetDifficultyLabel();
             string colorLabel = userPlaysBlack ? "Black" : "White";
+            string typeLabel = _botSettings.ChallengeMode ? "Challenge" : "Friendly";
             analysisOutput.AppendText($"Bot Mode: You play {colorLabel}\n");
-            analysisOutput.AppendText($"Difficulty: {diffLabel}\n\n");
+            analysisOutput.AppendText($"Difficulty: {diffLabel}  |  {typeLabel}\n\n");
             lblStatus.Text = $"Bot mode — {diffLabel}";
 
             // Disable engine match controls during bot mode
@@ -1825,7 +1840,50 @@ namespace ChessDroid
             btnPlayBot.Text = "vs Bot";
             btnStartMatch.Enabled = true;
             boardControl.InteractionEnabled = true;
-            lblStatus.Text = "Bot mode stopped";
+
+            if (_challengeSnapshot != null)
+            {
+                config?.CopyFrom(_challengeSnapshot);
+                _challengeSnapshot = null;
+                ApplyConsoleFont();
+                LeftPanel_Resize(leftPanel, EventArgs.Empty);
+                evalBar?.Reset();
+                lblStatus.Text = "Bot mode stopped — analysis restored";
+                _ = TriggerAutoAnalysis();
+            }
+            else
+            {
+                lblStatus.Text = "Bot mode stopped";
+            }
+        }
+
+        private void ApplyChallengeMode()
+        {
+            if (config == null) return;
+            _challengeSnapshot = new AppConfig();
+            _challengeSnapshot.CopyFrom(config);
+
+            config.ShowBestLine = false;
+            config.ShowSecondLine = false;
+            config.ShowThirdLine = false;
+            config.ShowEngineArrows = false;
+            config.ShowEvalBar = false;
+            LeftPanel_Resize(leftPanel, EventArgs.Empty);
+            config.ShowTacticalAnalysis = false;
+            config.ShowPositionalAnalysis = false;
+            config.ShowEndgameAnalysis = false;
+            config.ShowOpeningPrinciples = false;
+            config.ShowThreats = false;
+            config.ShowWDL = false;
+            config.PlayStyleEnabled = false;
+            config.ShowOpeningName = false;
+            config.ShowMoveQuality = false;
+            config.ContinuousAnalysis = false;
+            config.ShowBookMoves = false;
+
+            boardControl.ClearEngineArrows();
+            evalBar?.Reset();
+            analysisOutput.Clear();
         }
 
         #endregion
@@ -1834,6 +1892,8 @@ namespace ChessDroid
 
         private async Task AnalyzeCurrentPosition(CancellationToken ct = default)
         {
+            if (_challengeSnapshot != null) return; // challenge mode: no hints
+
             if (engineService == null)
             {
                 Debug.WriteLine("[Analysis] FAILED — engineService is null");
@@ -2167,6 +2227,10 @@ namespace ChessDroid
             finally
             {
                 moveListBox.EndUpdate();
+                // Re-assert font and item height — WinForms OwnerDrawFixed can reset these
+                // after Items.Clear() + EndUpdate in some scenarios.
+                moveListBox.Font = _consoleFont;
+                moveListBox.ItemHeight = Math.Max(14, (int)Math.Ceiling(_consoleFont.GetHeight()));
             }
 
             // Scroll to current position

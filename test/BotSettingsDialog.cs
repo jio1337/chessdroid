@@ -7,6 +7,8 @@ namespace ChessDroid
         private ComboBox cmbDifficulty = null!;
         private RadioButton rbPlayWhite = null!;
         private RadioButton rbPlayBlack = null!;
+        private RadioButton rbFriendly = null!;
+        private RadioButton rbChallenge = null!;
         private Button btnStart = null!;
         private Button btnCancel = null!;
 
@@ -21,7 +23,7 @@ namespace ChessDroid
         private void InitializeControls()
         {
             Text = "Play vs Bot";
-            Size = new Size(280, 230);
+            Size = new Size(280, 300);
             FormBorderStyle = FormBorderStyle.FixedDialog;
             StartPosition = FormStartPosition.CenterParent;
             MaximizeBox = false;
@@ -76,11 +78,40 @@ namespace ChessDroid
             grpColor.Controls.Add(rbPlayWhite);
             grpColor.Controls.Add(rbPlayBlack);
 
+            // Type group
+            var grpType = new GroupBox
+            {
+                Text = "Type",
+                Location = new Point(15, 130),
+                Size = new Size(240, 65),
+                Font = new Font("Courier New", 9F, FontStyle.Bold)
+            };
+
+            rbFriendly = new RadioButton
+            {
+                Text = "Friendly",
+                Location = new Point(15, 25),
+                Size = new Size(95, 25),
+                Checked = true,
+                Font = new Font("Courier New", 9F, FontStyle.Regular)
+            };
+
+            rbChallenge = new RadioButton
+            {
+                Text = "Challenge",
+                Location = new Point(120, 25),
+                Size = new Size(110, 25),
+                Font = new Font("Courier New", 9F, FontStyle.Regular)
+            };
+
+            grpType.Controls.Add(rbFriendly);
+            grpType.Controls.Add(rbChallenge);
+
             // Start button
             btnStart = new Button
             {
                 Text = "Start",
-                Location = new Point(55, 135),
+                Location = new Point(55, 210),
                 Size = new Size(80, 35),
                 FlatStyle = FlatStyle.Flat,
                 Font = new Font("Courier New", 9F, FontStyle.Bold)
@@ -90,7 +121,8 @@ namespace ChessDroid
                 Settings = new BotSettings
                 {
                     Difficulty = (BotDifficulty)cmbDifficulty.SelectedIndex,
-                    BotPlaysWhite = rbPlayBlack.Checked
+                    BotPlaysWhite = rbPlayBlack.Checked,
+                    ChallengeMode = rbChallenge.Checked
                 };
                 DialogResult = DialogResult.OK;
                 Close();
@@ -100,7 +132,7 @@ namespace ChessDroid
             btnCancel = new Button
             {
                 Text = "Cancel",
-                Location = new Point(145, 135),
+                Location = new Point(145, 210),
                 Size = new Size(80, 35),
                 FlatStyle = FlatStyle.Flat,
                 Font = new Font("Courier New", 9F)
@@ -111,7 +143,7 @@ namespace ChessDroid
                 Close();
             };
 
-            Controls.AddRange(new Control[] { lblDifficulty, cmbDifficulty, grpColor, btnStart, btnCancel });
+            Controls.AddRange(new Control[] { lblDifficulty, cmbDifficulty, grpColor, grpType, btnStart, btnCancel });
             AcceptButton = btnStart;
             CancelButton = btnCancel;
         }
@@ -148,6 +180,10 @@ namespace ChessDroid
                         gc.ForeColor = Color.White;
                         gc.BackColor = Color.FromArgb(45, 45, 48);
                     }
+                }
+                else if (c is Label lbl)
+                {
+                    lbl.ForeColor = Color.White;
                 }
             }
         }

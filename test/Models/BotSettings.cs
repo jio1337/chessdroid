@@ -13,6 +13,7 @@ namespace ChessDroid.Models
     {
         public BotDifficulty Difficulty { get; set; } = BotDifficulty.Medium;
         public bool BotPlaysWhite { get; set; } = false;
+        public bool ChallengeMode { get; set; } = false;
 
         public int GetSkillLevel() => Difficulty switch
         {
