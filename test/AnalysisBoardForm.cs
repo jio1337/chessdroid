@@ -2147,19 +2147,17 @@ namespace ChessDroid
                 wdl,
                 bookMoves);
 
-            // Update engine arrows on board (suppress during PV animation)
+            // Update arrows on board (suppress during PV animation)
             if (!isNavigating)
             {
-                int arrowCount = config?.EngineArrowCount ?? 1;
-                if (arrowCount > 0)
-                    UpdateEngineArrows(pvs, arrowCount);
-                else
+                bool inBook = config?.ShowBookMoves == true && bookMoves != null && bookMoves.Count > 0;
+
+                if (inBook)
+                {
+                    // Book arrows take over while in the opening — engine arrows would just overlap
                     boardControl.ClearEngineArrows();
 
-                // Update book arrows on board
-                if (config?.ShowBookMoves == true && bookMoves != null && bookMoves.Count > 0)
-                {
-                    int totalWeight = bookMoves.Sum(m => m.Priority);
+                    int totalWeight = bookMoves!.Sum(m => m.Priority);
                     double topPct = totalWeight > 0 ? bookMoves[0].Priority / (double)totalWeight * 100.0 : 1.0;
                     var bookArrows = new List<(int, int, int, int, Color)>();
                     foreach (var bm in bookMoves.Take(5))
@@ -2174,7 +2172,13 @@ namespace ChessDroid
                 }
                 else
                 {
+                    // Out of book — engine arrows
                     boardControl.ClearBookArrows();
+                    int arrowCount = config?.EngineArrowCount ?? 1;
+                    if (arrowCount > 0)
+                        UpdateEngineArrows(pvs, arrowCount);
+                    else
+                        boardControl.ClearEngineArrows();
                 }
             }
 
