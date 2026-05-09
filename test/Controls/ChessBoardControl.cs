@@ -49,6 +49,10 @@ namespace ChessDroid.Controls
         private Point arrowDragPosition = Point.Empty;
         private static readonly Color ArrowColor = Color.FromArgb(180, 0, 180, 80);
 
+        // Right-click square highlights
+        private HashSet<(int row, int col)> _highlightedSquares = new();
+        private static readonly Color SquareHighlightColor = Color.FromArgb(190, 235, 97, 40);
+
         // Engine analysis arrows (separate from user arrows)
         private List<(int fromRow, int fromCol, int toRow, int toCol, Color color)> engineArrows = new();
 
@@ -282,6 +286,7 @@ namespace ChessDroid.Controls
             try
             {
                 userArrows.Clear();
+                _highlightedSquares.Clear();
                 board = ChessBoard.FromFEN(fen);
                 string[] parts = fen.Split(' ');
                 whiteToMove = parts.Length > 1 ? parts[1] == "w" : true;
@@ -448,6 +453,10 @@ namespace ChessDroid.Controls
                         else if (row == lastMove.Value.toRow && col == lastMove.Value.toCol)
                             squareColor = BlendColors(squareColor, lastMoveToColor);
                     }
+
+                    // User-highlighted squares (right-click tap)
+                    if (_highlightedSquares.Contains((row, col)))
+                        squareColor = BlendColors(squareColor, SquareHighlightColor);
 
                     // Highlight selected square
                     if (row == selectedRow && col == selectedCol)
@@ -718,10 +727,11 @@ namespace ChessDroid.Controls
                 return;
             }
 
-            // Left-click clears arrows
-            if (e.Button == MouseButtons.Left && userArrows.Count > 0)
+            // Left-click clears arrows and square highlights
+            if (e.Button == MouseButtons.Left && (userArrows.Count > 0 || _highlightedSquares.Count > 0))
             {
                 userArrows.Clear();
+                _highlightedSquares.Clear();
                 Invalidate();
             }
 
@@ -891,7 +901,12 @@ namespace ChessDroid.Controls
             {
                 if (boardRow == arrowFromRow && boardCol == arrowFromCol)
                 {
-                    userArrows.Clear();
+                    // Tap on same square — toggle square highlight
+                    var sq = (boardRow, boardCol);
+                    if (_highlightedSquares.Contains(sq))
+                        _highlightedSquares.Remove(sq);
+                    else
+                        _highlightedSquares.Add(sq);
                 }
                 else
                 {
@@ -1273,6 +1288,7 @@ namespace ChessDroid.Controls
         private bool ExecuteMove(int fromRow, int fromCol, int toRow, int toCol, char? promotion)
         {
             userArrows.Clear();
+            _highlightedSquares.Clear();
 
             char movingPiece = board.GetPiece(fromRow, fromCol);
 
