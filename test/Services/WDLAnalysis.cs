@@ -82,9 +82,9 @@ namespace ChessDroid.Services
             if (winPct >= 80 || lossPct >= 80)
                 return "decisive";
             if (winPct >= 65 || lossPct >= 65)
-                return "winning";
-            if (winPct >= 55 || lossPct >= 55)
                 return "clear advantage";
+            if (winPct >= 55 || lossPct >= 55)
+                return "slight edge";
             if (winPct >= 45 && winPct > lossPct + 10)
                 return "slight edge";
             if (lossPct >= 45 && lossPct > winPct + 10)

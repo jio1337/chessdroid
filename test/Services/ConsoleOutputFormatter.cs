@@ -1900,14 +1900,29 @@ namespace ChessDroid.Services
             richTextBox.SelectionColor = lossColor;
             richTextBox.AppendText($"L:{lossPercent:F0}% ");
 
-            // Sharpness indicator (same from both perspectives)
-            string character = wdl.GetPositionCharacter();
+            // Sharpness indicator from the current side's perspective
+            string character = GetDisplayPositionCharacter(winPercent, lossPercent, drawPercent, wdl.Sharpness);
             Color sharpnessColor = WDLUtilities.GetSharpnessColor(wdl.Sharpness);
             richTextBox.SelectionColor = sharpnessColor;
             richTextBox.AppendText($"({character})");
 
             richTextBox.AppendText(Environment.NewLine);
             ResetFormatting();
+        }
+
+        private static string GetDisplayPositionCharacter(double win, double loss, double draw, double sharpness)
+        {
+            if (draw >= 70) return "very drawish";
+            if (draw >= 50) return "drawish";
+            if (win >= 80) return "decisive";
+            if (loss >= 80) return "decisive";
+            if (win >= 65) return "clear advantage";
+            if (loss >= 65) return "clear disadvantage";
+            if (win >= 55) return "slight edge";
+            if (loss >= 55) return "slight disadvantage";
+            if (sharpness >= 0.7) return "very sharp";
+            if (sharpness >= 0.4) return "sharp";
+            return "balanced";
         }
 
         /// <summary>

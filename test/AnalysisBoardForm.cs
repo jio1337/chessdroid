@@ -22,6 +22,7 @@ namespace ChessDroid
         private static readonly Regex PgnContinuationRegex = new(@"[0-9]+\.\.\.", RegexOptions.Compiled);
         private static readonly Regex PgnMoveNumberRegex = new(@"^\d+\.?$", RegexOptions.Compiled);
         private static readonly Regex PgnAttachedMoveRegex = new(@"^\d+\.(.+)$", RegexOptions.Compiled);
+        private static readonly Regex PgnEvalCommentRegex = new(@"\[([+\-]?\d+\.?\d*)\]", RegexOptions.Compiled);
 
         /// <summary>
         /// Cached engine analysis result for a position.
@@ -2658,6 +2659,11 @@ namespace ChessDroid
             sb.AppendLine("[White \"?\"]");
             sb.AppendLine("[Black \"?\"]");
             sb.AppendLine("[Result \"*\"]");
+            if (_classificationLookup != null)
+            {
+                string annotator = _currentClassification?.EngineName is { Length: > 0 } n ? n : "chessdroid";
+                sb.AppendLine($"[Annotator \"{annotator}\"]");
+            }
 
             // Add FEN if not standard starting position
             string rootFen = moveTree.Root.FEN;
@@ -2669,7 +2675,7 @@ namespace ChessDroid
 
             sb.AppendLine();
 
-            // Generate move text
+            // Generate move text with annotations
             var mainLine = moveTree.GetMainLine();
             if (mainLine.Count > 0)
             {
@@ -2678,18 +2684,37 @@ namespace ChessDroid
 
                 foreach (var node in mainLine)
                 {
-                    string moveStr;
-                    if (node.IsWhiteMove)
+                    // Strip inline symbols from SanMove — annotations are encoded as NAG + comment
+                    string cleanSan = StripAnnotationSymbols(node.SanMove);
+                    string moveStr = node.IsWhiteMove
+                        ? $"{node.MoveNumber}. {cleanSan}"
+                        : cleanSan;
+
+                    // NAG + comment: prefer classification result, fall back to inline symbol
+                    string nag = "";
+                    string comment = "";
+                    if (_classificationLookup != null &&
+                        _classificationLookup.TryGetValue(node, out var result))
                     {
-                        moveStr = $"{node.MoveNumber}. {node.SanMove}";
+                        nag = GetNagForSymbol(result.Symbol);
+                        comment = BuildPgnComment(result);
                     }
                     else
                     {
-                        moveStr = node.SanMove;
+                        nag = GetNagForSymbol(GetInlineSymbol(node.SanMove));
                     }
 
+                    string fullToken = moveStr;
+                    if (!string.IsNullOrEmpty(nag)) fullToken += " " + nag;
+                    if (!string.IsNullOrEmpty(comment)) fullToken += " " + comment;
+
+                    // Embed engine cache data so analysis is restored on re-import
+                    string posKey = GetPositionKey(node.FEN);
+                    if (_analysisCache.TryGetValue(posKey, out var cachedEntry) && cachedEntry.Depth > 0)
+                        fullToken += " " + SerializeCachedAnalysis(cachedEntry);
+
                     // Word wrap at ~80 characters
-                    if (lineLength + moveStr.Length + 1 > 80)
+                    if (lineLength + fullToken.Length + 1 > 80)
                     {
                         moveText.AppendLine();
                         lineLength = 0;
@@ -2700,12 +2725,12 @@ namespace ChessDroid
                         lineLength++;
                     }
 
-                    moveText.Append(moveStr);
-                    lineLength += moveStr.Length;
+                    moveText.Append(fullToken);
+                    lineLength += fullToken.Length;
                 }
 
                 sb.Append(moveText);
-                sb.Append(" *"); // Result
+                sb.Append(" *");
             }
             else
             {
@@ -2718,6 +2743,7 @@ namespace ChessDroid
 
         /// <summary>
         /// Imports a PGN string and populates the move tree.
+        /// Restores classification annotations (NAGs + eval comments) if present.
         /// </summary>
         private void ImportPgn(string pgn)
         {
@@ -2733,7 +2759,6 @@ namespace ChessDroid
                     string line = lines[i].Trim();
                     if (line.StartsWith("[") && line.EndsWith("]"))
                     {
-                        // Parse header: [Key "Value"]
                         int keyEnd = line.IndexOf(' ');
                         if (keyEnd > 1)
                         {
@@ -2741,10 +2766,7 @@ namespace ChessDroid
                             int valueStart = line.IndexOf('"') + 1;
                             int valueEnd = line.LastIndexOf('"');
                             if (valueStart > 0 && valueEnd > valueStart)
-                            {
-                                string value = line.Substring(valueStart, valueEnd - valueStart);
-                                headers[key] = value;
-                            }
+                                headers[key] = line.Substring(valueStart, valueEnd - valueStart);
                         }
                         moveTextStart = i + 1;
                     }
@@ -2755,93 +2777,140 @@ namespace ChessDroid
                     }
                 }
 
-                // Get starting FEN (or use standard position)
                 string startFen = headers.TryGetValue("FEN", out var fenValue)
                     ? fenValue
                     : "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
-                // Reset board and tree
                 boardControl.LoadFEN(startFen);
                 moveTree.Clear(startFen);
                 moveListBox.Items.Clear();
                 displayedNodes.Clear();
                 _analysisCache.Clear();
+                _currentClassification = null;
+                _classificationLookup = null;
 
-                // Extract move text (everything after headers)
-                string moveText = string.Join(" ", lines.Skip(moveTextStart));
+                string moveText = string.Join(" ", lines.Skip(moveTextStart))
+                    .Replace("\r", " ").Replace("\n", " ");
 
-                // Clean up the move text using cached regex patterns
-                moveText = PgnCommentRegex.Replace(moveText, " ");      // Remove comments
-                moveText = PgnVariationRegex.Replace(moveText, " ");    // Remove variations (simple)
-                moveText = PgnNagRegex.Replace(moveText, " ");          // Remove NAGs
-                moveText = PgnContinuationRegex.Replace(moveText, " "); // Remove continuation dots
-                moveText = moveText.Replace("\r", " ").Replace("\n", " ");
+                var tokens = TokenizePgnMoveText(moveText);
 
-                // Parse moves
-                var tokens = moveText.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
                 string currentFen = startFen;
                 int skippedMoves = 0;
                 var skippedMovesList = new List<string>();
 
-                // Set navigating flag to prevent BoardControl_MoveMade from double-adding moves
+                // Track annotations per node in move order
+                var annotationList = new List<(MoveNode node, string nag, string comment)>();
+                MoveNode? lastAppliedNode = null;
+
                 isNavigating = true;
 
-                foreach (var token in tokens)
+                foreach (var (type, value) in tokens)
                 {
-                    // Skip results
-                    if (token == "1-0" || token == "0-1" || token == "1/2-1/2" || token == "*")
-                        continue;
-
-                    // Skip standalone move numbers like "1." or "1"
-                    if (PgnMoveNumberRegex.IsMatch(token))
-                        continue;
-
-                    string san = token.Trim();
-
-                    // Handle move numbers attached to moves: "1.e4" -> "e4", "12.Nf3" -> "Nf3"
-                    var attachedMoveMatch = PgnAttachedMoveRegex.Match(san);
-                    if (attachedMoveMatch.Success)
+                    if (type == 'M')
                     {
-                        san = attachedMoveMatch.Groups[1].Value;
+                        string? uciMove = ConvertSanToUci(value, currentFen);
+                        if (uciMove == null)
+                        {
+                            Debug.WriteLine($"Failed to parse move: {value} in position {currentFen}");
+                            skippedMoves++;
+                            if (skippedMovesList.Count < 5) skippedMovesList.Add(value);
+                            continue;
+                        }
+                        boardControl.LoadFEN(currentFen);
+                        if (!boardControl.MakeMove(uciMove))
+                        {
+                            Debug.WriteLine($"Failed to apply move: {uciMove}");
+                            skippedMoves++;
+                            if (skippedMovesList.Count < 5) skippedMovesList.Add(value);
+                            continue;
+                        }
+                        string newFen = boardControl.GetFEN();
+                        moveTree.AddMove(uciMove, value, newFen);
+                        currentFen = newFen;
+                        lastAppliedNode = moveTree.CurrentNode;
+                        annotationList.Add((lastAppliedNode, "", ""));
                     }
-
-                    if (string.IsNullOrEmpty(san))
-                        continue;
-
-                    // Convert SAN to UCI
-                    string? uciMove = ConvertSanToUci(san, currentFen);
-                    if (uciMove == null)
+                    else if (type == 'N' && lastAppliedNode != null && annotationList.Count > 0)
                     {
-                        Debug.WriteLine($"Failed to parse move: {san} in position {currentFen}");
-                        skippedMoves++;
-                        if (skippedMovesList.Count < 5) skippedMovesList.Add(san);
-                        continue;
+                        var last = annotationList[^1];
+                        annotationList[^1] = (last.node, value, last.comment);
                     }
-
-                    // Apply the move using the board control
-                    boardControl.LoadFEN(currentFen);
-                    if (!boardControl.MakeMove(uciMove))
+                    else if (type == 'C' && lastAppliedNode != null && annotationList.Count > 0)
                     {
-                        Debug.WriteLine($"Failed to apply move: {uciMove}");
-                        skippedMoves++;
-                        if (skippedMovesList.Count < 5) skippedMovesList.Add(san);
-                        continue;
+                        if (value.StartsWith("[%cda "))
+                        {
+                            var ca = DeserializeCachedAnalysis(value);
+                            if (ca != null)
+                                _analysisCache[GetPositionKey(lastAppliedNode.FEN)] = ca;
+                        }
+                        else
+                        {
+                            var last = annotationList[^1];
+                            annotationList[^1] = (last.node, last.nag, value);
+                        }
                     }
-                    string newFen = boardControl.GetFEN();
-
-                    // Add to tree
-                    moveTree.AddMove(uciMove, san, newFen);
-                    currentFen = newFen;
                 }
 
-                // Reset navigating flag
                 isNavigating = false;
 
-                // Update display
+                bool hasAnnotations = annotationList.Any(a =>
+                    !string.IsNullOrEmpty(a.nag) || !string.IsNullOrEmpty(a.comment));
+
+                if (hasAnnotations)
+                {
+                    var moveResults = new List<MoveReviewResult>();
+                    int whiteMoveCount = 0, blackMoveCount = 0;
+
+                    foreach (var (node, nag, comment) in annotationList)
+                    {
+                        string symbol = !string.IsNullOrEmpty(nag) ? GetSymbolForNag(nag) : "";
+                        double? evalAfter = !string.IsNullOrEmpty(comment) ? ParseEvalFromComment(comment) : null;
+                        var quality = !string.IsNullOrEmpty(symbol)
+                            ? GetQualityForSymbol(symbol)
+                            : !string.IsNullOrEmpty(comment)
+                                ? ParseQualityFromComment(comment)
+                                : MoveQualityAnalyzer.MoveQuality.Best;
+
+                        moveResults.Add(new MoveReviewResult
+                        {
+                            Node = node,
+                            PlayedMove = node.SanMove,
+                            Quality = quality,
+                            Symbol = symbol,
+                            EvalAfter = evalAfter ?? 0,
+                            IsWhiteMove = node.IsWhiteMove
+                        });
+
+                        if (node.IsWhiteMove) whiteMoveCount++;
+                        else blackMoveCount++;
+                    }
+
+                    string annotator = headers.TryGetValue("Annotator", out var ann) ? ann : "chessdroid";
+                    _currentClassification = new MoveClassificationResult
+                    {
+                        EngineName = annotator,
+                        MoveResults = moveResults,
+                        WhiteMoveCount = whiteMoveCount,
+                        BlackMoveCount = blackMoveCount
+                    };
+
+                    foreach (var r in moveResults)
+                    {
+                        var counts = r.IsWhiteMove
+                            ? _currentClassification.WhiteCounts
+                            : _currentClassification.BlackCounts;
+                        counts.TryGetValue(r.Quality, out int cnt);
+                        counts[r.Quality] = cnt + 1;
+                    }
+                }
+
                 boardControl.LoadFEN(moveTree.CurrentNode.FEN);
                 UpdateMoveList();
                 UpdateFenDisplay();
                 UpdateTurnLabel();
+
+                if (hasAnnotations)
+                    UpdateMoveListWithClassification();
 
                 int moveCount = moveTree.GetMainLine().Count;
                 if (skippedMoves > 0)
@@ -2853,10 +2922,10 @@ namespace ChessDroid
                 }
                 else
                 {
-                    lblStatus.Text = $"Imported {moveCount} moves from PGN";
+                    string suffix = hasAnnotations ? " (with annotations)" : "";
+                    lblStatus.Text = $"Imported {moveCount} moves from PGN{suffix}";
                 }
 
-                // Navigate to start
                 moveTree.GoToStart();
                 boardControl.LoadFEN(moveTree.CurrentNode.FEN);
                 UpdateMoveListSelection();
@@ -3431,6 +3500,201 @@ namespace ChessDroid
                 }
             }
             return san;
+        }
+
+        private static string SerializeCachedAnalysis(CachedAnalysis ca)
+        {
+            var sb = new System.Text.StringBuilder();
+            sb.Append($"[%cda d={ca.Depth}");
+            if (!string.IsNullOrEmpty(ca.BestMove)) sb.Append($";b={ca.BestMove}");
+            if (!string.IsNullOrEmpty(ca.Evaluation)) sb.Append($";e={ca.Evaluation}");
+            if (ca.PVs.Count > 0) sb.Append($";v={string.Join("~", ca.PVs)}");
+            if (ca.Evaluations.Count > 0) sb.Append($";f={string.Join("~", ca.Evaluations)}");
+            if (ca.WDL != null) sb.Append($";w={ca.WDL.Win}/{ca.WDL.Draw}/{ca.WDL.Loss}");
+            sb.Append("]");
+            return $"{{ {sb} }}";
+        }
+
+        private static CachedAnalysis? DeserializeCachedAnalysis(string comment)
+        {
+            if (!comment.StartsWith("[%cda ") || !comment.EndsWith("]")) return null;
+            string inner = comment.Substring(6, comment.Length - 7);
+            var ca = new CachedAnalysis();
+            foreach (var field in inner.Split(';'))
+            {
+                int eq = field.IndexOf('=');
+                if (eq < 0) continue;
+                string key = field.Substring(0, eq);
+                string val = field.Substring(eq + 1);
+                switch (key)
+                {
+                    case "d":
+                        if (int.TryParse(val, out int d)) ca.Depth = d;
+                        break;
+                    case "b":
+                        ca.BestMove = val;
+                        break;
+                    case "e":
+                        ca.Evaluation = val;
+                        break;
+                    case "v":
+                        ca.PVs = val.Split('~').Where(x => !string.IsNullOrEmpty(x)).ToList();
+                        break;
+                    case "f":
+                        ca.Evaluations = val.Split('~').Where(x => !string.IsNullOrEmpty(x)).ToList();
+                        break;
+                    case "w":
+                        var wp = val.Split('/');
+                        if (wp.Length == 3 &&
+                            int.TryParse(wp[0], out int win) &&
+                            int.TryParse(wp[1], out int draw) &&
+                            int.TryParse(wp[2], out int loss))
+                            ca.WDL = new WDLInfo(win, draw, loss);
+                        break;
+                }
+            }
+            return ca.Depth > 0 ? ca : null;
+        }
+
+        private static string GetNagForSymbol(string symbol) => symbol switch
+        {
+            "!!" => "$3",
+            "!" => "$1",
+            "!?" => "$5",
+            "?!" => "$6",
+            "?" => "$2",
+            "??" => "$4",
+            _ => ""
+        };
+
+        private static string GetSymbolForNag(string nag) => nag switch
+        {
+            "$3" => "!!",
+            "$1" => "!",
+            "$5" => "!?",
+            "$6" => "?!",
+            "$2" => "?",
+            "$4" => "??",
+            _ => ""
+        };
+
+        private static MoveQualityAnalyzer.MoveQuality GetQualityForSymbol(string symbol) => symbol switch
+        {
+            "!!" => MoveQualityAnalyzer.MoveQuality.Brilliant,
+            "?!" => MoveQualityAnalyzer.MoveQuality.Inaccuracy,
+            "?" => MoveQualityAnalyzer.MoveQuality.Mistake,
+            "??" => MoveQualityAnalyzer.MoveQuality.Blunder,
+            _ => MoveQualityAnalyzer.MoveQuality.Best
+        };
+
+        private static string GetInlineSymbol(string san)
+        {
+            if (string.IsNullOrEmpty(san)) return "";
+            string[] symbols = { "!!", "??", "!?", "?!", "!", "?" };
+            foreach (var s in symbols)
+                if (san.EndsWith(s)) return s;
+            return "";
+        }
+
+        private static string BuildPgnComment(MoveReviewResult result)
+        {
+            string sign = result.EvalAfter >= 0 ? "+" : "-";
+            string eval = $"[{sign}{Math.Abs(result.EvalAfter):F2}]";
+            string label = result.Quality switch
+            {
+                MoveQualityAnalyzer.MoveQuality.Brilliant => "Brilliant",
+                MoveQualityAnalyzer.MoveQuality.Best => "Best",
+                MoveQualityAnalyzer.MoveQuality.Excellent => "Excellent",
+                MoveQualityAnalyzer.MoveQuality.Good => "Good",
+                MoveQualityAnalyzer.MoveQuality.Book => "Book",
+                MoveQualityAnalyzer.MoveQuality.Inaccuracy => "Inaccuracy",
+                MoveQualityAnalyzer.MoveQuality.Mistake => "Mistake",
+                MoveQualityAnalyzer.MoveQuality.Blunder => "Blunder",
+                MoveQualityAnalyzer.MoveQuality.Forced => "Forced",
+                _ => "Best"
+            };
+            return $"{{ {eval} {label} }}";
+        }
+
+        private static double? ParseEvalFromComment(string comment)
+        {
+            var m = PgnEvalCommentRegex.Match(comment);
+            if (!m.Success) return null;
+            return double.TryParse(m.Groups[1].Value,
+                System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture, out double v) ? v : (double?)null;
+        }
+
+        private static MoveQualityAnalyzer.MoveQuality ParseQualityFromComment(string comment)
+        {
+            if (comment.Contains("Brilliant")) return MoveQualityAnalyzer.MoveQuality.Brilliant;
+            if (comment.Contains("Blunder")) return MoveQualityAnalyzer.MoveQuality.Blunder;
+            if (comment.Contains("Mistake")) return MoveQualityAnalyzer.MoveQuality.Mistake;
+            if (comment.Contains("Inaccuracy")) return MoveQualityAnalyzer.MoveQuality.Inaccuracy;
+            if (comment.Contains("Book")) return MoveQualityAnalyzer.MoveQuality.Book;
+            if (comment.Contains("Excellent")) return MoveQualityAnalyzer.MoveQuality.Excellent;
+            if (comment.Contains("Forced")) return MoveQualityAnalyzer.MoveQuality.Forced;
+            if (comment.Contains("Good")) return MoveQualityAnalyzer.MoveQuality.Good;
+            return MoveQualityAnalyzer.MoveQuality.Best;
+        }
+
+        // Returns tokens: 'M'=move, 'N'=NAG ($3 etc), 'C'=comment text
+        private static List<(char type, string value)> TokenizePgnMoveText(string moveText)
+        {
+            var tokens = new List<(char, string)>();
+            int i = 0, len = moveText.Length;
+            while (i < len)
+            {
+                char c = moveText[i];
+                if (c == '{')
+                {
+                    int end = moveText.IndexOf('}', i + 1);
+                    if (end < 0) end = len - 1;
+                    tokens.Add(('C', moveText.Substring(i + 1, end - i - 1).Trim()));
+                    i = end + 1;
+                }
+                else if (c == '(')
+                {
+                    int depth = 1; i++;
+                    while (i < len && depth > 0)
+                    {
+                        if (moveText[i] == '(') depth++;
+                        else if (moveText[i] == ')') depth--;
+                        i++;
+                    }
+                }
+                else if (c == ';')
+                {
+                    while (i < len && moveText[i] != '\n') i++;
+                }
+                else if (c == '$')
+                {
+                    int start = i++;
+                    while (i < len && char.IsDigit(moveText[i])) i++;
+                    tokens.Add(('N', moveText.Substring(start, i - start)));
+                }
+                else if (char.IsWhiteSpace(c))
+                {
+                    i++;
+                }
+                else
+                {
+                    int start = i;
+                    while (i < len && !char.IsWhiteSpace(moveText[i]) &&
+                           moveText[i] != '{' && moveText[i] != '(' &&
+                           moveText[i] != '$' && moveText[i] != ';')
+                        i++;
+                    string token = moveText.Substring(start, i - start);
+                    if (token == "1-0" || token == "0-1" || token == "1/2-1/2" || token == "*")
+                        continue;
+                    if (PgnMoveNumberRegex.IsMatch(token)) continue;
+                    var am = PgnAttachedMoveRegex.Match(token);
+                    if (am.Success) token = am.Groups[1].Value.TrimStart('.');
+                    if (!string.IsNullOrEmpty(token))
+                        tokens.Add(('M', token));
+                }
+            }
+            return tokens;
         }
 
         #endregion

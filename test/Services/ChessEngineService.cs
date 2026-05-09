@@ -817,7 +817,15 @@ namespace ChessDroid.Services
                         {
                             pvBuffer[idx]   = string.Join(" ", pvMoves);
                             evalBuffer[idx] = lineEval;
-                            if (mpv == 1) { bestEval = lineEval; bestMove = pvMoves.Count > 0 ? pvMoves[0] : bestMove; wdl = lineWdl ?? wdl; }
+                            if (mpv == 1)
+                            {
+                                bestEval = lineEval;
+                                bestMove = pvMoves.Count > 0 ? pvMoves[0] : bestMove;
+                                // Stockfish WDL is from the side-to-move's perspective.
+                                // Convert to White's perspective so DisplayWDLInfo works correctly.
+                                if (lineWdl != null)
+                                    wdl = whiteToMove ? lineWdl : new WDLInfo(lineWdl.Loss, lineWdl.Draw, lineWdl.Win);
+                            }
                             highestMpvSeen = Math.Max(highestMpvSeen, mpv);
                         }
 
