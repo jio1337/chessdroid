@@ -2155,6 +2155,27 @@ namespace ChessDroid
                     UpdateEngineArrows(pvs, arrowCount);
                 else
                     boardControl.ClearEngineArrows();
+
+                // Update book arrows on board
+                if (config?.ShowBookMoves == true && bookMoves != null && bookMoves.Count > 0)
+                {
+                    int totalWeight = bookMoves.Sum(m => m.Priority);
+                    double topPct = totalWeight > 0 ? bookMoves[0].Priority / (double)totalWeight * 100.0 : 1.0;
+                    var bookArrows = new List<(int, int, int, int, Color)>();
+                    foreach (var bm in bookMoves.Take(5))
+                    {
+                        if (bm.UciMove.Length < 4) continue;
+                        var (fromRow, fromCol, toRow, toCol) = UciToSquares(bm.UciMove);
+                        double pct = totalWeight > 0 ? bm.Priority / (double)totalWeight * 100.0 : 0;
+                        int alpha = Math.Max(80, (int)(pct / topPct * 200));
+                        bookArrows.Add((fromRow, fromCol, toRow, toCol, Color.FromArgb(alpha, 15, 155, 200)));
+                    }
+                    boardControl.SetBookArrows(bookArrows);
+                }
+                else
+                {
+                    boardControl.ClearBookArrows();
+                }
             }
 
             // Update eval bar with the evaluation

@@ -56,6 +56,9 @@ namespace ChessDroid.Controls
         // Engine analysis arrows (separate from user arrows)
         private List<(int fromRow, int fromCol, int toRow, int toCol, Color color)> engineArrows = new();
 
+        // Opening book arrows (drawn underneath engine arrows)
+        private List<(int fromRow, int fromCol, int toRow, int toCol, Color color)> _bookArrows = new();
+
         // Visual settings
         private Color lightSquareColor = Color.FromArgb(240, 217, 181);
         private Color darkSquareColor = Color.FromArgb(181, 136, 99);
@@ -383,6 +386,21 @@ namespace ChessDroid.Controls
             }
         }
 
+        public void SetBookArrows(IEnumerable<(int fromRow, int fromCol, int toRow, int toCol, Color color)> arrows)
+        {
+            _bookArrows = arrows.ToList();
+            Invalidate();
+        }
+
+        public void ClearBookArrows()
+        {
+            if (_bookArrows.Count > 0)
+            {
+                _bookArrows.Clear();
+                Invalidate();
+            }
+        }
+
         /// <summary>
         /// Gets the piece character at the given internal coordinates (0=rank8, 7=rank1).
         /// </summary>
@@ -590,6 +608,12 @@ namespace ChessDroid.Controls
         private void DrawArrows(Graphics g, int squareSize)
         {
             g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+
+            // Draw book arrows (underneath everything)
+            foreach (var arrow in _bookArrows)
+            {
+                DrawArrow(g, squareSize, arrow.fromRow, arrow.fromCol, arrow.toRow, arrow.toCol, arrow.color);
+            }
 
             // Draw engine analysis arrows (underneath user arrows)
             foreach (var arrow in engineArrows)
