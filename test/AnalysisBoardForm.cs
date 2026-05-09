@@ -2504,6 +2504,7 @@ namespace ChessDroid
         private async Task AnimatePvLineAsync(List<MoveNode> nodes, CancellationToken ct)
         {
             isNavigating = true;
+            bool completed = false;
             try
             {
                 foreach (var node in nodes)
@@ -2513,6 +2514,20 @@ namespace ChessDroid
 
                     moveTree.GoToNode(node);
                     boardControl.LoadFEN(node.FEN);
+
+                    // Highlight the move that was just played so it's visually clear
+                    if (node.UciMove.Length >= 4)
+                    {
+                        int fromCol = node.UciMove[0] - 'a';
+                        int fromRow = 7 - (node.UciMove[1] - '1');
+                        int toCol   = node.UciMove[2] - 'a';
+                        int toRow   = 7 - (node.UciMove[3] - '1');
+                        boardControl.LastMove = (fromRow, fromCol, toRow, toCol);
+                    }
+
+                    // Force immediate repaint so each move is visible before the next delay
+                    boardControl.Refresh();
+
                     UpdateMoveListSelection();
                     UpdateFenDisplay();
                     UpdateTurnLabel();
@@ -2522,12 +2537,17 @@ namespace ChessDroid
                         statusText += " (variation)";
                     lblStatus.Text = statusText;
                 }
+                completed = true;
             }
             catch (TaskCanceledException) { }
             finally
             {
                 isNavigating = false;
             }
+
+            // Analyze the final position once the animation finishes naturally
+            if (completed && !matchRunning)
+                _ = TriggerAutoAnalysis();
         }
 
         #endregion
