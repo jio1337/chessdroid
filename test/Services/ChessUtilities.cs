@@ -583,6 +583,12 @@ namespace ChessDroid.Services
                 madeCapture = originalPiece != '.' && char.IsUpper(originalPiece) != isWhite;
             }
 
+            // SCENARIO 3: Pawn push to a defended square — pawn will be captured immediately
+            // (e.g., d5 pushed to a square covered by an enemy bishop — it's a free pawn)
+            PieceType movingPieceType = PieceHelper.GetPieceType(piece);
+            if (!givesCheck && !madeCapture && movingPieceType == PieceType.Pawn)
+                return true;
+
             // If neither giving check nor made a capture, piece might not be recaptured
             // (e.g., moving to a defended square without capturing - opponent might not want to trade)
             if (!givesCheck && !madeCapture) return false;

@@ -378,7 +378,7 @@ namespace ChessDroid.Services
                         Square = GetSquareName(kingRow, kingCol)
                     });
                 }
-                else if (attackersAfter < attackersBefore && attackersBefore >= 2)
+                else if (attackersAfter < attackersBefore - 1 && attackersBefore >= 5)
                 {
                     defenses.Add(new Defense
                     {

@@ -1323,6 +1323,18 @@ namespace ChessDroid.Services
                                     int pinnedValue = ChessUtilities.GetPieceValue(pinnedPieceType);
                                     int behindValue = ChessUtilities.GetPieceValue(behindPieceType);
 
+                                    // Pawn special case: same guard as ThreatDetection
+                                    // File/rank pins on pawns are not meaningful (pawn's forward moves stay on the same line)
+                                    // Backward-diagonal pins are not meaningful (pawns can't move that way)
+                                    if (pinnedPieceType == PieceType.Pawn)
+                                    {
+                                        bool isDiagonalPin = (dR != 0 && dF != 0);
+                                        if (!isDiagonalPin) break;
+                                        bool pinnedPawnIsWhite = char.IsUpper(firstPiece.Value);
+                                        int pawnForwardDir = pinnedPawnIsWhite ? -1 : 1;
+                                        if (dR != pawnForwardDir) break; // Backward diagonal — pawn can't move that way
+                                    }
+
                                     // ABSOLUTE PIN: The piece behind is the King - always report
                                     if (behindPieceType == PieceType.King)
                                     {
