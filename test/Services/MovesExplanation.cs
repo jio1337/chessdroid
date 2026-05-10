@@ -349,8 +349,8 @@ namespace ChessDroid.Services
                         reasons.Add(tempoAttack);
                 }
 
-                // Basic positional considerations (fallback) - controlled by ShowPositionalAnalysis
-                if (ExplanationFormatter.Features.ShowPositionalAnalysis && reasons.Count < 2)
+                // Basic positional considerations (fallback) - skip if piece will be immediately recaptured
+                if (ExplanationFormatter.Features.ShowPositionalAnalysis && reasons.Count < 2 && !pieceWillBeRecaptured)
                 {
                     if (pieceType == PieceType.Knight || pieceType == PieceType.Bishop)
                     {
@@ -361,15 +361,16 @@ namespace ChessDroid.Services
                     }
                 }
 
-                // Development moves - controlled by ShowPositionalAnalysis
-                if (ExplanationFormatter.Features.ShowPositionalAnalysis && reasons.Count < 2 && (srcRank == 0 || srcRank == 7) &&
-                    (pieceType == PieceType.Knight || pieceType == PieceType.Bishop))
+                // Development moves - skip if piece will be immediately recaptured
+                if (ExplanationFormatter.Features.ShowPositionalAnalysis && reasons.Count < 2 && !pieceWillBeRecaptured &&
+                    (srcRank == 0 || srcRank == 7) && (pieceType == PieceType.Knight || pieceType == PieceType.Bishop))
                 {
                     reasons.Add($"develops {char.ToUpper(piece)}{dest}");
                 }
 
-                // Fianchetto: bishop settles on b2/g2/b7/g7 controlling long diagonal
-                if (ExplanationFormatter.Features.ShowPositionalAnalysis && pieceType == PieceType.Bishop && reasons.Count < 2)
+                // Fianchetto: bishop settles on b2/g2/b7/g7 — skip if immediately recaptured
+                if (ExplanationFormatter.Features.ShowPositionalAnalysis && pieceType == PieceType.Bishop &&
+                    reasons.Count < 2 && !pieceWillBeRecaptured)
                 {
                     bool isFianchetto = (isWhite && destRank == 6 && (destFile == 1 || destFile == 6)) ||
                                        (!isWhite && destRank == 1 && (destFile == 1 || destFile == 6));
@@ -406,9 +407,8 @@ namespace ChessDroid.Services
                     if (!string.IsNullOrEmpty(bareKing) && reasons.Count < 2)
                         reasons.Add(bareKing);
 
-                    string? materialImbalance = EndgameAnalysis.DetectMaterialImbalance(tempBoard);
-                    if (!string.IsNullOrEmpty(materialImbalance) && reasons.Count < 2)
-                        reasons.Add(materialImbalance);
+                    // DetectMaterialImbalance preserved for future mini-template use — not shown in text output
+                    // string? materialImbalance = EndgameAnalysis.DetectMaterialImbalance(tempBoard);
 
                     string? qualityImbalance = EndgameAnalysis.DetectQualityImbalance(tempBoard);
                     if (!string.IsNullOrEmpty(qualityImbalance) && reasons.Count < 2)
