@@ -373,7 +373,19 @@ namespace ChessDroid.Services
 
             if (valuableAttacked.Count >= 2)
             {
-                var pieceNames = valuableAttacked
+                PieceType forkingType = PieceHelper.GetPieceType(piece);
+                int forkingValue = ChessUtilities.GetPieceValue(forkingType);
+
+                // A fork is only real if we genuinely win material:
+                // each "at risk" piece must be undefended OR worth more than the forking piece OR be the king
+                var atRisk = valuableAttacked.Where(p =>
+                    char.ToUpper(p.piece) == 'K' ||
+                    !ChessUtilities.IsSquareDefended(board, p.row, p.col, !movingPlayerIsWhite) ||
+                    p.value > forkingValue).ToList();
+
+                if (atRisk.Count < 2) return;
+
+                var pieceNames = atRisk
                     .Select(p => ChessUtilities.GetPieceName(PieceHelper.GetPieceType(p.piece)))
                     .Take(2);
 
