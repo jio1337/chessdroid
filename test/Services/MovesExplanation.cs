@@ -124,15 +124,22 @@ namespace ChessDroid.Services
                 if (ExplanationFormatter.Features.ShowTacticalAnalysis)
                 {
                     // Desperado: a piece ALREADY under attack extracts value by capturing before being taken
-                    // NOT a normal trade — the piece must have been hanging on its original square
+                    // NOT a normal trade — the piece must have been hanging, AND must NOT be capturing
+                    // the very piece that was threatening it (that's just a normal recapture/exchange)
                     if (pieceWillBeRecaptured && targetPiece != '.' && reasons.Count < 2)
                     {
                         bool wasAlreadyUnderAttack = ChessUtilities.IsSquareDefended(board, srcRank, srcFile, !isWhite);
                         if (wasAlreadyUnderAttack)
                         {
-                            PieceType capturedType = PieceHelper.GetPieceType(targetPiece);
-                            if (ChessUtilities.GetPieceValue(capturedType) >= 3)
-                                reasons.Add($"desperado — captures {ChessUtilities.GetPieceName(capturedType)} before recapture");
+                            // Exclude: capturing the piece that was attacking us (Nxe5 when knight on e5 attacked us)
+                            bool capturingOurAttacker = ChessUtilities.CanAttackSquare(
+                                board, destRank, destFile, targetPiece, srcRank, srcFile);
+                            if (!capturingOurAttacker)
+                            {
+                                PieceType capturedType = PieceHelper.GetPieceType(targetPiece);
+                                if (ChessUtilities.GetPieceValue(capturedType) >= 3)
+                                    reasons.Add($"desperado — captures {ChessUtilities.GetPieceName(capturedType)} before recapture");
+                            }
                         }
                     }
 

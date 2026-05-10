@@ -78,7 +78,7 @@ namespace ChessDroid.Services
 
                 // 1. Check if any of our pieces were attacked before and are now defended
                 // Pass destSquare to exclude the piece that just moved (can't defend itself)
-                DetectNewlyDefendedPieces(board, afterMove, movingPlayerIsWhite, destSquare, defenses);
+                DetectNewlyDefendedPieces(board, afterMove, movingPlayerIsWhite, destSquare, destRank, destFile, defenses);
 
                 // 2. Check if the moving piece was escaping an attack
                 DetectEscape(board, afterMove, srcRank, srcFile, destRank, destFile, movingPiece, movingPlayerIsWhite, defenses);
@@ -108,8 +108,12 @@ namespace ChessDroid.Services
         /// the move but are now defended after the move.
         /// </summary>
         private static void DetectNewlyDefendedPieces(ChessBoard before, ChessBoard after,
-            bool weAreWhite, string destSquare, List<Defense> defenses)
+            bool weAreWhite, string destSquare, int captureRow, int captureCol, List<Defense> defenses)
         {
+            // If this was a capture, get the captured piece so we can filter phantom "defends"
+            char capturedPiece = before.GetPiece(captureRow, captureCol);
+            bool wasCapture = capturedPiece != '.';
+
             // Check each of our pieces
             for (int r = 0; r < 8; r++)
             {
@@ -137,6 +141,16 @@ namespace ChessDroid.Services
                     bool wasDefendedBefore = IsSquareAttackedBy(before, r, c, weAreWhite);
                     int defendersBefore = CountDefenders(before, r, c, weAreWhite);
                     int attackersBefore = CountAttackers(before, r, c, !weAreWhite);
+
+                    // If this was a capture and the captured piece was the SOLE attacker of this
+                    // friendly piece, don't report "defends X" — we just took the attacker,
+                    // not executed a dedicated defensive move (e.g. Nxe5 removing the forking knight)
+                    if (wasCapture && attackersBefore == 1)
+                    {
+                        bool capturedWasAttacking = ChessUtilities.CanAttackSquare(
+                            before, captureRow, captureCol, capturedPiece, r, c);
+                        if (capturedWasAttacking) continue;
+                    }
 
                     // Is it defended now?
                     int defendersAfter = CountDefenders(after, r, c, weAreWhite);
