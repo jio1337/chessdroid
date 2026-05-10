@@ -447,6 +447,18 @@ namespace ChessDroid.Services
                 }
             }
 
+            // "pins [piece] on [square] to [piece]" — redundant if explanation already mentions pinning that piece
+            if (threat.StartsWith("pins ", StringComparison.OrdinalIgnoreCase))
+            {
+                // Extract pinned piece name: "pins knight on f6 to queen" → "knight"
+                var words = threat.Split(' ');
+                if (words.Length >= 2)
+                {
+                    string pieceName = words[1];
+                    return explanation.Contains($"pins {pieceName}", StringComparison.OrdinalIgnoreCase);
+                }
+            }
+
             return false;
         }
 
