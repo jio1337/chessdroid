@@ -120,6 +120,28 @@ namespace ChessDroid.Services
                 // A threat is "new" if its description didn't exist in threatsBefore
                 var beforeDescriptions = new HashSet<string>(threatsBefore.Select(t => t.Description));
                 threatsAfter = threatsAfter.Where(t => !beforeDescriptions.Contains(t.Description)).ToList();
+
+                // Extra filter for pawns: if we were ALREADY attacking a pawn before the move
+                // (even if it could escape via forward push), don't claim "wins pawn" as newly created.
+                // Example: bishop already on the diagonal to c4; Nc3 blocks c3 but didn't create the attacker.
+                var preAttackedPawnSquares = new HashSet<string>();
+                for (int r = 0; r < 8; r++)
+                {
+                    for (int c = 0; c < 8; c++)
+                    {
+                        char p = board.GetPiece(r, c);
+                        if (p == '.') continue;
+                        if (char.IsUpper(p) == movingPlayerIsWhite) continue; // Must be enemy
+                        if (PieceHelper.GetPieceType(p) != PieceType.Pawn) continue;
+                        if (IsSquareAttackedBy(board, r, c, movingPlayerIsWhite) &&
+                            !IsSquareAttackedBy(board, r, c, !movingPlayerIsWhite))
+                            preAttackedPawnSquares.Add(GetSquareName(r, c));
+                    }
+                }
+                threatsAfter = threatsAfter.Where(t =>
+                    !(t.Type == ThreatType.HangingPiece &&
+                      t.Description.StartsWith("wins pawn") &&
+                      preAttackedPawnSquares.Contains(t.Square))).ToList();
             }
             catch (Exception ex)
             {
