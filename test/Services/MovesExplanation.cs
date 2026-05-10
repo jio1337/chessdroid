@@ -149,10 +149,10 @@ namespace ChessDroid.Services
                         reasons.Add(tacticalPattern);
                     }
 
-                    // Overloading: our capture forces a defender to abandon another piece it guards
-                    if (reasons.Count < 2 && targetPiece != '.')
+                    // Overloading: our quiet move threatens a piece whose only defender is already guarding something else
+                    if (reasons.Count < 2 && targetPiece == '.')
                     {
-                        string? overloadInfo = DetectOverloading(board, destRank, destFile, piece, isWhite);
+                        string? overloadInfo = DetectOverloading(board, tempBoard, destRank, destFile, piece, isWhite);
                         if (!string.IsNullOrEmpty(overloadInfo))
                             reasons.Add(overloadInfo);
                     }
@@ -303,7 +303,7 @@ namespace ChessDroid.Services
                         // Battery: two friendly heavy pieces aligned on same file, rank, or diagonal
                         if (reasons.Count < 2)
                         {
-                            string? batteryInfo = DetectBattery(tempBoard, destRank, destFile, piece, isWhite);
+                            string? batteryInfo = DetectBattery(tempBoard, srcRank, srcFile, destRank, destFile, piece, isWhite);
                             if (!string.IsNullOrEmpty(batteryInfo))
                                 reasons.Add(batteryInfo);
                         }
@@ -3210,7 +3210,7 @@ namespace ChessDroid.Services
             }
         }
 
-        private static string? DetectBattery(ChessBoard board, int pieceRow, int pieceCol, char piece, bool isWhite)
+        private static string? DetectBattery(ChessBoard board, int srcRow, int srcCol, int pieceRow, int pieceCol, char piece, bool isWhite)
         {
             try
             {
@@ -3218,6 +3218,7 @@ namespace ChessDroid.Services
                 char friendlyRook = isWhite ? 'R' : 'r';
                 char friendlyQueen = isWhite ? 'Q' : 'q';
                 char friendlyBishop = isWhite ? 'B' : 'b';
+                char enemyKing = isWhite ? 'k' : 'K';
 
                 // Orthogonal battery (rook or queen aligned with another rook or queen)
                 if (pieceType == PieceType.Rook || pieceType == PieceType.Queen)
@@ -3231,10 +3232,16 @@ namespace ChessDroid.Services
                             char p = board.GetPiece(r, c);
                             if (p == friendlyRook || p == friendlyQueen)
                             {
-                                if (dir[1] == 0)
-                                    return $"forms battery on {(char)('a' + pieceCol)}-file";
-                                else
-                                    return $"forms battery on rank {8 - pieceRow}";
+                                // Skip if piece moved along the same line (battery pre-existed)
+                                bool preExisting = dir[1] == 0 ? srcCol == pieceCol : srcRow == pieceRow;
+                                if (preExisting) break;
+
+                                // Require at least one enemy piece on this line for the battery to be meaningful
+                                if (!LineHasEnemy(board, pieceRow, pieceCol, dir, isWhite)) break;
+
+                                return dir[1] == 0
+                                    ? $"forms battery on {(char)('a' + pieceCol)}-file"
+                                    : $"forms battery on rank {8 - pieceRow}";
                             }
                             if (p != '.') break;
                             r += dir[0]; c += dir[1];
@@ -3253,7 +3260,17 @@ namespace ChessDroid.Services
                         {
                             char p = board.GetPiece(r, c);
                             if (p == friendlyBishop || p == friendlyQueen)
+                            {
+                                // Skip if piece moved along same diagonal (battery pre-existed)
+                                bool srcOnSameDiag = Math.Abs(srcRow - r) == Math.Abs(srcCol - c) &&
+                                                    (srcRow == r || (srcRow - r > 0) == (pieceRow - r > 0));
+                                if (srcOnSameDiag) break;
+
+                                // Require at least one enemy piece on this diagonal
+                                if (!LineHasEnemy(board, pieceRow, pieceCol, dir, isWhite)) break;
+
                                 return "forms diagonal battery";
+                            }
                             if (p != '.') break;
                             r += dir[0]; c += dir[1];
                         }
@@ -3265,64 +3282,98 @@ namespace ChessDroid.Services
             catch { return null; }
         }
 
-        private static string? DetectOverloading(ChessBoard board, int destRank, int destFile, char piece, bool isWhite)
+        private static bool LineHasEnemy(ChessBoard board, int startRow, int startCol, int[] dir, bool isWhite)
+        {
+            // Scan the full line (both directions from startRow/startCol) for any enemy piece
+            foreach (int sign in new[] { 1, -1 })
+            {
+                int r = startRow + dir[0] * sign, c = startCol + dir[1] * sign;
+                while (r >= 0 && r < 8 && c >= 0 && c < 8)
+                {
+                    char p = board.GetPiece(r, c);
+                    if (p != '.')
+                    {
+                        if (char.IsUpper(p) != isWhite) return true; // Enemy piece found
+                        break; // Friendly piece blocks further scan
+                    }
+                    r += dir[0] * sign; c += dir[1] * sign;
+                }
+            }
+            return false;
+        }
+
+        private static string? DetectOverloading(ChessBoard board, ChessBoard tempBoard, int destRank, int destFile, char piece, bool isWhite)
         {
             try
             {
-                // Find enemy pieces that can recapture at destRank/destFile
-                // then check if any such piece is the sole defender of another valuable piece
-                for (int defRow = 0; defRow < 8; defRow++)
+                // Correct overloading definition: our quiet move DIRECTLY THREATENS a valuable enemy piece V.
+                // V's only defender D is also the sole defender of another valuable piece W.
+                // The opponent cannot protect both V and W simultaneously.
+
+                // Find enemy pieces our moved piece now directly attacks
+                for (int vr = 0; vr < 8; vr++)
                 {
-                    for (int defCol = 0; defCol < 8; defCol++)
+                    for (int vc = 0; vc < 8; vc++)
                     {
-                        char defender = board.GetPiece(defRow, defCol);
-                        if (defender == '.') continue;
-                        bool defIsWhite = char.IsUpper(defender);
-                        if (defIsWhite == isWhite) continue;
+                        char target = board.GetPiece(vr, vc);
+                        if (target == '.') continue;
+                        if (char.IsUpper(target) == isWhite) continue; // Must be enemy
 
-                        PieceType defType = PieceHelper.GetPieceType(defender);
-                        if (defType == PieceType.King) continue;
+                        PieceType targetType = PieceHelper.GetPieceType(target);
+                        if (ChessUtilities.GetPieceValue(targetType) < 3) continue; // Minor piece or better
 
-                        if (!ChessUtilities.CanAttackSquare(board, defRow, defCol, defender, destRank, destFile))
+                        // Our moved piece must directly threaten this target
+                        if (!ChessUtilities.CanAttackSquare(tempBoard, destRank, destFile, piece, vr, vc))
                             continue;
 
-                        // This defender can recapture — check if it's also the sole defender of another piece
-                        for (int r = 0; r < 8; r++)
+                        // Find all enemy pieces defending V (can recapture if we take there)
+                        for (int dr = 0; dr < 8; dr++)
                         {
-                            for (int c = 0; c < 8; c++)
+                            for (int dc = 0; dc < 8; dc++)
                             {
-                                if (r == defRow && c == defCol) continue;
-                                if (r == destRank && c == destFile) continue;
+                                if (dr == vr && dc == vc) continue;
+                                char defender = board.GetPiece(dr, dc);
+                                if (defender == '.') continue;
+                                if (char.IsUpper(defender) == isWhite) continue; // Must be enemy
+                                PieceType defType = PieceHelper.GetPieceType(defender);
+                                if (defType == PieceType.King) continue;
 
-                                char defended = board.GetPiece(r, c);
-                                if (defended == '.') continue;
-                                bool defendedIsWhite = char.IsUpper(defended);
-                                if (defendedIsWhite != !isWhite) continue;
+                                if (!ChessUtilities.CanAttackSquare(board, dr, dc, defender, vr, vc)) continue;
 
-                                PieceType defendedType = PieceHelper.GetPieceType(defended);
-                                if (ChessUtilities.GetPieceValue(defendedType) < 3) continue;
-
-                                if (!ChessUtilities.CanAttackSquare(board, defRow, defCol, defender, r, c))
-                                    continue;
-
-                                // Is this the sole defender?
-                                bool isSole = true;
-                                for (int dr = 0; dr < 8 && isSole; dr++)
+                                // D defends V — now check if D is also the SOLE defender of another piece W
+                                for (int wr = 0; wr < 8; wr++)
                                 {
-                                    for (int dc = 0; dc < 8 && isSole; dc++)
+                                    for (int wc = 0; wc < 8; wc++)
                                     {
-                                        if (dr == defRow && dc == defCol) continue;
-                                        if (dr == destRank && dc == destFile) continue;
-                                        char op = board.GetPiece(dr, dc);
-                                        if (op == '.') continue;
-                                        if (char.IsUpper(op) != !isWhite) continue;
-                                        if (ChessUtilities.CanAttackSquare(board, dr, dc, op, r, c))
-                                            isSole = false;
+                                        if (wr == vr && wc == vc) continue;
+                                        if (wr == dr && wc == dc) continue;
+                                        char w = board.GetPiece(wr, wc);
+                                        if (w == '.') continue;
+                                        if (char.IsUpper(w) == isWhite) continue; // Must be enemy
+
+                                        PieceType wType = PieceHelper.GetPieceType(w);
+                                        if (ChessUtilities.GetPieceValue(wType) < 3) continue;
+                                        if (!ChessUtilities.CanAttackSquare(board, dr, dc, defender, wr, wc)) continue;
+
+                                        // Is D the sole defender of W?
+                                        bool isSole = true;
+                                        for (int xr = 0; xr < 8 && isSole; xr++)
+                                        {
+                                            for (int xc = 0; xc < 8 && isSole; xc++)
+                                            {
+                                                if (xr == dr && xc == dc) continue;
+                                                char x = board.GetPiece(xr, xc);
+                                                if (x == '.') continue;
+                                                if (char.IsUpper(x) == isWhite) continue;
+                                                if (ChessUtilities.CanAttackSquare(board, xr, xc, x, wr, wc))
+                                                    isSole = false;
+                                            }
+                                        }
+
+                                        if (isSole)
+                                            return $"overloads {ChessUtilities.GetPieceName(defType)} defending {ChessUtilities.GetPieceName(wType)}";
                                     }
                                 }
-
-                                if (isSole)
-                                    return $"overloads {ChessUtilities.GetPieceName(defType)} defending {ChessUtilities.GetPieceName(defendedType)}";
                             }
                         }
                     }
