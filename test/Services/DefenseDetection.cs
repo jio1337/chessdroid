@@ -359,6 +359,10 @@ namespace ChessDroid.Services
                     int pieceValue = pieceType == PieceType.King ? 100 : ChessUtilities.GetPieceValue(pieceType);
                     if (pieceValue < 3 && pieceType != PieceType.King) continue;
 
+                    // Skip if this piece moved away — the square is empty in the after board,
+                    // meaning the piece escaped rather than being defended by interposition
+                    if (after.GetPiece(r, c) == '.') continue;
+
                     // Was this piece attacked before by a sliding piece through our destination square?
                     bool wasAttackedThrough = WasAttackedThroughSquare(before, r, c, destRow, destCol, !weAreWhite);
                     if (!wasAttackedThrough) continue;

@@ -2406,13 +2406,30 @@ namespace ChessDroid.Services
 
                     if (hasCheckThreat && hasMaterialThreat)
                     {
-                        return "double attack: check and wins material";
+                        // Material piece must be genuinely at risk (undefended or worth more than attacker)
+                        // — otherwise the king can escape to a square that defends it
+                        int attackerVal = ChessUtilities.GetPieceValue(PieceHelper.GetPieceType(piece));
+                        bool materialAtRisk = attackedPieces.Any(p =>
+                            p.type != PieceType.King &&
+                            ChessUtilities.GetPieceValue(p.type) >= 3 &&
+                            (!ChessUtilities.IsSquareDefended(board, p.row, p.col, !isWhite) ||
+                             ChessUtilities.GetPieceValue(p.type) > attackerVal));
+                        if (materialAtRisk)
+                            return "double attack: check and wins material";
                     }
 
-                    // Two valuable pieces attacked
+                    // Two valuable pieces attacked — mirror the at-risk filter from DetectForks:
+                    // both must be undefended or worth more than the forking piece, otherwise
+                    // the opponent can defuse the fork (e.g. queen trade removes both threats)
                     if (attackedPieces.Count(p => ChessUtilities.GetPieceValue(p.type) >= 3) >= 2)
                     {
-                        return "double attack on multiple pieces";
+                        int forkingValue = ChessUtilities.GetPieceValue(PieceHelper.GetPieceType(piece));
+                        int atRiskCount = attackedPieces.Count(p =>
+                            ChessUtilities.GetPieceValue(p.type) >= 3 &&
+                            (!ChessUtilities.IsSquareDefended(board, p.row, p.col, !isWhite) ||
+                             ChessUtilities.GetPieceValue(p.type) > forkingValue));
+                        if (atRiskCount >= 2)
+                            return "double attack on multiple pieces";
                     }
                 }
 
