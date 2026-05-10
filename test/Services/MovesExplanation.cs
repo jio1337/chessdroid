@@ -1237,7 +1237,7 @@ namespace ChessDroid.Services
                     if (!string.IsNullOrEmpty(doubleAttackInfo))
                         return doubleAttackInfo;
 
-                    var xrayInfo = DetectXRayAttack(board, pieceRow, pieceCol, piece, isWhite);
+                    var xrayInfo = DetectXRayAttack(board, pieceRow, pieceCol, piece, isWhite, originalBoard, srcRow, srcCol);
                     if (!string.IsNullOrEmpty(xrayInfo))
                         return xrayInfo;
 
@@ -2523,7 +2523,31 @@ namespace ChessDroid.Services
         // THROUGH an intervening piece, like "Superman vision"
         // Key: The intervening piece could move, revealing the attack on the piece behind
         // IMPORTANT: Only report if we would actually WIN the piece behind (not just attack it)
-        private static string? DetectXRayAttack(ChessBoard board, int pieceRow, int pieceCol, char piece, bool isWhite)
+        private static bool XRayExistedBefore(ChessBoard originalBoard, int srcRow, int srcCol,
+            int firstRow, int firstCol, int secondRow, int secondCol)
+        {
+            int dR = Math.Sign(firstRow - srcRow);
+            int dF = Math.Sign(firstCol - srcCol);
+            if (dR == 0 && dF == 0) return false;
+            // Must be on the same rank, file, or diagonal
+            if (dR != 0 && dF != 0 && Math.Abs(firstRow - srcRow) != Math.Abs(firstCol - srcCol)) return false;
+            // secondPiece must continue in the same direction beyond firstPiece
+            if (Math.Sign(secondRow - firstRow) != dR || Math.Sign(secondCol - firstCol) != dF) return false;
+            // Scan from src toward firstPiece — path must be unobstructed
+            for (int step = 1; step < 8; step++)
+            {
+                int r = srcRow + dR * step;
+                int c = srcCol + dF * step;
+                if (r < 0 || r >= 8 || c < 0 || c >= 8) return false;
+                if (r == firstRow && c == firstCol) return true;
+                char p = originalBoard.GetPiece(r, c);
+                if (p != '.' && !char.IsWhiteSpace(p)) return false;
+            }
+            return false;
+        }
+
+        private static string? DetectXRayAttack(ChessBoard board, int pieceRow, int pieceCol, char piece, bool isWhite,
+            ChessBoard? originalBoard = null, int srcRow = -1, int srcCol = -1)
         {
             try
             {
@@ -2587,6 +2611,11 @@ namespace ChessDroid.Services
 
                             int firstValue = ChessUtilities.GetPieceValue(firstType);
                             int secondValue = ChessUtilities.GetPieceValue(secondType);
+
+                            // Skip if this x-ray already existed before the move
+                            if (originalBoard != null && srcRow >= 0 &&
+                                XRayExistedBefore(originalBoard, srcRow, srcCol, firstPieceRow, firstPieceCol, secondPieceRow, secondPieceCol))
+                                continue;
 
                             // X-ray attack only meaningful if:
                             // 1. Second piece is the KING (absolute - illegal to leave in check)
