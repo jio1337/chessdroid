@@ -1735,8 +1735,16 @@ namespace ChessDroid.Services
                                             }
                                             return "discovered check";
                                         }
-                                        else if (ChessUtilities.GetPieceValue(targetType) >= 5) // Rook or Queen
-                                            return $"discovered attack on {ChessUtilities.GetPieceName(targetType)}";
+                                        else if (ChessUtilities.GetPieceValue(targetType) >= 3) // Minor piece or better
+                                        {
+                                            // Only report if the target is genuinely at risk:
+                                            // undefended (free capture) OR revealed piece outvalues the target (profitable trade)
+                                            char revealedPiece = newBoard.GetPiece(r, c);
+                                            int revealedValue = ChessUtilities.GetPieceValue(PieceHelper.GetPieceType(revealedPiece));
+                                            bool targetDefended = ChessUtilities.IsSquareDefended(newBoard, targetR, targetC, !isWhite);
+                                            if (!targetDefended || revealedValue < ChessUtilities.GetPieceValue(targetType))
+                                                return $"discovered attack on {ChessUtilities.GetPieceName(targetType)}";
+                                        }
                                     }
                                 }
                             }

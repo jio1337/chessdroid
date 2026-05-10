@@ -233,10 +233,23 @@ namespace ChessDroid.Services
                 }
             }
 
-            // Piece WAS in danger - check if it's safe now
+            // Piece WAS in danger - check if it's genuinely safe now
             bool isNowAttacked = IsSquareAttackedBy(after, destRow, destCol, !weAreWhite);
-
+            bool safeAtDest;
             if (!isNowAttacked)
+            {
+                safeAtDest = true;
+            }
+            else
+            {
+                // Still attacked — safe only if every attacker would lose material capturing us
+                // (attacker value > piece value AND the piece is defended at destination)
+                int lowestAttackerAtDest = GetLowestAttackerValue(after, destRow, destCol, !weAreWhite);
+                bool defendedAtDest = IsSquareAttackedBy(after, destRow, destCol, weAreWhite);
+                safeAtDest = lowestAttackerAtDest > pieceValue && defendedAtDest;
+            }
+
+            if (safeAtDest)
             {
                 string pieceName = ChessUtilities.GetPieceName(pieceType);
                 defenses.Add(new Defense
