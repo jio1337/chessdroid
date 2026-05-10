@@ -75,6 +75,7 @@ namespace ChessDroid
         private ChessEngineService? _botEngine;
         private CancellationTokenSource? _botMoveCts;
         private AppConfig? _challengeSnapshot; // non-null while challenge mode is active
+        private bool _bookArrowsActive = false; // true when book arrows are shown (suppress engine arrows)
 
         // Console font (managed here to allow proper disposal on change)
         private Font _consoleFont = new Font("Consolas", 10f);
@@ -1922,6 +1923,9 @@ namespace ChessDroid
             string fen = boardControl.GetFEN();
             Debug.WriteLine($"[Analysis] Starting — FEN: {fen}  State: {engineService.State}");
             string cacheKey = GetPositionKey(fen);
+
+            // Book arrows are instant — show them before the engine even starts
+            UpdateBookArrowsForPosition(fen);
             int depth = config?.EngineDepth ?? 15;
             int multiPV = 3;
 
@@ -1962,7 +1966,7 @@ namespace ChessDroid
                                 if (ct.IsCancellationRequested) return;
                                 lblStatus.Text = $"Analyzing... depth {currentDepth}";
                                 consoleFormatter?.DisplayLiveLines(fen, eval, pvs, evals, wdl, currentDepth);
-                                if (!isNavigating)
+                                if (!isNavigating && !_bookArrowsActive)
                                 {
                                     int arrowCount = config?.EngineArrowCount ?? 1;
                                     if (arrowCount > 0) UpdateEngineArrows(pvs, arrowCount);
@@ -2147,39 +2151,14 @@ namespace ChessDroid
                 wdl,
                 bookMoves);
 
-            // Update arrows on board (suppress during PV animation)
-            if (!isNavigating)
+            // Update engine arrows (book arrows already set upfront in UpdateBookArrowsForPosition)
+            if (!isNavigating && !_bookArrowsActive)
             {
-                bool inBook = config?.ShowBookMoves == true && bookMoves != null && bookMoves.Count > 0;
-
-                if (inBook)
-                {
-                    // Book arrows take over while in the opening — engine arrows would just overlap
-                    boardControl.ClearEngineArrows();
-
-                    int totalWeight = bookMoves!.Sum(m => m.Priority);
-                    double topPct = totalWeight > 0 ? bookMoves[0].Priority / (double)totalWeight * 100.0 : 1.0;
-                    var bookArrows = new List<(int, int, int, int, Color)>();
-                    foreach (var bm in bookMoves.Take(5))
-                    {
-                        if (bm.UciMove.Length < 4) continue;
-                        var (fromRow, fromCol, toRow, toCol) = UciToSquares(bm.UciMove);
-                        double pct = totalWeight > 0 ? bm.Priority / (double)totalWeight * 100.0 : 0;
-                        int alpha = Math.Max(80, (int)(pct / topPct * 200));
-                        bookArrows.Add((fromRow, fromCol, toRow, toCol, Color.FromArgb(alpha, 15, 155, 200)));
-                    }
-                    boardControl.SetBookArrows(bookArrows);
-                }
+                int arrowCount = config?.EngineArrowCount ?? 1;
+                if (arrowCount > 0)
+                    UpdateEngineArrows(pvs, arrowCount);
                 else
-                {
-                    // Out of book — engine arrows
-                    boardControl.ClearBookArrows();
-                    int arrowCount = config?.EngineArrowCount ?? 1;
-                    if (arrowCount > 0)
-                        UpdateEngineArrows(pvs, arrowCount);
-                    else
-                        boardControl.ClearEngineArrows();
-                }
+                    boardControl.ClearEngineArrows();
             }
 
             // Update eval bar with the evaluation
@@ -2196,6 +2175,36 @@ namespace ChessDroid
             int toCol = uci[2] - 'a';
             int toRow = 7 - (uci[3] - '1');
             return (fromRow, fromCol, toRow, toCol);
+        }
+
+        private void UpdateBookArrowsForPosition(string fen)
+        {
+            if (isNavigating) return;
+            bool inBook = config?.ShowBookMoves == true && openingBookService?.IsLoaded == true;
+            if (inBook)
+            {
+                var moves = openingBookService!.GetBookMovesForPosition(fen);
+                inBook = moves.Count > 0;
+                if (inBook)
+                {
+                    int totalWeight = moves.Sum(m => m.Weight);
+                    double topPct = totalWeight > 0 ? moves[0].Weight / (double)totalWeight * 100.0 : 1.0;
+                    var arrows = new List<(int, int, int, int, Color)>();
+                    foreach (var bm in moves.Take(5))
+                    {
+                        if (bm.UciMove.Length < 4) continue;
+                        var (fromRow, fromCol, toRow, toCol) = UciToSquares(bm.UciMove);
+                        double pct = totalWeight > 0 ? bm.Weight / (double)totalWeight * 100.0 : 0;
+                        int alpha = Math.Max(80, (int)(pct / topPct * 200));
+                        arrows.Add((fromRow, fromCol, toRow, toCol, Color.FromArgb(alpha, 15, 155, 200)));
+                    }
+                    boardControl.ClearEngineArrows();
+                    boardControl.SetBookArrows(arrows);
+                }
+            }
+            if (!inBook)
+                boardControl.ClearBookArrows();
+            _bookArrowsActive = inBook;
         }
 
         private void UpdateEngineArrows(List<string> pvs, int arrowCount)
