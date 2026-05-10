@@ -193,7 +193,44 @@ namespace ChessDroid.Services
             if (pieceType == PieceType.King) return; // King escapes handled differently
 
             int pieceValue = ChessUtilities.GetPieceValue(pieceType);
-            if (pieceValue < 3) return; // Don't report for pawns
+            if (pieceValue < 3)
+            {
+                // For pawns: only report if attacked for free by a higher-value piece
+                // (e.g. hanging pawn attacked by bishop — moving it to safety saves material)
+                bool wasAttackedP = IsSquareAttackedBy(before, srcRow, srcCol, !weAreWhite);
+                if (!wasAttackedP) return;
+
+                int lowestAttackerValueP = GetLowestAttackerValue(before, srcRow, srcCol, !weAreWhite);
+                if (lowestAttackerValueP <= 1) return; // Only pawn-on-pawn threat — skip
+
+                bool wasDefendedP = IsSquareAttackedBy(before, srcRow, srcCol, weAreWhite);
+                if (wasDefendedP) return; // Pawn is defended, not truly hanging
+
+                bool isNowAttackedP = IsSquareAttackedBy(after, destRow, destCol, !weAreWhite);
+                bool safeAtDestP;
+                if (!isNowAttackedP)
+                {
+                    safeAtDestP = true;
+                }
+                else
+                {
+                    int lowestAttackerAtDestP = GetLowestAttackerValue(after, destRow, destCol, !weAreWhite);
+                    bool defendedAtDestP = IsSquareAttackedBy(after, destRow, destCol, weAreWhite);
+                    safeAtDestP = lowestAttackerAtDestP > pieceValue && defendedAtDestP;
+                }
+
+                if (safeAtDestP)
+                {
+                    defenses.Add(new Defense
+                    {
+                        Description = "saves pawn",
+                        Type = DefenseType.Escape,
+                        Importance = 2,
+                        Square = GetSquareName(destRow, destCol)
+                    });
+                }
+                return;
+            }
 
             // Was the piece attacked on its original square?
             bool wasAttacked = IsSquareAttackedBy(before, srcRow, srcCol, !weAreWhite);

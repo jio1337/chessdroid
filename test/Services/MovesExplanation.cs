@@ -2400,7 +2400,9 @@ namespace ChessDroid.Services
                 {
                     // Check if one threat is checkmate and another is material
                     bool hasCheckThreat = attackedPieces.Any(p => p.type == PieceType.King);
-                    bool hasMaterialThreat = attackedPieces.Any(p => ChessUtilities.GetPieceValue(p.type) >= 3);
+                    // Exclude king itself from material threat — king value (100) would otherwise
+                    // always satisfy >= 3, producing false positives on any check+pawn fork
+                    bool hasMaterialThreat = attackedPieces.Any(p => p.type != PieceType.King && ChessUtilities.GetPieceValue(p.type) >= 3);
 
                     if (hasCheckThreat && hasMaterialThreat)
                     {
