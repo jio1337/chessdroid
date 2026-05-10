@@ -247,11 +247,12 @@ namespace ChessDroid.Services
 
                 // No enemy pawns ahead - it's a passed pawn
                 int distanceToPromotion = isWhite ? pawnRow : (7 - pawnRow);
+                string pawnFile = ((char)('a' + pawnCol)).ToString();
 
                 if (distanceToPromotion <= 2)
-                    return "creates dangerous passed pawn";
+                    return $"creates dangerous passed {pawnFile}-pawn";
                 else
-                    return "creates passed pawn";
+                    return $"creates passed {pawnFile}-pawn";
             }
             catch
             {
@@ -361,7 +362,7 @@ namespace ChessDroid.Services
                 }
 
                 // All checks passed - this is a true outpost
-                return $"{ChessUtilities.GetPieceName(pieceType)} on strong outpost";
+                return $"{ChessUtilities.GetPieceName(pieceType)} outpost on {ChessUtilities.GetSquareName(pieceRow, pieceCol)}";
             }
             catch
             {

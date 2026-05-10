@@ -97,7 +97,7 @@ namespace ChessDroid.Services
                     tempBoard.SetPiece(srcRank, rookDestFile, rook);
 
                     // For castling, return early with simple explanation
-                    return isKingside ? "castles kingside for safety" : "castles queenside for safety";
+                    return isKingside ? "castles kingside, activates rook" : "castles queenside, activates rook";
                 }
 
                 // Check if piece will be immediately recaptured (gives check OR captures on defended square)
@@ -123,6 +123,14 @@ namespace ChessDroid.Services
                 // TACTICAL ANALYSIS (controlled by ShowTacticalAnalysis toggle)
                 if (ExplanationFormatter.Features.ShowTacticalAnalysis)
                 {
+                    // Desperado: hanging piece extracts value by capturing before being recaptured
+                    if (pieceWillBeRecaptured && targetPiece != '.' && reasons.Count < 2)
+                    {
+                        PieceType capturedType = PieceHelper.GetPieceType(targetPiece);
+                        if (ChessUtilities.GetPieceValue(capturedType) >= 3)
+                            reasons.Add($"desperado — captures {ChessUtilities.GetPieceName(capturedType)} before recapture");
+                    }
+
                     // Threat creation (skip if piece will be recaptured)
                     if (reasons.Count < 2 && !pieceWillBeRecaptured)
                     {
@@ -139,6 +147,14 @@ namespace ChessDroid.Services
                     if (!string.IsNullOrEmpty(tacticalPattern))
                     {
                         reasons.Add(tacticalPattern);
+                    }
+
+                    // Overloading: our capture forces a defender to abandon another piece it guards
+                    if (reasons.Count < 2 && targetPiece != '.')
+                    {
+                        string? overloadInfo = DetectOverloading(board, destRank, destFile, piece, isWhite);
+                        if (!string.IsNullOrEmpty(overloadInfo))
+                            reasons.Add(overloadInfo);
                     }
 
                     // Perpetual check detection
@@ -163,6 +179,14 @@ namespace ChessDroid.Services
                     if (!string.IsNullOrEmpty(sacrificeInfo))
                     {
                         reasons.Add(sacrificeInfo);
+                    }
+
+                    // Clearance: opens a line for a friendly slider that couldn't reach a target before
+                    if (reasons.Count < 2 && !pieceWillBeRecaptured)
+                    {
+                        string? clearanceInfo = DetectClearance(board, tempBoard, srcRank, srcFile, piece, isWhite);
+                        if (!string.IsNullOrEmpty(clearanceInfo))
+                            reasons.Add(clearanceInfo);
                     }
                 }
 
@@ -191,13 +215,21 @@ namespace ChessDroid.Services
                     int advancement = char.IsUpper(piece) ? srcRank - destRank : destRank - srcRank;
                     if (advancement == 2)
                     {
-                        reasons.Add("aggressive pawn push");
+                        reasons.Add($"advances {(char)('a' + destFile)}-pawn");
                     }
 
                     // Check for promotion
                     if (bestMove.Length > 4)
                     {
                         reasons.Add("promotes to " + bestMove[4].ToString().ToUpper());
+                    }
+
+                    // Pawn break: advance creates new tension against an enemy pawn
+                    if (reasons.Count < 2)
+                    {
+                        string? pawnBreak = DetectPawnBreak(board, srcRank, srcFile, destRank, destFile, isWhite);
+                        if (!string.IsNullOrEmpty(pawnBreak))
+                            reasons.Add(pawnBreak);
                     }
                 }
 
@@ -214,6 +246,14 @@ namespace ChessDroid.Services
                         string? connectedInfo = PositionalEvaluation.DetectConnectedPawns(tempBoard, destRank, destFile, isWhite);
                         if (!string.IsNullOrEmpty(connectedInfo) && reasons.Count < 2)
                             reasons.Add(connectedInfo);
+
+                        // Luft: quiet advance near castled king creates breathing room
+                        if (reasons.Count < 2 && targetPiece == '.')
+                        {
+                            string? luft = DetectLuft(board, srcRank, srcFile, destRank, destFile, isWhite);
+                            if (!string.IsNullOrEmpty(luft))
+                                reasons.Add(luft);
+                        }
                     }
 
                     // Check if capture creates pawn weaknesses for opponent
@@ -247,6 +287,25 @@ namespace ChessDroid.Services
                             string? mobilityInfo = PositionalEvaluation.DetectHighMobility(tempBoard, destRank, destFile, piece, isWhite);
                             if (!string.IsNullOrEmpty(mobilityInfo))
                                 reasons.Add(mobilityInfo);
+                        }
+
+                        // Rook-specific: open/half-open file and 7th rank
+                        if (pieceType == PieceType.Rook && reasons.Count < 2)
+                        {
+                            string? openFileInfo = DetectRookOnOpenFile(tempBoard, destRank, destFile, isWhite);
+                            if (!string.IsNullOrEmpty(openFileInfo))
+                                reasons.Add(openFileInfo);
+
+                            if (reasons.Count < 2 && destRank == (isWhite ? 1 : 6))
+                                reasons.Add("rook penetrates to 7th rank");
+                        }
+
+                        // Battery: two friendly heavy pieces aligned on same file, rank, or diagonal
+                        if (reasons.Count < 2)
+                        {
+                            string? batteryInfo = DetectBattery(tempBoard, destRank, destFile, piece, isWhite);
+                            if (!string.IsNullOrEmpty(batteryInfo))
+                                reasons.Add(batteryInfo);
                         }
 
                         // Central control
@@ -283,7 +342,7 @@ namespace ChessDroid.Services
                     {
                         if (destFile >= 2 && destFile <= 5 && destRank >= 2 && destRank <= 5)
                         {
-                            reasons.Add("centralizes piece");
+                            reasons.Add($"centralizes {ChessUtilities.GetPieceName(pieceType)} to {ChessUtilities.GetSquareName(destRank, destFile)}");
                         }
                     }
                 }
@@ -292,7 +351,16 @@ namespace ChessDroid.Services
                 if (ExplanationFormatter.Features.ShowPositionalAnalysis && reasons.Count < 2 && (srcRank == 0 || srcRank == 7) &&
                     (pieceType == PieceType.Knight || pieceType == PieceType.Bishop))
                 {
-                    reasons.Add("develops piece");
+                    reasons.Add($"develops {char.ToUpper(piece)}{dest}");
+                }
+
+                // Fianchetto: bishop settles on b2/g2/b7/g7 controlling long diagonal
+                if (ExplanationFormatter.Features.ShowPositionalAnalysis && pieceType == PieceType.Bishop && reasons.Count < 2)
+                {
+                    bool isFianchetto = (isWhite && destRank == 6 && (destFile == 1 || destFile == 6)) ||
+                                       (!isWhite && destRank == 1 && (destFile == 1 || destFile == 6));
+                    if (isFianchetto)
+                        reasons.Add($"fianchettoes bishop on {ChessUtilities.GetSquareName(destRank, destFile)}");
                 }
 
                 // Castling
@@ -331,6 +399,22 @@ namespace ChessDroid.Services
                     string? qualityImbalance = EndgameAnalysis.DetectQualityImbalance(tempBoard);
                     if (!string.IsNullOrEmpty(qualityImbalance) && reasons.Count < 2)
                         reasons.Add(qualityImbalance);
+
+                    // King opposition: key endgame technique to control enemy king
+                    if (pieceType == PieceType.King && reasons.Count < 2)
+                    {
+                        var (enemyKingRow, enemyKingCol) = tempBoard.GetKingPosition(!isWhite);
+                        if (enemyKingRow >= 0)
+                        {
+                            int rowDiff = Math.Abs(destRank - enemyKingRow);
+                            int colDiff = Math.Abs(destFile - enemyKingCol);
+                            bool directOpp = (rowDiff == 2 && colDiff == 0) ||
+                                            (rowDiff == 0 && colDiff == 2) ||
+                                            (rowDiff == 2 && colDiff == 2);
+                            if (directOpp)
+                                reasons.Add("takes opposition against enemy king");
+                        }
+                    }
                 }
 
                 // OPENING ANALYSIS (controlled by ShowOpeningPrinciples toggle)
@@ -3095,6 +3179,289 @@ namespace ChessDroid.Services
             {
                 return null;
             }
+        }
+
+        private static string? DetectRookOnOpenFile(ChessBoard board, int pieceRow, int pieceCol, bool isWhite)
+        {
+            try
+            {
+                char friendlyPawn = isWhite ? 'P' : 'p';
+                char enemyPawn = isWhite ? 'p' : 'P';
+                bool hasFriendlyPawn = false;
+                bool hasEnemyPawn = false;
+
+                for (int r = 0; r < 8; r++)
+                {
+                    char p = board.GetPiece(r, pieceCol);
+                    if (p == friendlyPawn) hasFriendlyPawn = true;
+                    if (p == enemyPawn) hasEnemyPawn = true;
+                }
+
+                string file = ((char)('a' + pieceCol)).ToString();
+                if (!hasFriendlyPawn && !hasEnemyPawn)
+                    return $"rook seizes open {file}-file";
+                if (!hasFriendlyPawn)
+                    return $"rook on half-open {file}-file";
+                return null;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static string? DetectBattery(ChessBoard board, int pieceRow, int pieceCol, char piece, bool isWhite)
+        {
+            try
+            {
+                PieceType pieceType = PieceHelper.GetPieceType(piece);
+                char friendlyRook = isWhite ? 'R' : 'r';
+                char friendlyQueen = isWhite ? 'Q' : 'q';
+                char friendlyBishop = isWhite ? 'B' : 'b';
+
+                // Orthogonal battery (rook or queen aligned with another rook or queen)
+                if (pieceType == PieceType.Rook || pieceType == PieceType.Queen)
+                {
+                    int[][] orthoDirs = { new[] { -1, 0 }, new[] { 1, 0 }, new[] { 0, -1 }, new[] { 0, 1 } };
+                    foreach (var dir in orthoDirs)
+                    {
+                        int r = pieceRow + dir[0], c = pieceCol + dir[1];
+                        while (r >= 0 && r < 8 && c >= 0 && c < 8)
+                        {
+                            char p = board.GetPiece(r, c);
+                            if (p == friendlyRook || p == friendlyQueen)
+                            {
+                                if (dir[1] == 0)
+                                    return $"forms battery on {(char)('a' + pieceCol)}-file";
+                                else
+                                    return $"forms battery on rank {8 - pieceRow}";
+                            }
+                            if (p != '.') break;
+                            r += dir[0]; c += dir[1];
+                        }
+                    }
+                }
+
+                // Diagonal battery (bishop or queen aligned with another bishop or queen)
+                if (pieceType == PieceType.Bishop || pieceType == PieceType.Queen)
+                {
+                    int[][] diagDirs = { new[] { 1, 1 }, new[] { 1, -1 }, new[] { -1, 1 }, new[] { -1, -1 } };
+                    foreach (var dir in diagDirs)
+                    {
+                        int r = pieceRow + dir[0], c = pieceCol + dir[1];
+                        while (r >= 0 && r < 8 && c >= 0 && c < 8)
+                        {
+                            char p = board.GetPiece(r, c);
+                            if (p == friendlyBishop || p == friendlyQueen)
+                                return "forms diagonal battery";
+                            if (p != '.') break;
+                            r += dir[0]; c += dir[1];
+                        }
+                    }
+                }
+
+                return null;
+            }
+            catch { return null; }
+        }
+
+        private static string? DetectOverloading(ChessBoard board, int destRank, int destFile, char piece, bool isWhite)
+        {
+            try
+            {
+                // Find enemy pieces that can recapture at destRank/destFile
+                // then check if any such piece is the sole defender of another valuable piece
+                for (int defRow = 0; defRow < 8; defRow++)
+                {
+                    for (int defCol = 0; defCol < 8; defCol++)
+                    {
+                        char defender = board.GetPiece(defRow, defCol);
+                        if (defender == '.') continue;
+                        bool defIsWhite = char.IsUpper(defender);
+                        if (defIsWhite == isWhite) continue;
+
+                        PieceType defType = PieceHelper.GetPieceType(defender);
+                        if (defType == PieceType.King) continue;
+
+                        if (!ChessUtilities.CanAttackSquare(board, defRow, defCol, defender, destRank, destFile))
+                            continue;
+
+                        // This defender can recapture — check if it's also the sole defender of another piece
+                        for (int r = 0; r < 8; r++)
+                        {
+                            for (int c = 0; c < 8; c++)
+                            {
+                                if (r == defRow && c == defCol) continue;
+                                if (r == destRank && c == destFile) continue;
+
+                                char defended = board.GetPiece(r, c);
+                                if (defended == '.') continue;
+                                bool defendedIsWhite = char.IsUpper(defended);
+                                if (defendedIsWhite != !isWhite) continue;
+
+                                PieceType defendedType = PieceHelper.GetPieceType(defended);
+                                if (ChessUtilities.GetPieceValue(defendedType) < 3) continue;
+
+                                if (!ChessUtilities.CanAttackSquare(board, defRow, defCol, defender, r, c))
+                                    continue;
+
+                                // Is this the sole defender?
+                                bool isSole = true;
+                                for (int dr = 0; dr < 8 && isSole; dr++)
+                                {
+                                    for (int dc = 0; dc < 8 && isSole; dc++)
+                                    {
+                                        if (dr == defRow && dc == defCol) continue;
+                                        if (dr == destRank && dc == destFile) continue;
+                                        char op = board.GetPiece(dr, dc);
+                                        if (op == '.') continue;
+                                        if (char.IsUpper(op) != !isWhite) continue;
+                                        if (ChessUtilities.CanAttackSquare(board, dr, dc, op, r, c))
+                                            isSole = false;
+                                    }
+                                }
+
+                                if (isSole)
+                                    return $"overloads {ChessUtilities.GetPieceName(defType)} defending {ChessUtilities.GetPieceName(defendedType)}";
+                            }
+                        }
+                    }
+                }
+                return null;
+            }
+            catch { return null; }
+        }
+
+        private static string? DetectClearance(ChessBoard board, ChessBoard tempBoard, int srcRank, int srcFile, char piece, bool isWhite)
+        {
+            try
+            {
+                char friendlyQueen = isWhite ? 'Q' : 'q';
+                char friendlyRook = isWhite ? 'R' : 'r';
+                char friendlyBishop = isWhite ? 'B' : 'b';
+
+                // Find friendly sliders that couldn't reach a valuable target before but can now
+                for (int r = 0; r < 8; r++)
+                {
+                    for (int c = 0; c < 8; c++)
+                    {
+                        char p = board.GetPiece(r, c);
+                        if (r == srcRank && c == srcFile) continue; // Skip moved piece
+                        if (p != friendlyQueen && p != friendlyRook && p != friendlyBishop) continue;
+
+                        PieceType pType = PieceHelper.GetPieceType(p);
+
+                        // Find enemy pieces this slider newly attacks on tempBoard
+                        for (int tr = 0; tr < 8; tr++)
+                        {
+                            for (int tc = 0; tc < 8; tc++)
+                            {
+                                char target = board.GetPiece(tr, tc);
+                                if (target == '.') continue;
+                                if (char.IsUpper(target) == isWhite) continue;
+
+                                PieceType tType = PieceHelper.GetPieceType(target);
+                                if (ChessUtilities.GetPieceValue(tType) < 5) continue; // Rook/queen targets only
+
+                                // Couldn't reach before, can reach now
+                                if (ChessUtilities.CanAttackSquare(board, r, c, p, tr, tc)) continue;
+                                if (!ChessUtilities.CanAttackSquare(tempBoard, r, c, p, tr, tc)) continue;
+
+                                // Confirm our moved piece was the one blocking (srcRank/srcFile lies between slider and target)
+                                if (!IsSquareOnLineBetween(r, c, tr, tc, srcRank, srcFile)) continue;
+
+                                bool isDiag = Math.Abs(tr - r) == Math.Abs(tc - c) && tr != r;
+                                string lineDesc = isDiag
+                                    ? "diagonal"
+                                    : r == tr
+                                        ? $"rank {8 - r}"
+                                        : $"{(char)('a' + c)}-file";
+
+                                return $"clears {lineDesc} for {ChessUtilities.GetPieceName(pType)}";
+                            }
+                        }
+                    }
+                }
+                return null;
+            }
+            catch { return null; }
+        }
+
+        private static bool IsSquareOnLineBetween(int r1, int c1, int r2, int c2, int r, int c)
+        {
+            // Verify (r,c) lies strictly between (r1,c1) and (r2,c2) on the same line
+            int dr = r2 - r1, dc = c2 - c1;
+            int dr2 = r - r1, dc2 = c - c1;
+            if (dr == 0 && dc == 0) return false;
+
+            if (dr == 0) // Horizontal line
+            {
+                if (r != r1) return false;
+                return dc > 0 ? (c > c1 && c < c2) : (c < c1 && c > c2);
+            }
+            if (dc == 0) // Vertical line
+            {
+                if (c != c1) return false;
+                return dr > 0 ? (r > r1 && r < r2) : (r < r1 && r > r2);
+            }
+            // Diagonal
+            if (Math.Abs(dr) != Math.Abs(dc)) return false;
+            if (Math.Abs(dr2) != Math.Abs(dc2)) return false;
+            if (dr2 == 0) return false;
+            if ((dr > 0) != (dr2 > 0) || (dc > 0) != (dc2 > 0)) return false;
+            return Math.Abs(dr2) < Math.Abs(dr);
+        }
+
+        private static string? DetectPawnBreak(ChessBoard board, int srcRank, int srcFile, int destRank, int destFile, bool isWhite)
+        {
+            try
+            {
+                char enemyPawn = isWhite ? 'p' : 'P';
+                int attackDir = isWhite ? -1 : 1;
+
+                for (int fileOffset = -1; fileOffset <= 1; fileOffset += 2)
+                {
+                    int targetFile = destFile + fileOffset;
+                    int targetRank = destRank + attackDir;
+                    if (targetFile < 0 || targetFile >= 8 || targetRank < 0 || targetRank >= 8) continue;
+
+                    if (board.GetPiece(targetRank, targetFile) != enemyPawn) continue;
+
+                    // Was this tension already present? (pawn could already attack it from src)
+                    int prevTargetRank = srcRank + attackDir;
+                    bool wasAlreadyAttacking = prevTargetRank >= 0 && prevTargetRank < 8 &&
+                                               board.GetPiece(prevTargetRank, targetFile) == enemyPawn;
+                    if (!wasAlreadyAttacking)
+                        return $"{(char)('a' + destFile)}-pawn break";
+                }
+                return null;
+            }
+            catch { return null; }
+        }
+
+        private static string? DetectLuft(ChessBoard board, int srcRank, int srcFile, int destRank, int destFile, bool isWhite)
+        {
+            try
+            {
+                var (kingRow, kingCol) = board.GetKingPosition(isWhite);
+                if (kingRow < 0) return null;
+
+                // King must be castled (on back rank, not on the d/e files)
+                bool onBackRank = isWhite ? kingRow == 7 : kingRow == 0;
+                if (!onBackRank) return null;
+                bool isCastled = kingCol <= 2 || kingCol >= 5; // Not on d(3) or e(4) file
+                if (!isCastled) return null;
+
+                // Pawn must be on the rank directly in front of the king
+                int kingFrontRank = isWhite ? kingRow - 1 : kingRow + 1;
+                if (srcRank != kingFrontRank) return null;
+
+                // Pawn must be on the same or adjacent file as the king
+                if (Math.Abs(srcFile - kingCol) > 1) return null;
+
+                return "creates luft for king";
+            }
+            catch { return null; }
         }
     }
 }
