@@ -584,10 +584,31 @@ namespace ChessDroid.Services
             }
 
             // SCENARIO 3: Pawn push to a defended square — pawn will be captured immediately
-            // (e.g., d5 pushed to a square covered by an enemy bishop — it's a free pawn)
+            // Exception: if the pawn itself creates a tempo attack (attacks a valuable enemy piece),
+            // the opponent will likely retreat rather than capture the pawn.
             PieceType movingPieceType = PieceHelper.GetPieceType(piece);
             if (!givesCheck && !madeCapture && movingPieceType == PieceType.Pawn)
-                return true;
+            {
+                int attackDir = (piece == 'P' || char.IsUpper(piece)) ? -1 : 1; // white pawn attacks upward
+                bool attacksValuableEnemy = false;
+                for (int dc = -1; dc <= 1; dc += 2)
+                {
+                    int ar = pieceRow + attackDir;
+                    int ac = pieceCol + dc;
+                    if (ar < 0 || ar >= 8 || ac < 0 || ac >= 8) continue;
+                    char attacked = board.GetPiece(ar, ac);
+                    if (attacked == '.') continue;
+                    bool attackedIsWhite = char.IsUpper(attacked);
+                    if (attackedIsWhite == isWhite) continue; // own piece
+                    if (GetPieceValue(PieceHelper.GetPieceType(attacked)) >= 3)
+                    {
+                        attacksValuableEnemy = true;
+                        break;
+                    }
+                }
+                if (!attacksValuableEnemy)
+                    return true;
+            }
 
             // If neither giving check nor made a capture, piece might not be recaptured
             // (e.g., moving to a defended square without capturing - opponent might not want to trade)
