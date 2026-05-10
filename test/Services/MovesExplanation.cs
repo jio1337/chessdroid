@@ -306,7 +306,11 @@ namespace ChessDroid.Services
                         // Rook-specific: open/half-open file and 7th rank
                         if (pieceType == PieceType.Rook && reasons.Count < 2)
                         {
-                            string? openFileInfo = DetectRookOnOpenFile(tempBoard, destRank, destFile, isWhite);
+                            // Only claim "seizes open file" if the rook moved TO a new file —
+                            // sliding up/down the same file means it was already there.
+                            string? openFileInfo = srcFile != destFile
+                                ? DetectRookOnOpenFile(tempBoard, destRank, destFile, isWhite)
+                                : null;
                             if (!string.IsNullOrEmpty(openFileInfo))
                                 reasons.Add(openFileInfo);
 
