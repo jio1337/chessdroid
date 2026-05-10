@@ -410,9 +410,8 @@ namespace ChessDroid.Services
                     // DetectMaterialImbalance preserved for future mini-template use — not shown in text output
                     // string? materialImbalance = EndgameAnalysis.DetectMaterialImbalance(tempBoard);
 
-                    string? qualityImbalance = EndgameAnalysis.DetectQualityImbalance(tempBoard);
-                    if (!string.IsNullOrEmpty(qualityImbalance) && reasons.Count < 2)
-                        reasons.Add(qualityImbalance);
+                    // DetectQualityImbalance preserved for future mini-template use — not shown in text output
+                    // string? qualityImbalance = EndgameAnalysis.DetectQualityImbalance(tempBoard);
 
                     // King opposition: key endgame technique to control enemy king
                     if (pieceType == PieceType.King && reasons.Count < 2)
