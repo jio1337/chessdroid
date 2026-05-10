@@ -276,9 +276,11 @@ namespace ChessDroid.Services
                             reasons.Add(opponentWeakness);
                     }
 
-                    // Piece activity analysis
-                    if (reasons.Count < 2 && (pieceType == PieceType.Knight || pieceType == PieceType.Bishop ||
-                                              pieceType == PieceType.Rook || pieceType == PieceType.Queen))
+                    // Piece activity analysis — skip entirely if piece will be recaptured
+                    // (positional labels like 'controls long diagonal' are meaningless if the piece is exchanged off)
+                    if (reasons.Count < 2 && !pieceWillBeRecaptured &&
+                        (pieceType == PieceType.Knight || pieceType == PieceType.Bishop ||
+                         pieceType == PieceType.Rook || pieceType == PieceType.Queen))
                     {
                         // Outpost detection (very strong positional feature)
                         string? outpostInfo = PositionalEvaluation.DetectOutpost(tempBoard, destRank, destFile, piece, isWhite);
