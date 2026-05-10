@@ -314,7 +314,37 @@ namespace ChessDroid.Services
                             }
                         }
 
-                        if (!canEscape && !canBlock && !pawnCanMove)
+                        // KING DEFENSE CHECK (pawns only): if the enemy king can step to any
+                        // square adjacent to the threatened pawn without moving into check,
+                        // the pawn isn't truly won — the king can simply walk over to defend.
+                        bool kingCanDefend = false;
+                        if (pieceType == PieceType.Pawn && !pawnCanMove && !canEscape && !canBlock)
+                        {
+                            var (enemyKingRow, enemyKingCol) = board.GetKingPosition(!attackerIsWhite);
+                            if (enemyKingRow >= 0)
+                            {
+                                for (int dkr = -1; dkr <= 1 && !kingCanDefend; dkr++)
+                                {
+                                    for (int dkc = -1; dkc <= 1 && !kingCanDefend; dkc++)
+                                    {
+                                        if (dkr == 0 && dkc == 0) continue;
+                                        int kr = enemyKingRow + dkr;
+                                        int kc = enemyKingCol + dkc;
+                                        if (kr < 0 || kr >= 8 || kc < 0 || kc >= 8) continue;
+                                        char destPiece = board.GetPiece(kr, kc);
+                                        // Can't move onto own piece
+                                        if (destPiece != '.' && char.IsUpper(destPiece) == !attackerIsWhite) continue;
+                                        // Can't move into check
+                                        if (IsSquareAttackedBy(board, kr, kc, attackerIsWhite)) continue;
+                                        // Does this king destination defend the threatened pawn?
+                                        if (Math.Abs(kr - r) <= 1 && Math.Abs(kc - c) <= 1)
+                                            kingCanDefend = true;
+                                    }
+                                }
+                            }
+                        }
+
+                        if (!canEscape && !canBlock && !pawnCanMove && !kingCanDefend)
                         {
                             // Truly hanging - can't escape and can't be blocked!
                             threats.Add(new Threat
