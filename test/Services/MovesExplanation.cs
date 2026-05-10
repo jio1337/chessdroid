@@ -2232,11 +2232,12 @@ namespace ChessDroid.Services
                 }
                 else if (distanceToPromotion == 2)
                 {
-                    // Check if path is clear
+                    // Check if path is clear AND pawn is actually passed (no enemy pawns on same/adjacent files ahead)
                     int direction = isWhite ? -1 : 1;
                     int nextRow = pieceRow + direction;
 
-                    if (board.GetPiece(nextRow, pieceCol) == '.')
+                    if (board.GetPiece(nextRow, pieceCol) == '.' &&
+                        PositionalEvaluation.DetectPassedPawn(board, pieceRow, pieceCol, isWhite) != null)
                     {
                         return "advances passed pawn";
                     }
