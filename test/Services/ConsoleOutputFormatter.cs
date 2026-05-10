@@ -168,19 +168,13 @@ namespace ChessDroid.Services
                 // Remove redundant phrases from explanation
                 string cleanedExplanation = explanation;
 
-                // Remove redundant check-related phrases if they're in threats
-                if (!string.IsNullOrEmpty(threatsText))
-                {
-                    bool threatsHasCheck = threatsText.Contains("check", StringComparison.OrdinalIgnoreCase) ||
-                                           threatsText.Contains("checkmate", StringComparison.OrdinalIgnoreCase);
-                    if (threatsHasCheck)
-                    {
-                        cleanedExplanation = RemoveRedundantCheckPhrases(cleanedExplanation);
-                    }
-                }
-
                 // Remove redundant passed pawn phrases (always check, internal redundancy)
                 cleanedExplanation = RemoveRedundantPassedPawnPhrases(cleanedExplanation);
+
+                // Filter threats whose meaning is already expressed in the explanation
+                // (explanation wins — it's richer; don't show both)
+                if (!string.IsNullOrEmpty(threatsText))
+                    threatsText = FilterRedundantThreats(threatsText, explanation);
 
                 // Build the explanation line
                 if (!string.IsNullOrEmpty(cleanedExplanation))
@@ -418,6 +412,42 @@ namespace ChessDroid.Services
             }
 
             return explanation;
+        }
+
+        /// <summary>
+        /// Removes threats whose meaning is already expressed in the explanation.
+        /// The explanation wins — it's richer. Don't show both.
+        /// </summary>
+        private static string FilterRedundantThreats(string threatsText, string explanation)
+        {
+            if (string.IsNullOrEmpty(threatsText) || string.IsNullOrEmpty(explanation))
+                return threatsText;
+
+            var parts = threatsText.Split(new[] { ", " }, StringSplitOptions.RemoveEmptyEntries);
+            var kept = parts.Where(t => !IsThreatRedundantWithExplanation(t, explanation)).ToArray();
+            return string.Join(", ", kept);
+        }
+
+        private static bool IsThreatRedundantWithExplanation(string threat, string explanation)
+        {
+            // "gives check" / "gives checkmate" — redundant if explanation already mentions check
+            if (threat.Contains("check", StringComparison.OrdinalIgnoreCase))
+                return explanation.Contains("check", StringComparison.OrdinalIgnoreCase);
+
+            // "attacks [piece] on [square]" — redundant if explanation says "threat on [piece]" or "attacks [piece]"
+            if (threat.StartsWith("attacks ", StringComparison.OrdinalIgnoreCase))
+            {
+                // Extract piece name: "attacks bishop on e5" → "bishop"
+                var words = threat.Split(' ');
+                if (words.Length >= 2)
+                {
+                    string pieceName = words[1];
+                    return explanation.Contains($"threat on {pieceName}", StringComparison.OrdinalIgnoreCase) ||
+                           explanation.Contains($"attacks {pieceName}", StringComparison.OrdinalIgnoreCase);
+                }
+            }
+
+            return false;
         }
 
         /// <summary>
