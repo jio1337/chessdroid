@@ -667,6 +667,7 @@ namespace ChessDroid
                     _analysisCache.Clear(); // Clear analysis cache for new position
                     UpdateTurnLabel();
                     lblStatus.Text = "Position loaded from FEN";
+                    _ = TriggerAutoAnalysis();
                 }
                 catch (Exception ex)
                 {
