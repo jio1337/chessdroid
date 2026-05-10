@@ -3241,19 +3241,28 @@ namespace ChessDroid.Services
             {
                 char friendlyPawn = isWhite ? 'P' : 'p';
                 char enemyPawn = isWhite ? 'p' : 'P';
+                char enemyRook = isWhite ? 'r' : 'R';
+                char enemyQueen = isWhite ? 'q' : 'Q';
                 bool hasFriendlyPawn = false;
                 bool hasEnemyPawn = false;
+                bool fileContested = false;
 
                 for (int r = 0; r < 8; r++)
                 {
                     char p = board.GetPiece(r, pieceCol);
                     if (p == friendlyPawn) hasFriendlyPawn = true;
                     if (p == enemyPawn) hasEnemyPawn = true;
+                    // Enemy rook or queen on the same file means we don't control it — we contest it
+                    if (p == enemyRook || p == enemyQueen) fileContested = true;
                 }
 
                 string file = ((char)('a' + pieceCol)).ToString();
                 if (!hasFriendlyPawn && !hasEnemyPawn)
+                {
+                    if (fileContested)
+                        return $"contests open {file}-file";
                     return $"rook seizes open {file}-file";
+                }
                 if (!hasFriendlyPawn)
                     return $"rook on half-open {file}-file";
                 return null;
