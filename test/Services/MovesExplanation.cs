@@ -123,12 +123,17 @@ namespace ChessDroid.Services
                 // TACTICAL ANALYSIS (controlled by ShowTacticalAnalysis toggle)
                 if (ExplanationFormatter.Features.ShowTacticalAnalysis)
                 {
-                    // Desperado: hanging piece extracts value by capturing before being recaptured
+                    // Desperado: a piece ALREADY under attack extracts value by capturing before being taken
+                    // NOT a normal trade — the piece must have been hanging on its original square
                     if (pieceWillBeRecaptured && targetPiece != '.' && reasons.Count < 2)
                     {
-                        PieceType capturedType = PieceHelper.GetPieceType(targetPiece);
-                        if (ChessUtilities.GetPieceValue(capturedType) >= 3)
-                            reasons.Add($"desperado — captures {ChessUtilities.GetPieceName(capturedType)} before recapture");
+                        bool wasAlreadyUnderAttack = ChessUtilities.IsSquareDefended(board, srcRank, srcFile, !isWhite);
+                        if (wasAlreadyUnderAttack)
+                        {
+                            PieceType capturedType = PieceHelper.GetPieceType(targetPiece);
+                            if (ChessUtilities.GetPieceValue(capturedType) >= 3)
+                                reasons.Add($"desperado — captures {ChessUtilities.GetPieceName(capturedType)} before recapture");
+                        }
                     }
 
                     // Threat creation (skip if piece will be recaptured)
@@ -3339,6 +3344,23 @@ namespace ChessDroid.Services
                                 if (defType == PieceType.King) continue;
 
                                 if (!ChessUtilities.CanAttackSquare(board, dr, dc, defender, vr, vc)) continue;
+
+                                // D must be the SOLE defender of V — otherwise opponent can recapture with
+                                // a different piece and D never has to abandon W
+                                bool isSoleDefenderOfV = true;
+                                for (int xr2 = 0; xr2 < 8 && isSoleDefenderOfV; xr2++)
+                                {
+                                    for (int xc2 = 0; xc2 < 8 && isSoleDefenderOfV; xc2++)
+                                    {
+                                        if (xr2 == dr && xc2 == dc) continue;
+                                        char x2 = board.GetPiece(xr2, xc2);
+                                        if (x2 == '.') continue;
+                                        if (char.IsUpper(x2) == isWhite) continue;
+                                        if (ChessUtilities.CanAttackSquare(board, xr2, xc2, x2, vr, vc))
+                                            isSoleDefenderOfV = false;
+                                    }
+                                }
+                                if (!isSoleDefenderOfV) continue;
 
                                 // D defends V — now check if D is also the SOLE defender of another piece W
                                 for (int wr = 0; wr < 8; wr++)
