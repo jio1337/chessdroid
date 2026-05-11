@@ -719,12 +719,12 @@ namespace ChessDroid.Services
 
                     int diff = defenderDist - supporterDist;
 
-                    if (diff >= 2)
-                        return $"{supporterSide} king on {supporterSq} — {supporterDist} moves from {promoSquare}, {defenderSide} king {defenderDist} moves away";
+                    // Only surface the non-obvious case: the defending king is close enough
+                    // to intercept. The "supporting king is ahead" case is visible on the board.
                     if (diff <= -2)
-                        return $"{defenderSide} king {defenderDist} moves from {promoSquare} — intercepts the passed pawn";
+                        return $"{defenderSide} king {defenderDist} moves from {promoSquare} — may intercept the passed pawn";
 
-                    return null; // Kings roughly equidistant — no clear king advantage
+                    return null;
                 }
 
                 // No passed pawns: compare centralization, include square names for context
@@ -1366,15 +1366,9 @@ namespace ChessDroid.Services
                     if (opposition != null) insights.Add(opposition);
                 }
 
-                // Passed pawn advancement — skip if "unstoppable" already covers it
-                if (unstoppable == null)
-                {
-                    var passedPawns = EvaluatePassedPawns(board);
-                    if (passedPawns != null) insights.Add(passedPawns);
-                }
-
-                // King activity — context-aware: uses promotion square distances when passed
-                // pawns exist, centralization otherwise. Subsumes the old tropism check.
+                // King activity — only the non-obvious case: defender intercepts a passed pawn,
+                // or a dramatic centralization gap (≥ 3) in pawnless endgames.
+                // The "supporter is closer" case is intentionally omitted — it's visible on the board.
                 var kingActivity = EvaluateKingActivity(board);
                 if (kingActivity != null) insights.Add(kingActivity);
 
