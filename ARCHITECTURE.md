@@ -2,11 +2,11 @@
 
 ## Overview
 
-ChessDroid is a pure offline chess analysis application that combines tactical pattern recognition with deep positional understanding inspired by world-class chess engines (Ethereal and Stockfish). As of v3.6.0, the application is centered around the Analysis Board — an interactive workspace for deep chess analysis with visual engine arrows, PV line exploration, free-draw annotation, bot mode, continuous analysis, annotated PGN round-trips, square highlighting, and full board customization.
+ChessDroid is a pure offline chess analysis application that combines tactical pattern recognition with deep positional understanding inspired by world-class chess engines (Ethereal and Stockfish). As of v3.7.0, the application is centered around the Analysis Board — an interactive workspace for deep chess analysis with visual engine arrows, PV line exploration, free-draw annotation, bot mode, continuous analysis, annotated PGN round-trips, square highlighting, auto-play, and full board customization.
 
 ---
 
-## System Architecture (v3.6.0)
+## System Architecture (v3.7.0)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -579,7 +579,18 @@ Create a folder in `Templates/` with 12 PNG files named: wK, wQ, wR, wB, wN, wP,
 
 ## Version History
 
-**v3.6.0** — Explanation Accuracy (Current)
+**v3.7.0** — Checkmate Detection & Auto-Play (Current)
+- Full mate-in-1 scan across all pieces: detects battery setups, quiet moves that threaten forced mate; displays "threatens checkmate on g2"
+- Opponent mate threat display: `AnalyzeOpponentThreats` runs same scan; "stops checkmate threat" defense label on blocking moves
+- `IsCheckmate` king-capture bug fixed: king no longer counted as non-king capturer
+- `GetPieceMoves` pawn case added: pawn pushes, diagonal captures, and queen-promotion simulation
+- Auto-play button (`▶▶`/`⏸`): steps through move list at configurable speed; analysis suppressed during playback
+- Auto-play speed setting in Settings (200–2000ms, default 600ms)
+- Book arrows cleared on auto-play start and engine match start
+- Endgame analysis noise removed: king centralization, obvious passed pawn remarks, vague king activity, distant opposition in non-K+P endgames, zugzwang potential
+- Window title: `chessdroid v3.7.0`
+
+**v3.6.0** — Explanation Accuracy
 - Opening book arrows on board: book moves shown as arrows, replacing engine arrows during opening
 - 25+ move explanation false positive fixes: checkmate threat, pin, double attack, blocking, desperado, pawn escape, rook open file, x-ray, discovered attack, passed pawn, pawn tempo, positional labels on recaptured pieces
 - 13 new explanation patterns: centralization, outpost, rook battery, bishop pair, king safety, and more
@@ -687,4 +698,4 @@ https://github.com/jio1337/chessdroid/issues
 ---
 
 **Last Updated:** 2026-05-10
-**Document Version:** 3.6.0
+**Document Version:** 3.7.0

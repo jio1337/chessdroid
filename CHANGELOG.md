@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [3.7.0] - 2026-05-11
+
+### Added
+- **Checkmate Threat Detection** — Full mate-in-1 scan across all pieces after every move; catches battery setups and quiet moves that create forced mate next turn (e.g. Qc6 threatening Qxg2#). Threats display as "threatens checkmate on g2" so the exact square needing protection is always visible
+- **Opponent Mate Threat Display** — `AnalyzeOpponentThreats` now runs the same mate-in-1 scan, so the opponent's forced checkmate threat appears in the analysis output before you move
+- **"Stops Checkmate Threat" Defense Label** — When a move neutralizes the opponent's forced mate (e.g. Bf3 blocking Qxg2#), the defense panel shows "stops checkmate threat"
+- **Auto-Play Button (`▶▶`)** — Steps through the move list automatically at a configurable interval; toggles to `⏸` while running; stops at end of line or on any manual navigation
+- **Auto-Play Speed Setting** — New spinner in Settings → Chess Engine: 200–2000ms, 100ms steps, default 600ms; persisted in config.json
+
+### Fixed
+- **`IsCheckmate` King-Capture Bug** — `DefenseDetection.IsCheckmate` was counting the king as a valid capturer via `IsSquareAttackedBy`, causing "stops checkmate threat" to silently fail when the king was adjacent to the checking piece but would walk into a discovered attack (e.g. Qxg2# covered by Bb7)
+- **`GetPieceMoves` Missing Pawn Case** — `DefenseDetection.GetPieceMoves` had no pawn case; pawn-delivered mates (including promotions) were never detected by `IsCheckmateThreatened`. Added pushes, diagonal captures, and queen-promotion simulation for the back rank
+- **Book Arrows Persist Into Auto-Play** — Book arrows are now cleared when auto-play starts, matching the existing engine-arrow clear behavior
+- **Analysis Flicker During Auto-Play** — `TriggerAutoAnalysis` now bails immediately when `_autoPlaying` is true; arrows and in-flight analysis are cancelled on start; analysis fires once on the landing position when playback stops
+- **Book Arrows Persist Into Engine Match** — Book arrows cleared on engine match start (same fix as bot mode)
+- **Endgame Analysis Noise** — Removed redundant and obvious outputs: king centralization comparison, obvious passed pawn existence, king distance counts, vague king activity thresholds, distant opposition in non-K+P endgames, zugzwang potential
+
+---
+
 ## [3.6.0] - 2026-05-10
 
 ### Added

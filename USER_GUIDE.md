@@ -1,4 +1,4 @@
-## ChessDroid v3.6.0 — User Guide
+## ChessDroid v3.7.0 — User Guide
 
 ### Welcome to ChessDroid!
 
@@ -367,7 +367,15 @@ Create a folder in `Templates/` with 12 PNG files (wK, wQ, wR, wB, wN, wP, bK, b
 
 ## Version History
 
-**v3.6.0** — Explanation Accuracy (Current)
+**v3.7.0** — Checkmate Detection & Auto-Play (Current)
+- Checkmate threat detection: mate-in-1 scan across all pieces; shows "threatens checkmate on g2" so you always know the exact square to protect
+- Opponent mate threats visible in analysis before you move
+- "Stops checkmate threat" defense label on blocking moves (e.g. Bf3 blocking Qxg2#)
+- Auto-play button (▶▶): steps through the move list automatically; pause/resume at any time
+- Auto-play speed configurable in Settings (200–2000ms)
+- Cleaner endgame analysis: removed obvious and redundant output
+
+**v3.6.0** — Explanation Accuracy
 - Opening book arrows: book moves displayed as arrows on the board during opening positions
 - 25+ move explanation false positive fixes across all pattern detectors
 - 13 new explanation patterns for richer, more specific move descriptions
@@ -474,5 +482,5 @@ ChessDroid is released under the MIT License. Free and open-source forever!
 
 **Enjoy analyzing with ChessDroid!**
 
-*Last Updated: 2026-05-10*
-*Version: 3.6.0*
+*Last Updated: 2026-05-11*
+*Version: 3.7.0*
