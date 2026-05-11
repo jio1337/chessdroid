@@ -2,11 +2,11 @@
 
 ## Overview
 
-ChessDroid is a pure offline chess analysis application that combines tactical pattern recognition with deep positional understanding inspired by world-class chess engines (Ethereal and Stockfish). As of v3.5.0, the application is centered around the Analysis Board — an interactive workspace for deep chess analysis with visual engine arrows, PV line exploration, free-draw annotation, bot mode, continuous analysis, annotated PGN round-trips, square highlighting, and full board customization.
+ChessDroid is a pure offline chess analysis application that combines tactical pattern recognition with deep positional understanding inspired by world-class chess engines (Ethereal and Stockfish). As of v3.6.0, the application is centered around the Analysis Board — an interactive workspace for deep chess analysis with visual engine arrows, PV line exploration, free-draw annotation, bot mode, continuous analysis, annotated PGN round-trips, square highlighting, and full board customization.
 
 ---
 
-## System Architecture (v3.5.0)
+## System Architecture (v3.6.0)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -579,7 +579,15 @@ Create a folder in `Templates/` with 12 PNG files named: wK, wQ, wR, wB, wN, wP,
 
 ## Version History
 
-**v3.5.0** — Annotated PGN & Polish (Current)
+**v3.6.0** — Explanation Accuracy (Current)
+- Opening book arrows on board: book moves shown as arrows, replacing engine arrows during opening
+- 25+ move explanation false positive fixes: checkmate threat, pin, double attack, blocking, desperado, pawn escape, rook open file, x-ray, discovered attack, passed pawn, pawn tempo, positional labels on recaptured pieces
+- 13 new explanation patterns: centralization, outpost, rook battery, bishop pair, king safety, and more
+- Undefended pawn attack detection: "attacks pawn on X" label when move newly attacks an undefended pawn
+- FEN load now triggers automatic analysis
+- Window title: `chessdroid v3.6.0`
+
+**v3.5.0** — Annotated PGN & Polish
 - Annotated PGN export/import: NAGs, eval comments, engine cache data embedded per move; import restores classification and analysis instantly
 - Right-click square highlighting: tap toggles orange highlight; drag draws arrows; left-click clears all
 - Challenge/Friendly bot mode selector added to `BotSettingsDialog`
@@ -678,5 +686,5 @@ https://github.com/jio1337/chessdroid/issues
 
 ---
 
-**Last Updated:** 2026-05-09
-**Document Version:** 3.5.0
+**Last Updated:** 2026-05-10
+**Document Version:** 3.6.0

@@ -1,4 +1,4 @@
-## ChessDroid v3.5.0 — User Guide
+## ChessDroid v3.6.0 — User Guide
 
 ### Welcome to ChessDroid!
 
@@ -367,7 +367,14 @@ Create a folder in `Templates/` with 12 PNG files (wK, wQ, wR, wB, wN, wP, bK, b
 
 ## Version History
 
-**v3.5.0** — Annotated PGN & Polish (Current)
+**v3.6.0** — Explanation Accuracy (Current)
+- Opening book arrows: book moves displayed as arrows on the board during opening positions
+- 25+ move explanation false positive fixes across all pattern detectors
+- 13 new explanation patterns for richer, more specific move descriptions
+- "attacks pawn on X" label when a move newly attacks an undefended enemy pawn
+- Analysis now starts automatically after loading a FEN
+
+**v3.5.0** — Annotated PGN & Polish
 - Annotated PGN export/import: move symbols, eval comments, and engine cache embedded in PGN; importing a classified game restores all colors and analysis instantly
 - Right-click square highlighting: tap any square to toggle an orange highlight; right-click drag still draws arrows
 - WDL labels now reflect the side to move: "completely winning", "completely losing", "clear disadvantage" etc.
@@ -467,5 +474,5 @@ ChessDroid is released under the MIT License. Free and open-source forever!
 
 **Enjoy analyzing with ChessDroid!**
 
-*Last Updated: 2026-05-09*
-*Version: 3.5.0*
+*Last Updated: 2026-05-10*
+*Version: 3.6.0*

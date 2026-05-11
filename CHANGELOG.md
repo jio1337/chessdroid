@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [3.6.0] - 2026-05-10
+
+### Added
+- **Opening Book Arrows** — Engine arrows on the board now display suggested moves from the opening book during book positions, replacing engine arrows until the book runs out
+
+### Fixed
+- **Move Explanation False Positives (Major Pass)** — 25+ false positive fixes across the explanation and threat pipeline:
+  - `DetectCheckThreats`: "threatens checkmate" now requires king has zero escape squares AND the check cannot be blocked AND the checking piece cannot be captured by any non-king defender — eliminates false positives on blockable checks (e.g. Bb5+)
+  - `DetectPin` / `DetectPins`: wrapped with `!pieceWillBeRecaptured` guard — no pin labels when the moving piece is immediately recaptured
+  - `DetectDoubleAttack`: king value no longer contaminates `hasMaterialThreat`; at-risk filter added (mirrors `DetectForks`) — eliminates "double attack" when both attacked pieces are adequately defended
+  - `DetectBlocking`: skips squares that are empty in the after-board — eliminates "blocks attack on queen" when the queen already moved away
+  - Desperado: `trulyInDanger` check requires lowest attacker value < piece value; defended pieces no longer mislabeled as desperado
+  - `DetectEscape`: pawn escape now handled when pawn is attacked by a higher-value piece and undefended — "saves pawn" correctly fires for moves like g3
+  - `DetectRookOnOpenFile`: "rook seizes open file" suppressed when the rook is immediately blocked by a friendly piece in the forward direction
+  - `DetectRookOnOpenFile`: "rook seizes open file" suppressed when already on that file before the move; "contests" label added when enemy rook/queen occupies the same file
+  - X-ray attack false positive when piece was already on the same diagonal
+  - Pawn tempo attack suppressed when pawn push lands on a defended square
+  - "advances passed pawn" no longer fires for non-passed pawns near promotion
+  - Phantom threats suppressed when explanation already covers the same idea
+  - Pin false positive on f4-position and other cases with pinned piece/phantom threat combos
+  - Discovered attack now detects minor piece discoveries; escape now accounts for defended retreat squares
+  - "rook seizes open file" when enemy rook contests the file
+  - Positional activity labels no longer fire on captures that will be recaptured
+  - "wins pawn" false positive when enemy king can step in to defend
+  - Material imbalance text removed from output; positional fallbacks skip on recaptured pieces
+- **Move Explanation: 13 New Patterns** — Major specificity pass adds patterns including centralization, outpost placement, rook battery, bishop pair activation, king safety improvements, and more
+- **New Undefended Pawn Attack Detection** — Moving piece that newly attacks an undefended enemy pawn now labeled (e.g. "attacks pawn on b7")
+- **FEN Load Analysis** — Analysis now starts automatically after loading a FEN string
+
+---
+
 ## [3.5.0] - 2026-05-09
 
 ### Added
