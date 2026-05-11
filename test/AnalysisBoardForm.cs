@@ -531,22 +531,41 @@ namespace ChessDroid
 
         private async void BtnSettings_Click(object? sender, EventArgs e)
         {
+            // Snapshot analysis-relevant settings before the dialog modifies config
+            string prevEngine = config.SelectedEngine;
+            int prevDepth = config.EngineDepth;
+            int prevMaxDepth = config.ContinuousAnalysisMaxDepth;
+            bool prevPlayStyle = config.PlayStyleEnabled;
+            int prevAggressiveness = config.Aggressiveness;
+
             using var settingsForm = new SettingsForm(config);
             if (settingsForm.ShowDialog() == DialogResult.OK)
             {
-                // Reload engine service with new settings
-                engineService?.Dispose();
-                engineService = new ChessEngineService(config);
+                bool engineChanged = config.SelectedEngine != prevEngine;
+                bool analysisSettingsChanged = engineChanged
+                    || config.EngineDepth != prevDepth
+                    || config.ContinuousAnalysisMaxDepth != prevMaxDepth
+                    || config.PlayStyleEnabled != prevPlayStyle
+                    || config.Aggressiveness != prevAggressiveness;
+
+                if (engineChanged)
+                {
+                    engineService?.Dispose();
+                    engineService = new ChessEngineService(config);
+                }
                 InitializeServices();
                 ApplyTheme();
                 LeftPanel_Resize(leftPanel, EventArgs.Empty);
                 boardControl.SetSquareColors(
                     ColorTranslator.FromHtml(config.LightSquareColor),
                     ColorTranslator.FromHtml(config.DarkSquareColor));
-                _analysisCache.Clear(); // Clear cache when settings change
 
-                // Initialize the engine immediately
-                await InitializeEngineAsync();
+                // Only clear cache when settings that affect analysis results change
+                if (analysisSettingsChanged)
+                    _analysisCache.Clear();
+
+                if (engineChanged)
+                    await InitializeEngineAsync();
             }
         }
 
