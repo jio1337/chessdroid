@@ -727,21 +727,7 @@ namespace ChessDroid.Services
                     return null;
                 }
 
-                // No passed pawns: compare centralization, include square names for context
-                int whiteCentralization = GetKingCentralization(whiteKingRow, whiteKingCol);
-                int blackCentralization = GetKingCentralization(blackKingRow, blackKingCol);
-                int centralDiff = whiteCentralization - blackCentralization;
-
-                string whiteKingSq = $"{(char)('a' + whiteKingCol)}{8 - whiteKingRow}";
-                string blackKingSq = $"{(char)('a' + blackKingCol)}{8 - blackKingRow}";
-
-                // Require a clear gap (≥ 3) before claiming king activity advantage —
-                // a diff of 1-2 is usually visually obvious and not worth stating
-                if (centralDiff >= 3)
-                    return $"White king on {whiteKingSq} more active than Black king on {blackKingSq}";
-                else if (centralDiff <= -3)
-                    return $"Black king on {blackKingSq} more active than White king on {whiteKingSq}";
-
+                // No passed pawns — nothing non-obvious to say about king activity
                 return null;
             }
             catch
