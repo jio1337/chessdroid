@@ -128,6 +128,7 @@ namespace ChessDroid
             numContinuousMaxDepth.Value = Math.Clamp(config.ContinuousAnalysisMaxDepth, 10, 100);
             numContinuousMaxDepth.Enabled = config.ContinuousAnalysis;
             chkContinuousAnalysis.CheckedChanged += (s, e) => numContinuousMaxDepth.Enabled = chkContinuousAnalysis.Checked;
+            numAutoPlayInterval.Value = Math.Clamp(config.AutoPlayInterval, 200, 2000);
 
             // Load theme preference
             chkDarkMode.Checked = config.Theme == "Dark";
@@ -181,6 +182,7 @@ namespace ChessDroid
             config.ShowBookMoves = chkBookMoves.Checked;
             config.ContinuousAnalysis = chkContinuousAnalysis.Checked;
             config.ContinuousAnalysisMaxDepth = (int)numContinuousMaxDepth.Value;
+            config.AutoPlayInterval = (int)numAutoPlayInterval.Value;
 
             config.Save();
 

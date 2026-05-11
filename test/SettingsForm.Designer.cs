@@ -37,6 +37,8 @@ namespace ChessDroid
             chkContinuousAnalysis = new CheckBox();
             lblContinuousMaxDepth = new Label();
             numContinuousMaxDepth = new NumericUpDown();
+            lblAutoPlayInterval = new Label();
+            numAutoPlayInterval = new NumericUpDown();
             numMoveTimeout = new NumericUpDown();
             numMaxRetries = new NumericUpDown();
             numEngineTimeout = new NumericUpDown();
@@ -90,6 +92,7 @@ namespace ChessDroid
             grpEngine.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)numMinAnalysisTime).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numContinuousMaxDepth).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)numAutoPlayInterval).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numMoveTimeout).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numMaxRetries).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numEngineTimeout).BeginInit();
@@ -108,6 +111,8 @@ namespace ChessDroid
             grpEngine.Controls.Add(chkContinuousAnalysis);
             grpEngine.Controls.Add(lblContinuousMaxDepth);
             grpEngine.Controls.Add(numContinuousMaxDepth);
+            grpEngine.Controls.Add(lblAutoPlayInterval);
+            grpEngine.Controls.Add(numAutoPlayInterval);
             grpEngine.Controls.Add(numMoveTimeout);
             grpEngine.Controls.Add(numMaxRetries);
             grpEngine.Controls.Add(numEngineTimeout);
@@ -181,6 +186,27 @@ namespace ChessDroid
             numContinuousMaxDepth.TabIndex = 11;
             numContinuousMaxDepth.Value = new decimal(new int[] { 50, 0, 0, 0 });
             toolTip1.SetToolTip(numContinuousMaxDepth, "Maximum depth for continuous analysis (10-100).");
+            //
+            // lblAutoPlayInterval
+            //
+            lblAutoPlayInterval.Location = new Point(10, 201);
+            lblAutoPlayInterval.Name = "lblAutoPlayInterval";
+            lblAutoPlayInterval.Size = new Size(116, 15);
+            lblAutoPlayInterval.TabIndex = 12;
+            lblAutoPlayInterval.Text = "Auto-play speed (ms):";
+            toolTip1.SetToolTip(lblAutoPlayInterval, "Time between moves during auto-play (200-2000ms).");
+            //
+            // numAutoPlayInterval
+            //
+            numAutoPlayInterval.Increment = new decimal(new int[] { 100, 0, 0, 0 });
+            numAutoPlayInterval.Minimum = new decimal(new int[] { 200, 0, 0, 0 });
+            numAutoPlayInterval.Maximum = new decimal(new int[] { 2000, 0, 0, 0 });
+            numAutoPlayInterval.Location = new Point(228, 198);
+            numAutoPlayInterval.Name = "numAutoPlayInterval";
+            numAutoPlayInterval.Size = new Size(54, 20);
+            numAutoPlayInterval.TabIndex = 13;
+            numAutoPlayInterval.Value = new decimal(new int[] { 600, 0, 0, 0 });
+            toolTip1.SetToolTip(numAutoPlayInterval, "Time between moves during auto-play (200-2000ms).");
             //
             // numMoveTimeout
             // 
@@ -783,6 +809,7 @@ namespace ChessDroid
             grpEngine.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)numMinAnalysisTime).EndInit();
             ((System.ComponentModel.ISupportInitialize)numContinuousMaxDepth).EndInit();
+            ((System.ComponentModel.ISupportInitialize)numAutoPlayInterval).EndInit();
             ((System.ComponentModel.ISupportInitialize)numMoveTimeout).EndInit();
             ((System.ComponentModel.ISupportInitialize)numMaxRetries).EndInit();
             ((System.ComponentModel.ISupportInitialize)numEngineTimeout).EndInit();
@@ -858,5 +885,7 @@ namespace ChessDroid
         private System.Windows.Forms.CheckBox chkContinuousAnalysis;
         private System.Windows.Forms.Label lblContinuousMaxDepth;
         private System.Windows.Forms.NumericUpDown numContinuousMaxDepth;
+        private System.Windows.Forms.Label lblAutoPlayInterval;
+        private System.Windows.Forms.NumericUpDown numAutoPlayInterval;
     }
 }

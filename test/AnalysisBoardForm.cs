@@ -76,6 +76,8 @@ namespace ChessDroid
         private CancellationTokenSource? _botMoveCts;
         private AppConfig? _challengeSnapshot; // non-null while challenge mode is active
         private bool _bookArrowsActive = false; // true when book arrows are shown (suppress engine arrows)
+        private System.Windows.Forms.Timer _autoPlayTimer = null!;
+        private bool _autoPlaying = false;
 
         // Console font (managed here to allow proper disposal on change)
         private Font _consoleFont = new Font("Consolas", 10f);
@@ -148,7 +150,7 @@ namespace ChessDroid
 
             // Standard buttons
             foreach (var btn in new[] { btnSettings, btnNewGame, btnFlipBoard, btnTakeBack, btnPrevMove,
-                                        btnNextMove, btnPlayBot, btnEditPosition, btnLoadFen, btnCopyFen, btnClassifyMoves,
+                                        btnNextMove, btnAutoPlay, btnPlayBot, btnEditPosition, btnLoadFen, btnCopyFen, btnClassifyMoves,
                                         btnExportPgn, btnImportPgn })
             {
                 btn.BackColor = scheme.ButtonBackColor;
@@ -333,6 +335,10 @@ namespace ChessDroid
             clockTimer.Interval = 100;
             clockTimer.Tick += ClockTimer_Tick;
 
+            _autoPlayTimer = new System.Windows.Forms.Timer();
+            _autoPlayTimer.Interval = 400;
+            _autoPlayTimer.Tick += AutoPlayTimer_Tick;
+
             // Trigger initial layout for responsive checkbox positioning
             GrpEngineMatch_Resize(grpEngineMatch, EventArgs.Empty);
         }
@@ -406,9 +412,11 @@ namespace ChessDroid
                 btnPrevMove.Width = navButtonWidth;
                 btnNextMove.Location = new Point(navX + navButtonWidth + 2, buttonY);
                 btnNextMove.Width = navButtonWidth;
+                btnAutoPlay.Location = new Point(btnNextMove.Right + 2, buttonY);
+                btnAutoPlay.Width = navButtonWidth;
 
                 // Bot button (after nav buttons)
-                int botX = btnNextMove.Right + buttonSpacing;
+                int botX = btnAutoPlay.Right + buttonSpacing;
                 int editBtnWidth = 28;
                 btnPlayBot.Location = new Point(botX, buttonY);
                 btnPlayBot.Width = Math.Max(60, boardX + boardSize - botX - editBtnWidth - buttonSpacing);
@@ -487,6 +495,8 @@ namespace ChessDroid
 
         private async Task TriggerAutoAnalysis()
         {
+            if (_autoPlaying) return;
+
             // Cancel previous analysis if still running
             autoAnalysisCts?.Cancel();
             autoAnalysisCts = new CancellationTokenSource();
@@ -510,6 +520,7 @@ namespace ChessDroid
 
         private void BtnNewGame_Click(object? sender, EventArgs e)
         {
+            StopAutoPlay();
             if (_botModeActive) StopBotMode();
             boardControl.ClearEngineArrows();
             boardControl.ClearMoveAnnotation();
@@ -576,6 +587,7 @@ namespace ChessDroid
 
         private void BtnTakeBack_Click(object? sender, EventArgs e)
         {
+            StopAutoPlay();
             // Cancel any pending bot move
             _botMoveCts?.Cancel();
 
@@ -606,6 +618,7 @@ namespace ChessDroid
 
         private void BtnPrevMove_Click(object? sender, EventArgs e)
         {
+            StopAutoPlay();
             _pvAnimationCts?.Cancel();
             if (moveTree.GoBack())
             {
@@ -668,6 +681,46 @@ namespace ChessDroid
                     isNavigating = false;
                 }
             }
+        }
+
+        private void BtnAutoPlay_Click(object? sender, EventArgs e)
+        {
+            if (_autoPlaying)
+                StopAutoPlay();
+            else
+                StartAutoPlay();
+        }
+
+        private void StartAutoPlay()
+        {
+            if (moveTree.CurrentNode.Next() == null) return; // already at end
+            _autoPlaying = true;
+            _autoPlayTimer.Interval = config.AutoPlayInterval;
+            btnAutoPlay.Text = "⏸";
+            autoAnalysisCts?.Cancel(); // cancel any in-flight analysis
+            boardControl.ClearEngineArrows();
+            boardControl.ClearBookArrows();
+            _bookArrowsActive = false;
+            _autoPlayTimer.Start();
+        }
+
+        private void StopAutoPlay()
+        {
+            _autoPlaying = false;
+            _autoPlayTimer.Stop();
+            btnAutoPlay.Text = "▶▶";
+            if (!matchRunning)
+                _ = TriggerAutoAnalysis(); // analyze the position we landed on
+        }
+
+        private void AutoPlayTimer_Tick(object? sender, EventArgs e)
+        {
+            if (moveTree.CurrentNode.Next() == null)
+            {
+                StopAutoPlay();
+                return;
+            }
+            BtnNextMove_Click(this, EventArgs.Empty);
         }
 
         private void BtnLoadFen_Click(object? sender, EventArgs e)
