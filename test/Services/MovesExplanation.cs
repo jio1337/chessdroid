@@ -3351,6 +3351,16 @@ namespace ChessDroid.Services
                 string file = ((char)('a' + pieceCol)).ToString();
                 if (!hasFriendlyPawn && !hasEnemyPawn)
                 {
+                    // Rook must have forward scope — if immediately blocked by own piece it's not seizing anything
+                    int forwardDir = isWhite ? -1 : 1;
+                    int nextRow = pieceRow + forwardDir;
+                    if (nextRow >= 0 && nextRow < 8)
+                    {
+                        char nextPiece = board.GetPiece(nextRow, pieceCol);
+                        if (nextPiece != '.' && char.IsUpper(nextPiece) == isWhite)
+                            return null;
+                    }
+
                     if (fileContested)
                         return $"contests open {file}-file";
                     return $"rook seizes open {file}-file";
