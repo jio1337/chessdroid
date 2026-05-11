@@ -631,10 +631,23 @@ namespace ChessDroid.Services
             {
                 var (attackerRow, attackerCol) = attackers[0];
 
-                // Can any of our pieces (other than king) capture the attacker?
-                if (IsSquareAttackedBy(board, attackerRow, attackerCol, weAreWhite))
+                // Can any of our NON-KING pieces capture the attacker?
+                // King captures are already handled by the escape squares loop above —
+                // including the king here would incorrectly report "not checkmate" when
+                // the king could nominally reach the square but walks into a discovered attack.
+                bool nonKingCanCapture = false;
+                for (int cr = 0; cr < 8 && !nonKingCanCapture; cr++)
+                    for (int cc = 0; cc < 8 && !nonKingCanCapture; cc++)
+                    {
+                        char p = board.GetPiece(cr, cc);
+                        if (p == '.') continue;
+                        if (char.IsUpper(p) != weAreWhite) continue;
+                        if (PieceHelper.GetPieceType(p) == PieceType.King) continue;
+                        if (ChessUtilities.CanAttackSquare(board, cr, cc, p, attackerRow, attackerCol))
+                            nonKingCanCapture = true;
+                    }
+                if (nonKingCanCapture)
                 {
-                    // We can capture the attacker - not checkmate
                     return false;
                 }
 

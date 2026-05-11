@@ -96,6 +96,13 @@ namespace ChessDroid.Services
                 // Pass pieceWillBeRecaptured to skip phantom threats
                 DetectCheckThreats(afterMove, destRank, destFile, movingPlayerIsWhite, threatsAfter, pieceWillBeRecaptured);
 
+                // If the moved piece doesn't give direct check/mate, scan ALL our pieces for
+                // mate-in-1 threats (e.g. a battery move that threatens Qxg2#)
+                if (!pieceWillBeRecaptured && !threatsAfter.Any(t => t.Type == ThreatType.CheckmateThreat))
+                {
+                    DetectMateInOneThreat(afterMove, movingPlayerIsWhite, threatsAfter);
+                }
+
                 // Skip phantom threats if piece gives check and will be recaptured
                 // These threats won't materialize because opponent MUST recapture to escape check
                 if (!pieceWillBeRecaptured)
@@ -195,6 +202,12 @@ namespace ChessDroid.Services
 
                 // Check if opponent can capture our pawn en passant
                 DetectOpponentEnPassantThreat(board, enPassantSquare, weAreWhite, threats);
+
+                // Check if opponent can deliver checkmate in one move
+                if (!threats.Any(t => t.Type == ThreatType.CheckmateThreat))
+                {
+                    DetectMateInOneThreat(board, opponentIsWhite, threats);
+                }
             }
             catch (Exception ex)
             {
@@ -264,10 +277,10 @@ namespace ChessDroid.Services
                             isCheckmateThreat = true;
                             threats.Add(new Threat
                             {
-                                Description = "threatens checkmate",
+                                Description = $"threatens checkmate on {GetSquareName(pieceRow, pieceCol)}",
                                 Type = ThreatType.CheckmateThreat,
                                 Severity = 5,
-                                Square = GetSquareName(kingRow, kingCol)
+                                Square = GetSquareName(pieceRow, pieceCol)
                             });
                         }
                     }
@@ -858,6 +871,90 @@ namespace ChessDroid.Services
                     Severity = 2, // Moderate severity - it's a pawn capture
                     Square = enPassantSquare
                 });
+            }
+        }
+
+        /// <summary>
+        /// Scan all of the mover's pieces for a mate-in-1 threat from the current position.
+        /// Catches battery/setup moves (e.g. Qc6 threatening Qxg2#) that don't give direct check
+        /// but leave a forced checkmate available on the very next move.
+        /// </summary>
+        private static void DetectMateInOneThreat(ChessBoard board, bool movingPlayerIsWhite, List<Threat> threats)
+        {
+            var (kingRow, kingCol) = board.GetKingPosition(!movingPlayerIsWhite);
+            if (kingRow < 0) return;
+
+            var (ourKingRow, ourKingCol) = board.GetKingPosition(movingPlayerIsWhite);
+
+            for (int r = 0; r < 8; r++)
+            {
+                for (int c = 0; c < 8; c++)
+                {
+                    char piece = board.GetPiece(r, c);
+                    if (piece == '.') continue;
+                    if (char.IsUpper(piece) != movingPlayerIsWhite) continue;
+
+                    for (int tr = 0; tr < 8; tr++)
+                    {
+                        for (int tc = 0; tc < 8; tc++)
+                        {
+                            if (tr == r && tc == c) continue;
+
+                            char targetPiece = board.GetPiece(tr, tc);
+                            if (targetPiece != '.' && char.IsUpper(targetPiece) == movingPlayerIsWhite) continue;
+
+                            if (!ChessUtilities.CanAttackSquare(board, r, c, piece, tr, tc)) continue;
+
+                            using var pooled = BoardPool.Rent(board);
+                            ChessBoard testBoard = pooled.Board;
+                            testBoard.SetPiece(tr, tc, piece);
+                            testBoard.SetPiece(r, c, '.');
+
+                            // Skip illegal moves that expose our own king
+                            if (ourKingRow >= 0)
+                            {
+                                int checkKingRow = (r == ourKingRow && c == ourKingCol) ? tr : ourKingRow;
+                                int checkKingCol = (r == ourKingRow && c == ourKingCol) ? tc : ourKingCol;
+                                if (IsSquareAttackedBy(testBoard, checkKingRow, checkKingCol, !movingPlayerIsWhite))
+                                    continue;
+                            }
+
+                            // Does this move give check to the opponent's king?
+                            if (!ChessUtilities.CanAttackSquare(testBoard, tr, tc, piece, kingRow, kingCol))
+                                continue;
+
+                            int escapes = CountKingEscapeSquares(testBoard, kingRow, kingCol, !movingPlayerIsWhite);
+                            if (escapes > 0) continue;
+
+                            bool canBlock = ChessUtilities.CanBlockSlidingAttack(testBoard, kingRow, kingCol, !movingPlayerIsWhite);
+                            if (canBlock) continue;
+
+                            bool canCapture = false;
+                            for (int dr = 0; dr < 8 && !canCapture; dr++)
+                                for (int dc = 0; dc < 8 && !canCapture; dc++)
+                                {
+                                    char defender = testBoard.GetPiece(dr, dc);
+                                    if (defender == '.') continue;
+                                    if (char.IsUpper(defender) == movingPlayerIsWhite) continue;
+                                    if (PieceHelper.GetPieceType(defender) == PieceType.King) continue;
+                                    if (ChessUtilities.CanAttackSquare(testBoard, dr, dc, defender, tr, tc))
+                                        canCapture = true;
+                                }
+
+                            if (!canCapture)
+                            {
+                                threats.Add(new Threat
+                                {
+                                    Description = $"threatens checkmate on {GetSquareName(tr, tc)}",
+                                    Type = ThreatType.CheckmateThreat,
+                                    Severity = 5,
+                                    Square = GetSquareName(tr, tc)
+                                });
+                                return; // One mate threat is enough
+                            }
+                        }
+                    }
+                }
             }
         }
 
