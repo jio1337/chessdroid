@@ -496,10 +496,19 @@ namespace ChessDroid.Services
 
             foreach (var (destRow, destCol) in possibleMoves)
             {
-                // Simulate the move
+                // Simulate the move; pawns reaching the back rank promote to queen
+                char pieceToPlace = piece;
+                if (pieceType == PieceType.Pawn)
+                {
+                    bool isWhitePawn = char.IsUpper(piece);
+                    int promoRank = isWhitePawn ? 0 : 7;
+                    if (destRow == promoRank)
+                        pieceToPlace = isWhitePawn ? 'Q' : 'q';
+                }
+
                 using var pooledCheck = BoardPool.Rent(board);
                 ChessBoard tempBoard = pooledCheck.Board;
-                tempBoard.SetPiece(destRow, destCol, piece);
+                tempBoard.SetPiece(destRow, destCol, pieceToPlace);
                 tempBoard.SetPiece(pieceRow, pieceCol, '.');
 
                 // Check if this gives check
@@ -548,6 +557,31 @@ namespace ChessDroid.Services
                             char target = board.GetPiece(r, c);
                             if (target == '.' || char.IsUpper(target) != isWhite)
                                 moves.Add((r, c));
+                        }
+                    }
+                    break;
+                case PieceType.Pawn:
+                    int dir = isWhite ? -1 : 1;
+                    int pushRow = row + dir;
+                    // Single push
+                    if (pushRow >= 0 && pushRow < 8 && board.GetPiece(pushRow, col) == '.')
+                    {
+                        moves.Add((pushRow, col));
+                        // Double push from starting rank
+                        int startRank = isWhite ? 6 : 1;
+                        int push2Row = row + 2 * dir;
+                        if (row == startRank && push2Row >= 0 && push2Row < 8 && board.GetPiece(push2Row, col) == '.')
+                            moves.Add((push2Row, col));
+                    }
+                    // Diagonal captures (also covers promotion captures)
+                    foreach (int dc in new[] { -1, 1 })
+                    {
+                        int captureCol = col + dc;
+                        if (pushRow >= 0 && pushRow < 8 && captureCol >= 0 && captureCol < 8)
+                        {
+                            char target = board.GetPiece(pushRow, captureCol);
+                            if (target != '.' && char.IsUpper(target) != isWhite)
+                                moves.Add((pushRow, captureCol));
                         }
                     }
                     break;

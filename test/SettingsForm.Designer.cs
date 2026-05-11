@@ -121,9 +121,9 @@ namespace ChessDroid
             grpEngine.Controls.Add(lblMaxRetries);
             grpEngine.Controls.Add(lblEngineTimeout);
             grpEngine.ForeColor = Color.White;
-            grpEngine.Location = new Point(13, 13);
+            grpEngine.Location = new Point(12, 10);
             grpEngine.Name = "grpEngine";
-            grpEngine.Size = new Size(298, 207);
+            grpEngine.Size = new Size(298, 230);
             grpEngine.TabIndex = 1;
             grpEngine.TabStop = false;
             grpEngine.Text = "Chess Engine";
@@ -157,57 +157,57 @@ namespace ChessDroid
             lblMinAnalysisTime.TabIndex = 7;
             lblMinAnalysisTime.Text = "Min Analysis Time (ms):";
             toolTip1.SetToolTip(lblMinAnalysisTime, "Minimum analysis time in ms (0 = no minimum). Ensures engine thinks for at least this long.");
-            //
+            // 
             // chkContinuousAnalysis
-            //
-            chkContinuousAnalysis.Location = new Point(10, 178);
+            // 
+            chkContinuousAnalysis.Location = new Point(12, 178);
             chkContinuousAnalysis.Name = "chkContinuousAnalysis";
-            chkContinuousAnalysis.Size = new Size(148, 18);
+            chkContinuousAnalysis.Size = new Size(170, 18);
             chkContinuousAnalysis.TabIndex = 9;
             chkContinuousAnalysis.Text = "Continuous analysis";
             toolTip1.SetToolTip(chkContinuousAnalysis, "When enabled, engine analyzes to max depth and updates results live as depth increases. When disabled, engine stops at the configured depth.");
-            //
+            // 
             // lblContinuousMaxDepth
-            //
-            lblContinuousMaxDepth.Location = new Point(162, 181);
+            // 
+            lblContinuousMaxDepth.Font = new Font("Courier New", 8.25F);
+            lblContinuousMaxDepth.Location = new Point(186, 178);
             lblContinuousMaxDepth.Name = "lblContinuousMaxDepth";
-            lblContinuousMaxDepth.Size = new Size(62, 15);
+            lblContinuousMaxDepth.Size = new Size(36, 15);
             lblContinuousMaxDepth.TabIndex = 10;
-            lblContinuousMaxDepth.Text = "Max depth:";
+            lblContinuousMaxDepth.Text = "Max:";
             toolTip1.SetToolTip(lblContinuousMaxDepth, "Maximum depth for continuous analysis (10-100).");
-            //
+            // 
             // numContinuousMaxDepth
-            //
-            numContinuousMaxDepth.Location = new Point(228, 178);
+            // 
+            numContinuousMaxDepth.Location = new Point(228, 176);
             numContinuousMaxDepth.Minimum = new decimal(new int[] { 10, 0, 0, 0 });
-            numContinuousMaxDepth.Maximum = new decimal(new int[] { 100, 0, 0, 0 });
             numContinuousMaxDepth.Name = "numContinuousMaxDepth";
             numContinuousMaxDepth.Size = new Size(54, 20);
             numContinuousMaxDepth.TabIndex = 11;
-            numContinuousMaxDepth.Value = new decimal(new int[] { 50, 0, 0, 0 });
             toolTip1.SetToolTip(numContinuousMaxDepth, "Maximum depth for continuous analysis (10-100).");
-            //
+            numContinuousMaxDepth.Value = new decimal(new int[] { 50, 0, 0, 0 });
+            // 
             // lblAutoPlayInterval
-            //
-            lblAutoPlayInterval.Location = new Point(10, 201);
+            // 
+            lblAutoPlayInterval.Location = new Point(10, 206);
             lblAutoPlayInterval.Name = "lblAutoPlayInterval";
-            lblAutoPlayInterval.Size = new Size(116, 15);
+            lblAutoPlayInterval.Size = new Size(171, 15);
             lblAutoPlayInterval.TabIndex = 12;
             lblAutoPlayInterval.Text = "Auto-play speed (ms):";
             toolTip1.SetToolTip(lblAutoPlayInterval, "Time between moves during auto-play (200-2000ms).");
-            //
+            // 
             // numAutoPlayInterval
-            //
+            // 
             numAutoPlayInterval.Increment = new decimal(new int[] { 100, 0, 0, 0 });
-            numAutoPlayInterval.Minimum = new decimal(new int[] { 200, 0, 0, 0 });
+            numAutoPlayInterval.Location = new Point(182, 202);
             numAutoPlayInterval.Maximum = new decimal(new int[] { 2000, 0, 0, 0 });
-            numAutoPlayInterval.Location = new Point(228, 198);
+            numAutoPlayInterval.Minimum = new decimal(new int[] { 200, 0, 0, 0 });
             numAutoPlayInterval.Name = "numAutoPlayInterval";
-            numAutoPlayInterval.Size = new Size(54, 20);
+            numAutoPlayInterval.Size = new Size(100, 20);
             numAutoPlayInterval.TabIndex = 13;
-            numAutoPlayInterval.Value = new decimal(new int[] { 600, 0, 0, 0 });
             toolTip1.SetToolTip(numAutoPlayInterval, "Time between moves during auto-play (200-2000ms).");
-            //
+            numAutoPlayInterval.Value = new decimal(new int[] { 600, 0, 0, 0 });
+            // 
             // numMoveTimeout
             // 
             numMoveTimeout.Increment = new decimal(new int[] { 5000, 0, 0, 0 });
@@ -296,7 +296,7 @@ namespace ChessDroid
             grpDisplay.Controls.Add(lblConsoleFont);
             grpDisplay.Controls.Add(btnChooseFont);
             grpDisplay.ForeColor = Color.White;
-            grpDisplay.Location = new Point(13, 226);
+            grpDisplay.Location = new Point(12, 246);
             grpDisplay.Name = "grpDisplay";
             grpDisplay.Size = new Size(298, 181);
             grpDisplay.TabIndex = 2;
@@ -443,7 +443,7 @@ namespace ChessDroid
             grpBoardColors.Controls.Add(lblDarkSquares);
             grpBoardColors.Controls.Add(btnDarkColor);
             grpBoardColors.ForeColor = Color.White;
-            grpBoardColors.Location = new Point(13, 413);
+            grpBoardColors.Location = new Point(12, 433);
             grpBoardColors.Name = "grpBoardColors";
             grpBoardColors.Size = new Size(298, 79);
             grpBoardColors.TabIndex = 12;
@@ -508,7 +508,7 @@ namespace ChessDroid
             grpExplanations.Controls.Add(chkMoveQuality);
             grpExplanations.Controls.Add(chkBookMoves);
             grpExplanations.ForeColor = Color.White;
-            grpExplanations.Location = new Point(317, 13);
+            grpExplanations.Location = new Point(316, 10);
             grpExplanations.Name = "grpExplanations";
             grpExplanations.Size = new Size(255, 278);
             grpExplanations.TabIndex = 3;
@@ -541,7 +541,7 @@ namespace ChessDroid
             chkTactical.Checked = true;
             chkTactical.CheckState = CheckState.Checked;
             chkTactical.ForeColor = Color.White;
-            chkTactical.Location = new Point(10, 52);
+            chkTactical.Location = new Point(10, 51);
             chkTactical.Name = "chkTactical";
             chkTactical.Size = new Size(145, 18);
             chkTactical.TabIndex = 1;
@@ -555,7 +555,7 @@ namespace ChessDroid
             chkPositional.Checked = true;
             chkPositional.CheckState = CheckState.Checked;
             chkPositional.ForeColor = Color.White;
-            chkPositional.Location = new Point(10, 77);
+            chkPositional.Location = new Point(10, 76);
             chkPositional.Name = "chkPositional";
             chkPositional.Size = new Size(159, 18);
             chkPositional.TabIndex = 2;
@@ -569,7 +569,7 @@ namespace ChessDroid
             chkEndgame.Checked = true;
             chkEndgame.CheckState = CheckState.Checked;
             chkEndgame.ForeColor = Color.White;
-            chkEndgame.Location = new Point(10, 102);
+            chkEndgame.Location = new Point(10, 101);
             chkEndgame.Name = "chkEndgame";
             chkEndgame.Size = new Size(138, 18);
             chkEndgame.TabIndex = 3;
@@ -583,7 +583,7 @@ namespace ChessDroid
             chkOpening.Checked = true;
             chkOpening.CheckState = CheckState.Checked;
             chkOpening.ForeColor = Color.White;
-            chkOpening.Location = new Point(10, 127);
+            chkOpening.Location = new Point(10, 126);
             chkOpening.Name = "chkOpening";
             chkOpening.Size = new Size(152, 18);
             chkOpening.TabIndex = 4;
@@ -597,7 +597,7 @@ namespace ChessDroid
             chkThreats.Checked = true;
             chkThreats.CheckState = CheckState.Checked;
             chkThreats.ForeColor = Color.White;
-            chkThreats.Location = new Point(10, 152);
+            chkThreats.Location = new Point(10, 151);
             chkThreats.Name = "chkThreats";
             chkThreats.Size = new Size(138, 18);
             chkThreats.TabIndex = 9;
@@ -611,11 +611,11 @@ namespace ChessDroid
             chkWDL.Checked = true;
             chkWDL.CheckState = CheckState.Checked;
             chkWDL.ForeColor = Color.White;
-            chkWDL.Location = new Point(10, 177);
+            chkWDL.Location = new Point(10, 176);
             chkWDL.Name = "chkWDL";
-            chkWDL.Size = new Size(166, 18);
+            chkWDL.Size = new Size(131, 18);
             chkWDL.TabIndex = 10;
-            chkWDL.Text = "WDL & Sharpness (Lc0)";
+            chkWDL.Text = "WDL + Sharpness";
             toolTip1.SetToolTip(chkWDL, "Show Win/Draw/Loss probabilities and position sharpness (Lc0-inspired)");
             chkWDL.UseVisualStyleBackColor = true;
             // 
@@ -625,7 +625,7 @@ namespace ChessDroid
             chkOpeningName.Checked = true;
             chkOpeningName.CheckState = CheckState.Checked;
             chkOpeningName.ForeColor = Color.White;
-            chkOpeningName.Location = new Point(10, 202);
+            chkOpeningName.Location = new Point(10, 201);
             chkOpeningName.Name = "chkOpeningName";
             chkOpeningName.Size = new Size(145, 18);
             chkOpeningName.TabIndex = 11;
@@ -639,7 +639,7 @@ namespace ChessDroid
             chkMoveQuality.Checked = true;
             chkMoveQuality.CheckState = CheckState.Checked;
             chkMoveQuality.ForeColor = Color.White;
-            chkMoveQuality.Location = new Point(10, 227);
+            chkMoveQuality.Location = new Point(10, 226);
             chkMoveQuality.Name = "chkMoveQuality";
             chkMoveQuality.Size = new Size(229, 18);
             chkMoveQuality.TabIndex = 12;
@@ -653,7 +653,7 @@ namespace ChessDroid
             chkBookMoves.Checked = true;
             chkBookMoves.CheckState = CheckState.Checked;
             chkBookMoves.ForeColor = Color.White;
-            chkBookMoves.Location = new Point(10, 252);
+            chkBookMoves.Location = new Point(10, 251);
             chkBookMoves.Name = "chkBookMoves";
             chkBookMoves.Size = new Size(131, 18);
             chkBookMoves.TabIndex = 13;
@@ -668,7 +668,7 @@ namespace ChessDroid
             grpLc0Features.Controls.Add(trkAggressiveness);
             grpLc0Features.Controls.Add(lblAggressivenessValue);
             grpLc0Features.ForeColor = Color.White;
-            grpLc0Features.Location = new Point(317, 301);
+            grpLc0Features.Location = new Point(316, 298);
             grpLc0Features.Name = "grpLc0Features";
             grpLc0Features.Size = new Size(255, 146);
             grpLc0Features.TabIndex = 9;
@@ -720,7 +720,7 @@ namespace ChessDroid
             // 
             btnSave.FlatStyle = FlatStyle.Popup;
             btnSave.ForeColor = SystemColors.ControlLightLight;
-            btnSave.Location = new Point(344, 484);
+            btnSave.Location = new Point(316, 450);
             btnSave.Name = "btnSave";
             btnSave.Size = new Size(100, 28);
             btnSave.TabIndex = 4;
@@ -732,7 +732,7 @@ namespace ChessDroid
             // 
             btnReset.FlatStyle = FlatStyle.Popup;
             btnReset.ForeColor = SystemColors.ControlLightLight;
-            btnReset.Location = new Point(344, 519);
+            btnReset.Location = new Point(316, 484);
             btnReset.Name = "btnReset";
             btnReset.Size = new Size(100, 28);
             btnReset.TabIndex = 5;
@@ -744,7 +744,7 @@ namespace ChessDroid
             // 
             btnHelp.FlatStyle = FlatStyle.Popup;
             btnHelp.ForeColor = SystemColors.ControlLightLight;
-            btnHelp.Location = new Point(450, 484);
+            btnHelp.Location = new Point(471, 451);
             btnHelp.Name = "btnHelp";
             btnHelp.Size = new Size(100, 28);
             btnHelp.TabIndex = 6;
@@ -757,7 +757,7 @@ namespace ChessDroid
             btnCancel.DialogResult = DialogResult.Cancel;
             btnCancel.FlatStyle = FlatStyle.Popup;
             btnCancel.ForeColor = SystemColors.ControlLightLight;
-            btnCancel.Location = new Point(450, 519);
+            btnCancel.Location = new Point(472, 484);
             btnCancel.Name = "btnCancel";
             btnCancel.Size = new Size(100, 28);
             btnCancel.TabIndex = 7;
@@ -771,7 +771,7 @@ namespace ChessDroid
             chkDarkMode.Checked = true;
             chkDarkMode.CheckState = CheckState.Checked;
             chkDarkMode.ForeColor = Color.White;
-            chkDarkMode.Location = new Point(13, 519);
+            chkDarkMode.Location = new Point(12, 518);
             chkDarkMode.Name = "chkDarkMode";
             chkDarkMode.Size = new Size(89, 18);
             chkDarkMode.TabIndex = 8;
@@ -787,7 +787,7 @@ namespace ChessDroid
             AutoSizeMode = AutoSizeMode.GrowAndShrink;
             BackColor = Color.FromArgb(45, 45, 48);
             CancelButton = btnCancel;
-            ClientSize = new Size(585, 563);
+            ClientSize = new Size(585, 545);
             Controls.Add(chkDarkMode);
             Controls.Add(btnCancel);
             Controls.Add(btnHelp);
