@@ -131,14 +131,33 @@ namespace ChessDroid.Services
                         bool wasAlreadyUnderAttack = ChessUtilities.IsSquareDefended(board, srcRank, srcFile, !isWhite);
                         if (wasAlreadyUnderAttack)
                         {
-                            // Exclude: capturing the piece that was attacking us (Nxe5 when knight on e5 attacked us)
-                            bool capturingOurAttacker = ChessUtilities.CanAttackSquare(
-                                board, destRank, destFile, targetPiece, srcRank, srcFile);
-                            if (!capturingOurAttacker)
+                            // Piece must be TRULY in danger — not just attacked but adequately defended.
+                            // "Truly in danger" = undefended, OR lowest attacker < piece value
+                            // (e.g. queen attacked by equal-value queen + defended by pawn = NOT a desperado)
+                            bool isDefended = ChessUtilities.IsSquareDefended(board, srcRank, srcFile, isWhite);
+                            bool trulyInDanger;
+                            if (!isDefended)
                             {
-                                PieceType capturedType = PieceHelper.GetPieceType(targetPiece);
-                                if (ChessUtilities.GetPieceValue(capturedType) >= 3)
-                                    reasons.Add($"desperado — captures {ChessUtilities.GetPieceName(capturedType)} before recapture");
+                                trulyInDanger = true;
+                            }
+                            else
+                            {
+                                int lowestAttacker = ChessUtilities.GetLowestAttackerValue(board, srcRank, srcFile, !isWhite);
+                                int movingValue = ChessUtilities.GetPieceValue(pieceType);
+                                trulyInDanger = lowestAttacker < movingValue;
+                            }
+
+                            if (trulyInDanger)
+                            {
+                                // Exclude: capturing the piece that was attacking us (Nxe5 when knight on e5 attacked us)
+                                bool capturingOurAttacker = ChessUtilities.CanAttackSquare(
+                                    board, destRank, destFile, targetPiece, srcRank, srcFile);
+                                if (!capturingOurAttacker)
+                                {
+                                    PieceType capturedType = PieceHelper.GetPieceType(targetPiece);
+                                    if (ChessUtilities.GetPieceValue(capturedType) >= 3)
+                                        reasons.Add($"desperado — captures {ChessUtilities.GetPieceName(capturedType)} before recapture");
+                                }
                             }
                         }
                     }
@@ -363,6 +382,15 @@ namespace ChessDroid.Services
                             reasons.Add($"centralizes {ChessUtilities.GetPieceName(pieceType)} to {ChessUtilities.GetSquareName(destRank, destFile)}");
                         }
                     }
+                }
+
+                // After positional labels, check if the move also newly attacks an undefended pawn —
+                // a threat worth mentioning even when the piece isn't being recaptured
+                if (ExplanationFormatter.Features.ShowTacticalAnalysis && reasons.Count < 2 && !pieceWillBeRecaptured)
+                {
+                    string? pawnAttack = DetectNewUndefendedPawnAttack(board, tempBoard, destRank, destFile, piece, isWhite);
+                    if (!string.IsNullOrEmpty(pawnAttack))
+                        reasons.Add(pawnAttack);
                 }
 
                 // Development moves - skip if piece will be immediately recaptured
@@ -2267,6 +2295,35 @@ namespace ChessDroid.Services
         // TEMPO ATTACK - Piece moves to a better square while attacking an equal/higher value piece
         // This creates "tempo" because the opponent must respond to the threat
         // Example: Nc4 attacks Bb6 - knight centralizes AND threatens the bishop
+        /// <summary>
+        /// Returns "attacks pawn on X" when the moved piece newly attacks an undefended enemy pawn.
+        /// Only fires when the attack did not exist before the move and the pawn has no defender.
+        /// </summary>
+        private static string? DetectNewUndefendedPawnAttack(ChessBoard before, ChessBoard after,
+            int pieceRow, int pieceCol, char piece, bool isWhite)
+        {
+            for (int r = 0; r < 8; r++)
+            {
+                for (int c = 0; c < 8; c++)
+                {
+                    char target = after.GetPiece(r, c);
+                    if (target == '.') continue;
+                    if (char.IsUpper(target) == isWhite) continue;
+                    if (PieceHelper.GetPieceType(target) != PieceType.Pawn) continue;
+                    if (!ChessUtilities.CanAttackSquare(after, pieceRow, pieceCol, piece, r, c)) continue;
+
+                    bool wasAttackedBefore = ChessUtilities.IsSquareAttackedBy(before, r, c, isWhite);
+                    if (wasAttackedBefore) continue;
+
+                    bool isDefended = ChessUtilities.IsSquareAttackedBy(after, r, c, !isWhite);
+                    if (isDefended) continue;
+
+                    return $"attacks pawn on {ChessUtilities.GetSquareName(r, c)}";
+                }
+            }
+            return null;
+        }
+
         private static string? DetectTempoAttack(ChessBoard originalBoard, ChessBoard newBoard,
             int srcRow, int srcCol, int destRow, int destCol, char piece, PieceType pieceType, bool isWhite)
         {
