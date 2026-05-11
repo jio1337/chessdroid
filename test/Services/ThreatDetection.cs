@@ -104,7 +104,10 @@ namespace ChessDroid.Services
                     DetectForks(afterMove, destRank, destFile, movingPlayerIsWhite, threatsAfter);
                 }
 
-                DetectPins(afterMove, movingPlayerIsWhite, threatsAfter, afterMoveCache);
+                if (!pieceWillBeRecaptured)
+                {
+                    DetectPins(afterMove, movingPlayerIsWhite, threatsAfter, afterMoveCache);
+                }
                 DetectPromotionThreats(afterMove, movingPlayerIsWhite, threatsAfter);
 
                 // Skip trapped piece detection if our piece will be recaptured
@@ -233,16 +236,40 @@ namespace ChessDroid.Services
                 if (!pieceWillBeRecaptured)
                 {
                     int escapeSquares = CountKingEscapeSquares(board, kingRow, kingCol, !movingPlayerIsWhite);
-                    if (escapeSquares <= 1)
+                    if (escapeSquares == 0)
                     {
-                        isCheckmateThreat = true;
-                        threats.Add(new Threat
+                        // Verify the check can't be blocked (only relevant for sliding pieces)
+                        bool canBlock = ChessUtilities.CanBlockSlidingAttack(board, kingRow, kingCol, !movingPlayerIsWhite);
+
+                        // Verify the checking piece can't be captured by any non-king defender
+                        bool canCapture = false;
+                        if (!canBlock)
                         {
-                            Description = "threatens checkmate",
-                            Type = ThreatType.CheckmateThreat,
-                            Severity = 5,
-                            Square = GetSquareName(kingRow, kingCol)
-                        });
+                            for (int r = 0; r < 8 && !canCapture; r++)
+                            {
+                                for (int c = 0; c < 8 && !canCapture; c++)
+                                {
+                                    char defender = board.GetPiece(r, c);
+                                    if (defender == '.') continue;
+                                    if (char.IsUpper(defender) == movingPlayerIsWhite) continue; // skip attacker's pieces
+                                    if (PieceHelper.GetPieceType(defender) == PieceType.King) continue; // king capture handled via escape squares
+                                    if (ChessUtilities.CanAttackSquare(board, r, c, defender, pieceRow, pieceCol))
+                                        canCapture = true;
+                                }
+                            }
+                        }
+
+                        if (!canBlock && !canCapture)
+                        {
+                            isCheckmateThreat = true;
+                            threats.Add(new Threat
+                            {
+                                Description = "threatens checkmate",
+                                Type = ThreatType.CheckmateThreat,
+                                Severity = 5,
+                                Square = GetSquareName(kingRow, kingCol)
+                            });
+                        }
                     }
                 }
 

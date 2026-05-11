@@ -1130,10 +1130,13 @@ namespace ChessDroid.Services
                     return discoveredAttackInfo;
                 }
 
-                var pinInfo = DetectPin(board, pieceRow, pieceCol, piece, isWhite);
-                if (!string.IsNullOrEmpty(pinInfo))
+                if (!pieceWillBeRecaptured)
                 {
-                    return pinInfo;
+                    var pinInfo = DetectPin(board, pieceRow, pieceCol, piece, isWhite);
+                    if (!string.IsNullOrEmpty(pinInfo))
+                    {
+                        return pinInfo;
+                    }
                 }
 
                 // Zwischenzug detection - intermediate forcing move instead of "obvious" recapture
