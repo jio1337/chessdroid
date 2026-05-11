@@ -1345,16 +1345,7 @@ namespace ChessDroid.Services
                 var unstoppable = DetectUnstoppablePawn(board, whiteToMove);
                 if (unstoppable != null) insights.Add(unstoppable);
 
-                // Opposition — skip if there's already an unstoppable pawn (moot at that point)
-                if (unstoppable == null)
-                {
-                    var opposition = DetectOpposition(board, whiteToMove);
-                    if (opposition != null) insights.Add(opposition);
-                }
-
-                // King activity — only the non-obvious case: defender intercepts a passed pawn,
-                // or a dramatic centralization gap (≥ 3) in pawnless endgames.
-                // The "supporter is closer" case is intentionally omitted — it's visible on the board.
+                // King activity — only the non-obvious case: defender may intercept a passed pawn
                 var kingActivity = EvaluateKingActivity(board);
                 if (kingActivity != null) insights.Add(kingActivity);
 
@@ -1365,10 +1356,6 @@ namespace ChessDroid.Services
                 // Check for opposite colored bishops
                 var oppBishops = DetectOppositeBishops(board);
                 if (oppBishops != null) insights.Add(oppBishops);
-
-                // Check for zugzwang potential (with meaningful description)
-                var zugzwang = DetectZugzwangPotential(board, whiteToMove);
-                if (zugzwang != null) insights.Add(zugzwang);
 
                 // Add specific endgame type
                 var kpk = DetectKPvK(board, whiteToMove);
