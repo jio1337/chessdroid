@@ -1197,6 +1197,8 @@ namespace ChessDroid
             moveListBox.Items.Clear();
             displayedNodes.Clear();
             _analysisCache.Clear(); // Clear analysis cache for new match
+            boardControl.ClearBookArrows();
+            _bookArrowsActive = false;
 
             // Set up match log
             analysisOutput.Clear();
