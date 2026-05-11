@@ -735,13 +735,11 @@ namespace ChessDroid.Services
                 string whiteKingSq = $"{(char)('a' + whiteKingCol)}{8 - whiteKingRow}";
                 string blackKingSq = $"{(char)('a' + blackKingCol)}{8 - blackKingRow}";
 
+                // Require a clear gap (≥ 3) before claiming king activity advantage —
+                // a diff of 1-2 is usually visually obvious and not worth stating
                 if (centralDiff >= 3)
-                    return $"White king on {whiteKingSq} much more active than Black king on {blackKingSq}";
-                else if (centralDiff >= 2)
                     return $"White king on {whiteKingSq} more active than Black king on {blackKingSq}";
                 else if (centralDiff <= -3)
-                    return $"Black king on {blackKingSq} much more active than White king on {whiteKingSq}";
-                else if (centralDiff <= -2)
                     return $"Black king on {blackKingSq} more active than White king on {whiteKingSq}";
 
                 return null;
@@ -799,11 +797,22 @@ namespace ChessDroid.Services
                 {
                     // The side NOT to move has the opposition
                     string holder = whiteToMove ? "Black" : "White";
-                    return $"{holder} has the opposition";
+                    string mover = whiteToMove ? "White" : "Black";
+                    return $"{holder} has the opposition — {mover}'s king must move aside";
                 }
 
                 // Distant opposition (same file/rank, even number of squares apart)
-                if (whiteKingCol == blackKingCol || whiteKingRow == blackKingRow)
+                // Only report in pure king+pawn endgames where it's most relevant
+                bool hasPieces = false;
+                for (int r = 0; r < 8 && !hasPieces; r++)
+                    for (int c = 0; c < 8 && !hasPieces; c++)
+                    {
+                        char p = board.GetPiece(r, c);
+                        if (p != '.' && p != 'K' && p != 'k' && p != 'P' && p != 'p')
+                            hasPieces = true;
+                    }
+
+                if (!hasPieces && (whiteKingCol == blackKingCol || whiteKingRow == blackKingRow))
                 {
                     int distance = whiteKingCol == blackKingCol
                         ? Math.Abs(whiteKingRow - blackKingRow)
@@ -812,7 +821,8 @@ namespace ChessDroid.Services
                     if (distance > 2 && distance % 2 == 0)
                     {
                         string holder = whiteToMove ? "Black" : "White";
-                        return $"{holder} has distant opposition";
+                        string mover = whiteToMove ? "White" : "Black";
+                        return $"{holder} has distant opposition — {mover}'s king must give way";
                     }
                 }
 
@@ -1178,8 +1188,17 @@ namespace ChessDroid.Services
                         string square = $"{(char)('a' + col)}{8 - row}";
                         int ranksFromPromotion = isWhite ? row : (7 - row);
                         string side = isWhite ? "White" : "Black";
-                        string rankWord = ranksFromPromotion == 1 ? "rank" : "ranks";
-                        mostAdvanced = $"{side}'s passed pawn on {square} ({ranksFromPromotion} {rankWord} from promotion)";
+                        // Only show the rank count when the pawn is genuinely threatening (≤ 3 ranks)
+                        // — counting squares on a far-away pawn adds no insight
+                        if (ranksFromPromotion <= 3)
+                        {
+                            string rankWord = ranksFromPromotion == 1 ? "rank" : "ranks";
+                            mostAdvanced = $"{side}'s passed pawn on {square} ({ranksFromPromotion} {rankWord} from promotion)";
+                        }
+                        else
+                        {
+                            mostAdvanced = $"{side} has a passed pawn on {square}";
+                        }
                     }
                 }
 
@@ -1340,9 +1359,12 @@ namespace ChessDroid.Services
                 var unstoppable = DetectUnstoppablePawn(board, whiteToMove);
                 if (unstoppable != null) insights.Add(unstoppable);
 
-                // Check for opposition
-                var opposition = DetectOpposition(board, whiteToMove);
-                if (opposition != null) insights.Add(opposition);
+                // Opposition — skip if there's already an unstoppable pawn (moot at that point)
+                if (unstoppable == null)
+                {
+                    var opposition = DetectOpposition(board, whiteToMove);
+                    if (opposition != null) insights.Add(opposition);
+                }
 
                 // Passed pawn advancement — skip if "unstoppable" already covers it
                 if (unstoppable == null)
