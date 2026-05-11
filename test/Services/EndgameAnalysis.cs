@@ -654,8 +654,9 @@ namespace ChessDroid.Services
         }
 
         /// <summary>
-        /// Evaluate king activity advantage
-        /// Returns positive for White advantage, negative for Black
+        /// Evaluate king activity advantage — context-aware.
+        /// When passed pawns exist, compares Chebyshev distances to the promotion square.
+        /// Falls back to centralization comparison in pawnless endgames.
         /// </summary>
         public static string? EvaluateKingActivity(ChessBoard board)
         {
@@ -678,19 +679,70 @@ namespace ChessDroid.Services
 
                 if (whiteKingRow < 0 || blackKingRow < 0) return null;
 
+                // When passed pawns exist, king distance to the promotion square is
+                // more meaningful than board centralization
+                var passedPawns = FindPassedPawns(board);
+                if (passedPawns.Count > 0)
+                {
+                    // Focus on the most advanced passed pawn
+                    int bestBonus = -1;
+                    int bestPawnRow = -1, bestPawnCol = -1;
+                    bool bestIsWhite = false;
+
+                    foreach (var (row, col, isWhite) in passedPawns)
+                    {
+                        int bonus = GetPassedPawnBonus(row, isWhite);
+                        if (bonus > bestBonus)
+                        {
+                            bestBonus = bonus;
+                            bestPawnRow = row;
+                            bestPawnCol = col;
+                            bestIsWhite = isWhite;
+                        }
+                    }
+
+                    int promotionRow = bestIsWhite ? 0 : 7;
+                    string promoSquare = $"{(char)('a' + bestPawnCol)}{(bestIsWhite ? 8 : 1)}";
+
+                    int supporterKingRow = bestIsWhite ? whiteKingRow : blackKingRow;
+                    int supporterKingCol = bestIsWhite ? whiteKingCol : blackKingCol;
+                    int defenderKingRow = bestIsWhite ? blackKingRow : whiteKingRow;
+                    int defenderKingCol = bestIsWhite ? blackKingCol : whiteKingCol;
+
+                    // Chebyshev distance (king moves) to the promotion square
+                    int supporterDist = Math.Max(Math.Abs(supporterKingRow - promotionRow), Math.Abs(supporterKingCol - bestPawnCol));
+                    int defenderDist = Math.Max(Math.Abs(defenderKingRow - promotionRow), Math.Abs(defenderKingCol - bestPawnCol));
+
+                    string supporterSide = bestIsWhite ? "White" : "Black";
+                    string defenderSide = bestIsWhite ? "Black" : "White";
+                    string supporterSq = $"{(char)('a' + supporterKingCol)}{8 - supporterKingRow}";
+
+                    int diff = defenderDist - supporterDist;
+
+                    if (diff >= 2)
+                        return $"{supporterSide} king on {supporterSq} — {supporterDist} moves from {promoSquare}, {defenderSide} king {defenderDist} moves away";
+                    if (diff <= -2)
+                        return $"{defenderSide} king {defenderDist} moves from {promoSquare} — intercepts the passed pawn";
+
+                    return null; // Kings roughly equidistant — no clear king advantage
+                }
+
+                // No passed pawns: compare centralization, include square names for context
                 int whiteCentralization = GetKingCentralization(whiteKingRow, whiteKingCol);
                 int blackCentralization = GetKingCentralization(blackKingRow, blackKingCol);
+                int centralDiff = whiteCentralization - blackCentralization;
 
-                int diff = whiteCentralization - blackCentralization;
+                string whiteKingSq = $"{(char)('a' + whiteKingCol)}{8 - whiteKingRow}";
+                string blackKingSq = $"{(char)('a' + blackKingCol)}{8 - blackKingRow}";
 
-                if (diff >= 3)
-                    return "White has much more active king";
-                else if (diff >= 2)
-                    return "White has more active king";
-                else if (diff <= -3)
-                    return "Black has much more active king";
-                else if (diff <= -2)
-                    return "Black has more active king";
+                if (centralDiff >= 3)
+                    return $"White king on {whiteKingSq} much more active than Black king on {blackKingSq}";
+                else if (centralDiff >= 2)
+                    return $"White king on {whiteKingSq} more active than Black king on {blackKingSq}";
+                else if (centralDiff <= -3)
+                    return $"Black king on {blackKingSq} much more active than White king on {whiteKingSq}";
+                else if (centralDiff <= -2)
+                    return $"Black king on {blackKingSq} more active than White king on {whiteKingSq}";
 
                 return null;
             }
@@ -1126,7 +1178,8 @@ namespace ChessDroid.Services
                         string square = $"{(char)('a' + col)}{8 - row}";
                         int ranksFromPromotion = isWhite ? row : (7 - row);
                         string side = isWhite ? "White" : "Black";
-                        mostAdvanced = $"{side}'s passed pawn on {square} ({ranksFromPromotion} ranks from promotion)";
+                        string rankWord = ranksFromPromotion == 1 ? "rank" : "ranks";
+                        mostAdvanced = $"{side}'s passed pawn on {square} ({ranksFromPromotion} {rankWord} from promotion)";
                     }
                 }
 
@@ -1291,17 +1344,17 @@ namespace ChessDroid.Services
                 var opposition = DetectOpposition(board, whiteToMove);
                 if (opposition != null) insights.Add(opposition);
 
-                // Check king activity
+                // Passed pawn advancement — skip if "unstoppable" already covers it
+                if (unstoppable == null)
+                {
+                    var passedPawns = EvaluatePassedPawns(board);
+                    if (passedPawns != null) insights.Add(passedPawns);
+                }
+
+                // King activity — context-aware: uses promotion square distances when passed
+                // pawns exist, centralization otherwise. Subsumes the old tropism check.
                 var kingActivity = EvaluateKingActivity(board);
                 if (kingActivity != null) insights.Add(kingActivity);
-
-                // Check passed pawns
-                var passedPawns = EvaluatePassedPawns(board);
-                if (passedPawns != null) insights.Add(passedPawns);
-
-                // Check king tropism to passed pawns
-                var tropism = EvaluateKingTropism(board);
-                if (tropism != null) insights.Add(tropism);
 
                 // Check for fortress
                 var fortress = DetectFortress(board);
