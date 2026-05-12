@@ -407,13 +407,14 @@ namespace ChessDroid
 
                 // Navigation buttons (smaller)
                 int navButtonWidth = 35;
+                int autoPlayWidth = 40;
                 int navX = boardX + 3 * (buttonWidth + buttonSpacing);
                 btnPrevMove.Location = new Point(navX, buttonY);
                 btnPrevMove.Width = navButtonWidth;
                 btnNextMove.Location = new Point(navX + navButtonWidth + 2, buttonY);
                 btnNextMove.Width = navButtonWidth;
                 btnAutoPlay.Location = new Point(btnNextMove.Right + 2, buttonY);
-                btnAutoPlay.Width = navButtonWidth;
+                btnAutoPlay.Width = autoPlayWidth;
 
                 // Bot button (after nav buttons)
                 int botX = btnAutoPlay.Right + buttonSpacing;
@@ -696,7 +697,7 @@ namespace ChessDroid
             if (moveTree.CurrentNode.Next() == null) return; // already at end
             _autoPlaying = true;
             _autoPlayTimer.Interval = config.AutoPlayInterval;
-            btnAutoPlay.Text = "⏸";
+            btnAutoPlay.Text = "||";
             autoAnalysisCts?.Cancel(); // cancel any in-flight analysis
             boardControl.ClearEngineArrows();
             boardControl.ClearBookArrows();
@@ -708,7 +709,7 @@ namespace ChessDroid
         {
             _autoPlaying = false;
             _autoPlayTimer.Stop();
-            btnAutoPlay.Text = "▶▶";
+            btnAutoPlay.Text = ">>";
             if (!matchRunning)
                 _ = TriggerAutoAnalysis(); // analyze the position we landed on
         }

@@ -252,25 +252,25 @@ namespace ChessDroid
             btnNextMove.TabIndex = 13;
             btnNextMove.Text = "▶";
             btnNextMove.Click += BtnNextMove_Click;
-            //
+            // 
             // btnAutoPlay
-            //
+            // 
             btnAutoPlay.FlatStyle = FlatStyle.Flat;
             btnAutoPlay.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
             btnAutoPlay.Location = new Point(408, 530);
             btnAutoPlay.Name = "btnAutoPlay";
-            btnAutoPlay.Size = new Size(35, 28);
+            btnAutoPlay.Size = new Size(64, 28);
             btnAutoPlay.TabIndex = 25;
-            btnAutoPlay.Text = "▶▶";
+            btnAutoPlay.Text = ">>";
             btnAutoPlay.Click += BtnAutoPlay_Click;
-            //
+            // 
             // btnPlayBot
             // 
             btnPlayBot.FlatStyle = FlatStyle.Flat;
             btnPlayBot.Font = new Font("Courier New", 8.25F);
-            btnPlayBot.Location = new Point(445, 530);
+            btnPlayBot.Location = new Point(478, 530);
             btnPlayBot.Name = "btnPlayBot";
-            btnPlayBot.Size = new Size(65, 28);
+            btnPlayBot.Size = new Size(32, 28);
             btnPlayBot.TabIndex = 24;
             btnPlayBot.Text = "vs Bot";
             btnPlayBot.Click += BtnPlayBot_Click;
