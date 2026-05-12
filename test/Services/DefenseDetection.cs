@@ -627,7 +627,12 @@ namespace ChessDroid.Services
             if (!IsSquareAttackedBy(board, kingRow, kingCol, !weAreWhite))
                 return false;
 
-            // Check if king can escape
+            // Check if king can escape — rent once, test each square in-place
+            char king = weAreWhite ? 'K' : 'k';
+            using var pooledKingEscape = BoardPool.Rent(board);
+            ChessBoard tempBoard = pooledKingEscape.Board;
+            tempBoard.SetPiece(kingRow, kingCol, '.');
+
             for (int dr = -1; dr <= 1; dr++)
             {
                 for (int dc = -1; dc <= 1; dc++)
@@ -638,21 +643,16 @@ namespace ChessDroid.Services
                     if (r < 0 || r >= 8 || c < 0 || c >= 8) continue;
 
                     char sq = board.GetPiece(r, c);
-                    // Can't move to square with our own piece
                     if (sq != '.' && char.IsUpper(sq) == weAreWhite) continue;
 
-                    // Simulate king move
-                    using var pooledKingEscape = BoardPool.Rent(board);
-                    ChessBoard tempBoard = pooledKingEscape.Board;
-                    char king = weAreWhite ? 'K' : 'k';
+                    char saved = tempBoard.GetPiece(r, c);
                     tempBoard.SetPiece(r, c, king);
-                    tempBoard.SetPiece(kingRow, kingCol, '.');
 
-                    // Check if king is safe there
-                    if (!IsSquareAttackedBy(tempBoard, r, c, !weAreWhite))
-                    {
-                        return false; // King can escape
-                    }
+                    bool safe = !IsSquareAttackedBy(tempBoard, r, c, !weAreWhite);
+
+                    tempBoard.SetPiece(r, c, saved);
+
+                    if (safe) return false; // King can escape
                 }
             }
 

@@ -1010,6 +1010,7 @@ namespace ChessDroid
                     BtnPrevMove_Click(this, EventArgs.Empty);
                     return true;
                 case Keys.Right:
+                    if (_autoPlaying) StopAutoPlay();
                     BtnNextMove_Click(this, EventArgs.Empty);
                     return true;
                 case Keys.Up:
@@ -1038,6 +1039,7 @@ namespace ChessDroid
 
         private void NavigateToStart()
         {
+            if (_autoPlaying) StopAutoPlay();
             isNavigating = true;
             try
             {
@@ -1063,6 +1065,7 @@ namespace ChessDroid
 
         private void NavigateToEnd()
         {
+            if (_autoPlaying) StopAutoPlay();
             isNavigating = true;
             try
             {

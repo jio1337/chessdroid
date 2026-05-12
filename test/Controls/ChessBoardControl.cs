@@ -315,6 +315,7 @@ namespace ChessDroid.Controls
                 }
 
                 lastMove = null;
+                ClearMoveAnnotation();
                 ClearSelection();
                 Invalidate();
                 BoardChanged?.Invoke(this, EventArgs.Empty);

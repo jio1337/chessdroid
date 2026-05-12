@@ -894,6 +894,17 @@ namespace ChessDroid.Services
                     if (piece == '.') continue;
                     if (char.IsUpper(piece) != movingPlayerIsWhite) continue;
 
+                    bool isWhitePiece = char.IsUpper(piece);
+                    bool isPawn = PieceHelper.GetPieceType(piece) == PieceType.Pawn;
+                    int pawnDir = isWhitePiece ? -1 : 1;
+                    int backRank = isWhitePiece ? 0 : 7;
+                    int pawnStartRow = isWhitePiece ? 1 : 6; // one step before back rank
+
+                    // For pawns, also try forward push(es) to back rank that CanAttackSquare misses
+                    var pawnPromoCandidates = new List<(int tr, int tc)>();
+                    if (isPawn && r == pawnStartRow && board.GetPiece(r + pawnDir, c) == '.')
+                        pawnPromoCandidates.Add((r + pawnDir, c));
+
                     for (int tr = 0; tr < 8; tr++)
                     {
                         for (int tc = 0; tc < 8; tc++)
@@ -903,11 +914,17 @@ namespace ChessDroid.Services
                             char targetPiece = board.GetPiece(tr, tc);
                             if (targetPiece != '.' && char.IsUpper(targetPiece) == movingPlayerIsWhite) continue;
 
-                            if (!ChessUtilities.CanAttackSquare(board, r, c, piece, tr, tc)) continue;
+                            bool isPawnPromoCandidate = pawnPromoCandidates.Contains((tr, tc));
+                            if (!isPawnPromoCandidate && !ChessUtilities.CanAttackSquare(board, r, c, piece, tr, tc)) continue;
+
+                            // Simulate pawn promotion to queen on back rank
+                            char pieceOnTarget = (isPawn && tr == backRank)
+                                ? (isWhitePiece ? 'Q' : 'q')
+                                : piece;
 
                             using var pooled = BoardPool.Rent(board);
                             ChessBoard testBoard = pooled.Board;
-                            testBoard.SetPiece(tr, tc, piece);
+                            testBoard.SetPiece(tr, tc, pieceOnTarget);
                             testBoard.SetPiece(r, c, '.');
 
                             // Skip illegal moves that expose our own king
@@ -920,7 +937,7 @@ namespace ChessDroid.Services
                             }
 
                             // Does this move give check to the opponent's king?
-                            if (!ChessUtilities.CanAttackSquare(testBoard, tr, tc, piece, kingRow, kingCol))
+                            if (!ChessUtilities.CanAttackSquare(testBoard, tr, tc, pieceOnTarget, kingRow, kingCol))
                                 continue;
 
                             int escapes = CountKingEscapeSquares(testBoard, kingRow, kingCol, !movingPlayerIsWhite);
@@ -1129,11 +1146,15 @@ namespace ChessDroid.Services
                         // If all pieces are defended AND attacker is worth same or more, fork doesn't win material
                         // We can just take the attacker and only lose one trade
                         if (!hasUndefendedPiece && attackerValue >= lowestTargetValue)
-                        {
-                            // Not a real fork - we can just let them take one piece and recapture
-                            // No material loss beyond a single trade
                             continue;
-                        }
+
+                        // If the forking piece can be captured for free or profitably, it's not a real fork
+                        bool forkPieceDefended = IsSquareAttackedBy(board, r, c, opponentIsWhite);
+                        if (!forkPieceDefended)
+                            continue; // Forking piece is hanging — we simply take it
+                        int ourLowestForker = GetLowestAttackerValue(board, r, c, !opponentIsWhite);
+                        if (ourLowestForker > 0 && ourLowestForker < attackerValue)
+                            continue; // We can capture the forking piece with a cheaper piece (profitable)
 
                         var pieceNames = valuableAttacked
                             .Select(p => ChessUtilities.GetPieceName(PieceHelper.GetPieceType(p.piece)))
@@ -1411,6 +1432,12 @@ namespace ChessDroid.Services
             int escapeSquares = 0;
             char king = kingIsWhite ? 'K' : 'k';
 
+            // Rent ONE board and remove the king once; then test each escape square
+            // in-place (place king, check, restore) — 8× fewer board copies vs per-square rent
+            using var pooledKing = BoardPool.Rent(board);
+            ChessBoard tempBoard = pooledKing.Board;
+            tempBoard.SetPiece(kingRow, kingCol, '.');
+
             for (int dr = -1; dr <= 1; dr++)
             {
                 for (int dc = -1; dc <= 1; dc++)
@@ -1427,17 +1454,14 @@ namespace ChessDroid.Services
                     // Can't move to square occupied by own piece
                     if (target != '.' && char.IsUpper(target) == kingIsWhite) continue;
 
-                    // Check if square is attacked by opponent
-                    // Temporarily remove king to check attacks
-                    using var pooledKing = BoardPool.Rent(board);
-                    ChessBoard tempBoard = pooledKing.Board;
-                    tempBoard.SetPiece(kingRow, kingCol, '.');
+                    // Place king at candidate square, check attacks, then undo
+                    char saved = tempBoard.GetPiece(newRow, newCol);
                     tempBoard.SetPiece(newRow, newCol, king);
 
                     if (!IsSquareAttackedBy(tempBoard, newRow, newCol, !kingIsWhite))
-                    {
                         escapeSquares++;
-                    }
+
+                    tempBoard.SetPiece(newRow, newCol, saved);
                 }
             }
 
