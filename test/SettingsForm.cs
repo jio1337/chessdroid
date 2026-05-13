@@ -7,13 +7,32 @@ namespace ChessDroid
         private string _selectedFontFamily = "Consolas";
         private float _selectedFontSize = 10.0f;
 
+        private static readonly (string Name, string Light, string Dark)[] ColorPresets =
+        {
+            ("Brown (default)", "#F0D9B5", "#B58863"),
+            ("Green",           "#EEEED2", "#769656"),
+            ("Blue",            "#DEE3E6", "#8CA2AD"),
+            ("Red",             "#F2D0C3", "#B55239"),
+            ("Pink",            "#F5D6E3", "#C0708A"),
+            ("Purple",          "#E8DCEF", "#8C69AA"),
+            ("Gray",            "#E8E8E8", "#8A8A8A"),
+        };
+
         public SettingsForm(AppConfig config, Action? onConfigChanged = null)
         {
             this.config = config ?? throw new ArgumentNullException(nameof(config));
             this.onConfigChanged = onConfigChanged;
             InitializeComponent();
             PopulateEngineDepthComboBox();
+            PopulateColorPresets();
             LoadSettings();
+        }
+
+        private void PopulateColorPresets()
+        {
+            cmbColorPreset.Items.Clear();
+            foreach (var (name, _, _) in ColorPresets)
+                cmbColorPreset.Items.Add(name);
         }
 
         private void PopulateEngineDepthComboBox()
@@ -104,6 +123,8 @@ namespace ChessDroid
             // Board colors
             try { btnLightColor.BackColor = ColorTranslator.FromHtml(config.LightSquareColor); } catch { btnLightColor.BackColor = Color.FromArgb(240, 217, 181); }
             try { btnDarkColor.BackColor = ColorTranslator.FromHtml(config.DarkSquareColor); } catch { btnDarkColor.BackColor = Color.FromArgb(181, 136, 99); }
+            cmbColorPreset.SelectedIndex = -1;
+            chkSquareLabels.Checked = config.ShowSquareLabels;
 
             // Explanation settings
             PopulateComplexityComboBox();
@@ -164,6 +185,7 @@ namespace ChessDroid
             config.ConsoleFontSize = _selectedFontSize;
             config.LightSquareColor = ColorTranslator.ToHtml(btnLightColor.BackColor);
             config.DarkSquareColor = ColorTranslator.ToHtml(btnDarkColor.BackColor);
+            config.ShowSquareLabels = chkSquareLabels.Checked;
 
             // Save explanation settings
             config.ExplanationComplexity = cmbComplexity.SelectedItem?.ToString() ?? "Intermediate";
@@ -252,6 +274,22 @@ namespace ChessDroid
             using var dlg = new ColorDialog { Color = btnDarkColor.BackColor, FullOpen = true };
             if (dlg.ShowDialog(this) == DialogResult.OK)
                 btnDarkColor.BackColor = dlg.Color;
+        }
+
+        private void BtnResetColors_Click(object? sender, EventArgs e)
+        {
+            btnLightColor.BackColor = Color.FromArgb(240, 217, 181);
+            btnDarkColor.BackColor = Color.FromArgb(181, 136, 99);
+            cmbColorPreset.SelectedIndex = -1;
+        }
+
+        private void CmbColorPreset_SelectedIndexChanged(object? sender, EventArgs e)
+        {
+            int idx = cmbColorPreset.SelectedIndex;
+            if (idx < 0 || idx >= ColorPresets.Length) return;
+            var (_, light, dark) = ColorPresets[idx];
+            btnLightColor.BackColor = ColorTranslator.FromHtml(light);
+            btnDarkColor.BackColor = ColorTranslator.FromHtml(dark);
         }
 
         private void ChkDarkMode_CheckedChanged(object? sender, EventArgs e)
@@ -355,6 +393,16 @@ namespace ChessDroid
                 lblLightSquares.BackColor = Color.FromArgb(45, 45, 48);
                 lblDarkSquares.ForeColor = Color.White;
                 lblDarkSquares.BackColor = Color.FromArgb(45, 45, 48);
+                lblColorPreset.ForeColor = Color.White;
+                lblColorPreset.BackColor = Color.FromArgb(45, 45, 48);
+                cmbColorPreset.BackColor = Color.FromArgb(60, 60, 65);
+                cmbColorPreset.ForeColor = Color.White;
+                btnResetColors.ForeColor = Color.White;
+                btnResetColors.BackColor = Color.FromArgb(60, 60, 65);
+                lblSquareLabels.ForeColor = Color.White;
+                lblSquareLabels.BackColor = Color.FromArgb(45, 45, 48);
+                chkSquareLabels.ForeColor = Color.White;
+                chkSquareLabels.BackColor = Color.FromArgb(45, 45, 48);
 
                 // Play Style GroupBox
                 grpLc0Features.ForeColor = Color.Cyan;
@@ -483,6 +531,16 @@ namespace ChessDroid
                 lblLightSquares.BackColor = Color.WhiteSmoke;
                 lblDarkSquares.ForeColor = Color.Black;
                 lblDarkSquares.BackColor = Color.WhiteSmoke;
+                lblColorPreset.ForeColor = Color.Black;
+                lblColorPreset.BackColor = Color.WhiteSmoke;
+                cmbColorPreset.BackColor = Color.White;
+                cmbColorPreset.ForeColor = Color.Black;
+                btnResetColors.ForeColor = Color.DarkSlateGray;
+                btnResetColors.BackColor = Color.Gainsboro;
+                lblSquareLabels.ForeColor = Color.Black;
+                lblSquareLabels.BackColor = Color.WhiteSmoke;
+                chkSquareLabels.ForeColor = Color.Black;
+                chkSquareLabels.BackColor = Color.WhiteSmoke;
 
                 // Play Style GroupBox
                 grpLc0Features.ForeColor = Color.DarkCyan;

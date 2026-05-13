@@ -62,6 +62,7 @@ namespace ChessDroid.Controls
         // Visual settings
         private Color lightSquareColor = Color.FromArgb(240, 217, 181);
         private Color darkSquareColor = Color.FromArgb(181, 136, 99);
+        private bool showSquareLabels = false;
         private Color selectedSquareColor = Color.FromArgb(130, 186, 221, 97);
         private Color legalMoveColor = Color.FromArgb(100, 130, 151, 105);
         private Color lastMoveFromColor = Color.FromArgb(100, 255, 255, 100);
@@ -201,6 +202,12 @@ namespace ChessDroid.Controls
                 isFlipped = value;
                 Invalidate();
             }
+        }
+
+        public bool ShowSquareLabels
+        {
+            get => showSquareLabels;
+            set { if (showSquareLabels != value) { showSquareLabels = value; Invalidate(); } }
         }
 
         public ChessBoard GetBoardState() => board;
@@ -552,7 +559,7 @@ namespace ChessDroid.Controls
                 // File letters (a-h)
                 int fileIndex = isFlipped ? 7 - i : i;
                 string file = ((char)('a' + fileIndex)).ToString();
-                bool isLight = (7 + fileIndex) % 2 == 0;
+                bool isLight = isFlipped ? fileIndex % 2 == 0 : (7 + fileIndex) % 2 == 0;
                 using (SolidBrush brush = new SolidBrush(isLight ? darkSquareColor : lightSquareColor))
                 {
                     g.DrawString(file, coordFont, brush, i * squareSize + 2, 8 * squareSize - coordFont.Height - 2);
@@ -565,6 +572,29 @@ namespace ChessDroid.Controls
                 using (SolidBrush brush = new SolidBrush(isLight ? darkSquareColor : lightSquareColor))
                 {
                     g.DrawString(rank, coordFont, brush, 2, i * squareSize + 2);
+                }
+            }
+
+            // Draw square name labels if enabled (e.g. "e4", "d5")
+            if (showSquareLabels)
+            {
+                float labelFontSize = Math.Max(8f, squareSize * 0.20f);
+                using var labelFont = new Font("Segoe UI", labelFontSize, FontStyle.Regular);
+                for (int row = 0; row < 8; row++)
+                {
+                    for (int col = 0; col < 8; col++)
+                    {
+                        int displayRow = isFlipped ? 7 - row : row;
+                        int displayCol = isFlipped ? 7 - col : col;
+                        bool isLightSq = (row + col) % 2 == 0;
+                        Color baseColor = isLightSq ? darkSquareColor : lightSquareColor;
+                        string squareName = $"{(char)('a' + col)}{8 - row}";
+                        SizeF textSize = g.MeasureString(squareName, labelFont);
+                        float x = displayCol * squareSize + (squareSize - textSize.Width) / 2f;
+                        float y = displayRow * squareSize + (squareSize - textSize.Height) / 2f;
+                        using (SolidBrush brush = new SolidBrush(Color.FromArgb(140, baseColor)))
+                            g.DrawString(squareName, labelFont, brush, x, y);
+                    }
                 }
             }
 

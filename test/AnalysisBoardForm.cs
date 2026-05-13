@@ -93,6 +93,7 @@ namespace ChessDroid
             boardControl.SetSquareColors(
                 ColorTranslator.FromHtml(config.LightSquareColor),
                 ColorTranslator.FromHtml(config.DarkSquareColor));
+            boardControl.ShowSquareLabels = config.ShowSquareLabels;
             InitializeServices();
             InitializeMatchControls();
             PopulatePiecesComboBox();
@@ -373,14 +374,13 @@ namespace ChessDroid
                 int groupX = (panel.Width - groupWidth) / 2;
                 groupX = Math.Max(groupX, 10); // Minimum left margin
 
-                // Position eval bar (left of board, same height)
-                evalBar.Location = new Point(groupX, 5);
-                evalBar.Size = new Size(evalBarWidth, boardSize);
-
-                // Position board (right of eval bar)
+                // Position board first, then match eval bar to its exact height
                 int boardX = groupX + evalBarTotal;
                 boardControl.Size = new Size(boardSize, boardSize);
                 boardControl.Location = new Point(boardX, 5);
+
+                evalBar.Location = new Point(groupX, boardControl.Top);
+                evalBar.Size = new Size(evalBarWidth, boardControl.Height);
 
                 // Reposition controls below the board (aligned with board, not eval bar)
                 int controlsY = boardControl.Bottom + 5;
@@ -571,6 +571,7 @@ namespace ChessDroid
                 boardControl.SetSquareColors(
                     ColorTranslator.FromHtml(config.LightSquareColor),
                     ColorTranslator.FromHtml(config.DarkSquareColor));
+                boardControl.ShowSquareLabels = config.ShowSquareLabels;
 
                 // Only clear cache when settings that affect analysis results change
                 if (analysisSettingsChanged)

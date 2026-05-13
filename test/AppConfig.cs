@@ -27,6 +27,7 @@ namespace ChessDroid
         // Board square colors (hex strings e.g. "#F0D9B5")
         public string LightSquareColor { get; set; } = "#F0D9B5";
         public string DarkSquareColor { get; set; } = "#B58863";
+        public bool ShowSquareLabels { get; set; } = false;
 
         // Explanation settings
         public string ExplanationComplexity { get; set; } = "Intermediate"; // Beginner, Intermediate, Advanced, Master
@@ -165,6 +166,7 @@ namespace ChessDroid
             ShowEvalBar = other.ShowEvalBar;
             LightSquareColor = other.LightSquareColor;
             DarkSquareColor = other.DarkSquareColor;
+            ShowSquareLabels = other.ShowSquareLabels;
             ExplanationComplexity = other.ExplanationComplexity;
             ShowTacticalAnalysis = other.ShowTacticalAnalysis;
             ShowPositionalAnalysis = other.ShowPositionalAnalysis;

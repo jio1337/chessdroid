@@ -66,6 +66,11 @@ namespace ChessDroid
             btnLightColor = new Button();
             lblDarkSquares = new Label();
             btnDarkColor = new Button();
+            lblColorPreset = new Label();
+            cmbColorPreset = new ComboBox();
+            btnResetColors = new Button();
+            lblSquareLabels = new Label();
+            chkSquareLabels = new CheckBox();
             grpExplanations = new GroupBox();
             cmbComplexity = new ComboBox();
             lblComplexity = new Label();
@@ -442,10 +447,15 @@ namespace ChessDroid
             grpBoardColors.Controls.Add(btnLightColor);
             grpBoardColors.Controls.Add(lblDarkSquares);
             grpBoardColors.Controls.Add(btnDarkColor);
+            grpBoardColors.Controls.Add(lblColorPreset);
+            grpBoardColors.Controls.Add(cmbColorPreset);
+            grpBoardColors.Controls.Add(btnResetColors);
+            grpBoardColors.Controls.Add(lblSquareLabels);
+            grpBoardColors.Controls.Add(chkSquareLabels);
             grpBoardColors.ForeColor = Color.White;
             grpBoardColors.Location = new Point(12, 433);
             grpBoardColors.Name = "grpBoardColors";
-            grpBoardColors.Size = new Size(298, 79);
+            grpBoardColors.Size = new Size(298, 130);
             grpBoardColors.TabIndex = 12;
             grpBoardColors.TabStop = false;
             grpBoardColors.Text = "Board Colors";
@@ -493,7 +503,59 @@ namespace ChessDroid
             toolTip1.SetToolTip(btnDarkColor, "Click to choose dark square color");
             btnDarkColor.UseVisualStyleBackColor = false;
             btnDarkColor.Click += BtnDarkColor_Click;
-            // 
+            //
+            // lblColorPreset
+            //
+            lblColorPreset.Location = new Point(10, 76);
+            lblColorPreset.Name = "lblColorPreset";
+            lblColorPreset.Size = new Size(80, 19);
+            lblColorPreset.TabIndex = 4;
+            lblColorPreset.Text = "Theme:";
+            //
+            // cmbColorPreset
+            //
+            cmbColorPreset.DropDownStyle = ComboBoxStyle.DropDownList;
+            cmbColorPreset.FlatStyle = FlatStyle.Flat;
+            cmbColorPreset.Location = new Point(95, 73);
+            cmbColorPreset.Name = "cmbColorPreset";
+            cmbColorPreset.Size = new Size(130, 22);
+            cmbColorPreset.TabIndex = 5;
+            toolTip1.SetToolTip(cmbColorPreset, "Select a board color theme preset");
+            cmbColorPreset.SelectedIndexChanged += CmbColorPreset_SelectedIndexChanged;
+            //
+            // btnResetColors
+            //
+            btnResetColors.Cursor = Cursors.Hand;
+            btnResetColors.FlatAppearance.BorderColor = Color.Gray;
+            btnResetColors.FlatStyle = FlatStyle.Flat;
+            btnResetColors.Location = new Point(235, 73);
+            btnResetColors.Name = "btnResetColors";
+            btnResetColors.Size = new Size(55, 22);
+            btnResetColors.TabIndex = 6;
+            btnResetColors.Text = "Reset";
+            toolTip1.SetToolTip(btnResetColors, "Reset board colors to default brown");
+            btnResetColors.UseVisualStyleBackColor = false;
+            btnResetColors.Click += BtnResetColors_Click;
+            //
+            // lblSquareLabels
+            //
+            lblSquareLabels.Location = new Point(10, 106);
+            lblSquareLabels.Name = "lblSquareLabels";
+            lblSquareLabels.Size = new Size(150, 19);
+            lblSquareLabels.TabIndex = 7;
+            lblSquareLabels.Text = "Square Labels:";
+            toolTip1.SetToolTip(lblSquareLabels, "Show square names (e4, d5...) in the center of each square");
+            //
+            // chkSquareLabels
+            //
+            chkSquareLabels.AutoSize = true;
+            chkSquareLabels.Location = new Point(166, 105);
+            chkSquareLabels.Name = "chkSquareLabels";
+            chkSquareLabels.Size = new Size(15, 14);
+            chkSquareLabels.TabIndex = 8;
+            toolTip1.SetToolTip(chkSquareLabels, "Show square names (e4, d5...) in the center of each square");
+            chkSquareLabels.UseVisualStyleBackColor = true;
+            //
             // grpExplanations
             // 
             grpExplanations.Controls.Add(cmbComplexity);
@@ -771,7 +833,7 @@ namespace ChessDroid
             chkDarkMode.Checked = true;
             chkDarkMode.CheckState = CheckState.Checked;
             chkDarkMode.ForeColor = Color.White;
-            chkDarkMode.Location = new Point(12, 518);
+            chkDarkMode.Location = new Point(12, 569);
             chkDarkMode.Name = "chkDarkMode";
             chkDarkMode.Size = new Size(89, 18);
             chkDarkMode.TabIndex = 8;
@@ -787,7 +849,7 @@ namespace ChessDroid
             AutoSizeMode = AutoSizeMode.GrowAndShrink;
             BackColor = Color.FromArgb(45, 45, 48);
             CancelButton = btnCancel;
-            ClientSize = new Size(585, 545);
+            ClientSize = new Size(585, 596);
             Controls.Add(chkDarkMode);
             Controls.Add(btnCancel);
             Controls.Add(btnHelp);
@@ -859,6 +921,11 @@ namespace ChessDroid
         private System.Windows.Forms.Button btnLightColor;
         private System.Windows.Forms.Label lblDarkSquares;
         private System.Windows.Forms.Button btnDarkColor;
+        private System.Windows.Forms.Label lblColorPreset;
+        private System.Windows.Forms.ComboBox cmbColorPreset;
+        private System.Windows.Forms.Button btnResetColors;
+        private System.Windows.Forms.Label lblSquareLabels;
+        private System.Windows.Forms.CheckBox chkSquareLabels;
         private System.Windows.Forms.Button btnSave;
         private System.Windows.Forms.Button btnReset;
         private System.Windows.Forms.Button btnHelp;
