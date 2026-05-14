@@ -195,15 +195,15 @@ namespace ChessDroid.Services
         /// <summary>
         /// Get a color suggestion for sharpness display.
         /// </summary>
-        public static System.Drawing.Color GetSharpnessColor(double sharpness)
+        public static System.Drawing.Color GetSharpnessColor(double sharpness, bool isDarkMode = false)
         {
             if (sharpness >= 0.7)
-                return System.Drawing.Color.OrangeRed;      // Very sharp - danger/excitement
+                return isDarkMode ? System.Drawing.Color.OrangeRed  : System.Drawing.Color.Firebrick;
             if (sharpness >= 0.4)
-                return System.Drawing.Color.Orange;          // Sharp
+                return isDarkMode ? System.Drawing.Color.Orange      : System.Drawing.Color.SaddleBrown;
             if (sharpness >= 0.2)
-                return System.Drawing.Color.Gold;            // Balanced
-            return System.Drawing.Color.LightBlue;           // Drawish - calm
+                return isDarkMode ? System.Drawing.Color.Gold        : System.Drawing.Color.DimGray;
+            return isDarkMode     ? System.Drawing.Color.LightBlue   : System.Drawing.Color.SteelBlue;
         }
     }
 }

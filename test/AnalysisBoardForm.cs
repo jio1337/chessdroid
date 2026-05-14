@@ -869,13 +869,13 @@ namespace ChessDroid
             {
                 symbol = "?!";
                 moveText = text[..^2].TrimEnd();
-                symbolColor = ColorScheme.InaccuracyColor;
+                symbolColor = isDark ? ColorScheme.InaccuracyColor : Color.DarkGoldenrod;
             }
             else if (text.EndsWith("?") && !text.EndsWith("??") && !text.EndsWith("?!"))
             {
                 symbol = "?";
                 moveText = text[..^1].TrimEnd();
-                symbolColor = ColorScheme.MistakeColor;
+                symbolColor = isDark ? ColorScheme.MistakeColor : Color.Chocolate;
             }
             else if (text.EndsWith("!") && !text.EndsWith("!!"))
             {
@@ -3566,6 +3566,7 @@ namespace ChessDroid
 
                     // Store eval on node so the graph has data for every move
                     node.Evaluation = evalAfter;
+                    RefreshEvalGraph();
 
                     // Store the result
                     var moveResult = new MoveReviewResult

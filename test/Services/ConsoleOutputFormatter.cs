@@ -1875,7 +1875,7 @@ namespace ChessDroid.Services
         /// <param name="moveEval">Evaluation of the move being classified (in pawns)</param>
         /// <param name="whiteToMove">Whether it's White's turn</param>
         /// <returns>Tuple of (label, symbol, color) for the classification</returns>
-        private static (string label, string symbol, Color color) GetMoveClassification(
+        private (string label, string symbol, Color color) GetMoveClassification(
             double bestEval, double moveEval, bool whiteToMove)
         {
             // Calculate win probabilities
@@ -1907,12 +1907,13 @@ namespace ChessDroid.Services
             // NOTE: When showing alternatives to the "only winning move", we only
             // display NEGATIVE classifications (Blunder, Mistake, Inaccuracy).
             // If the drop is small, we return null to show no classification.
+            bool isDark = config?.Theme == "Dark";
             if (winProbDrop >= 0.20)
                 return ("Blunder", "??", Color.Crimson);
             else if (winProbDrop >= 0.10)
-                return ("Mistake", "?", Color.OrangeRed);
+                return ("Mistake", "?", isDark ? Color.OrangeRed : Color.Chocolate);
             else if (winProbDrop >= 0.05)
-                return ("Inaccuracy", "?!", Color.Orange);
+                return ("Inaccuracy", "?!", isDark ? Color.Orange : Color.DarkGoldenrod);
             else
                 return ("", "", Color.Transparent); // No label for small drops
         }
