@@ -140,6 +140,7 @@ namespace ChessDroid.Services
             int dstRank = 8 - (dst[1] - '0');
 
             char moving = board[srcRank, srcFile];
+            if (moving == '.') return; // source is empty — engine move doesn't match board state
             char target = board[dstRank, dstFile];
 
             // Handle en-passant capture

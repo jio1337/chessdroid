@@ -111,6 +111,47 @@ namespace ChessDroid.Models
             return string.Join("/", rows);
         }
 
+        private static readonly HashSet<char> _validFenPieces =
+            new HashSet<char> { 'K','Q','R','B','N','P','k','q','r','b','n','p' };
+
+        // Returns a FEN string safe to send to a UCI engine: unknown piece characters
+        // (e.g. 'D' from user-typed FENs) are collapsed into empty-square counts so the
+        // engine's column offsets match the app's board exactly.
+        public static string SanitizeFenForEngine(string fen)
+        {
+            int spaceIdx = fen.IndexOf(' ');
+            string placement = spaceIdx >= 0 ? fen[..spaceIdx] : fen;
+            string rest      = spaceIdx >= 0 ? fen[spaceIdx..]  : "";
+
+            var sb = new StringBuilder(placement.Length);
+            int emptyRun = 0;
+
+            foreach (char c in placement)
+            {
+                if (c == '/')
+                {
+                    if (emptyRun > 0) { sb.Append(emptyRun); emptyRun = 0; }
+                    sb.Append('/');
+                }
+                else if (char.IsDigit(c))
+                {
+                    emptyRun += c - '0';
+                }
+                else if (_validFenPieces.Contains(c))
+                {
+                    if (emptyRun > 0) { sb.Append(emptyRun); emptyRun = 0; }
+                    sb.Append(c);
+                }
+                else
+                {
+                    emptyRun++; // unknown piece treated as one empty square
+                }
+            }
+            if (emptyRun > 0) sb.Append(emptyRun);
+
+            return sb.ToString() + rest;
+        }
+
         public static ChessBoard FromFEN(string fen)
         {
             var chessBoard = new ChessBoard();

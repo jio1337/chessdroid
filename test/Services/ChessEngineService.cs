@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Text.RegularExpressions;
+using ChessDroid.Models;
 
 namespace ChessDroid.Services
 {
@@ -373,8 +374,8 @@ namespace ChessDroid.Services
                         }
                     }
 
-                    // Set position
-                    if (!await SafeWriteLineAsync($"{UCI_CMD_POSITION} {fen}"))
+                    // Set position (sanitize FEN so unknown piece chars don't offset engine columns)
+                    if (!await SafeWriteLineAsync($"{UCI_CMD_POSITION} {ChessBoard.SanitizeFenForEngine(fen)}"))
                     {
                         throw new IOException("Failed to set position");
                     }
@@ -731,7 +732,7 @@ namespace ChessDroid.Services
                 if (!await SyncWithEngineAsync()) return;
 
                 await SafeWriteLineAsync($"{UCI_CMD_SETOPTION} MultiPV value {multiPV}");
-                await SafeWriteLineAsync($"{UCI_CMD_POSITION} {fen}");
+                await SafeWriteLineAsync($"{UCI_CMD_POSITION} {ChessBoard.SanitizeFenForEngine(fen)}");
 
                 bool whiteToMove = fen.Split(' ') is { Length: > 1 } p && p[1] == "w";
 
@@ -885,8 +886,8 @@ namespace ChessDroid.Services
                 // Set MultiPV to 1
                 await SafeWriteLineAsync($"{UCI_CMD_SETOPTION} MultiPV value 1");
 
-                // Set position
-                await SafeWriteLineAsync($"{UCI_CMD_POSITION} {fen}");
+                // Set position (sanitize FEN so unknown piece chars don't offset engine columns)
+                await SafeWriteLineAsync($"{UCI_CMD_POSITION} {ChessBoard.SanitizeFenForEngine(fen)}");
 
                 // Start search
                 State = EngineState.Analyzing;
