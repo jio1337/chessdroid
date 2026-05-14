@@ -59,6 +59,10 @@ namespace ChessDroid.Controls
         // Opening book arrows (drawn underneath engine arrows)
         private List<(int fromRow, int fromCol, int toRow, int toCol, Color color)> _bookArrows = new();
 
+        // Threat arrows (attacker → hanging piece, drawn in red under engine arrows)
+        private List<(int fromRow, int fromCol, int toRow, int toCol, Color color)> _threatArrows = new();
+        private static readonly Color ThreatArrowColor = Color.FromArgb(170, 200, 45, 45);
+
         // Visual settings
         private Color lightSquareColor = Color.FromArgb(240, 217, 181);
         private Color darkSquareColor = Color.FromArgb(181, 136, 99);
@@ -283,6 +287,7 @@ namespace ChessDroid.Controls
             enPassantRow = -1;
             enPassantCol = -1;
             lastMove = null;
+            _threatArrows.Clear();
             ClearSelection();
             Invalidate();
             BoardChanged?.Invoke(this, EventArgs.Empty);
@@ -297,6 +302,7 @@ namespace ChessDroid.Controls
             {
                 userArrows.Clear();
                 _highlightedSquares.Clear();
+                _threatArrows.Clear();
                 board = ChessBoard.FromFEN(fen);
                 string[] parts = fen.Split(' ');
                 whiteToMove = parts.Length > 1 ? parts[1] == "w" : true;
@@ -405,6 +411,21 @@ namespace ChessDroid.Controls
             if (_bookArrows.Count > 0)
             {
                 _bookArrows.Clear();
+                Invalidate();
+            }
+        }
+
+        public void SetThreatArrows(IEnumerable<(int fromRow, int fromCol, int toRow, int toCol)> arrows)
+        {
+            _threatArrows = arrows.Select(a => (a.fromRow, a.fromCol, a.toRow, a.toCol, ThreatArrowColor)).ToList();
+            Invalidate();
+        }
+
+        public void ClearThreatArrows()
+        {
+            if (_threatArrows.Count > 0)
+            {
+                _threatArrows.Clear();
                 Invalidate();
             }
         }
@@ -642,6 +663,12 @@ namespace ChessDroid.Controls
 
             // Draw book arrows (underneath everything)
             foreach (var arrow in _bookArrows)
+            {
+                DrawArrow(g, squareSize, arrow.fromRow, arrow.fromCol, arrow.toRow, arrow.toCol, arrow.color);
+            }
+
+            // Draw threat arrows (hanging piece warnings, under engine arrows)
+            foreach (var arrow in _threatArrows)
             {
                 DrawArrow(g, squareSize, arrow.fromRow, arrow.fromCol, arrow.toRow, arrow.toCol, arrow.color);
             }
@@ -1373,6 +1400,8 @@ namespace ChessDroid.Controls
 
             // Apply the move to the board
             char captured = board.GetPiece(toRow, toCol);
+            bool isCapture = captured != '.' ||
+                (char.ToLower(movingPiece) == 'p' && fromCol != toCol && captured == '.'); // en passant
 
             // Handle special moves
             if (char.ToLower(movingPiece) == 'k' && Math.Abs(fromCol - toCol) == 2)
@@ -1427,7 +1456,7 @@ namespace ChessDroid.Controls
             Invalidate();
 
             // Fire event
-            MoveMade?.Invoke(this, new MoveEventArgs(uciMove, GetFEN()));
+            MoveMade?.Invoke(this, new MoveEventArgs(uciMove, GetFEN(), isCapture));
             BoardChanged?.Invoke(this, EventArgs.Empty);
 
             return true;
@@ -1530,11 +1559,13 @@ namespace ChessDroid.Controls
     {
         public string UciMove { get; }
         public string FEN { get; }
+        public bool IsCapture { get; }
 
-        public MoveEventArgs(string uciMove, string fen)
+        public MoveEventArgs(string uciMove, string fen, bool isCapture = false)
         {
             UciMove = uciMove;
             FEN = fen;
+            IsCapture = isCapture;
         }
     }
 }

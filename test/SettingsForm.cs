@@ -125,6 +125,8 @@ namespace ChessDroid
             try { btnDarkColor.BackColor = ColorTranslator.FromHtml(config.DarkSquareColor); } catch { btnDarkColor.BackColor = Color.FromArgb(181, 136, 99); }
             cmbColorPreset.SelectedIndex = -1;
             chkSquareLabels.Checked = config.ShowSquareLabels;
+            chkThreatArrows.Checked = config.ShowThreatArrows;
+            chkMoveSounds.Checked = config.MoveSoundsEnabled;
 
             // Explanation settings
             PopulateComplexityComboBox();
@@ -186,6 +188,8 @@ namespace ChessDroid
             config.LightSquareColor = ColorTranslator.ToHtml(btnLightColor.BackColor);
             config.DarkSquareColor = ColorTranslator.ToHtml(btnDarkColor.BackColor);
             config.ShowSquareLabels = chkSquareLabels.Checked;
+            config.ShowThreatArrows = chkThreatArrows.Checked;
+            config.MoveSoundsEnabled = chkMoveSounds.Checked;
 
             // Save explanation settings
             config.ExplanationComplexity = cmbComplexity.SelectedItem?.ToString() ?? "Intermediate";
@@ -403,6 +407,10 @@ namespace ChessDroid
                 lblSquareLabels.BackColor = Color.FromArgb(45, 45, 48);
                 chkSquareLabels.ForeColor = Color.White;
                 chkSquareLabels.BackColor = Color.FromArgb(45, 45, 48);
+                lblThreatArrows.ForeColor = Color.White;
+                lblThreatArrows.BackColor = Color.FromArgb(45, 45, 48);
+                chkThreatArrows.ForeColor = Color.White;
+                chkThreatArrows.BackColor = Color.FromArgb(45, 45, 48);
 
                 // Play Style GroupBox
                 grpLc0Features.ForeColor = Color.Cyan;
@@ -541,6 +549,10 @@ namespace ChessDroid
                 lblSquareLabels.BackColor = Color.WhiteSmoke;
                 chkSquareLabels.ForeColor = Color.Black;
                 chkSquareLabels.BackColor = Color.WhiteSmoke;
+                lblThreatArrows.ForeColor = Color.Black;
+                lblThreatArrows.BackColor = Color.WhiteSmoke;
+                chkThreatArrows.ForeColor = Color.Black;
+                chkThreatArrows.BackColor = Color.WhiteSmoke;
 
                 // Play Style GroupBox
                 grpLc0Features.ForeColor = Color.DarkCyan;

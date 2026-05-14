@@ -29,6 +29,10 @@ namespace ChessDroid
         public string DarkSquareColor { get; set; } = "#B58863";
         public bool ShowSquareLabels { get; set; } = false;
 
+        // Sound & visual aids
+        public bool MoveSoundsEnabled { get; set; } = true;
+        public bool ShowThreatArrows { get; set; } = false;
+
         // Explanation settings
         public string ExplanationComplexity { get; set; } = "Intermediate"; // Beginner, Intermediate, Advanced, Master
 
@@ -167,6 +171,8 @@ namespace ChessDroid
             LightSquareColor = other.LightSquareColor;
             DarkSquareColor = other.DarkSquareColor;
             ShowSquareLabels = other.ShowSquareLabels;
+            MoveSoundsEnabled = other.MoveSoundsEnabled;
+            ShowThreatArrows = other.ShowThreatArrows;
             ExplanationComplexity = other.ExplanationComplexity;
             ShowTacticalAnalysis = other.ShowTacticalAnalysis;
             ShowPositionalAnalysis = other.ShowPositionalAnalysis;

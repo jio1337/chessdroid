@@ -61,6 +61,8 @@ namespace ChessDroid
             lblBest = new Label();
             lblConsoleFont = new Label();
             btnChooseFont = new Button();
+            lblMoveSounds = new Label();
+            chkMoveSounds = new CheckBox();
             grpBoardColors = new GroupBox();
             lblLightSquares = new Label();
             btnLightColor = new Button();
@@ -71,6 +73,8 @@ namespace ChessDroid
             btnResetColors = new Button();
             lblSquareLabels = new Label();
             chkSquareLabels = new CheckBox();
+            lblThreatArrows = new Label();
+            chkThreatArrows = new CheckBox();
             grpExplanations = new GroupBox();
             cmbComplexity = new ComboBox();
             lblComplexity = new Label();
@@ -300,10 +304,12 @@ namespace ChessDroid
             grpDisplay.Controls.Add(lblBest);
             grpDisplay.Controls.Add(lblConsoleFont);
             grpDisplay.Controls.Add(btnChooseFont);
+            grpDisplay.Controls.Add(lblMoveSounds);
+            grpDisplay.Controls.Add(chkMoveSounds);
             grpDisplay.ForeColor = Color.White;
             grpDisplay.Location = new Point(12, 246);
             grpDisplay.Name = "grpDisplay";
-            grpDisplay.Size = new Size(298, 181);
+            grpDisplay.Size = new Size(298, 198);
             grpDisplay.TabIndex = 2;
             grpDisplay.TabStop = false;
             grpDisplay.Text = "Display Options";
@@ -440,9 +446,30 @@ namespace ChessDroid
             btnChooseFont.TextAlign = ContentAlignment.MiddleLeft;
             toolTip1.SetToolTip(btnChooseFont, "Click to choose font for analysis output and move list");
             btnChooseFont.Click += BtnChooseFont_Click;
-            // 
+            //
+            // lblMoveSounds
+            //
+            lblMoveSounds.Location = new Point(10, 173);
+            lblMoveSounds.Name = "lblMoveSounds";
+            lblMoveSounds.Size = new Size(150, 19);
+            lblMoveSounds.TabIndex = 14;
+            lblMoveSounds.Text = "Move Sounds:";
+            toolTip1.SetToolTip(lblMoveSounds, "Play a sound when a move is made");
+            //
+            // chkMoveSounds
+            //
+            chkMoveSounds.AutoSize = true;
+            chkMoveSounds.Checked = true;
+            chkMoveSounds.CheckState = CheckState.Checked;
+            chkMoveSounds.Location = new Point(166, 172);
+            chkMoveSounds.Name = "chkMoveSounds";
+            chkMoveSounds.Size = new Size(15, 14);
+            chkMoveSounds.TabIndex = 15;
+            toolTip1.SetToolTip(chkMoveSounds, "Play a sound when a move is made (different sound for captures)");
+            chkMoveSounds.UseVisualStyleBackColor = true;
+            //
             // grpBoardColors
-            // 
+            //
             grpBoardColors.Controls.Add(lblLightSquares);
             grpBoardColors.Controls.Add(btnLightColor);
             grpBoardColors.Controls.Add(lblDarkSquares);
@@ -452,10 +479,12 @@ namespace ChessDroid
             grpBoardColors.Controls.Add(btnResetColors);
             grpBoardColors.Controls.Add(lblSquareLabels);
             grpBoardColors.Controls.Add(chkSquareLabels);
+            grpBoardColors.Controls.Add(lblThreatArrows);
+            grpBoardColors.Controls.Add(chkThreatArrows);
             grpBoardColors.ForeColor = Color.White;
-            grpBoardColors.Location = new Point(12, 433);
+            grpBoardColors.Location = new Point(12, 450);
             grpBoardColors.Name = "grpBoardColors";
-            grpBoardColors.Size = new Size(298, 130);
+            grpBoardColors.Size = new Size(298, 147);
             grpBoardColors.TabIndex = 12;
             grpBoardColors.TabStop = false;
             grpBoardColors.Text = "Board Colors";
@@ -556,8 +585,27 @@ namespace ChessDroid
             toolTip1.SetToolTip(chkSquareLabels, "Show square names (e4, d5...) in the center of each square");
             chkSquareLabels.UseVisualStyleBackColor = true;
             //
+            // lblThreatArrows
+            //
+            lblThreatArrows.Location = new Point(10, 122);
+            lblThreatArrows.Name = "lblThreatArrows";
+            lblThreatArrows.Size = new Size(150, 19);
+            lblThreatArrows.TabIndex = 9;
+            lblThreatArrows.Text = "Threat Arrows:";
+            toolTip1.SetToolTip(lblThreatArrows, "Show red arrows on the board pointing to hanging or capturable pieces");
+            //
+            // chkThreatArrows
+            //
+            chkThreatArrows.AutoSize = true;
+            chkThreatArrows.Location = new Point(166, 121);
+            chkThreatArrows.Name = "chkThreatArrows";
+            chkThreatArrows.Size = new Size(15, 14);
+            chkThreatArrows.TabIndex = 10;
+            toolTip1.SetToolTip(chkThreatArrows, "Show red arrows pointing to hanging or capturable pieces after each analysis");
+            chkThreatArrows.UseVisualStyleBackColor = true;
+            //
             // grpExplanations
-            // 
+            //
             grpExplanations.Controls.Add(cmbComplexity);
             grpExplanations.Controls.Add(lblComplexity);
             grpExplanations.Controls.Add(chkTactical);
@@ -782,7 +830,7 @@ namespace ChessDroid
             // 
             btnSave.FlatStyle = FlatStyle.Popup;
             btnSave.ForeColor = SystemColors.ControlLightLight;
-            btnSave.Location = new Point(316, 450);
+            btnSave.Location = new Point(316, 484);
             btnSave.Name = "btnSave";
             btnSave.Size = new Size(100, 28);
             btnSave.TabIndex = 4;
@@ -794,7 +842,7 @@ namespace ChessDroid
             // 
             btnReset.FlatStyle = FlatStyle.Popup;
             btnReset.ForeColor = SystemColors.ControlLightLight;
-            btnReset.Location = new Point(316, 484);
+            btnReset.Location = new Point(316, 518);
             btnReset.Name = "btnReset";
             btnReset.Size = new Size(100, 28);
             btnReset.TabIndex = 5;
@@ -806,7 +854,7 @@ namespace ChessDroid
             // 
             btnHelp.FlatStyle = FlatStyle.Popup;
             btnHelp.ForeColor = SystemColors.ControlLightLight;
-            btnHelp.Location = new Point(471, 451);
+            btnHelp.Location = new Point(471, 485);
             btnHelp.Name = "btnHelp";
             btnHelp.Size = new Size(100, 28);
             btnHelp.TabIndex = 6;
@@ -819,7 +867,7 @@ namespace ChessDroid
             btnCancel.DialogResult = DialogResult.Cancel;
             btnCancel.FlatStyle = FlatStyle.Popup;
             btnCancel.ForeColor = SystemColors.ControlLightLight;
-            btnCancel.Location = new Point(472, 484);
+            btnCancel.Location = new Point(472, 518);
             btnCancel.Name = "btnCancel";
             btnCancel.Size = new Size(100, 28);
             btnCancel.TabIndex = 7;
@@ -833,7 +881,7 @@ namespace ChessDroid
             chkDarkMode.Checked = true;
             chkDarkMode.CheckState = CheckState.Checked;
             chkDarkMode.ForeColor = Color.White;
-            chkDarkMode.Location = new Point(12, 569);
+            chkDarkMode.Location = new Point(12, 603);
             chkDarkMode.Name = "chkDarkMode";
             chkDarkMode.Size = new Size(89, 18);
             chkDarkMode.TabIndex = 8;
@@ -849,7 +897,7 @@ namespace ChessDroid
             AutoSizeMode = AutoSizeMode.GrowAndShrink;
             BackColor = Color.FromArgb(45, 45, 48);
             CancelButton = btnCancel;
-            ClientSize = new Size(585, 596);
+            ClientSize = new Size(585, 630);
             Controls.Add(chkDarkMode);
             Controls.Add(btnCancel);
             Controls.Add(btnHelp);
@@ -926,6 +974,10 @@ namespace ChessDroid
         private System.Windows.Forms.Button btnResetColors;
         private System.Windows.Forms.Label lblSquareLabels;
         private System.Windows.Forms.CheckBox chkSquareLabels;
+        private System.Windows.Forms.Label lblThreatArrows;
+        private System.Windows.Forms.CheckBox chkThreatArrows;
+        private System.Windows.Forms.Label lblMoveSounds;
+        private System.Windows.Forms.CheckBox chkMoveSounds;
         private System.Windows.Forms.Button btnSave;
         private System.Windows.Forms.Button btnReset;
         private System.Windows.Forms.Button btnHelp;

@@ -365,7 +365,7 @@ namespace ChessDroid.Services
         /// <summary>
         /// Find all pieces of the specified color that attack a given square.
         /// </summary>
-        private static List<(int row, int col, char piece)> FindAttackers(ChessBoard board, int targetRow, int targetCol, bool attackerIsWhite)
+        public static List<(int row, int col, char piece)> FindAttackers(ChessBoard board, int targetRow, int targetCol, bool attackerIsWhite)
         {
             var attackers = new List<(int row, int col, char piece)>();
 

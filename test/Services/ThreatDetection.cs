@@ -1408,6 +1408,52 @@ namespace ChessDroid.Services
 
         #endregion Opponent Threat Detection Methods
 
+        #region Board Snapshot Helpers
+
+        /// <summary>
+        /// Returns (attackerRow, attackerCol, targetRow, targetCol) pairs for all hanging pieces
+        /// on the current board — used to draw threat arrows.
+        /// A piece is considered hanging if it is undefended OR can be captured by a cheaper piece.
+        /// Kings are excluded.
+        /// </summary>
+        public static List<(int fromRow, int fromCol, int toRow, int toCol)> GetThreatArrows(ChessBoard board)
+        {
+            var arrows = new List<(int, int, int, int)>();
+
+            for (int r = 0; r < 8; r++)
+            {
+                for (int c = 0; c < 8; c++)
+                {
+                    char piece = board.GetPiece(r, c);
+                    if (piece == '.') continue;
+                    if (char.ToLower(piece) == 'k') continue;
+
+                    bool isWhitePiece = char.IsUpper(piece);
+                    bool isAttacked = ChessUtilities.IsSquareAttackedBy(board, r, c, !isWhitePiece);
+                    if (!isAttacked) continue;
+
+                    bool isDefended = ChessUtilities.IsSquareAttackedBy(board, r, c, isWhitePiece);
+                    int pieceValue = ChessUtilities.GetPieceValue(PieceHelper.GetPieceType(piece));
+                    int lowestAttacker = ChessUtilities.GetLowestAttackerValue(board, r, c, !isWhitePiece);
+
+                    bool isHanging = !isDefended || (lowestAttacker > 0 && lowestAttacker < pieceValue);
+                    if (!isHanging) continue;
+
+                    var attackers = ChessUtilities.FindAttackers(board, r, c, !isWhitePiece);
+                    if (attackers.Count == 0) continue;
+
+                    var best = attackers
+                        .OrderBy(a => ChessUtilities.GetPieceValue(PieceHelper.GetPieceType(a.piece)))
+                        .First();
+                    arrows.Add((best.row, best.col, r, c));
+                }
+            }
+
+            return arrows;
+        }
+
+        #endregion Board Snapshot Helpers
+
         #region Helper Methods
 
         private static string GetSquareName(int row, int col) => ChessUtilities.GetSquareName(row, col);

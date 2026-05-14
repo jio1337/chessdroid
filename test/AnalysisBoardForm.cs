@@ -459,8 +459,18 @@ namespace ChessDroid
             // Cancel any PV animation in progress
             _pvAnimationCts?.Cancel();
 
-            // Clear engine arrows (new analysis will redraw them)
+            // Clear engine arrows and threat arrows (new analysis will redraw them)
             boardControl.ClearEngineArrows();
+            boardControl.ClearThreatArrows();
+
+            // Move sound
+            if (config.MoveSoundsEnabled)
+            {
+                if (e.IsCapture)
+                    System.Media.SystemSounds.Exclamation.Play();
+                else
+                    System.Media.SystemSounds.Asterisk.Play();
+            }
 
             // Skip if we're navigating (not making a new move)
             if (isNavigating) return;
@@ -572,6 +582,7 @@ namespace ChessDroid
                     ColorTranslator.FromHtml(config.LightSquareColor),
                     ColorTranslator.FromHtml(config.DarkSquareColor));
                 boardControl.ShowSquareLabels = config.ShowSquareLabels;
+                if (!config.ShowThreatArrows) boardControl.ClearThreatArrows();
 
                 // Only clear cache when settings that affect analysis results change
                 if (analysisSettingsChanged)
@@ -2243,6 +2254,17 @@ namespace ChessDroid
 
             // Update eval bar with the evaluation
             UpdateEvalBar(evaluation);
+
+            // Update threat arrows (hanging piece warnings on the board)
+            if (config?.ShowThreatArrows == true)
+            {
+                var threats = ThreatDetection.GetThreatArrows(boardControl.GetBoardState());
+                boardControl.SetThreatArrows(threats);
+            }
+            else
+            {
+                boardControl.ClearThreatArrows();
+            }
 
             string cacheIndicator = fromCache ? " (cached)" : "";
             lblStatus.Text = $"Analysis complete (depth {depth}){cacheIndicator}";

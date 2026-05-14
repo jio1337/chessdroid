@@ -50,117 +50,113 @@ namespace ChessDroid
 
         private void LoadHelpText()
         {
-            string helpText = @"CHESSDROID v3.0.0 - CHESS ANALYSIS BOARD
+            string helpText = @"CHESSDROID v3.8.0 - CHESS ANALYSIS BOARD
 
 ═══════════════════════════════════════════════════════════════════
-🎮 GETTING STARTED
+GETTING STARTED
 ═══════════════════════════════════════════════════════════════════
 
-Chessdroid is a powerful chess analysis tool featuring:
+Interactive chess analysis board with:
   • 30+ tactical pattern detection (pins, forks, skewers, etc.)
-  • Move quality classification (Brilliant, Best, Good, etc.)
-  • Opening book support (Polyglot .bin format)
-  • Engine vs Engine matches with adjustable strength
-  • PGN import/export with full move tree support
+  • Move quality classification (Brilliant, Best, Inaccuracy, etc.)
+  • Full mate-in-1 threat detection after every move
+  • Opening book (Polyglot .bin + ECO database)
+  • Bot mode (play vs Stockfish, 5 difficulty levels)
+  • Engine vs Engine matches with configurable time controls
+  • Annotated PGN import/export (NAGs, eval comments)
+  • [See line] animated PV exploration
+  • Auto-play through move list
+  • Continuous analysis with live depth updates
+  • Threat arrows (red) and engine arrows (green/yellow/red)
+  • Move sounds (configurable)
 
 ═══════════════════════════════════════════════════════════════════
-🤖 CHESS ENGINE
+KEYBOARD SHORTCUTS
 ═══════════════════════════════════════════════════════════════════
 
-🧠 Engine Depth (1-20)
-  • 10-15 (Recommended): Good balance of speed and strength
-  • 16-20: Maximum strength but slower
-
-⏱ Response Timeout - Max wait time for engine analysis
-🔄 Max Retries - Retry attempts on engine failure
-⏳ Move Timeout - Total time for full analysis cycle
-⏱ Min Analysis Time - Minimum analysis time
-
-🎮 Engine Selection - Choose from engines in /Engines folder
-🎨 Piece Set - Choose piece style from /Templates folder
+  Left / Right     Navigate moves (previous / next)
+  Up / Down        Navigate variations at same level
+  Home / End       Jump to start / end of game
+  Ctrl+N           New Game
+  Ctrl+F           Flip Board
+  Backspace        Take back last move
 
 ═══════════════════════════════════════════════════════════════════
-📝 EXPLANATION SETTINGS
+CHESS ENGINE
 ═══════════════════════════════════════════════════════════════════
 
-📚 Complexity Level
-Controls how detailed explanations are:
+Engine Depth (1-20)
+  • 10-15: Good balance of speed and analysis quality
+  • 16-20: Stronger but slower
 
+Min Analysis Time - Engine thinks for at least this long (ms)
+Continuous Analysis - Live depth-by-depth streaming up to max depth
+Auto-play speed - Time between moves during auto-play (ms)
+
+Engine Selection - Choose from engines in /Engines folder
+Piece Set - Choose piece style from /Templates folder
+
+═══════════════════════════════════════════════════════════════════
+EXPLANATION SETTINGS
+═══════════════════════════════════════════════════════════════════
+
+Complexity Level controls explanation detail:
   • Beginner: Simple terms, basic concepts
   • Intermediate: Standard chess terminology
   • Advanced: Full technical details
-  • Master: Complete analysis with all metrics
+  • Master: All metrics shown
 
-🎯 Feature Toggles (all independently controllable):
-
-  ♟ Tactical Analysis
-    Pins, forks, skewers, discovered attacks, sacrifices,
-    tempo attacks, zwischenzug, perpetual check
-
-  ♟ Positional Analysis
-    Pawn structure, outposts, piece mobility, king safety,
-    central control, development advice
-
-  ♟ Endgame Analysis
-    Opposition detection, rule of the square, king activity,
-    insufficient material, fortress detection, zugzwang
-
-  ♟ Opening Principles
-    Opening move descriptions and principles
-
-  ♟ SEE Values
-    Static Exchange Evaluation - material won/lost after captures
-
-  ♟ Threats Analysis
-    Threats created by your move and opponent threats
-
-  ♟ WDL & Sharpness
-    Win/Draw/Loss percentages and position sharpness
+Feature Toggles (independently controllable):
+  Tactical Analysis  - Pins, forks, sacrifices, zwischenzug
+  Positional         - Pawn structure, outposts, king safety
+  Endgame            - Opposition, rule of the square, zugzwang
+  Opening Principles - Center control, development advice
+  Threats Analysis   - Threats created, opponent threats, mate-in-1
+  WDL + Sharpness    - Win/Draw/Loss percentages, position sharpness
 
 ═══════════════════════════════════════════════════════════════════
-🎛 PLAY STYLE
+DISPLAY OPTIONS
 ═══════════════════════════════════════════════════════════════════
 
-⚔ Aggressiveness Slider (0-100)
+Show Best/Second/Third Line - Control how many engine PV lines show
+Engine Arrows - None / Best only / Best+2nd / All 3
+Move Sounds - Click on move, different sound for captures
+Show Eval Bar - Toggle the evaluation bar on/off
 
-  • 0-20 (Very Solid): Prefer safe, defensive moves
+Board Colors - Custom light/dark square colors + 7 presets
+Square Labels - Show square names (e4, d5...) on the board
+Threat Arrows - Red arrows pointing to hanging/capturable pieces
+
+═══════════════════════════════════════════════════════════════════
+PLAY STYLE
+═══════════════════════════════════════════════════════════════════
+
+Aggressiveness Slider (0-100):
+  • 0-20  (Very Solid): Prefer safe, defensive moves
   • 21-40 (Solid): Slightly conservative
   • 41-60 (Balanced): No filtering, show all moves
   • 61-80 (Aggressive): Prefer active, dynamic moves
   • 81-100 (Very Aggressive): Maximum attacking chances
 
-📖 Show Opening Name
-Displays the detected opening (e.g., 'Sicilian Defense')
-
-⭐ Show Move Quality
-Shows: Brilliant (!!) Best (!) Good Inaccuracy (?!)
-       Mistake (?) Blunder (??)
-
 ═══════════════════════════════════════════════════════════════════
-📺 DISPLAY OPTIONS
+BOT MODE
 ═══════════════════════════════════════════════════════════════════
 
-Show Best/Second/Third Line - Control how many engine lines to show
-Comparing multiple lines helps understand why one move is better!
+Play vs Stockfish at 5 difficulty levels:
+  Easy / Medium / Hard / Expert / Master
+
+Choose your color (White or Black).
+Take Back goes back 2 moves (yours + bot's response).
+Challenge mode hides engine analysis while you play.
 
 ═══════════════════════════════════════════════════════════════════
-⌨ KEYBOARD SHORTCUTS
+TIPS
 ═══════════════════════════════════════════════════════════════════
 
-  Ctrl+O    Open PGN file
-  Ctrl+S    Save PGN file
-  Ctrl+V    Paste FEN/PGN from clipboard
-  Ctrl+C    Copy current FEN
-  Left/Right arrows - Navigate moves
-
-═══════════════════════════════════════════════════════════════════
-💡 TIPS
-═══════════════════════════════════════════════════════════════════
-
-Engine timeout → Reduce Depth or increase Timeout
-No endgame insights → Enable 'Endgame Analysis' toggle
-Explanations too verbose → Lower Complexity level
-Want book moves → Enable 'Show Book Moves' in settings";
+Engine timeout   -> Reduce Depth or increase Timeout
+No book arrows   -> Make sure a .bin file is in /Books folder
+Threat arrows    -> Enable in Settings > Board Colors > Threat Arrows
+Auto-play pauses -> Press '>>' button again or press Right arrow";
 
             txtHelp.Text = helpText;
             txtHelp.SelectionStart = 0;
