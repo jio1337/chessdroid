@@ -2,11 +2,11 @@
 
 ## Overview
 
-ChessDroid is a pure offline chess analysis application that combines tactical pattern recognition with deep positional understanding inspired by world-class chess engines (Ethereal and Stockfish). As of v3.8.0, the application is centered around the Analysis Board — an interactive workspace for deep chess analysis with visual engine arrows, threat arrows, PV line exploration, free-draw annotation, bot mode, continuous analysis, annotated PGN round-trips, square highlighting, auto-play, and full board customization.
+ChessDroid is a pure offline chess analysis application that combines tactical pattern recognition with deep positional understanding inspired by world-class chess engines (Ethereal and Stockfish). As of v3.8.1, the application is centered around the Analysis Board — an interactive workspace for deep chess analysis with visual engine arrows, threat arrows, PV line exploration, free-draw annotation, bot mode, continuous analysis, annotated PGN round-trips, square highlighting, auto-play, and full board customization.
 
 ---
 
-## System Architecture (v3.8.0)
+## System Architecture (v3.8.1)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -579,7 +579,12 @@ Create a folder in `Templates/` with 12 PNG files named: wK, wQ, wR, wB, wN, wP,
 
 ## Version History
 
-**v3.8.0** — Threat Arrows (Current)
+**v3.8.1** — Bug Fixes & Light Theme Polish (Current)
+- [See line] board corruption fix: `SanitizeFenForEngine()` normalizes unknown FEN piece chars before every `position fen` command; `ApplyUciMove` guard returns early on empty source square
+- Light theme readability: `GetSharpnessColor` now theme-aware (Firebrick/SaddleBrown/DimGray/SteelBlue in light mode instead of Orange/Gold/LightBlue); separator and Recommended colors darkened
+- Window title: `chessdroid v3.8.1`
+
+**v3.8.0** — Threat Arrows
 - Threat arrows (red) on board: show opponent threats against your pieces; derived from same detection as "⚠ Opponent threats:" text — always in sync; `ShowThreatArrows` setting
 - Book moves immediate display: opening name + book moves shown before engine starts; `ShowBookInfoImmediate(fen)` → `ConsoleOutputFormatter.ShowBookContextNow`
 - Color preset combobox: pre-selects matching preset on SettingsForm open via `Array.FindIndex`
@@ -710,4 +715,4 @@ https://github.com/jio1337/chessdroid/issues
 ---
 
 **Last Updated:** 2026-05-14
-**Document Version:** 3.7.0
+**Document Version:** 3.8.1

@@ -1,4 +1,4 @@
-## ChessDroid v3.8.0 — User Guide
+## ChessDroid v3.8.1 — User Guide
 
 ### Welcome to ChessDroid!
 
@@ -367,7 +367,11 @@ Create a folder in `Templates/` with 12 PNG files (wK, wQ, wR, wB, wN, wP, bK, b
 
 ## Version History
 
-**v3.8.0** — Threat Arrows (Current)
+**v3.8.1** — Bug Fixes & Light Theme Polish (Current)
+- [See line] board corruption fixed: clicking any PV line on positions with non-standard FEN characters no longer causes pieces to disappear
+- Light theme readability improvements: position labels, continuous analysis separator, and Recommended move section are now clearly visible on white backgrounds
+
+**v3.8.0** — Threat Arrows
 - Threat arrows (red) on the board: opponent threats against your pieces shown as visual arrows after each analysis, always matching the "⚠ Opponent threats:" text; toggle in Settings → Board Colors
 - Book moves shown immediately: opening name and book moves appear in the console before the engine starts thinking
 - Color preset combobox pre-selects your current colors when you open Settings
@@ -490,4 +494,4 @@ ChessDroid is released under the MIT License. Free and open-source forever!
 **Enjoy analyzing with ChessDroid!**
 
 *Last Updated: 2026-05-14*
-*Version: 3.8.0*
+*Version: 3.8.1*

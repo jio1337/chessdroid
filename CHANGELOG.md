@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [3.8.1] - 2026-05-14
+
+### Fixed
+- **[See line] Board Corruption** — FEN strings containing non-standard piece characters (e.g. `D` from custom positions) were sent as-is to Stockfish, which skipped unknown chars and shifted column offsets; the engine's PV moves then referenced wrong squares, causing pieces to vanish from the board when clicking [See line]. `ChessBoard.SanitizeFenForEngine()` now normalizes unknown chars to empty squares before every `position fen` command. `ApplyUciMove` also gained a guard that returns early if the source square is empty.
+
+### Improved
+- **Light Theme Readability** — Several colors were near-invisible on white backgrounds: position character labels ("completely losing", "sharp") used `Color.Orange`, `Color.Gold`, and `Color.LightBlue` regardless of theme. `GetSharpnessColor` is now theme-aware, using `Firebrick`, `SaddleBrown`, `DimGray`, and `SteelBlue` in light mode. The continuous-analysis separator line (`───`) was also changed from `LightGray` to `Gray`, and the Recommended move header/explanation were darkened from `DarkOrange`/`Chocolate` to `SaddleBrown`/`Sienna`.
+
+---
+
 ## [3.8.0] - 2026-05-14
 
 ### Added
