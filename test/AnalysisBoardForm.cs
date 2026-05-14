@@ -101,8 +101,13 @@ namespace ChessDroid
             // Initialize move tree with starting position
             moveTree = new MoveTree(boardControl.GetFEN());
 
-            // Pre-initialize engine when form is shown (async, non-blocking)
-            this.Shown += async (s, e) => await InitializeEngineAsync();
+            // Shown fires after TableLayoutPanel finalizes its layout — recalculate positions then
+            this.Shown += async (s, e) =>
+            {
+                LeftPanel_Resize(leftPanel, EventArgs.Empty);
+                this.MinimumSize = this.Size; // initial size becomes the enforced minimum
+                await InitializeEngineAsync();
+            };
         }
 
         private async Task InitializeEngineAsync()
@@ -369,9 +374,9 @@ namespace ChessDroid
                 int boardSize = Math.Min(availableWidth, availableHeight);
                 boardSize = Math.Max(boardSize, 300); // Minimum size
 
-                // Center the board+evalbar group horizontally in the panel
+                // Right-align the board+evalbar so it sits flush against the moves list
                 int groupWidth = boardSize + evalBarTotal;
-                int groupX = (panel.Width - groupWidth) / 2;
+                int groupX = panel.Width - groupWidth;
                 groupX = Math.Max(groupX, 10); // Minimum left margin
 
                 // Position board first, then match eval bar to its exact height
@@ -430,7 +435,8 @@ namespace ChessDroid
                 int fenY = buttonY + 32;
                 int fenLabelWidth = 35;
                 int fenButtonWidth = 55;
-                int fenInputWidth = Math.Max(150, boardSize - fenLabelWidth - 2 * fenButtonWidth - 20);
+                // Account for: label + input + gap + Load + gap + Copy + gap + Settings(28) + margin(5)
+                int fenInputWidth = Math.Max(150, boardSize - fenLabelWidth - 2 * fenButtonWidth - 48);
 
                 lblFen.Location = new Point(boardX, fenY + 3);
                 txtFen.Location = new Point(boardX + fenLabelWidth, fenY);
@@ -2028,6 +2034,8 @@ namespace ChessDroid
                 lblStatus.Text = "Analyzing...";
                 int maxDepth = config?.ContinuousAnalysisMaxDepth ?? 50;
 
+                ShowBookInfoImmediate(fen);
+
                 string lastBestMove = "", lastEval = "";
                 List<string> lastPvs = new(), lastEvals = new();
                 WDLInfo? lastWdl = null;
@@ -2109,6 +2117,7 @@ namespace ChessDroid
             }
 
             lblStatus.Text = "Analyzing...";
+            ShowBookInfoImmediate(fen);
 
             try
             {
@@ -2198,26 +2207,7 @@ namespace ChessDroid
                 }
             }
 
-            // Get book moves
-            List<BookMove>? bookMoves = null;
-            if (openingBookService?.IsLoaded == true)
-            {
-                var moves = openingBookService.GetBookMovesForPosition(fen);
-                if (moves != null && moves.Count > 0)
-                {
-                    bookMoves = moves.Select(pm => new BookMove
-                    {
-                        UciMove = pm.UciMove,
-                        Games = pm.Weight,
-                        Priority = pm.Weight,
-                        WinRate = 50,
-                        Wins = 0,
-                        Losses = 0,
-                        Draws = 0,
-                        Source = "Book"
-                    }).ToList();
-                }
-            }
+            var bookMoves = FetchBookMoves(fen);
 
             // Display results (respect user's line visibility settings)
             consoleFormatter?.DisplayAnalysisResults(
@@ -2246,10 +2236,13 @@ namespace ChessDroid
             // Update eval bar with the evaluation
             UpdateEvalBar(evaluation);
 
-            // Update threat arrows (hanging piece warnings on the board)
+            // Update threat arrows — derived from the same detection as the text output
             if (config?.ShowThreatArrows == true)
             {
-                var threats = ThreatDetection.GetThreatArrows(boardControl.GetBoardState());
+                string[] fenParts = fen.Split(' ');
+                bool weAreWhite = fenParts.Length > 1 && fenParts[1] == "w";
+                string ep = fenParts.Length > 4 ? fenParts[3] : "-";
+                var threats = ThreatDetection.GetThreatArrows(boardControl.GetBoardState(), weAreWhite, ep);
                 boardControl.SetThreatArrows(threats);
             }
             else
@@ -2268,6 +2261,32 @@ namespace ChessDroid
             int toCol = uci[2] - 'a';
             int toRow = 7 - (uci[3] - '1');
             return (fromRow, fromCol, toRow, toCol);
+        }
+
+        private List<BookMove>? FetchBookMoves(string fen)
+        {
+            if (openingBookService?.IsLoaded != true) return null;
+            var moves = openingBookService.GetBookMovesForPosition(fen);
+            if (moves == null || moves.Count == 0) return null;
+            return moves.Select(pm => new BookMove
+            {
+                UciMove = pm.UciMove,
+                Games = pm.Weight,
+                Priority = pm.Weight,
+                WinRate = 50,
+                Wins = 0,
+                Losses = 0,
+                Draws = 0,
+                Source = "Book"
+            }).ToList();
+        }
+
+        private void ShowBookInfoImmediate(string fen)
+        {
+            var bookMoves = FetchBookMoves(fen);
+            consoleFormatter?.SetBookContext(fen, bookMoves);
+            if (config?.ShowOpeningName == true || config?.ShowBookMoves == true)
+                consoleFormatter?.ShowBookContextNow(fen, bookMoves);
         }
 
         private void UpdateBookArrowsForPosition(string fen)

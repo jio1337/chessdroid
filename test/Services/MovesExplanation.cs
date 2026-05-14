@@ -147,7 +147,9 @@ namespace ChessDroid.Services
                                 trulyInDanger = lowestAttacker < movingValue;
                             }
 
-                            if (trulyInDanger)
+                            // Desperado also requires the piece to be TRAPPED — no safe square to flee to.
+                            // If it can simply retreat, Bxe7 is just a trade, not a desperado.
+                            if (trulyInDanger && !HasSafeRetreat(board, srcRank, srcFile, piece, isWhite))
                             {
                                 // Exclude: capturing the piece that was attacking us (Nxe5 when knight on e5 attacked us)
                                 bool capturingOurAttacker = ChessUtilities.CanAttackSquare(
@@ -1086,6 +1088,24 @@ namespace ChessDroid.Services
         // Delegate to ChessUtilities
         private static bool IsPieceImmediatelyRecapturable(ChessBoard board, int pieceRow, int pieceCol, char piece, bool isWhite, ChessBoard? originalBoard = null)
             => ChessUtilities.IsPieceImmediatelyRecapturable(board, pieceRow, pieceCol, piece, isWhite, originalBoard);
+
+        // Returns true if the piece on (fromRow,fromCol) can move to at least one empty square
+        // that is not attacked by the opponent — i.e. it is NOT trapped and has a safe retreat.
+        private static bool HasSafeRetreat(ChessBoard board, int fromRow, int fromCol, char piece, bool isWhite)
+        {
+            for (int r = 0; r < 8; r++)
+            {
+                for (int c = 0; c < 8; c++)
+                {
+                    if (r == fromRow && c == fromCol) continue;
+                    if (board.GetPiece(r, c) != '.') continue; // retreats only (empty squares)
+                    if (!ChessRulesService.CanReachSquare(board, fromRow, fromCol, piece, r, c)) continue;
+                    if (!ChessUtilities.IsSquareAttackedBy(board, r, c, !isWhite))
+                        return true; // found at least one safe square to flee to
+                }
+            }
+            return false;
+        }
 
         // Detect tactical patterns like forks, pins, skewers, discovered attacks
         private static string? DetectTacticalPattern(ChessBoard originalBoard, ChessBoard board, int srcRow, int srcCol, int pieceRow, int pieceCol, char piece, PieceType pieceType, bool isWhite)
@@ -3553,7 +3573,29 @@ namespace ChessDroid.Services
                                         }
 
                                         if (isSole)
-                                            return $"overloads {ChessUtilities.GetPieceName(defType)} defending {ChessUtilities.GetPieceName(wType)}";
+                                        {
+                                            // Verify the overload is exploitable: after D recaptures on V,
+                                            // can any of our pieces actually reach W?
+                                            using var pooledExploit = BoardPool.Rent(board);
+                                            ChessBoard exploitBoard = pooledExploit.Board;
+                                            exploitBoard.SetPiece(dr, dc, '.'); // D vacates its square
+                                            exploitBoard.SetPiece(vr, vc, defender); // D recaptures on V
+                                            bool exploitable = false;
+                                            for (int xr = 0; xr < 8 && !exploitable; xr++)
+                                            {
+                                                for (int xc = 0; xc < 8 && !exploitable; xc++)
+                                                {
+                                                    if (xr == destRank && xc == destFile) continue;
+                                                    char attacker = exploitBoard.GetPiece(xr, xc);
+                                                    if (attacker == '.') continue;
+                                                    if (char.IsUpper(attacker) != isWhite) continue;
+                                                    if (ChessUtilities.CanAttackSquare(exploitBoard, xr, xc, attacker, wr, wc))
+                                                        exploitable = true;
+                                                }
+                                            }
+                                            if (exploitable)
+                                                return $"overloads {ChessUtilities.GetPieceName(defType)} defending {ChessUtilities.GetPieceName(wType)}";
+                                        }
                                     }
                                 }
                             }

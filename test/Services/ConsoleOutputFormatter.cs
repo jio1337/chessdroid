@@ -16,6 +16,10 @@ namespace ChessDroid.Services
         // [See line] clickable markers: character range → PV data
         private readonly List<(int start, int length, string pvUci, string fen)> _seeLineMarkers = new();
 
+        // Book context stored before engine starts — lets live updates prepend opening/book info
+        private string? _activeBookFen;
+        private List<BookMove>? _activeBookMoves;
+
         /// <summary>
         /// Fired when user clicks a [See line] link. Parameters: (pvUci, startFen)
         /// </summary>
@@ -33,6 +37,53 @@ namespace ChessDroid.Services
             // Wire up mouse events for [See line] click detection
             richTextBox.MouseClick += RichTextBox_MouseClick;
             richTextBox.MouseMove += RichTextBox_MouseMove;
+        }
+
+        /// <summary>
+        /// Stores the book context for the current position so live depth updates can prepend it.
+        /// </summary>
+        public void SetBookContext(string? fen, List<BookMove>? bookMoves)
+        {
+            _activeBookFen = fen;
+            _activeBookMoves = bookMoves;
+        }
+
+        /// <summary>
+        /// Clears the console and immediately shows opening name + book moves for the given position.
+        /// Call this before the engine starts so the user sees book info without waiting.
+        /// </summary>
+        public void ShowBookContextNow(string fen, List<BookMove>? bookMoves)
+        {
+            _activeBookFen = fen;
+            _activeBookMoves = bookMoves;
+            Clear();
+            _seeLineMarkers.Clear();
+            AppendOpeningAndBook(fen, bookMoves);
+        }
+
+        /// <summary>
+        /// Appends opening name and book moves to the current console output (no Clear).
+        /// </summary>
+        private void AppendOpeningAndBook(string fen, List<BookMove>? bookMoves)
+        {
+            if (config?.ShowOpeningName == true)
+            {
+                string openingDisplay = OpeningBook.GetOpeningDisplay(fen);
+                if (!string.IsNullOrEmpty(openingDisplay) && openingDisplay != "Starting Position")
+                {
+                    richTextBox.SelectionColor = GetThemeColor(Color.CornflowerBlue, Color.MidnightBlue);
+                    richTextBox.AppendText($"Opening: {openingDisplay}{Environment.NewLine}");
+                    ResetFormatting();
+                }
+                else
+                {
+                    richTextBox.SelectionColor = GetThemeColor(Color.Gray, Color.DarkSlateGray);
+                    richTextBox.AppendText($"Opening: Out of book{Environment.NewLine}");
+                    ResetFormatting();
+                }
+            }
+            if (config?.ShowBookMoves == true && bookMoves != null && bookMoves.Count > 0)
+                DisplayBookMoves(bookMoves, fen);
         }
 
         private void RichTextBox_MouseClick(object? sender, MouseEventArgs e)
@@ -2059,31 +2110,7 @@ namespace ChessDroid.Services
                 DisplayWDLInfo(wdl, whiteToMoveForWdl);
             }
 
-            // Display opening name if in known theory and enabled
-            if (config?.ShowOpeningName == true)
-            {
-                string openingDisplay = OpeningBook.GetOpeningDisplay(completeFen);
-
-                if (!string.IsNullOrEmpty(openingDisplay) && openingDisplay != "Starting Position")
-                {
-                    richTextBox.SelectionColor = GetThemeColor(Color.CornflowerBlue, Color.MidnightBlue);
-                    richTextBox.AppendText($"Opening: {openingDisplay}{Environment.NewLine}");
-                    ResetFormatting();
-                }
-                else
-                {
-                    // Show "Out of book" when we're past known theory
-                    richTextBox.SelectionColor = GetThemeColor(Color.Gray, Color.DarkSlateGray);
-                    richTextBox.AppendText($"Opening: Out of book{Environment.NewLine}");
-                    ResetFormatting();
-                }
-            }
-
-            // Display book moves if available and enabled
-            if (config?.ShowBookMoves == true && bookMoves != null && bookMoves.Count > 0)
-            {
-                DisplayBookMoves(bookMoves, completeFen);
-            }
+            AppendOpeningAndBook(fen, bookMoves);
 
             // Determine if dark mode is enabled for color selection
             bool isDarkMode = config?.Theme == "Dark";
@@ -2484,6 +2511,10 @@ namespace ChessDroid.Services
             if (config?.ShowWDL == true && wdl != null)
                 DisplayWDLInfo(wdl, whiteToMove);
 
+            // Prepend opening/book info — context set before engine started
+            if (_activeBookFen != null)
+                AppendOpeningAndBook(_activeBookFen, _activeBookMoves);
+
             Color[] lineColors = isDark
                 ? new[] { Color.PaleGreen, Color.Khaki, Color.LightCoral }
                 : new[] { Color.DarkGreen, Color.SaddleBrown, Color.Maroon };
@@ -2503,6 +2534,9 @@ namespace ChessDroid.Services
                 richTextBox.AppendText(Environment.NewLine);
                 ResetFormatting();
             }
+
+            if (config?.ShowThreats == true)
+                DisplayOpponentThreats(fen);
         }
 
         /// <summary>

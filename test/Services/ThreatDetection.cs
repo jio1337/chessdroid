@@ -386,7 +386,6 @@ namespace ChessDroid.Services
 
                         if (!canEscape && !canBlock && !pawnCanMove && !kingCanDefend)
                         {
-                            // Truly hanging - can't escape and can't be blocked!
                             threats.Add(new Threat
                             {
                                 Description = $"wins {pieceName} on {square}",
@@ -1026,8 +1025,8 @@ namespace ChessDroid.Services
                     int pieceValue = ChessUtilities.GetPieceValue(pieceType);
                     if (pieceValue < 1) continue;
 
-                    // Is this piece attacked by opponent?
-                    bool isAttacked = IsSquareAttackedBy(board, r, c, opponentIsWhite);
+                    // Is this piece attacked by a non-pinned opponent piece?
+                    bool isAttacked = HasLegalAttacker(board, r, c, opponentIsWhite);
                     if (!isAttacked) continue;
 
                     // Is it defended?
@@ -1411,45 +1410,52 @@ namespace ChessDroid.Services
         #region Board Snapshot Helpers
 
         /// <summary>
-        /// Returns (attackerRow, attackerCol, targetRow, targetCol) pairs for all hanging pieces
-        /// on the current board — used to draw threat arrows.
-        /// A piece is considered hanging if it is undefended OR can be captured by a cheaper piece.
-        /// Kings are excluded.
+        /// Returns (attackerRow, attackerCol, targetRow, targetCol) pairs for threat arrows.
+        /// Arrows are derived directly from the same detection that produces the text output,
+        /// so visuals and text are always in sync — no arrow without a corresponding text threat.
         /// </summary>
-        public static List<(int fromRow, int fromCol, int toRow, int toCol)> GetThreatArrows(ChessBoard board)
+        public static List<(int fromRow, int fromCol, int toRow, int toCol)> GetThreatArrows(
+            ChessBoard board, bool weAreWhite, string enPassantSquare = "-")
         {
             var arrows = new List<(int, int, int, int)>();
 
-            for (int r = 0; r < 8; r++)
+            // Opponent threats against our pieces (mirrors "⚠ Opponent threats:" text)
+            var oppThreats = AnalyzeOpponentThreats(board, weAreWhite, enPassantSquare);
+            foreach (var threat in oppThreats)
             {
-                for (int c = 0; c < 8; c++)
-                {
-                    char piece = board.GetPiece(r, c);
-                    if (piece == '.') continue;
-                    if (char.ToLower(piece) == 'k') continue;
-
-                    bool isWhitePiece = char.IsUpper(piece);
-                    bool isAttacked = ChessUtilities.IsSquareAttackedBy(board, r, c, !isWhitePiece);
-                    if (!isAttacked) continue;
-
-                    bool isDefended = ChessUtilities.IsSquareAttackedBy(board, r, c, isWhitePiece);
-                    int pieceValue = ChessUtilities.GetPieceValue(PieceHelper.GetPieceType(piece));
-                    int lowestAttacker = ChessUtilities.GetLowestAttackerValue(board, r, c, !isWhitePiece);
-
-                    bool isHanging = !isDefended || (lowestAttacker > 0 && lowestAttacker < pieceValue);
-                    if (!isHanging) continue;
-
-                    var attackers = ChessUtilities.FindAttackers(board, r, c, !isWhitePiece);
-                    if (attackers.Count == 0) continue;
-
-                    var best = attackers
-                        .OrderBy(a => ChessUtilities.GetPieceValue(PieceHelper.GetPieceType(a.piece)))
-                        .First();
-                    arrows.Add((best.row, best.col, r, c));
-                }
+                if (threat.Type != ThreatType.HangingPiece && threat.Type != ThreatType.MaterialWin) continue;
+                AddArrowForSquare(board, threat.Square, !weAreWhite, arrows);
             }
 
+
             return arrows;
+        }
+
+        // Finds the cheapest legal (non-pinned) attacker for the given square and adds an arrow.
+        private static void AddArrowForSquare(ChessBoard board, string square,
+            bool attackerIsWhite, List<(int, int, int, int)> arrows)
+        {
+            if (square.Length < 2) return;
+            int tc = square[0] - 'a';
+            int tr = 8 - (square[1] - '0');
+            if (tr < 0 || tr > 7 || tc < 0 || tc > 7) return;
+
+            var attackers = ChessUtilities.FindAttackers(board, tr, tc, attackerIsWhite);
+            var best = attackers
+                .Where(a =>
+                {
+                    using var pooledPin = BoardPool.Rent(board);
+                    ChessBoard testPin = pooledPin.Board;
+                    testPin.SetPiece(tr, tc, a.piece);
+                    testPin.SetPiece(a.row, a.col, '.');
+                    var (kr, kc) = testPin.GetKingPosition(attackerIsWhite);
+                    return kr < 0 || !ChessUtilities.IsSquareAttackedBy(testPin, kr, kc, !attackerIsWhite);
+                })
+                .OrderBy(a => ChessUtilities.GetPieceValue(PieceHelper.GetPieceType(a.piece)))
+                .FirstOrDefault();
+
+            if (best.piece != default)
+                arrows.Add((best.row, best.col, tr, tc));
         }
 
         #endregion Board Snapshot Helpers
@@ -1460,6 +1466,24 @@ namespace ChessDroid.Services
 
         private static bool IsSquareAttackedBy(ChessBoard board, int row, int col, bool byWhite)
             => ChessUtilities.IsSquareAttackedBy(board, row, col, byWhite);
+
+        // Returns true if any non-pinned attacker of the given color can legally capture on (targetRow, targetCol).
+        // A pinned attacker is one whose king would be in check after the capture.
+        private static bool HasLegalAttacker(ChessBoard board, int targetRow, int targetCol, bool attackerIsWhite)
+        {
+            var attackers = ChessUtilities.FindAttackers(board, targetRow, targetCol, attackerIsWhite);
+            foreach (var (aRow, aCol, aPiece) in attackers)
+            {
+                using var pooledPin = BoardPool.Rent(board);
+                ChessBoard testPin = pooledPin.Board;
+                testPin.SetPiece(targetRow, targetCol, aPiece);
+                testPin.SetPiece(aRow, aCol, '.');
+                var (kr, kc) = testPin.GetKingPosition(attackerIsWhite);
+                if (kr < 0 || !ChessUtilities.IsSquareAttackedBy(testPin, kr, kc, !attackerIsWhite))
+                    return true;
+            }
+            return false;
+        }
 
         private static int GetLowestAttackerValue(ChessBoard board, int row, int col, bool attackerIsWhite)
             => ChessUtilities.GetLowestAttackerValue(board, row, col, attackerIsWhite);

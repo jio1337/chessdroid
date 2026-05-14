@@ -123,7 +123,10 @@ namespace ChessDroid
             // Board colors
             try { btnLightColor.BackColor = ColorTranslator.FromHtml(config.LightSquareColor); } catch { btnLightColor.BackColor = Color.FromArgb(240, 217, 181); }
             try { btnDarkColor.BackColor = ColorTranslator.FromHtml(config.DarkSquareColor); } catch { btnDarkColor.BackColor = Color.FromArgb(181, 136, 99); }
-            cmbColorPreset.SelectedIndex = -1;
+            int presetMatch = Array.FindIndex(ColorPresets, p =>
+                string.Equals(p.Light, config.LightSquareColor, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(p.Dark, config.DarkSquareColor, StringComparison.OrdinalIgnoreCase));
+            cmbColorPreset.SelectedIndex = presetMatch;
             chkSquareLabels.Checked = config.ShowSquareLabels;
             chkThreatArrows.Checked = config.ShowThreatArrows;
 
