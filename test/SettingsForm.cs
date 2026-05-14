@@ -129,6 +129,7 @@ namespace ChessDroid
             cmbColorPreset.SelectedIndex = presetMatch;
             chkSquareLabels.Checked = config.ShowSquareLabels;
             chkThreatArrows.Checked = config.ShowThreatArrows;
+            chkEvalGraph.Checked = config.ShowEvalGraph;
 
             // Explanation settings
             PopulateComplexityComboBox();
@@ -191,6 +192,7 @@ namespace ChessDroid
             config.DarkSquareColor = ColorTranslator.ToHtml(btnDarkColor.BackColor);
             config.ShowSquareLabels = chkSquareLabels.Checked;
             config.ShowThreatArrows = chkThreatArrows.Checked;
+            config.ShowEvalGraph = chkEvalGraph.Checked;
 
             // Save explanation settings
             config.ExplanationComplexity = cmbComplexity.SelectedItem?.ToString() ?? "Intermediate";
@@ -412,6 +414,10 @@ namespace ChessDroid
                 lblThreatArrows.BackColor = Color.FromArgb(45, 45, 48);
                 chkThreatArrows.ForeColor = Color.White;
                 chkThreatArrows.BackColor = Color.FromArgb(45, 45, 48);
+                lblEvalGraph.ForeColor = Color.White;
+                lblEvalGraph.BackColor = Color.FromArgb(45, 45, 48);
+                chkEvalGraph.ForeColor = Color.White;
+                chkEvalGraph.BackColor = Color.FromArgb(45, 45, 48);
                 // Play Style GroupBox
                 grpLc0Features.ForeColor = Color.Cyan;
                 grpLc0Features.BackColor = Color.FromArgb(45, 45, 48);
@@ -553,6 +559,10 @@ namespace ChessDroid
                 lblThreatArrows.BackColor = Color.WhiteSmoke;
                 chkThreatArrows.ForeColor = Color.Black;
                 chkThreatArrows.BackColor = Color.WhiteSmoke;
+                lblEvalGraph.ForeColor = Color.Black;
+                lblEvalGraph.BackColor = Color.WhiteSmoke;
+                chkEvalGraph.ForeColor = Color.Black;
+                chkEvalGraph.BackColor = Color.WhiteSmoke;
 
                 // Play Style GroupBox
                 grpLc0Features.ForeColor = Color.DarkCyan;

@@ -18,6 +18,9 @@ namespace ChessDroid.Models
         /// <summary>FEN before this move (parent's FEN or initial position)</summary>
         public string ParentFEN { get; set; } = "";
 
+        /// <summary>Engine evaluation after this move (pawns, White's perspective). Null until analyzed.</summary>
+        public double? Evaluation { get; set; }
+
         /// <summary>Parent node (null for root)</summary>
         public MoveNode? Parent { get; set; }
 

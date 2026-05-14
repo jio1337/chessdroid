@@ -73,6 +73,8 @@ namespace ChessDroid
             chkSquareLabels = new CheckBox();
             lblThreatArrows = new Label();
             chkThreatArrows = new CheckBox();
+            lblEvalGraph = new Label();
+            chkEvalGraph = new CheckBox();
             grpExplanations = new GroupBox();
             cmbComplexity = new ComboBox();
             lblComplexity = new Label();
@@ -456,10 +458,12 @@ namespace ChessDroid
             grpBoardColors.Controls.Add(chkSquareLabels);
             grpBoardColors.Controls.Add(lblThreatArrows);
             grpBoardColors.Controls.Add(chkThreatArrows);
+            grpBoardColors.Controls.Add(lblEvalGraph);
+            grpBoardColors.Controls.Add(chkEvalGraph);
             grpBoardColors.ForeColor = Color.White;
             grpBoardColors.Location = new Point(12, 433);
             grpBoardColors.Name = "grpBoardColors";
-            grpBoardColors.Size = new Size(298, 147);
+            grpBoardColors.Size = new Size(298, 163);
             grpBoardColors.TabIndex = 12;
             grpBoardColors.TabStop = false;
             grpBoardColors.Text = "Board Colors";
@@ -578,6 +582,25 @@ namespace ChessDroid
             chkThreatArrows.TabIndex = 10;
             toolTip1.SetToolTip(chkThreatArrows, "Show red arrows warning about opponent threats against your pieces");
             chkThreatArrows.UseVisualStyleBackColor = true;
+            //
+            // lblEvalGraph
+            //
+            lblEvalGraph.Location = new Point(10, 138);
+            lblEvalGraph.Name = "lblEvalGraph";
+            lblEvalGraph.Size = new Size(150, 19);
+            lblEvalGraph.TabIndex = 11;
+            lblEvalGraph.Text = "Eval Graph:";
+            toolTip1.SetToolTip(lblEvalGraph, "Show the evaluation graph above the analysis output");
+            //
+            // chkEvalGraph
+            //
+            chkEvalGraph.AutoSize = true;
+            chkEvalGraph.Location = new Point(166, 137);
+            chkEvalGraph.Name = "chkEvalGraph";
+            chkEvalGraph.Size = new Size(15, 14);
+            chkEvalGraph.TabIndex = 12;
+            toolTip1.SetToolTip(chkEvalGraph, "Show the evaluation graph above the analysis output");
+            chkEvalGraph.UseVisualStyleBackColor = true;
             //
             // grpExplanations
             //
@@ -951,6 +974,8 @@ namespace ChessDroid
         private System.Windows.Forms.CheckBox chkSquareLabels;
         private System.Windows.Forms.Label lblThreatArrows;
         private System.Windows.Forms.CheckBox chkThreatArrows;
+        private System.Windows.Forms.Label lblEvalGraph;
+        private System.Windows.Forms.CheckBox chkEvalGraph;
         private System.Windows.Forms.Button btnSave;
         private System.Windows.Forms.Button btnReset;
         private System.Windows.Forms.Button btnHelp;

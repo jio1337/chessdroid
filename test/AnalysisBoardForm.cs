@@ -82,6 +82,8 @@ namespace ChessDroid
         // Console font (managed here to allow proper disposal on change)
         private Font _consoleFont = new Font("Consolas", 10f);
 
+        private EvalGraphControl? _evalGraph;
+
         public AnalysisBoardForm(AppConfig config, ChessEngineService? sharedEngineService = null)
         {
             this.config = config;
@@ -89,6 +91,13 @@ namespace ChessDroid
             this.sharpnessAnalyzer = new MoveSharpnessAnalyzer();
 
             InitializeComponent();
+
+            _evalGraph = new EvalGraphControl { Dock = DockStyle.Top, Height = 65, Name = "evalGraph" };
+            _evalGraph.MoveNodeSelected += EvalGraph_MoveNodeSelected;
+            rightPanel.Controls.Add(_evalGraph);
+            // z-order: lblAnalysis(top) → evalGraph → grpEngineMatch → analysisOutput(fill)
+            rightPanel.Controls.SetChildIndex(_evalGraph, rightPanel.Controls.IndexOf(grpEngineMatch));
+
             ApplyTheme();
             boardControl.SetSquareColors(
                 ColorTranslator.FromHtml(config.LightSquareColor),
@@ -215,6 +224,8 @@ namespace ChessDroid
             // Update FEN display
             UpdateFenDisplay();
 
+            if (_evalGraph != null) _evalGraph.Visible = config?.ShowEvalGraph ?? true;
+            RefreshEvalGraph();
             ApplyConsoleFont();
         }
 
@@ -580,6 +591,7 @@ namespace ChessDroid
                     ColorTranslator.FromHtml(config.DarkSquareColor));
                 boardControl.ShowSquareLabels = config.ShowSquareLabels;
                 if (!config.ShowThreatArrows) boardControl.ClearThreatArrows();
+                if (_evalGraph != null) _evalGraph.Visible = config.ShowEvalGraph;
 
                 // Only clear cache when settings that affect analysis results change
                 if (analysisSettingsChanged)
@@ -2232,6 +2244,10 @@ namespace ChessDroid
                     boardControl.ClearEngineArrows();
             }
 
+            // Store evaluation on the move node so the eval graph can read it
+            moveTree.CurrentNode.Evaluation = MovesExplanation.ParseEvaluation(evaluation);
+            RefreshEvalGraph();
+
             // Update eval bar with the evaluation
             UpdateEvalBar(evaluation);
 
@@ -2515,18 +2531,46 @@ namespace ChessDroid
 
         private void UpdateMoveListSelection()
         {
-            // Find current node in displayed nodes
             var current = moveTree.CurrentNode;
             if (current == moveTree.Root)
             {
                 moveListBox.ClearSelected();
+                RefreshEvalGraph();
                 return;
             }
 
             int idx = displayedNodes.IndexOf(current);
             if (idx >= 0 && idx < moveListBox.Items.Count)
-            {
                 moveListBox.SelectedIndex = idx;
+
+            RefreshEvalGraph();
+        }
+
+        private void RefreshEvalGraph()
+        {
+            if (_evalGraph == null || moveTree == null) return;
+            var current = moveTree.CurrentNode == moveTree.Root ? null : moveTree.CurrentNode;
+            _evalGraph.SetData(moveTree, current, config?.Theme == "Dark");
+        }
+
+        private void EvalGraph_MoveNodeSelected(MoveNode node)
+        {
+            if (isNavigating || matchRunning) return;
+            isNavigating = true;
+            try
+            {
+                moveTree.GoToNode(node);
+                boardControl.LoadFEN(node.FEN);
+                UpdateMoveAnnotation(node);
+                UpdateFenDisplay();
+                UpdateTurnLabel();
+                UpdateMoveListSelection();
+                lblStatus.Text = $"Move {node.MoveNumber}";
+                if (!matchRunning) _ = TriggerAutoAnalysis();
+            }
+            finally
+            {
+                isNavigating = false;
             }
         }
 
@@ -3520,6 +3564,9 @@ namespace ChessDroid
                         }
                     }
 
+                    // Store eval on node so the graph has data for every move
+                    node.Evaluation = evalAfter;
+
                     // Store the result
                     var moveResult = new MoveReviewResult
                     {
@@ -3562,6 +3609,7 @@ namespace ChessDroid
 
             // Update the move list with classification symbols
             UpdateMoveListWithClassification();
+            RefreshEvalGraph();
 
             btnClassifyMoves.Enabled = true;
             lblStatus.Text = $"Classification complete - {whiteMoves + blackMoves} moves analyzed";

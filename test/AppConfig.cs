@@ -31,6 +31,7 @@ namespace ChessDroid
 
         // Visual aids
         public bool ShowThreatArrows { get; set; } = false;
+        public bool ShowEvalGraph { get; set; } = true;
 
         // Explanation settings
         public string ExplanationComplexity { get; set; } = "Intermediate"; // Beginner, Intermediate, Advanced, Master
@@ -171,6 +172,7 @@ namespace ChessDroid
             DarkSquareColor = other.DarkSquareColor;
             ShowSquareLabels = other.ShowSquareLabels;
             ShowThreatArrows = other.ShowThreatArrows;
+            ShowEvalGraph = other.ShowEvalGraph;
             ExplanationComplexity = other.ExplanationComplexity;
             ShowTacticalAnalysis = other.ShowTacticalAnalysis;
             ShowPositionalAnalysis = other.ShowPositionalAnalysis;
