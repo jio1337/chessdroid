@@ -567,7 +567,7 @@ namespace ChessDroid
             lblThreatArrows.Size = new Size(150, 19);
             lblThreatArrows.TabIndex = 9;
             lblThreatArrows.Text = "Threat Arrows:";
-            toolTip1.SetToolTip(lblThreatArrows, "Show red arrows on the board pointing to hanging or capturable pieces");
+            toolTip1.SetToolTip(lblThreatArrows, "Show red arrows warning about opponent threats against your pieces");
             //
             // chkThreatArrows
             //
@@ -576,7 +576,7 @@ namespace ChessDroid
             chkThreatArrows.Name = "chkThreatArrows";
             chkThreatArrows.Size = new Size(15, 14);
             chkThreatArrows.TabIndex = 10;
-            toolTip1.SetToolTip(chkThreatArrows, "Show red arrows pointing to hanging or capturable pieces after each analysis");
+            toolTip1.SetToolTip(chkThreatArrows, "Show red arrows warning about opponent threats against your pieces");
             chkThreatArrows.UseVisualStyleBackColor = true;
             //
             // grpExplanations

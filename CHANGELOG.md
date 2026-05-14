@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [3.8.0] - 2026-05-14
+
+### Added
+- **Threat Arrows** — Red arrows on the board pointing from the attacking piece to the threatened square after each analysis; arrows are always derived from the same detection logic as the "⚠ Opponent threats:" text, guaranteeing text and visuals stay in sync; toggleable in Settings → Board Colors → Threat Arrows
+- **Book Moves Immediate Display** — Opening name and available book moves are shown in the console before the engine starts, so you see the opening context instantly even during long searches
+- **Color Preset Pre-Selection** — SettingsForm now detects the current board colors on open and pre-selects the matching preset in the combobox (or shows blank for custom colors)
+- **Board Right-Aligned in Panel** — Board sits flush against the move list with no gap; empty space moves to the left side
+- **Minimum Window Size Enforced** — Window minimum size is set from the actual rendered size in the `Shown` event, DPI-safe and consistent across configurations
+- **Opponent Threats in Continuous Analysis** — "⚠ Opponent threats:" section now also appears during continuous analysis live depth updates, not only at final depth
+
+### Fixed
+- **Desperado False Positive** — A piece attacked by a cheaper piece is no longer mislabeled as a desperado if it has a safe retreat square; added `HasSafeRetreat` check — desperado now requires both `trulyInDanger` AND no safe retreat
+- **Overload False Positive** — Structural overload detection (defender solely covers two pieces) now also simulates the position after the exchange to verify an enemy piece can actually reach the second defended target; no label if it can't
+- **Pinned Attacker False Positive** — `HasLegalAttacker` simulates each capture and checks if the attacker's king would be exposed; pinned pieces (e.g. a pawn pinned to the king) no longer generate false threat arrows or text
+
+---
+
 ## [3.7.0] - 2026-05-11
 
 ### Added

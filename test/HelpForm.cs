@@ -68,7 +68,6 @@ Interactive chess analysis board with:
   • Auto-play through move list
   • Continuous analysis with live depth updates
   • Threat arrows (red) and engine arrows (green/yellow/red)
-  • Move sounds (configurable)
 
 ═══════════════════════════════════════════════════════════════════
 KEYBOARD SHORTCUTS
@@ -120,12 +119,11 @@ DISPLAY OPTIONS
 
 Show Best/Second/Third Line - Control how many engine PV lines show
 Engine Arrows - None / Best only / Best+2nd / All 3
-Move Sounds - Click on move, different sound for captures
 Show Eval Bar - Toggle the evaluation bar on/off
 
 Board Colors - Custom light/dark square colors + 7 presets
 Square Labels - Show square names (e4, d5...) on the board
-Threat Arrows - Red arrows pointing to hanging/capturable pieces
+Threat Arrows - Red arrows warning about opponent threats against your pieces
 
 ═══════════════════════════════════════════════════════════════════
 PLAY STYLE

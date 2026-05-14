@@ -1,4 +1,4 @@
-## ChessDroid v3.7.0 — User Guide
+## ChessDroid v3.8.0 — User Guide
 
 ### Welcome to ChessDroid!
 
@@ -367,7 +367,14 @@ Create a folder in `Templates/` with 12 PNG files (wK, wQ, wR, wB, wN, wP, bK, b
 
 ## Version History
 
-**v3.7.0** — Checkmate Detection & Auto-Play (Current)
+**v3.8.0** — Threat Arrows (Current)
+- Threat arrows (red) on the board: opponent threats against your pieces shown as visual arrows after each analysis, always matching the "⚠ Opponent threats:" text; toggle in Settings → Board Colors
+- Book moves shown immediately: opening name and book moves appear in the console before the engine starts thinking
+- Color preset combobox pre-selects your current colors when you open Settings
+- Opponent threats now also visible during continuous analysis live updates
+- Desperado, overload, and pinned attacker detection accuracy improvements
+
+**v3.7.0** — Checkmate Detection & Auto-Play
 - Checkmate threat detection: mate-in-1 scan across all pieces; shows "threatens checkmate on g2" so you always know the exact square to protect
 - Opponent mate threats visible in analysis before you move
 - "Stops checkmate threat" defense label on blocking moves (e.g. Bf3 blocking Qxg2#)
@@ -482,5 +489,5 @@ ChessDroid is released under the MIT License. Free and open-source forever!
 
 **Enjoy analyzing with ChessDroid!**
 
-*Last Updated: 2026-05-11*
-*Version: 3.7.0*
+*Last Updated: 2026-05-14*
+*Version: 3.8.0*

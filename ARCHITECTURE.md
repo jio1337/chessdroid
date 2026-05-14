@@ -2,11 +2,11 @@
 
 ## Overview
 
-ChessDroid is a pure offline chess analysis application that combines tactical pattern recognition with deep positional understanding inspired by world-class chess engines (Ethereal and Stockfish). As of v3.7.0, the application is centered around the Analysis Board — an interactive workspace for deep chess analysis with visual engine arrows, PV line exploration, free-draw annotation, bot mode, continuous analysis, annotated PGN round-trips, square highlighting, auto-play, and full board customization.
+ChessDroid is a pure offline chess analysis application that combines tactical pattern recognition with deep positional understanding inspired by world-class chess engines (Ethereal and Stockfish). As of v3.8.0, the application is centered around the Analysis Board — an interactive workspace for deep chess analysis with visual engine arrows, threat arrows, PV line exploration, free-draw annotation, bot mode, continuous analysis, annotated PGN round-trips, square highlighting, auto-play, and full board customization.
 
 ---
 
-## System Architecture (v3.7.0)
+## System Architecture (v3.8.0)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -579,7 +579,19 @@ Create a folder in `Templates/` with 12 PNG files named: wK, wQ, wR, wB, wN, wP,
 
 ## Version History
 
-**v3.7.0** — Checkmate Detection & Auto-Play (Current)
+**v3.8.0** — Threat Arrows (Current)
+- Threat arrows (red) on board: show opponent threats against your pieces; derived from same detection as "⚠ Opponent threats:" text — always in sync; `ShowThreatArrows` setting
+- Book moves immediate display: opening name + book moves shown before engine starts; `ShowBookInfoImmediate(fen)` → `ConsoleOutputFormatter.ShowBookContextNow`
+- Color preset combobox: pre-selects matching preset on SettingsForm open via `Array.FindIndex`
+- Board right-aligned in leftPanel: `groupX = panel.Width - groupWidth`; empty space left-side
+- Minimum window size = actual rendered size set in `Shown` event, DPI-safe
+- Opponent threats section added to `DisplayLiveLines` (continuous analysis live updates)
+- Desperado false positive fix: `HasSafeRetreat` added — desperado requires no safe retreat AND truly in danger
+- Overload false positive fix: exploit board simulation verifies enemy can reach second defended target after exchange
+- Pinned attacker false positive fix: `HasLegalAttacker` simulates capture + checks attacker's king exposure
+- Window title: `chessdroid v3.8.0`
+
+**v3.7.0** — Checkmate Detection & Auto-Play
 - Full mate-in-1 scan across all pieces: detects battery setups, quiet moves that threaten forced mate; displays "threatens checkmate on g2"
 - Opponent mate threat display: `AnalyzeOpponentThreats` runs same scan; "stops checkmate threat" defense label on blocking moves
 - `IsCheckmate` king-capture bug fixed: king no longer counted as non-king capturer
@@ -697,5 +709,5 @@ https://github.com/jio1337/chessdroid/issues
 
 ---
 
-**Last Updated:** 2026-05-10
+**Last Updated:** 2026-05-14
 **Document Version:** 3.7.0
