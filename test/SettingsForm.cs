@@ -126,7 +126,6 @@ namespace ChessDroid
             cmbColorPreset.SelectedIndex = -1;
             chkSquareLabels.Checked = config.ShowSquareLabels;
             chkThreatArrows.Checked = config.ShowThreatArrows;
-            chkMoveSounds.Checked = config.MoveSoundsEnabled;
 
             // Explanation settings
             PopulateComplexityComboBox();
@@ -189,7 +188,6 @@ namespace ChessDroid
             config.DarkSquareColor = ColorTranslator.ToHtml(btnDarkColor.BackColor);
             config.ShowSquareLabels = chkSquareLabels.Checked;
             config.ShowThreatArrows = chkThreatArrows.Checked;
-            config.MoveSoundsEnabled = chkMoveSounds.Checked;
 
             // Save explanation settings
             config.ExplanationComplexity = cmbComplexity.SelectedItem?.ToString() ?? "Intermediate";
@@ -411,7 +409,6 @@ namespace ChessDroid
                 lblThreatArrows.BackColor = Color.FromArgb(45, 45, 48);
                 chkThreatArrows.ForeColor = Color.White;
                 chkThreatArrows.BackColor = Color.FromArgb(45, 45, 48);
-
                 // Play Style GroupBox
                 grpLc0Features.ForeColor = Color.Cyan;
                 grpLc0Features.BackColor = Color.FromArgb(45, 45, 48);

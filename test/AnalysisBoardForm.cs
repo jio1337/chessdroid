@@ -463,15 +463,6 @@ namespace ChessDroid
             boardControl.ClearEngineArrows();
             boardControl.ClearThreatArrows();
 
-            // Move sound
-            if (config.MoveSoundsEnabled)
-            {
-                if (e.IsCapture)
-                    System.Media.SystemSounds.Exclamation.Play();
-                else
-                    System.Media.SystemSounds.Asterisk.Play();
-            }
-
             // Skip if we're navigating (not making a new move)
             if (isNavigating) return;
 
