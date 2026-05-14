@@ -2216,7 +2216,6 @@ namespace ChessDroid
                 pvs,
                 evals,
                 fen,
-                null, // No previous eval for blunder detection
                 config?.ShowBestLine ?? true,
                 config?.ShowSecondLine ?? true,
                 config?.ShowThirdLine ?? true,

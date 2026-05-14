@@ -115,39 +115,6 @@ namespace ChessDroid.Services
         }
 
         /// <summary>
-        /// Displays blunder warning with colored background and explanation
-        /// </summary>
-        public void DisplayBlunderWarning(string blunderType, double evalDrop, bool whiteBlundered, string explanation = "")
-        {
-            AppendTextWithFormat($"⚠ {blunderType}! Eval swing: {evalDrop:F2} pawns{Environment.NewLine}",
-                Color.Orange, Color.Black, FontStyle.Bold);
-
-            // Show explanation if available
-            if (!string.IsNullOrEmpty(explanation))
-            {
-                string who = whiteBlundered ? "White" : "Black";
-                richTextBox.SelectionColor = GetThemeColor(Color.OrangeRed, Color.DarkOrange);
-                richTextBox.AppendText($"{who} {explanation}{Environment.NewLine}");
-                ResetFormatting();
-            }
-            else
-            {
-                // Fallback to generic message
-                if (whiteBlundered)
-                {
-                    richTextBox.AppendText($"White just blundered and gave Black a big opportunity!{Environment.NewLine}");
-                }
-                else
-                {
-                    richTextBox.AppendText($"Black just blundered and gave White a big opportunity!{Environment.NewLine}");
-                }
-            }
-
-            ResetFormatting();
-            richTextBox.AppendText(Environment.NewLine);
-        }
-
-        /// <summary>
         /// Displays a move line with evaluation, explanation, and threats
         /// </summary>
         public void DisplayMoveLine(
@@ -1995,7 +1962,7 @@ namespace ChessDroid.Services
 
             // Sharpness indicator from the current side's perspective
             string character = GetDisplayPositionCharacter(winPercent, lossPercent, drawPercent, wdl.Sharpness);
-            Color sharpnessColor = WDLUtilities.GetSharpnessColor(wdl.Sharpness);
+            Color sharpnessColor = WDLUtilities.GetSharpnessColor(wdl.Sharpness, config?.Theme == "Dark");
             richTextBox.SelectionColor = sharpnessColor;
             richTextBox.AppendText($"({character})");
 
@@ -2058,7 +2025,7 @@ namespace ChessDroid.Services
         }
 
         /// <summary>
-        /// Displays complete analysis results including blunder detection and multiple lines
+        /// Displays complete analysis results including multiple lines
         /// </summary>
         public void DisplayAnalysisResults(
             string bestMove,
@@ -2066,7 +2033,6 @@ namespace ChessDroid.Services
             List<string> pvs,
             List<string> evaluations,
             string completeFen,
-            double? previousEvaluation,
             bool showBestLine,
             bool showSecondLine,
             bool showThirdLine,
@@ -2078,27 +2044,6 @@ namespace ChessDroid.Services
 
             Clear();
             _seeLineMarkers.Clear();
-
-            // Check for blunders
-            double? currentEval = MovesExplanation.ParseEvaluation(evaluation);
-            if (currentEval.HasValue && previousEvaluation.HasValue)
-            {
-                // Extract whose turn it is from FEN to determine who just moved
-                string[] fenParts = fen.Split(' ');
-                bool whiteToMove = fenParts.Length > 1 && fenParts[1] == "w";
-                bool whiteJustMoved = !whiteToMove;
-
-                var (isBlunder, blunderType, evalDrop, whiteBlundered) = MovesExplanation.DetectBlunder(
-                    currentEval, previousEvaluation, whiteJustMoved);
-
-                if (isBlunder)
-                {
-                    // Generate explanation for why it's a blunder
-                    string blunderExplanation = MovesExplanation.GenerateBlunderExplanation(
-                        fen, pvs, evaluation, whiteBlundered);
-                    DisplayBlunderWarning(blunderType, evalDrop, whiteBlundered, blunderExplanation);
-                }
-            }
 
             // Extract whose turn it is from FEN for WDL display
             string[] fenPartsForWdl = fen.Split(' ');
@@ -2180,7 +2125,7 @@ namespace ChessDroid.Services
             double? evalForBrilliant = MovesExplanation.ParseEvaluation(evaluation);
             if (evalForBrilliant.HasValue)
             {
-                var (isBrilliant, explanation) = IsBrilliantMove(fen, firstMove, evalForBrilliant.Value, previousEvaluation);
+                var (isBrilliant, explanation) = IsBrilliantMove(fen, firstMove, evalForBrilliant.Value, null);
                 if (isBrilliant)
                 {
                     bestMoveClassification = ("Brilliant", "!!", GetThemeColor(Color.Cyan, Color.Teal));
@@ -2344,10 +2289,10 @@ namespace ChessDroid.Services
                     // Use best line colors when it's the only line shown, orange when shown alongside other lines
                     Color headerColor = allLinesHidden
                         ? (isDarkMode ? Color.PaleGreen : Color.DarkGreen)
-                        : (isDarkMode ? Color.Orange : Color.DarkOrange);
+                        : (isDarkMode ? Color.Orange : Color.SaddleBrown);
                     Color explanationColor = allLinesHidden
                         ? (isDarkMode ? Color.LightGreen : Color.ForestGreen)
-                        : (isDarkMode ? Color.Gold : Color.Chocolate);
+                        : (isDarkMode ? Color.Gold : Color.Sienna);
 
                     DisplayMoveLine(
                         "Recommended",
@@ -2503,7 +2448,7 @@ namespace ChessDroid.Services
             // Header
             richTextBox.SelectionColor = GetThemeColor(Color.Silver, Color.DimGray);
             richTextBox.AppendText($" depth {depth}  │  {FormatEvaluation(evaluation)}  │  {side}{Environment.NewLine}");
-            richTextBox.SelectionColor = GetThemeColor(Color.FromArgb(75, 75, 75), Color.LightGray);
+            richTextBox.SelectionColor = GetThemeColor(Color.FromArgb(75, 75, 75), Color.Gray);
             richTextBox.AppendText(new string('─', 38) + Environment.NewLine);
             ResetFormatting();
 
