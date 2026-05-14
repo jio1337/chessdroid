@@ -567,6 +567,7 @@ namespace ChessDroid
             int prevMaxDepth = config.ContinuousAnalysisMaxDepth;
             bool prevPlayStyle = config.PlayStyleEnabled;
             int prevAggressiveness = config.Aggressiveness;
+            string prevTheme = config.Theme;
 
             using var settingsForm = new SettingsForm(config);
             if (settingsForm.ShowDialog() == DialogResult.OK)
@@ -585,6 +586,11 @@ namespace ChessDroid
                 }
                 InitializeServices();
                 ApplyTheme();
+                if (config.Theme != prevTheme)
+                {
+                    consoleFormatter?.Clear();
+                    _ = TriggerAutoAnalysis();
+                }
                 LeftPanel_Resize(leftPanel, EventArgs.Empty);
                 boardControl.SetSquareColors(
                     ColorTranslator.FromHtml(config.LightSquareColor),
