@@ -23,7 +23,7 @@ namespace ChessDroid
             this.config = config ?? throw new ArgumentNullException(nameof(config));
             this.onConfigChanged = onConfigChanged;
             InitializeComponent();
-            PopulateEngineDepthComboBox();
+
             PopulateColorPresets();
             LoadSettings();
         }
@@ -33,24 +33,6 @@ namespace ChessDroid
             cmbColorPreset.Items.Clear();
             foreach (var (name, _, _) in ColorPresets)
                 cmbColorPreset.Items.Add(name);
-        }
-
-        private void PopulateEngineDepthComboBox()
-        {
-            cmbEngineDepth.Items.Clear();
-            for (int i = 1; i <= 20; i++)
-            {
-                cmbEngineDepth.Items.Add(i);
-            }
-        }
-
-        private void PopulateComplexityComboBox()
-        {
-            cmbComplexity.Items.Clear();
-            cmbComplexity.Items.Add("Beginner");
-            cmbComplexity.Items.Add("Intermediate");
-            cmbComplexity.Items.Add("Advanced");
-            cmbComplexity.Items.Add("Master");
         }
 
         private void PopulateEnginesComboBox()
@@ -94,14 +76,7 @@ namespace ChessDroid
             numMoveTimeout.Value = config.MoveTimeoutMs;
 
             // Engine depth
-            if (config.EngineDepth >= 1 && config.EngineDepth <= 20)
-            {
-                cmbEngineDepth.SelectedItem = config.EngineDepth;
-            }
-            else
-            {
-                cmbEngineDepth.SelectedItem = 15; // Default
-            }
+            numEngineDepth.Value = Math.Clamp(config.EngineDepth, 1, 40);
 
             // Min analysis time
             numMinAnalysisTime.Value = config.MinAnalysisTimeMs;
@@ -129,11 +104,14 @@ namespace ChessDroid
             cmbColorPreset.SelectedIndex = presetMatch;
             chkSquareLabels.Checked = config.ShowSquareLabels;
             chkThreatArrows.Checked = config.ShowThreatArrows;
+            chkBookArrows.Checked = config.ShowBookArrows;
             chkEvalGraph.Checked = config.ShowEvalGraph;
+            chkAnimations.Checked = config.ShowAnimations;
+            numAnimationMs.Value = Math.Max(50, Math.Min(500, config.AnimationDurationMs));
+            numAnimationMs.Enabled = config.ShowAnimations;
+            chkAnimations.CheckedChanged += (s, e) => numAnimationMs.Enabled = chkAnimations.Checked;
 
             // Explanation settings
-            PopulateComplexityComboBox();
-            cmbComplexity.SelectedItem = config.ExplanationComplexity ?? "Intermediate";
             chkTactical.Checked = config.ShowTacticalAnalysis;
             chkPositional.Checked = config.ShowPositionalAnalysis;
             chkEndgame.Checked = config.ShowEndgameAnalysis;
@@ -163,19 +141,11 @@ namespace ChessDroid
 
         private void BtnSave_Click(object? sender, EventArgs e)
         {
-            // Validate Engine Depth selection
-            if (cmbEngineDepth.SelectedItem == null)
-            {
-                MessageBox.Show("Please select an Engine Depth value.",
-                    "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
             // Save engine values
             config.EngineResponseTimeoutMs = (int)numEngineTimeout.Value;
             config.MaxEngineRetries = (int)numMaxRetries.Value;
             config.MoveTimeoutMs = (int)numMoveTimeout.Value;
-            config.EngineDepth = (int)cmbEngineDepth.SelectedItem;
+            config.EngineDepth = (int)numEngineDepth.Value;
             config.MinAnalysisTimeMs = (int)numMinAnalysisTime.Value;
             config.Theme = chkDarkMode.Checked ? "Dark" : "Light";
 
@@ -192,10 +162,12 @@ namespace ChessDroid
             config.DarkSquareColor = ColorTranslator.ToHtml(btnDarkColor.BackColor);
             config.ShowSquareLabels = chkSquareLabels.Checked;
             config.ShowThreatArrows = chkThreatArrows.Checked;
+            config.ShowBookArrows = chkBookArrows.Checked;
             config.ShowEvalGraph = chkEvalGraph.Checked;
+            config.ShowAnimations = chkAnimations.Checked;
+            config.AnimationDurationMs = (int)numAnimationMs.Value;
 
             // Save explanation settings
-            config.ExplanationComplexity = cmbComplexity.SelectedItem?.ToString() ?? "Intermediate";
             config.ShowTacticalAnalysis = chkTactical.Checked;
             config.ShowPositionalAnalysis = chkPositional.Checked;
             config.ShowEndgameAnalysis = chkEndgame.Checked;
@@ -414,10 +386,22 @@ namespace ChessDroid
                 lblThreatArrows.BackColor = Color.FromArgb(45, 45, 48);
                 chkThreatArrows.ForeColor = Color.White;
                 chkThreatArrows.BackColor = Color.FromArgb(45, 45, 48);
+                lblBookArrows.ForeColor = Color.White;
+                lblBookArrows.BackColor = Color.FromArgb(45, 45, 48);
+                chkBookArrows.ForeColor = Color.White;
+                chkBookArrows.BackColor = Color.FromArgb(45, 45, 48);
                 lblEvalGraph.ForeColor = Color.White;
                 lblEvalGraph.BackColor = Color.FromArgb(45, 45, 48);
                 chkEvalGraph.ForeColor = Color.White;
                 chkEvalGraph.BackColor = Color.FromArgb(45, 45, 48);
+                lblAnimations.ForeColor = Color.White;
+                lblAnimations.BackColor = Color.FromArgb(45, 45, 48);
+                chkAnimations.ForeColor = Color.White;
+                chkAnimations.BackColor = Color.FromArgb(45, 45, 48);
+                lblAnimationSpeed.ForeColor = Color.White;
+                lblAnimationSpeed.BackColor = Color.FromArgb(45, 45, 48);
+                numAnimationMs.ForeColor = Color.White;
+                numAnimationMs.BackColor = Color.FromArgb(45, 45, 48);
                 // Play Style GroupBox
                 grpLc0Features.ForeColor = Color.Cyan;
                 grpLc0Features.BackColor = Color.FromArgb(45, 45, 48);
@@ -559,10 +543,22 @@ namespace ChessDroid
                 lblThreatArrows.BackColor = Color.WhiteSmoke;
                 chkThreatArrows.ForeColor = Color.Black;
                 chkThreatArrows.BackColor = Color.WhiteSmoke;
+                lblBookArrows.ForeColor = Color.Black;
+                lblBookArrows.BackColor = Color.WhiteSmoke;
+                chkBookArrows.ForeColor = Color.Black;
+                chkBookArrows.BackColor = Color.WhiteSmoke;
                 lblEvalGraph.ForeColor = Color.Black;
                 lblEvalGraph.BackColor = Color.WhiteSmoke;
                 chkEvalGraph.ForeColor = Color.Black;
                 chkEvalGraph.BackColor = Color.WhiteSmoke;
+                lblAnimations.ForeColor = Color.Black;
+                lblAnimations.BackColor = Color.WhiteSmoke;
+                chkAnimations.ForeColor = Color.Black;
+                chkAnimations.BackColor = Color.WhiteSmoke;
+                lblAnimationSpeed.ForeColor = Color.Black;
+                lblAnimationSpeed.BackColor = Color.WhiteSmoke;
+                numAnimationMs.ForeColor = Color.Black;
+                numAnimationMs.BackColor = Color.WhiteSmoke;
 
                 // Play Style GroupBox
                 grpLc0Features.ForeColor = Color.DarkCyan;
@@ -628,68 +624,5 @@ namespace ChessDroid
             lblAggressivenessValue.Text = $"{trkAggressiveness.Value} ({style})";
         }
 
-        private void CmbComplexity_SelectedIndexChanged(object? sender, EventArgs e)
-        {
-            string? complexity = cmbComplexity.SelectedItem?.ToString();
-
-            switch (complexity)
-            {
-                case "Beginner":
-                    // Beginner (<1200): Tactical Analysis, Opening Principles, WDL
-                    chkTactical.Checked = true;
-                    chkPositional.Checked = false;
-                    chkEndgame.Checked = false;
-                    chkOpening.Checked = true;
-
-                    chkThreats.Checked = false;
-                    chkWDL.Checked = true;
-                    chkOpeningName.Checked = true;
-                    chkMoveQuality.Checked = false;
-                    chkBookMoves.Checked = false;
-                    break;
-
-                case "Intermediate":
-                    // Intermediate (1200-1800): All tactical/positional, Move Quality, WDL
-                    chkTactical.Checked = true;
-                    chkPositional.Checked = true;
-                    chkEndgame.Checked = false;
-                    chkOpening.Checked = true;
-
-                    chkThreats.Checked = true;
-                    chkWDL.Checked = true;
-                    chkOpeningName.Checked = true;
-                    chkMoveQuality.Checked = true;
-                    chkBookMoves.Checked = true;
-                    break;
-
-                case "Advanced":
-                    // Advanced (1800-2200): All features
-                    chkTactical.Checked = true;
-                    chkPositional.Checked = true;
-                    chkEndgame.Checked = true;
-                    chkOpening.Checked = true;
-
-                    chkThreats.Checked = true;
-                    chkWDL.Checked = true;
-                    chkOpeningName.Checked = true;
-                    chkMoveQuality.Checked = true;
-                    chkBookMoves.Checked = true;
-                    break;
-
-                case "Master":
-                    // Master (2200+): All features
-                    chkTactical.Checked = true;
-                    chkPositional.Checked = true;
-                    chkEndgame.Checked = true;
-                    chkOpening.Checked = true;
-
-                    chkThreats.Checked = true;
-                    chkWDL.Checked = true;
-                    chkOpeningName.Checked = true;
-                    chkMoveQuality.Checked = true;
-                    chkBookMoves.Checked = true;
-                    break;
-            }
-        }
     }
 }

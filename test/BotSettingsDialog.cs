@@ -4,7 +4,8 @@ namespace ChessDroid
 {
     public class BotSettingsDialog : Form
     {
-        private ComboBox cmbDifficulty = null!;
+        private TrackBar trkDifficulty = null!;
+        private Label lblDifficultyValue = null!;
         private RadioButton rbPlayWhite = null!;
         private RadioButton rbPlayBlack = null!;
         private RadioButton rbFriendly = null!;
@@ -23,7 +24,7 @@ namespace ChessDroid
         private void InitializeControls()
         {
             Text = "Play vs Bot";
-            Size = new Size(280, 300);
+            Size = new Size(280, 365);
             FormBorderStyle = FormBorderStyle.FixedDialog;
             StartPosition = FormStartPosition.CenterParent;
             MaximizeBox = false;
@@ -38,22 +39,57 @@ namespace ChessDroid
                 Font = new Font("Courier New", 9F)
             };
 
-            // Difficulty combo
-            cmbDifficulty = new ComboBox
+            // Live level label (right side)
+            lblDifficultyValue = new Label
             {
-                DropDownStyle = ComboBoxStyle.DropDownList,
-                Location = new Point(95, 15),
-                Size = new Size(160, 23),
-                Font = new Font("Courier New", 9F)
+                Text = "Level 8",
+                Location = new Point(95, 18),
+                Size = new Size(160, 20),
+                Font = new Font("Courier New", 9F, FontStyle.Bold),
+                TextAlign = ContentAlignment.MiddleRight
             };
-            cmbDifficulty.Items.AddRange(new object[] { "Easy", "Medium", "Hard", "Expert", "Master" });
-            cmbDifficulty.SelectedIndex = 1; // Default: Medium
+
+            // Trackbar (1–20)
+            trkDifficulty = new TrackBar
+            {
+                Minimum = 1,
+                Maximum = 20,
+                Value = 8,
+                TickFrequency = 1,
+                LargeChange = 5,
+                SmallChange = 1,
+                Location = new Point(10, 40),
+                Size = new Size(250, 40),
+                AutoSize = false
+            };
+            trkDifficulty.Scroll += (s, e) =>
+            {
+                lblDifficultyValue.Text = $"Level {trkDifficulty.Value}";
+            };
+
+            // Range labels
+            var lblMin = new Label
+            {
+                Text = "1",
+                Location = new Point(10, 80),
+                Size = new Size(20, 16),
+                Font = new Font("Courier New", 8F),
+                TextAlign = ContentAlignment.MiddleLeft
+            };
+            var lblMax = new Label
+            {
+                Text = "20",
+                Location = new Point(240, 80),
+                Size = new Size(24, 16),
+                Font = new Font("Courier New", 8F),
+                TextAlign = ContentAlignment.MiddleRight
+            };
 
             // Color group
             var grpColor = new GroupBox
             {
                 Text = "Play as",
-                Location = new Point(15, 50),
+                Location = new Point(15, 105),
                 Size = new Size(240, 70),
                 Font = new Font("Courier New", 9F, FontStyle.Bold)
             };
@@ -82,7 +118,7 @@ namespace ChessDroid
             var grpType = new GroupBox
             {
                 Text = "Type",
-                Location = new Point(15, 130),
+                Location = new Point(15, 185),
                 Size = new Size(240, 65),
                 Font = new Font("Courier New", 9F, FontStyle.Bold)
             };
@@ -111,7 +147,7 @@ namespace ChessDroid
             btnStart = new Button
             {
                 Text = "Start",
-                Location = new Point(55, 210),
+                Location = new Point(55, 265),
                 Size = new Size(80, 35),
                 FlatStyle = FlatStyle.Flat,
                 Font = new Font("Courier New", 9F, FontStyle.Bold)
@@ -120,7 +156,7 @@ namespace ChessDroid
             {
                 Settings = new BotSettings
                 {
-                    Difficulty = (BotDifficulty)cmbDifficulty.SelectedIndex,
+                    SkillLevel = trkDifficulty.Value,
                     BotPlaysWhite = rbPlayBlack.Checked,
                     ChallengeMode = rbChallenge.Checked
                 };
@@ -132,7 +168,7 @@ namespace ChessDroid
             btnCancel = new Button
             {
                 Text = "Cancel",
-                Location = new Point(145, 210),
+                Location = new Point(145, 265),
                 Size = new Size(80, 35),
                 FlatStyle = FlatStyle.Flat,
                 Font = new Font("Courier New", 9F)
@@ -143,7 +179,11 @@ namespace ChessDroid
                 Close();
             };
 
-            Controls.AddRange(new Control[] { lblDifficulty, cmbDifficulty, grpColor, grpType, btnStart, btnCancel });
+            Controls.AddRange(new Control[]
+            {
+                lblDifficulty, lblDifficultyValue, trkDifficulty,
+                lblMin, lblMax, grpColor, grpType, btnStart, btnCancel
+            });
             AcceptButton = btnStart;
             CancelButton = btnCancel;
         }
@@ -160,12 +200,7 @@ namespace ChessDroid
                 c.ForeColor = Color.White;
                 c.BackColor = Color.FromArgb(45, 45, 48);
 
-                if (c is ComboBox cmb)
-                {
-                    cmb.BackColor = Color.FromArgb(60, 60, 65);
-                    cmb.ForeColor = Color.White;
-                }
-                else if (c is Button btn)
+                if (c is Button btn)
                 {
                     btn.BackColor = Color.FromArgb(60, 60, 65);
                     btn.ForeColor = Color.White;
@@ -180,10 +215,6 @@ namespace ChessDroid
                         gc.ForeColor = Color.White;
                         gc.BackColor = Color.FromArgb(45, 45, 48);
                     }
-                }
-                else if (c is Label lbl)
-                {
-                    lbl.ForeColor = Color.White;
                 }
             }
         }

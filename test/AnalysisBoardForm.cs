@@ -103,6 +103,7 @@ namespace ChessDroid
                 ColorTranslator.FromHtml(config.LightSquareColor),
                 ColorTranslator.FromHtml(config.DarkSquareColor));
             boardControl.ShowSquareLabels = config.ShowSquareLabels;
+            boardControl.AnimationDurationMs = config.AnimationDurationMs;
             InitializeServices();
             InitializeMatchControls();
             PopulatePiecesComboBox();
@@ -539,6 +540,7 @@ namespace ChessDroid
 
         private void BtnNewGame_Click(object? sender, EventArgs e)
         {
+            CancelClassification();
             StopAutoPlay();
             if (_botModeActive) StopBotMode();
             boardControl.ClearEngineArrows();
@@ -598,6 +600,7 @@ namespace ChessDroid
                 boardControl.ShowSquareLabels = config.ShowSquareLabels;
                 if (!config.ShowThreatArrows) boardControl.ClearThreatArrows();
                 if (_evalGraph != null) _evalGraph.Visible = config.ShowEvalGraph;
+                boardControl.AnimationDurationMs = config.AnimationDurationMs;
 
                 // Only clear cache when settings that affect analysis results change
                 if (analysisSettingsChanged)
@@ -688,6 +691,8 @@ namespace ChessDroid
                 try
                 {
                     boardControl.LoadFEN(moveTree.CurrentNode.FEN);
+                    if (config?.ShowAnimations == true && !string.IsNullOrEmpty(moveTree.CurrentNode.UciMove))
+                        boardControl.StartAnimation(moveTree.CurrentNode.UciMove);
                     UpdateMoveAnnotation(moveTree.CurrentNode);
                     UpdateFenDisplay();
                     UpdateTurnLabel();
@@ -756,6 +761,7 @@ namespace ChessDroid
             string fen = txtFen.Text.Trim();
             if (!string.IsNullOrEmpty(fen))
             {
+                CancelClassification();
                 try
                 {
                     boardControl.LoadFEN(fen);
@@ -778,6 +784,7 @@ namespace ChessDroid
 
         private void LoadFenIntoBoard(string fen)
         {
+            CancelClassification();
             try
             {
                 boardControl.LoadFEN(fen);
@@ -1277,6 +1284,7 @@ namespace ChessDroid
                 boardControl.ResetBoard();
                 startFen = boardControl.GetFEN();
             }
+            CancelClassification();
             moveTree.Clear(startFen);
             moveListBox.Items.Clear();
             displayedNodes.Clear();
@@ -1570,7 +1578,10 @@ namespace ChessDroid
             _botSettings = dialog.Settings;
 
             // Reset the board for a new game
+            CancelClassification();
             boardControl.ClearEngineArrows();
+            boardControl.ClearBookArrows();
+            _bookArrowsActive = false;
             boardControl.ResetBoard();
             moveTree.Clear(boardControl.GetFEN());
             moveListBox.Items.Clear();
@@ -1684,6 +1695,8 @@ namespace ChessDroid
                 {
                     string fenBeforeMove = moveTree.CurrentNode.FEN;
                     boardControl.MakeMove(bestMove);
+                    if (config?.ShowAnimations == true)
+                        boardControl.StartAnimation(bestMove);
 
                     string san = ConvertUciToSan(bestMove, fenBeforeMove);
                     string newFen = boardControl.GetFEN();
@@ -1765,13 +1778,15 @@ namespace ChessDroid
             }
 
             analysisOutput.AppendText($"\n{result}\n");
-            lblStatus.Text = result;
             boardControl.InteractionEnabled = false;
             btnPlayBot.Text = "vs Bot";
             btnStartMatch.Enabled = true;
 
             _botEngine?.Dispose();
             _botEngine = null;
+
+            RestoreChallengeSnapshot();
+            lblStatus.Text = result;
         }
 
         private bool IsSideInCheck(bool whiteKing)
@@ -1966,20 +1981,20 @@ namespace ChessDroid
             btnStartMatch.Enabled = true;
             boardControl.InteractionEnabled = true;
 
-            if (_challengeSnapshot != null)
-            {
-                config?.CopyFrom(_challengeSnapshot);
-                _challengeSnapshot = null;
-                ApplyConsoleFont();
-                LeftPanel_Resize(leftPanel, EventArgs.Empty);
-                evalBar?.Reset();
-                lblStatus.Text = "Bot mode stopped — analysis restored";
-                _ = TriggerAutoAnalysis();
-            }
-            else
-            {
-                lblStatus.Text = "Bot mode stopped";
-            }
+            RestoreChallengeSnapshot();
+        }
+
+        private void RestoreChallengeSnapshot()
+        {
+            if (_challengeSnapshot == null) return;
+            config?.CopyFrom(_challengeSnapshot);
+            _challengeSnapshot = null;
+            ApplyTheme();
+            ApplyConsoleFont();
+            LeftPanel_Resize(leftPanel, EventArgs.Empty);
+            evalBar?.Reset();
+            lblStatus.Text = "Bot mode stopped — analysis restored";
+            _ = TriggerAutoAnalysis();
         }
 
         private void ApplyChallengeMode()
@@ -2313,7 +2328,7 @@ namespace ChessDroid
         private void UpdateBookArrowsForPosition(string fen)
         {
             if (isNavigating) return;
-            bool inBook = config?.ShowBookMoves == true && openingBookService?.IsLoaded == true;
+            bool inBook = config?.ShowBookMoves == true && config?.ShowBookArrows == true && openingBookService?.IsLoaded == true;
             if (inBook)
             {
                 var moves = openingBookService!.GetBookMovesForPosition(fen);
@@ -3013,6 +3028,7 @@ namespace ChessDroid
                     ? fenValue
                     : "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
+                CancelClassification();
                 boardControl.LoadFEN(startFen);
                 moveTree.Clear(startFen);
                 moveListBox.Items.Clear();
@@ -3304,6 +3320,7 @@ namespace ChessDroid
 
         // Store the current classification result
         private MoveClassificationResult? _currentClassification;
+        private CancellationTokenSource? _classifyCts;
 
         private async void BtnClassifyMoves_Click(object? sender, EventArgs e)
         {
@@ -3335,8 +3352,17 @@ namespace ChessDroid
             await ClassifyMoves(mainLine);
         }
 
+        private void CancelClassification()
+        {
+            _classifyCts?.Cancel();
+        }
+
         private async Task ClassifyMoves(List<MoveNode> mainLine)
         {
+            _classifyCts?.Dispose();
+            _classifyCts = new CancellationTokenSource();
+            var ct = _classifyCts.Token;
+
             btnClassifyMoves.Enabled = false;
 
 
@@ -3364,6 +3390,8 @@ namespace ChessDroid
 
             for (int i = 0; i < mainLine.Count; i++)
             {
+                if (ct.IsCancellationRequested) break;
+
                 var node = mainLine[i];
                 lblStatus.Text = $"Classifying move {i + 1}/{mainLine.Count}: {node.SanMove}...";
                 Application.DoEvents();
@@ -3392,7 +3420,7 @@ namespace ChessDroid
                     else
                     {
                         // Run engine analysis with 3 PVs so cache is valid for position navigation
-                        var analysisResult = await engineService.GetBestMoveAsync(beforeFen, classification.EngineDepth, 3);
+                        var analysisResult = await engineService.GetBestMoveAsync(beforeFen, classification.EngineDepth, 3, ct: ct);
                         bestMove = analysisResult.bestMove ?? "";
                         rawBeforeEval = analysisResult.evaluation;
                         evalBeforeNullable = ParseEvalNullable(analysisResult.evaluation);
@@ -3434,7 +3462,7 @@ namespace ChessDroid
                     else
                     {
                         // Use 3 PVs so cache is valid for position navigation
-                        var afterResult = await engineService.GetBestMoveAsync(node.FEN, classification.EngineDepth, 3);
+                        var afterResult = await engineService.GetBestMoveAsync(node.FEN, classification.EngineDepth, 3, ct: ct);
                         rawAfterEval = afterResult.evaluation;
                         evalAfterNullable = ParseEvalNullable(afterResult.evaluation);
 
@@ -3602,10 +3630,24 @@ namespace ChessDroid
                         classification.BlackCounts[quality.Quality]++;
                     }
                 }
+                catch (OperationCanceledException)
+                {
+                    break;
+                }
                 catch (Exception ex)
                 {
                     Debug.WriteLine($"Error classifying move {i + 1}: {ex.Message}");
                 }
+            }
+
+            btnClassifyMoves.Enabled = true;
+            _classifyCts?.Dispose();
+            _classifyCts = null;
+
+            if (ct.IsCancellationRequested)
+            {
+                lblStatus.Text = "Classification cancelled";
+                return;
             }
 
             // Store final stats
@@ -3618,7 +3660,6 @@ namespace ChessDroid
             UpdateMoveListWithClassification();
             RefreshEvalGraph();
 
-            btnClassifyMoves.Enabled = true;
             lblStatus.Text = $"Classification complete - {whiteMoves + blackMoves} moves analyzed";
         }
 

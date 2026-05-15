@@ -31,11 +31,12 @@ namespace ChessDroid
 
         // Visual aids
         public bool ShowThreatArrows { get; set; } = false;
+        public bool ShowBookArrows { get; set; } = true;
         public bool ShowEvalGraph { get; set; } = true;
+        public bool ShowAnimations { get; set; } = true;
+        public int AnimationDurationMs { get; set; } = 150;
 
         // Explanation settings
-        public string ExplanationComplexity { get; set; } = "Intermediate"; // Beginner, Intermediate, Advanced, Master
-
         public bool ShowTacticalAnalysis { get; set; } = true; // Show tactical patterns
         public bool ShowPositionalAnalysis { get; set; } = true; // Show positional evaluation
         public bool ShowEndgameAnalysis { get; set; } = true; // Show endgame patterns
@@ -172,8 +173,10 @@ namespace ChessDroid
             DarkSquareColor = other.DarkSquareColor;
             ShowSquareLabels = other.ShowSquareLabels;
             ShowThreatArrows = other.ShowThreatArrows;
+            ShowBookArrows = other.ShowBookArrows;
             ShowEvalGraph = other.ShowEvalGraph;
-            ExplanationComplexity = other.ExplanationComplexity;
+            ShowAnimations = other.ShowAnimations;
+            AnimationDurationMs = other.AnimationDurationMs;
             ShowTacticalAnalysis = other.ShowTacticalAnalysis;
             ShowPositionalAnalysis = other.ShowPositionalAnalysis;
             ShowEndgameAnalysis = other.ShowEndgameAnalysis;
@@ -185,7 +188,6 @@ namespace ChessDroid
             Aggressiveness = other.Aggressiveness;
             ShowOpeningName = other.ShowOpeningName;
             ShowMoveQuality = other.ShowMoveQuality;
-
             ContinuousAnalysis = other.ContinuousAnalysis;
             ContinuousAnalysisMaxDepth = other.ContinuousAnalysisMaxDepth;
             AutoPlayInterval = other.AutoPlayInterval;

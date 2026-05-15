@@ -92,7 +92,7 @@ namespace ChessDroid.Controls
             {
                 Color lineColor = _isDarkMode ? Color.FromArgb(140, 140, 140) : Color.FromArgb(100, 100, 100);
                 using var pen = new Pen(lineColor, 1.5f);
-                g.DrawLines(pen, points.Skip(1).Take(points.Count - 2).ToArray());
+                g.DrawLines(pen, pts[1..^1]);
             }
 
             DrawCenterLine(g);

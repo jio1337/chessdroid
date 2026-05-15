@@ -75,6 +75,19 @@ namespace ChessDroid.Controls
         // Last move tracking
         private (int fromRow, int fromCol, int toRow, int toCol)? lastMove;
 
+        // Piece move animation
+        private bool _animating = false;
+        private char _animPiece = '.';
+        private int _animFromRow, _animFromCol, _animToRow, _animToCol;
+        private float _animProgress = 0f;
+        private float _animDurationMs = 150f;
+        public int AnimationDurationMs
+        {
+            get => (int)_animDurationMs;
+            set => _animDurationMs = Math.Max(50, Math.Min(500, value));
+        }
+        private readonly System.Windows.Forms.Timer _animTimer;
+
         // Move annotation badge (e.g. "!!", "?", "??")
         private string _moveAnnotationSymbol = "";
         private int _annotationRow = -1;
@@ -90,6 +103,15 @@ namespace ChessDroid.Controls
         // Cached font for fallback Unicode piece rendering (prevents GDI+ leak)
         private Font? pieceFallbackFont;
         private float lastPieceFontSize = 0f;
+
+        // Cached fonts for OnPaint — recreated only when squareSize changes
+        private Font? _labelFont;
+        private Font? _badgeFont;
+        private static readonly System.Drawing.StringFormat _badgeSf = new System.Drawing.StringFormat
+        {
+            Alignment = System.Drawing.StringAlignment.Center,
+            LineAlignment = System.Drawing.StringAlignment.Center
+        };
 
         /// <summary>
         /// When false, disables mouse interaction (for engine-vs-engine matches).
@@ -117,6 +139,9 @@ namespace ChessDroid.Controls
 
             // Load piece images
             LoadPieceImages("Lichess");
+
+            _animTimer = new System.Windows.Forms.Timer { Interval = 16 };
+            _animTimer.Tick += AnimTimer_Tick;
         }
 
         /// <summary>
@@ -298,6 +323,8 @@ namespace ChessDroid.Controls
         /// </summary>
         public void LoadFEN(string fen)
         {
+            _animating = false;
+            _animTimer?.Stop();
             try
             {
                 userArrows.Clear();
@@ -463,6 +490,61 @@ namespace ChessDroid.Controls
             return ExecuteMove(srcRow, srcCol, destRow, destCol, promotion);
         }
 
+        /// <summary>
+        /// Starts a smooth slide animation for the piece that just moved via uciMove.
+        /// Must be called AFTER the move has been applied to the board state.
+        /// </summary>
+        public void StartAnimation(string uciMove)
+        {
+            if (uciMove.Length < 4) return;
+            int fromCol = uciMove[0] - 'a';
+            int fromRow = 7 - (uciMove[1] - '1');
+            int toCol   = uciMove[2] - 'a';
+            int toRow   = 7 - (uciMove[3] - '1');
+
+            char movedPiece = board.GetPiece(toRow, toCol);
+
+            // Castling: king moves 2 squares — animate the rook sliding over instead.
+            // In real chess you move the king first then grab the rook, so the rook is
+            // what visually "travels" across the board.
+            bool isCastling = (movedPiece == 'K' || movedPiece == 'k')
+                              && fromRow == toRow
+                              && Math.Abs(fromCol - toCol) == 2;
+            if (isCastling)
+            {
+                bool kingside  = toCol > fromCol;
+                int rookFromCol = kingside ? 7 : 0;
+                int rookToCol   = kingside ? toCol - 1 : toCol + 1;
+                _animFromRow = fromRow; _animFromCol = rookFromCol;
+                _animToRow   = toRow;   _animToCol   = rookToCol;
+                _animPiece   = board.GetPiece(toRow, rookToCol);
+            }
+            else
+            {
+                if (movedPiece == '.') return;
+                _animFromRow = fromRow; _animFromCol = fromCol;
+                _animToRow   = toRow;   _animToCol   = toCol;
+                _animPiece   = movedPiece;
+            }
+
+            if (_animPiece == '.') return;
+            _animProgress = 0f;
+            _animating = true;
+            _animTimer.Start();
+        }
+
+        private void AnimTimer_Tick(object? sender, EventArgs e)
+        {
+            _animProgress += 16f / _animDurationMs;
+            if (_animProgress >= 1f)
+            {
+                _animProgress = 1f;
+                _animating = false;
+                _animTimer.Stop();
+            }
+            Invalidate();
+        }
+
         #endregion
 
         #region Painting
@@ -541,10 +623,11 @@ namespace ChessDroid.Controls
                         }
                     }
 
-                    // Draw piece (skip if being dragged)
+                    // Draw piece (skip if being dragged or is the animation's in-flight piece)
                     char piece = board.GetPiece(row, col);
                     bool isBeingDragged = isDragging && row == dragFromRow && col == dragFromCol;
-                    if (piece != '.' && !isBeingDragged)
+                    bool isInFlight = _animating && row == _animToRow && col == _animToCol;
+                    if (piece != '.' && !isBeingDragged && !isInFlight)
                     {
                         DrawPiece(g, piece, rect, squareSize);
                     }
@@ -553,6 +636,18 @@ namespace ChessDroid.Controls
 
             // Draw user arrows
             DrawArrows(g, squareSize);
+
+            // Draw the animating piece floating above the board
+            if (_animating)
+            {
+                float fx = (isFlipped ? 7 - _animFromCol : _animFromCol) * squareSize;
+                float fy = (isFlipped ? 7 - _animFromRow : _animFromRow) * squareSize;
+                float tx = (isFlipped ? 7 - _animToCol   : _animToCol)   * squareSize;
+                float ty = (isFlipped ? 7 - _animToRow   : _animToRow)   * squareSize;
+                float cx = fx + (tx - fx) * _animProgress;
+                float cy = fy + (ty - fy) * _animProgress;
+                DrawPiece(g, _animPiece, new Rectangle((int)cx, (int)cy, squareSize, squareSize), squareSize);
+            }
 
             // Draw dragged piece at cursor (on top of everything)
             if (isDragging && dragPiece != '.')
@@ -600,7 +695,11 @@ namespace ChessDroid.Controls
             if (showSquareLabels)
             {
                 float labelFontSize = Math.Max(8f, squareSize * 0.20f);
-                using var labelFont = new Font("Segoe UI", labelFontSize, FontStyle.Regular);
+                if (_labelFont == null || Math.Abs(_labelFont.Size - labelFontSize) > 0.1f)
+                {
+                    _labelFont?.Dispose();
+                    _labelFont = new Font("Segoe UI", labelFontSize, FontStyle.Regular);
+                }
                 for (int row = 0; row < 8; row++)
                 {
                     for (int col = 0; col < 8; col++)
@@ -610,11 +709,11 @@ namespace ChessDroid.Controls
                         bool isLightSq = (row + col) % 2 == 0;
                         Color baseColor = isLightSq ? darkSquareColor : lightSquareColor;
                         string squareName = $"{(char)('a' + col)}{8 - row}";
-                        SizeF textSize = g.MeasureString(squareName, labelFont);
+                        SizeF textSize = g.MeasureString(squareName, _labelFont);
                         float x = displayCol * squareSize + (squareSize - textSize.Width) / 2f;
                         float y = displayRow * squareSize + (squareSize - textSize.Height) / 2f;
                         using (SolidBrush brush = new SolidBrush(Color.FromArgb(140, baseColor)))
-                            g.DrawString(squareName, labelFont, brush, x, y);
+                            g.DrawString(squareName, _labelFont, brush, x, y);
                     }
                 }
             }
@@ -643,17 +742,14 @@ namespace ChessDroid.Controls
                     g.FillEllipse(bg, badgeX, badgeY, badgeSize, badgeSize);
 
                 float fontSize = Math.Max(6f, badgeSize * 0.42f);
-                using (Font badgeFont = new Font("Segoe UI", fontSize, FontStyle.Bold))
-                using (SolidBrush fg = new SolidBrush(Color.White))
+                if (_badgeFont == null || Math.Abs(_badgeFont.Size - fontSize) > 0.1f)
                 {
-                    var sf = new System.Drawing.StringFormat
-                    {
-                        Alignment = System.Drawing.StringAlignment.Center,
-                        LineAlignment = System.Drawing.StringAlignment.Center
-                    };
-                    g.DrawString(_moveAnnotationSymbol, badgeFont, fg,
-                        new RectangleF(badgeX, badgeY, badgeSize, badgeSize), sf);
+                    _badgeFont?.Dispose();
+                    _badgeFont = new Font("Segoe UI", fontSize, FontStyle.Bold);
                 }
+                using (SolidBrush fg = new SolidBrush(Color.White))
+                    g.DrawString(_moveAnnotationSymbol, _badgeFont, fg,
+                        new RectangleF(badgeX, badgeY, badgeSize, badgeSize), _badgeSf);
             }
         }
 
@@ -1542,6 +1638,8 @@ namespace ChessDroid.Controls
             {
                 coordFont?.Dispose();
                 pieceFallbackFont?.Dispose();
+                _labelFont?.Dispose();
+                _badgeFont?.Dispose();
                 foreach (var img in pieceImages.Values)
                 {
                     img?.Dispose();

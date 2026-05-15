@@ -2,93 +2,20 @@ namespace ChessDroid.Services
 {
     /// <summary>
     /// User Experience enhancements for move explanations
-    /// Provides color coding, formatting, complexity levels, and visual presentation
+    /// Provides color coding, formatting, and visual presentation
     /// </summary>
     public static class ExplanationFormatter
     {
-        // =============================
-        // COMPLEXITY LEVELS
-        // Different explanation depths for different skill levels
-        // =============================
-
-        public enum ComplexityLevel
-        {
-            Beginner,       // Simple, clear language (e.g., "attacks queen")
-            Intermediate,   // More detail (e.g., "creates threat on undefended queen")
-            Advanced,       // Full detail (e.g., "knight on strong outpost attacks undefended queen (SEE +6)")
-            Master          // Technical (e.g., "Nd5 exploits weak c7 square, creates dual threats on e7 queen and b6 knight")
-        }
-
-        public static ComplexityLevel CurrentLevel { get; set; } = ComplexityLevel.Intermediate;
-
         /// <summary>
         /// Load settings from AppConfig and apply them
         /// </summary>
         public static void LoadFromConfig(AppConfig config)
         {
-            // Set complexity level
-            CurrentLevel = config.ExplanationComplexity switch
-            {
-                "Beginner" => ComplexityLevel.Beginner,
-                "Intermediate" => ComplexityLevel.Intermediate,
-                "Advanced" => ComplexityLevel.Advanced,
-                "Master" => ComplexityLevel.Master,
-                _ => ComplexityLevel.Intermediate
-            };
-
-            // Set feature toggles
             Features.ShowTacticalAnalysis = config.ShowTacticalAnalysis;
             Features.ShowPositionalAnalysis = config.ShowPositionalAnalysis;
             Features.ShowEndgameAnalysis = config.ShowEndgameAnalysis;
             Features.ShowOpeningPrinciples = config.ShowOpeningPrinciples;
             Features.ShowSEEValues = false; // SEE runs internally but never displayed
-        }
-
-        /// <summary>
-        /// Simplify explanation based on complexity level
-        /// </summary>
-        public static string AdjustForComplexity(string fullExplanation, ComplexityLevel level)
-        {
-            if (string.IsNullOrEmpty(fullExplanation))
-                return fullExplanation;
-
-            switch (level)
-            {
-                case ComplexityLevel.Beginner:
-                    return SimplifyForBeginner(fullExplanation);
-
-                case ComplexityLevel.Intermediate:
-                    return SimplifyForIntermediate(fullExplanation);
-
-                case ComplexityLevel.Advanced:
-                case ComplexityLevel.Master:
-                default:
-                    return fullExplanation; // Keep all details for Advanced/Master
-            }
-        }
-
-        private static string SimplifyForBeginner(string explanation)
-        {
-            // Remove technical terms
-            return explanation
-                .Replace("singular move", "best move")
-                .Replace("only good move", "best move")
-                .Replace("knight on strong outpost", "knight in good position")
-                .Replace("creates passed pawn", "advances pawn")
-                .Replace("creates dangerous passed pawn", "dangerous pawn")
-                .Replace("opposite-colored bishops (drawish)", "bishops make it hard to win")
-                .Replace("zugzwang-prone", "careful")
-                .Replace("tablebase", "endgame theory")
-                .Replace("sharp tactical position", "complicated position")
-                .Replace("technical endgame", "careful endgame");
-        }
-
-        private static string SimplifyForIntermediate(string explanation)
-        {
-            // Keep most terms but simplify very technical ones
-            return explanation
-                .Replace("opposite-colored bishops (drawish)", "opposite-colored bishops")
-                .Replace("zugzwang-prone position", "zugzwang territory");
         }
 
         // =============================
@@ -331,9 +258,6 @@ namespace ChessDroid.Services
             Color qualityColor = GetQualityColor(quality);
             string qualitySymbol = GetQualitySymbol(quality);
 
-            // Adjust explanation for complexity level
-            string adjustedExplanation = AdjustForComplexity(explanation, CurrentLevel);
-
             // Start formatting
             richTextBox.SelectionStart = richTextBox.TextLength;
             richTextBox.SelectionLength = 0;
@@ -354,7 +278,7 @@ namespace ChessDroid.Services
             // Explanation in color
             richTextBox.SelectionFont = new Font(richTextBox.Font, FontStyle.Regular);
             richTextBox.SelectionColor = qualityColor;
-            richTextBox.AppendText(adjustedExplanation);
+            richTextBox.AppendText(explanation);
             richTextBox.AppendText(Environment.NewLine);
 
             // Reset formatting

@@ -31,7 +31,7 @@ namespace ChessDroid
             components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(SettingsForm));
             grpEngine = new GroupBox();
-            cmbEngineDepth = new ComboBox();
+            numEngineDepth = new NumericUpDown();
             numMinAnalysisTime = new NumericUpDown();
             lblMinAnalysisTime = new Label();
             chkContinuousAnalysis = new CheckBox();
@@ -73,11 +73,15 @@ namespace ChessDroid
             chkSquareLabels = new CheckBox();
             lblThreatArrows = new Label();
             chkThreatArrows = new CheckBox();
+            lblBookArrows = new Label();
+            chkBookArrows = new CheckBox();
             lblEvalGraph = new Label();
             chkEvalGraph = new CheckBox();
+            lblAnimations = new Label();
+            chkAnimations = new CheckBox();
+            lblAnimationSpeed = new Label();
+            numAnimationMs = new NumericUpDown();
             grpExplanations = new GroupBox();
-            cmbComplexity = new ComboBox();
-            lblComplexity = new Label();
             chkTactical = new CheckBox();
             chkPositional = new CheckBox();
             chkEndgame = new CheckBox();
@@ -105,8 +109,10 @@ namespace ChessDroid
             ((System.ComponentModel.ISupportInitialize)numMoveTimeout).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numMaxRetries).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numEngineTimeout).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)numEngineDepth).BeginInit();
             grpDisplay.SuspendLayout();
             grpBoardColors.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)numAnimationMs).BeginInit();
             grpExplanations.SuspendLayout();
             grpLc0Features.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)trkAggressiveness).BeginInit();
@@ -114,7 +120,7 @@ namespace ChessDroid
             // 
             // grpEngine
             // 
-            grpEngine.Controls.Add(cmbEngineDepth);
+            grpEngine.Controls.Add(numEngineDepth);
             grpEngine.Controls.Add(numMinAnalysisTime);
             grpEngine.Controls.Add(lblMinAnalysisTime);
             grpEngine.Controls.Add(chkContinuousAnalysis);
@@ -130,22 +136,23 @@ namespace ChessDroid
             grpEngine.Controls.Add(lblMaxRetries);
             grpEngine.Controls.Add(lblEngineTimeout);
             grpEngine.ForeColor = Color.White;
-            grpEngine.Location = new Point(12, 10);
+            grpEngine.Location = new Point(13, 11);
             grpEngine.Name = "grpEngine";
             grpEngine.Size = new Size(298, 230);
             grpEngine.TabIndex = 1;
             grpEngine.TabStop = false;
             grpEngine.Text = "Chess Engine";
             // 
-            // cmbEngineDepth
-            // 
-            cmbEngineDepth.DropDownStyle = ComboBoxStyle.DropDownList;
-            cmbEngineDepth.FormattingEnabled = true;
-            cmbEngineDepth.Location = new Point(182, 117);
-            cmbEngineDepth.Name = "cmbEngineDepth";
-            cmbEngineDepth.Size = new Size(100, 22);
-            cmbEngineDepth.TabIndex = 6;
-            toolTip1.SetToolTip(cmbEngineDepth, "Analysis depth (1-20). Higher = stronger but slower.");
+            // numEngineDepth
+            //
+            numEngineDepth.Location = new Point(182, 117);
+            numEngineDepth.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
+            numEngineDepth.Maximum = new decimal(new int[] { 40, 0, 0, 0 });
+            numEngineDepth.Value = new decimal(new int[] { 15, 0, 0, 0 });
+            numEngineDepth.Name = "numEngineDepth";
+            numEngineDepth.Size = new Size(100, 20);
+            numEngineDepth.TabIndex = 6;
+            toolTip1.SetToolTip(numEngineDepth, "Analysis depth (1-40). Higher = stronger but slower.");
             // 
             // numMinAnalysisTime
             // 
@@ -259,7 +266,7 @@ namespace ChessDroid
             lblEngineDepth.Size = new Size(104, 19);
             lblEngineDepth.TabIndex = 3;
             lblEngineDepth.Text = "Engine Depth:";
-            toolTip1.SetToolTip(lblEngineDepth, "Analysis depth (1-20). Higher = stronger but slower.");
+            toolTip1.SetToolTip(lblEngineDepth, "Analysis depth (1-40). Higher = stronger but slower.");
             // 
             // lblMoveTimeout
             // 
@@ -301,13 +308,15 @@ namespace ChessDroid
             grpDisplay.Controls.Add(chkShowSecond);
             grpDisplay.Controls.Add(lblSecond);
             grpDisplay.Controls.Add(chkShowBest);
+            grpDisplay.Controls.Add(lblBookArrows);
             grpDisplay.Controls.Add(lblBest);
+            grpDisplay.Controls.Add(chkBookArrows);
             grpDisplay.Controls.Add(lblConsoleFont);
             grpDisplay.Controls.Add(btnChooseFont);
             grpDisplay.ForeColor = Color.White;
-            grpDisplay.Location = new Point(12, 246);
+            grpDisplay.Location = new Point(13, 247);
             grpDisplay.Name = "grpDisplay";
-            grpDisplay.Size = new Size(298, 181);
+            grpDisplay.Size = new Size(298, 199);
             grpDisplay.TabIndex = 2;
             grpDisplay.TabStop = false;
             grpDisplay.Text = "Display Options";
@@ -353,7 +362,7 @@ namespace ChessDroid
             chkEvalBar.AutoSize = true;
             chkEvalBar.Checked = true;
             chkEvalBar.CheckState = CheckState.Checked;
-            chkEvalBar.Location = new Point(166, 130);
+            chkEvalBar.Location = new Point(166, 148);
             chkEvalBar.Name = "chkEvalBar";
             chkEvalBar.Size = new Size(15, 14);
             chkEvalBar.TabIndex = 11;
@@ -362,7 +371,7 @@ namespace ChessDroid
             // 
             // lblEvalBar
             // 
-            lblEvalBar.Location = new Point(10, 128);
+            lblEvalBar.Location = new Point(10, 146);
             lblEvalBar.Name = "lblEvalBar";
             lblEvalBar.Size = new Size(150, 19);
             lblEvalBar.TabIndex = 10;
@@ -426,7 +435,7 @@ namespace ChessDroid
             // 
             // lblConsoleFont
             // 
-            lblConsoleFont.Location = new Point(10, 150);
+            lblConsoleFont.Location = new Point(10, 168);
             lblConsoleFont.Name = "lblConsoleFont";
             lblConsoleFont.Size = new Size(104, 19);
             lblConsoleFont.TabIndex = 12;
@@ -436,7 +445,7 @@ namespace ChessDroid
             // btnChooseFont
             // 
             btnChooseFont.FlatStyle = FlatStyle.Flat;
-            btnChooseFont.Location = new Point(166, 148);
+            btnChooseFont.Location = new Point(166, 166);
             btnChooseFont.Name = "btnChooseFont";
             btnChooseFont.Size = new Size(116, 22);
             btnChooseFont.TabIndex = 13;
@@ -444,9 +453,9 @@ namespace ChessDroid
             btnChooseFont.TextAlign = ContentAlignment.MiddleLeft;
             toolTip1.SetToolTip(btnChooseFont, "Click to choose font for analysis output and move list");
             btnChooseFont.Click += BtnChooseFont_Click;
-            //
+            // 
             // grpBoardColors
-            //
+            // 
             grpBoardColors.Controls.Add(lblLightSquares);
             grpBoardColors.Controls.Add(btnLightColor);
             grpBoardColors.Controls.Add(lblDarkSquares);
@@ -460,10 +469,14 @@ namespace ChessDroid
             grpBoardColors.Controls.Add(chkThreatArrows);
             grpBoardColors.Controls.Add(lblEvalGraph);
             grpBoardColors.Controls.Add(chkEvalGraph);
+            grpBoardColors.Controls.Add(lblAnimations);
+            grpBoardColors.Controls.Add(chkAnimations);
+            grpBoardColors.Controls.Add(lblAnimationSpeed);
+            grpBoardColors.Controls.Add(numAnimationMs);
             grpBoardColors.ForeColor = Color.White;
-            grpBoardColors.Location = new Point(12, 433);
+            grpBoardColors.Location = new Point(13, 452);
             grpBoardColors.Name = "grpBoardColors";
-            grpBoardColors.Size = new Size(298, 163);
+            grpBoardColors.Size = new Size(298, 214);
             grpBoardColors.TabIndex = 12;
             grpBoardColors.TabStop = false;
             grpBoardColors.Text = "Board Colors";
@@ -511,32 +524,32 @@ namespace ChessDroid
             toolTip1.SetToolTip(btnDarkColor, "Click to choose dark square color");
             btnDarkColor.UseVisualStyleBackColor = false;
             btnDarkColor.Click += BtnDarkColor_Click;
-            //
+            // 
             // lblColorPreset
-            //
+            // 
             lblColorPreset.Location = new Point(10, 76);
             lblColorPreset.Name = "lblColorPreset";
-            lblColorPreset.Size = new Size(80, 19);
+            lblColorPreset.Size = new Size(58, 19);
             lblColorPreset.TabIndex = 4;
             lblColorPreset.Text = "Theme:";
-            //
+            // 
             // cmbColorPreset
-            //
+            // 
             cmbColorPreset.DropDownStyle = ComboBoxStyle.DropDownList;
             cmbColorPreset.FlatStyle = FlatStyle.Flat;
-            cmbColorPreset.Location = new Point(95, 73);
+            cmbColorPreset.Location = new Point(91, 73);
             cmbColorPreset.Name = "cmbColorPreset";
             cmbColorPreset.Size = new Size(130, 22);
             cmbColorPreset.TabIndex = 5;
             toolTip1.SetToolTip(cmbColorPreset, "Select a board color theme preset");
             cmbColorPreset.SelectedIndexChanged += CmbColorPreset_SelectedIndexChanged;
-            //
+            // 
             // btnResetColors
-            //
+            // 
             btnResetColors.Cursor = Cursors.Hand;
             btnResetColors.FlatAppearance.BorderColor = Color.Gray;
             btnResetColors.FlatStyle = FlatStyle.Flat;
-            btnResetColors.Location = new Point(235, 73);
+            btnResetColors.Location = new Point(227, 73);
             btnResetColors.Name = "btnResetColors";
             btnResetColors.Size = new Size(55, 22);
             btnResetColors.TabIndex = 6;
@@ -544,18 +557,18 @@ namespace ChessDroid
             toolTip1.SetToolTip(btnResetColors, "Reset board colors to default brown");
             btnResetColors.UseVisualStyleBackColor = false;
             btnResetColors.Click += BtnResetColors_Click;
-            //
+            // 
             // lblSquareLabels
-            //
-            lblSquareLabels.Location = new Point(10, 106);
+            // 
+            lblSquareLabels.Location = new Point(12, 103);
             lblSquareLabels.Name = "lblSquareLabels";
-            lblSquareLabels.Size = new Size(150, 19);
+            lblSquareLabels.Size = new Size(116, 19);
             lblSquareLabels.TabIndex = 7;
             lblSquareLabels.Text = "Square Labels:";
             toolTip1.SetToolTip(lblSquareLabels, "Show square names (e4, d5...) in the center of each square");
-            //
+            // 
             // chkSquareLabels
-            //
+            // 
             chkSquareLabels.AutoSize = true;
             chkSquareLabels.Location = new Point(166, 105);
             chkSquareLabels.Name = "chkSquareLabels";
@@ -563,49 +576,106 @@ namespace ChessDroid
             chkSquareLabels.TabIndex = 8;
             toolTip1.SetToolTip(chkSquareLabels, "Show square names (e4, d5...) in the center of each square");
             chkSquareLabels.UseVisualStyleBackColor = true;
-            //
+            // 
             // lblThreatArrows
-            //
-            lblThreatArrows.Location = new Point(10, 122);
+            // 
+            lblThreatArrows.Location = new Point(12, 122);
             lblThreatArrows.Name = "lblThreatArrows";
-            lblThreatArrows.Size = new Size(150, 19);
+            lblThreatArrows.Size = new Size(116, 19);
             lblThreatArrows.TabIndex = 9;
             lblThreatArrows.Text = "Threat Arrows:";
             toolTip1.SetToolTip(lblThreatArrows, "Show red arrows warning about opponent threats against your pieces");
-            //
+            // 
             // chkThreatArrows
-            //
+            // 
             chkThreatArrows.AutoSize = true;
-            chkThreatArrows.Location = new Point(166, 121);
+            chkThreatArrows.Location = new Point(166, 124);
             chkThreatArrows.Name = "chkThreatArrows";
             chkThreatArrows.Size = new Size(15, 14);
             chkThreatArrows.TabIndex = 10;
             toolTip1.SetToolTip(chkThreatArrows, "Show red arrows warning about opponent threats against your pieces");
             chkThreatArrows.UseVisualStyleBackColor = true;
-            //
+            // 
+            // lblBookArrows
+            // 
+            lblBookArrows.Location = new Point(11, 129);
+            lblBookArrows.Name = "lblBookArrows";
+            lblBookArrows.Size = new Size(116, 19);
+            lblBookArrows.TabIndex = 17;
+            lblBookArrows.Text = "Book Arrows:";
+            toolTip1.SetToolTip(lblBookArrows, "Show opening book move arrows on the board");
+            // 
+            // chkBookArrows
+            // 
+            chkBookArrows.AutoSize = true;
+            chkBookArrows.Location = new Point(166, 130);
+            chkBookArrows.Name = "chkBookArrows";
+            chkBookArrows.Size = new Size(15, 14);
+            chkBookArrows.TabIndex = 18;
+            toolTip1.SetToolTip(chkBookArrows, "Show opening book move arrows on the board");
+            chkBookArrows.UseVisualStyleBackColor = true;
+            // 
             // lblEvalGraph
-            //
-            lblEvalGraph.Location = new Point(10, 138);
+            // 
+            lblEvalGraph.Location = new Point(12, 142);
             lblEvalGraph.Name = "lblEvalGraph";
-            lblEvalGraph.Size = new Size(150, 19);
+            lblEvalGraph.Size = new Size(104, 19);
             lblEvalGraph.TabIndex = 11;
             lblEvalGraph.Text = "Eval Graph:";
             toolTip1.SetToolTip(lblEvalGraph, "Show the evaluation graph above the analysis output");
-            //
+            // 
             // chkEvalGraph
-            //
+            // 
             chkEvalGraph.AutoSize = true;
-            chkEvalGraph.Location = new Point(166, 137);
+            chkEvalGraph.Location = new Point(166, 144);
             chkEvalGraph.Name = "chkEvalGraph";
             chkEvalGraph.Size = new Size(15, 14);
             chkEvalGraph.TabIndex = 12;
             toolTip1.SetToolTip(chkEvalGraph, "Show the evaluation graph above the analysis output");
             chkEvalGraph.UseVisualStyleBackColor = true;
-            //
+            // 
+            // lblAnimations
+            // 
+            lblAnimations.Location = new Point(12, 162);
+            lblAnimations.Name = "lblAnimations";
+            lblAnimations.Size = new Size(86, 19);
+            lblAnimations.TabIndex = 13;
+            lblAnimations.Text = "Animations:";
+            toolTip1.SetToolTip(lblAnimations, "Enable smooth piece move animations");
+            // 
+            // chkAnimations
+            // 
+            chkAnimations.AutoSize = true;
+            chkAnimations.Location = new Point(166, 163);
+            chkAnimations.Name = "chkAnimations";
+            chkAnimations.Size = new Size(15, 14);
+            chkAnimations.TabIndex = 14;
+            toolTip1.SetToolTip(chkAnimations, "Enable smooth piece move animations");
+            chkAnimations.UseVisualStyleBackColor = true;
+            // 
+            // lblAnimationSpeed
+            // 
+            lblAnimationSpeed.Location = new Point(12, 183);
+            lblAnimationSpeed.Name = "lblAnimationSpeed";
+            lblAnimationSpeed.Size = new Size(104, 19);
+            lblAnimationSpeed.TabIndex = 15;
+            lblAnimationSpeed.Text = "Speed (ms):";
+            toolTip1.SetToolTip(lblAnimationSpeed, "Animation duration in milliseconds (50 = very fast, 500 = slow)");
+            // 
+            // numAnimationMs
+            // 
+            numAnimationMs.Increment = new decimal(new int[] { 25, 0, 0, 0 });
+            numAnimationMs.Location = new Point(166, 182);
+            numAnimationMs.Maximum = new decimal(new int[] { 500, 0, 0, 0 });
+            numAnimationMs.Minimum = new decimal(new int[] { 50, 0, 0, 0 });
+            numAnimationMs.Name = "numAnimationMs";
+            numAnimationMs.Size = new Size(60, 20);
+            numAnimationMs.TabIndex = 16;
+            toolTip1.SetToolTip(numAnimationMs, "Animation duration in milliseconds (50 = very fast, 500 = slow)");
+            numAnimationMs.Value = new decimal(new int[] { 150, 0, 0, 0 });
+            // 
             // grpExplanations
-            //
-            grpExplanations.Controls.Add(cmbComplexity);
-            grpExplanations.Controls.Add(lblComplexity);
+            // 
             grpExplanations.Controls.Add(chkTactical);
             grpExplanations.Controls.Add(chkPositional);
             grpExplanations.Controls.Add(chkEndgame);
@@ -616,32 +686,12 @@ namespace ChessDroid
             grpExplanations.Controls.Add(chkMoveQuality);
             grpExplanations.Controls.Add(chkBookMoves);
             grpExplanations.ForeColor = Color.White;
-            grpExplanations.Location = new Point(316, 10);
+            grpExplanations.Location = new Point(317, 11);
             grpExplanations.Name = "grpExplanations";
-            grpExplanations.Size = new Size(255, 278);
+            grpExplanations.Size = new Size(255, 248);
             grpExplanations.TabIndex = 3;
             grpExplanations.TabStop = false;
             grpExplanations.Text = "Explanation Settings";
-            // 
-            // cmbComplexity
-            // 
-            cmbComplexity.DropDownStyle = ComboBoxStyle.DropDownList;
-            cmbComplexity.FormattingEnabled = true;
-            cmbComplexity.Location = new Point(120, 20);
-            cmbComplexity.Name = "cmbComplexity";
-            cmbComplexity.Size = new Size(124, 22);
-            cmbComplexity.TabIndex = 0;
-            toolTip1.SetToolTip(cmbComplexity, "Explanation detail level: Beginner (simple) to Master (technical)");
-            cmbComplexity.SelectedIndexChanged += CmbComplexity_SelectedIndexChanged;
-            // 
-            // lblComplexity
-            // 
-            lblComplexity.Location = new Point(10, 23);
-            lblComplexity.Name = "lblComplexity";
-            lblComplexity.Size = new Size(110, 19);
-            lblComplexity.TabIndex = 0;
-            lblComplexity.Text = "Complexity:";
-            toolTip1.SetToolTip(lblComplexity, "Explanation detail level: Beginner (simple) to Master (technical)");
             // 
             // chkTactical
             // 
@@ -649,7 +699,7 @@ namespace ChessDroid
             chkTactical.Checked = true;
             chkTactical.CheckState = CheckState.Checked;
             chkTactical.ForeColor = Color.White;
-            chkTactical.Location = new Point(10, 51);
+            chkTactical.Location = new Point(10, 21);
             chkTactical.Name = "chkTactical";
             chkTactical.Size = new Size(145, 18);
             chkTactical.TabIndex = 1;
@@ -663,7 +713,7 @@ namespace ChessDroid
             chkPositional.Checked = true;
             chkPositional.CheckState = CheckState.Checked;
             chkPositional.ForeColor = Color.White;
-            chkPositional.Location = new Point(10, 76);
+            chkPositional.Location = new Point(10, 46);
             chkPositional.Name = "chkPositional";
             chkPositional.Size = new Size(159, 18);
             chkPositional.TabIndex = 2;
@@ -677,7 +727,7 @@ namespace ChessDroid
             chkEndgame.Checked = true;
             chkEndgame.CheckState = CheckState.Checked;
             chkEndgame.ForeColor = Color.White;
-            chkEndgame.Location = new Point(10, 101);
+            chkEndgame.Location = new Point(10, 71);
             chkEndgame.Name = "chkEndgame";
             chkEndgame.Size = new Size(138, 18);
             chkEndgame.TabIndex = 3;
@@ -691,7 +741,7 @@ namespace ChessDroid
             chkOpening.Checked = true;
             chkOpening.CheckState = CheckState.Checked;
             chkOpening.ForeColor = Color.White;
-            chkOpening.Location = new Point(10, 126);
+            chkOpening.Location = new Point(10, 96);
             chkOpening.Name = "chkOpening";
             chkOpening.Size = new Size(152, 18);
             chkOpening.TabIndex = 4;
@@ -705,7 +755,7 @@ namespace ChessDroid
             chkThreats.Checked = true;
             chkThreats.CheckState = CheckState.Checked;
             chkThreats.ForeColor = Color.White;
-            chkThreats.Location = new Point(10, 151);
+            chkThreats.Location = new Point(10, 121);
             chkThreats.Name = "chkThreats";
             chkThreats.Size = new Size(138, 18);
             chkThreats.TabIndex = 9;
@@ -719,7 +769,7 @@ namespace ChessDroid
             chkWDL.Checked = true;
             chkWDL.CheckState = CheckState.Checked;
             chkWDL.ForeColor = Color.White;
-            chkWDL.Location = new Point(10, 176);
+            chkWDL.Location = new Point(10, 146);
             chkWDL.Name = "chkWDL";
             chkWDL.Size = new Size(131, 18);
             chkWDL.TabIndex = 10;
@@ -733,7 +783,7 @@ namespace ChessDroid
             chkOpeningName.Checked = true;
             chkOpeningName.CheckState = CheckState.Checked;
             chkOpeningName.ForeColor = Color.White;
-            chkOpeningName.Location = new Point(10, 201);
+            chkOpeningName.Location = new Point(10, 171);
             chkOpeningName.Name = "chkOpeningName";
             chkOpeningName.Size = new Size(145, 18);
             chkOpeningName.TabIndex = 11;
@@ -747,7 +797,7 @@ namespace ChessDroid
             chkMoveQuality.Checked = true;
             chkMoveQuality.CheckState = CheckState.Checked;
             chkMoveQuality.ForeColor = Color.White;
-            chkMoveQuality.Location = new Point(10, 226);
+            chkMoveQuality.Location = new Point(10, 196);
             chkMoveQuality.Name = "chkMoveQuality";
             chkMoveQuality.Size = new Size(229, 18);
             chkMoveQuality.TabIndex = 12;
@@ -761,7 +811,7 @@ namespace ChessDroid
             chkBookMoves.Checked = true;
             chkBookMoves.CheckState = CheckState.Checked;
             chkBookMoves.ForeColor = Color.White;
-            chkBookMoves.Location = new Point(10, 251);
+            chkBookMoves.Location = new Point(10, 221);
             chkBookMoves.Name = "chkBookMoves";
             chkBookMoves.Size = new Size(131, 18);
             chkBookMoves.TabIndex = 13;
@@ -776,7 +826,7 @@ namespace ChessDroid
             grpLc0Features.Controls.Add(trkAggressiveness);
             grpLc0Features.Controls.Add(lblAggressivenessValue);
             grpLc0Features.ForeColor = Color.White;
-            grpLc0Features.Location = new Point(316, 298);
+            grpLc0Features.Location = new Point(317, 264);
             grpLc0Features.Name = "grpLc0Features";
             grpLc0Features.Size = new Size(255, 146);
             grpLc0Features.TabIndex = 9;
@@ -827,10 +877,11 @@ namespace ChessDroid
             // btnSave
             // 
             btnSave.FlatStyle = FlatStyle.Popup;
+            btnSave.Font = new Font("Courier New", 14.25F);
             btnSave.ForeColor = SystemColors.ControlLightLight;
-            btnSave.Location = new Point(316, 467);
+            btnSave.Location = new Point(324, 451);
             btnSave.Name = "btnSave";
-            btnSave.Size = new Size(100, 28);
+            btnSave.Size = new Size(245, 28);
             btnSave.TabIndex = 4;
             btnSave.Text = "Save && Apply";
             btnSave.UseVisualStyleBackColor = true;
@@ -839,10 +890,11 @@ namespace ChessDroid
             // btnReset
             // 
             btnReset.FlatStyle = FlatStyle.Popup;
+            btnReset.Font = new Font("Courier New", 14.25F);
             btnReset.ForeColor = SystemColors.ControlLightLight;
-            btnReset.Location = new Point(316, 501);
+            btnReset.Location = new Point(324, 485);
             btnReset.Name = "btnReset";
-            btnReset.Size = new Size(100, 28);
+            btnReset.Size = new Size(245, 28);
             btnReset.TabIndex = 5;
             btnReset.Text = "Defaults";
             btnReset.UseVisualStyleBackColor = true;
@@ -851,10 +903,11 @@ namespace ChessDroid
             // btnHelp
             // 
             btnHelp.FlatStyle = FlatStyle.Popup;
+            btnHelp.Font = new Font("Courier New", 14.25F);
             btnHelp.ForeColor = SystemColors.ControlLightLight;
-            btnHelp.Location = new Point(471, 468);
+            btnHelp.Location = new Point(324, 519);
             btnHelp.Name = "btnHelp";
-            btnHelp.Size = new Size(100, 28);
+            btnHelp.Size = new Size(245, 28);
             btnHelp.TabIndex = 6;
             btnHelp.Text = "Help";
             btnHelp.UseVisualStyleBackColor = true;
@@ -864,10 +917,11 @@ namespace ChessDroid
             // 
             btnCancel.DialogResult = DialogResult.Cancel;
             btnCancel.FlatStyle = FlatStyle.Popup;
+            btnCancel.Font = new Font("Courier New", 14.25F);
             btnCancel.ForeColor = SystemColors.ControlLightLight;
-            btnCancel.Location = new Point(472, 501);
+            btnCancel.Location = new Point(324, 638);
             btnCancel.Name = "btnCancel";
-            btnCancel.Size = new Size(100, 28);
+            btnCancel.Size = new Size(245, 28);
             btnCancel.TabIndex = 7;
             btnCancel.Text = "Cancel";
             btnCancel.UseVisualStyleBackColor = true;
@@ -878,10 +932,11 @@ namespace ChessDroid
             chkDarkMode.AutoSize = true;
             chkDarkMode.Checked = true;
             chkDarkMode.CheckState = CheckState.Checked;
+            chkDarkMode.Font = new Font("Courier New", 14.25F);
             chkDarkMode.ForeColor = Color.White;
-            chkDarkMode.Location = new Point(12, 586);
+            chkDarkMode.Location = new Point(386, 583);
             chkDarkMode.Name = "chkDarkMode";
-            chkDarkMode.Size = new Size(89, 18);
+            chkDarkMode.Size = new Size(128, 25);
             chkDarkMode.TabIndex = 8;
             chkDarkMode.Text = "Dark Mode";
             chkDarkMode.UseVisualStyleBackColor = true;
@@ -895,7 +950,7 @@ namespace ChessDroid
             AutoSizeMode = AutoSizeMode.GrowAndShrink;
             BackColor = Color.FromArgb(45, 45, 48);
             CancelButton = btnCancel;
-            ClientSize = new Size(585, 613);
+            ClientSize = new Size(585, 677);
             Controls.Add(chkDarkMode);
             Controls.Add(btnCancel);
             Controls.Add(btnHelp);
@@ -921,9 +976,12 @@ namespace ChessDroid
             ((System.ComponentModel.ISupportInitialize)numMoveTimeout).EndInit();
             ((System.ComponentModel.ISupportInitialize)numMaxRetries).EndInit();
             ((System.ComponentModel.ISupportInitialize)numEngineTimeout).EndInit();
+            ((System.ComponentModel.ISupportInitialize)numEngineDepth).EndInit();
             grpDisplay.ResumeLayout(false);
             grpDisplay.PerformLayout();
             grpBoardColors.ResumeLayout(false);
+            grpBoardColors.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)numAnimationMs).EndInit();
             grpExplanations.ResumeLayout(false);
             grpExplanations.PerformLayout();
             grpLc0Features.ResumeLayout(false);
@@ -937,7 +995,7 @@ namespace ChessDroid
         #endregion
 
         private System.Windows.Forms.GroupBox grpEngine;
-        private System.Windows.Forms.ComboBox cmbEngineDepth;
+        private System.Windows.Forms.NumericUpDown numEngineDepth;
         private System.Windows.Forms.NumericUpDown numMinAnalysisTime;
         private System.Windows.Forms.Label lblMinAnalysisTime;
         private System.Windows.Forms.NumericUpDown numMoveTimeout;
@@ -974,8 +1032,14 @@ namespace ChessDroid
         private System.Windows.Forms.CheckBox chkSquareLabels;
         private System.Windows.Forms.Label lblThreatArrows;
         private System.Windows.Forms.CheckBox chkThreatArrows;
+        private System.Windows.Forms.Label lblBookArrows;
+        private System.Windows.Forms.CheckBox chkBookArrows;
         private System.Windows.Forms.Label lblEvalGraph;
         private System.Windows.Forms.CheckBox chkEvalGraph;
+        private System.Windows.Forms.Label lblAnimations;
+        private System.Windows.Forms.CheckBox chkAnimations;
+        private System.Windows.Forms.Label lblAnimationSpeed;
+        private System.Windows.Forms.NumericUpDown numAnimationMs;
         private System.Windows.Forms.Button btnSave;
         private System.Windows.Forms.Button btnReset;
         private System.Windows.Forms.Button btnHelp;
@@ -983,8 +1047,6 @@ namespace ChessDroid
         private System.Windows.Forms.CheckBox chkDarkMode;
         private System.Windows.Forms.ToolTip toolTip1;
         private System.Windows.Forms.GroupBox grpExplanations;
-        private System.Windows.Forms.ComboBox cmbComplexity;
-        private System.Windows.Forms.Label lblComplexity;
         private System.Windows.Forms.CheckBox chkTactical;
         private System.Windows.Forms.CheckBox chkPositional;
         private System.Windows.Forms.CheckBox chkEndgame;
