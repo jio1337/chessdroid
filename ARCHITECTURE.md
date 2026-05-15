@@ -2,11 +2,11 @@
 
 ## Overview
 
-ChessDroid is a pure offline chess analysis application that combines tactical pattern recognition with deep positional understanding inspired by world-class chess engines (Ethereal and Stockfish). As of v3.8.1, the application is centered around the Analysis Board — an interactive workspace for deep chess analysis with visual engine arrows, threat arrows, PV line exploration, free-draw annotation, bot mode, continuous analysis, annotated PGN round-trips, square highlighting, auto-play, and full board customization.
+ChessDroid is a pure offline chess analysis application that combines tactical pattern recognition with deep positional understanding inspired by world-class chess engines (Ethereal and Stockfish). As of v3.9.0, the application is centered around the Analysis Board — an interactive workspace for deep chess analysis with visual engine arrows, threat arrows, eval graph, PV line exploration, piece animations, free-draw annotation, bot mode, continuous analysis, annotated PGN round-trips, square highlighting, auto-play, and full board customization.
 
 ---
 
-## System Architecture (v3.8.1)
+## System Architecture (v3.9.0)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -579,7 +579,19 @@ Create a folder in `Templates/` with 12 PNG files named: wK, wQ, wR, wB, wN, wP,
 
 ## Version History
 
-**v3.8.1** — Bug Fixes & Light Theme Polish (Current)
+**v3.9.0** — Eval Graph, Animations & QoL (Current)
+- Eval graph: `EvalGraphControl` (65px right panel), shows score history across all moves; click-to-navigate; `ShowEvalGraph` toggle
+- Piece animations: 150ms GDI+ lerp timer in `ChessBoardControl`; castling animates rook; speed configurable 50–500ms; `ShowAnimations` toggle
+- Bot difficulty: `BotDifficulty` enum removed; `BotSettings.SkillLevel` (int 1–20) is now primary; `BotSettingsDialog` uses TrackBar 1–20
+- `ShowBookArrows` independent of `ShowBookMoves` — each toggleable separately
+- Classification cancellation: `CancellationTokenSource _classifyCts` cleanly cancels mid-classification on New Game / Load FEN / Load PGN / bot start
+- Engine depth: NumericUpDown 1–40 replaces ComboBox 1–20 (Stockfish has no hard depth cap)
+- `ExplanationComplexity` system removed entirely: `ComplexityLevel` enum, `AdjustForComplexity`, `SimplifyForBeginner/Intermediate` all gone
+- `HandleBotGameEnd` now calls `RestoreChallengeSnapshot` — settings correctly restored after natural game end
+- Performance: `_labelFont` / `_badgeFont` / `_badgeSf` cached in `ChessBoardControl` (were recreated every 60fps paint)
+- Window title: `chessdroid v3.9.0`
+
+**v3.8.1** — Bug Fixes & Light Theme Polish
 - [See line] board corruption fix: `SanitizeFenForEngine()` normalizes unknown FEN piece chars before every `position fen` command; `ApplyUciMove` guard returns early on empty source square
 - Light theme readability: `GetSharpnessColor` now theme-aware (Firebrick/SaddleBrown/DimGray/SteelBlue in light mode instead of Orange/Gold/LightBlue); separator and Recommended colors darkened
 - Window title: `chessdroid v3.8.1`
@@ -715,4 +727,4 @@ https://github.com/jio1337/chessdroid/issues
 ---
 
 **Last Updated:** 2026-05-14
-**Document Version:** 3.8.1
+**Document Version:** 3.9.0

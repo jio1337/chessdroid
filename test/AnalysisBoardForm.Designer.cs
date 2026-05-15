@@ -698,7 +698,7 @@ namespace ChessDroid
             MinimumSize = new Size(1000, 600);
             Name = "AnalysisBoardForm";
             StartPosition = FormStartPosition.CenterScreen;
-            Text = "chessdroid v3.8.1";
+            Text = "chessdroid v3.9.0";
             KeyDown += AnalysisBoardForm_KeyDown;
             mainLayout.ResumeLayout(false);
             leftPanel.ResumeLayout(false);

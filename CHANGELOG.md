@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [3.9.0] - 2026-05-14
+
+### Added
+- **Eval Graph** — Score history panel (65px) on the right side of the board; shows white/black advantage as a filled area chart across all moves in the game tree; click any point to navigate to that move; toggleable via Settings → Board Colors → Eval Graph
+- **Piece Animations** — Smooth 150ms GDI+ lerp animation for every move; castling animates the rook sliding to its destination square; speed configurable 50–500ms in Settings; fully toggleable; animation speed control automatically disables when animations are unchecked
+- **Bot Difficulty Level Selector** — Play vs Bot dialog now shows a full TrackBar (1–20) instead of Easy/Medium/Hard tiers; every individual Stockfish skill level is directly selectable; move time scales smoothly by tier (400ms→3000ms)
+- **Independent Book Arrows Toggle** — Show/hide opening book arrows independently from the book moves text in the console; both `ShowBookArrows` and `ShowBookMoves` can now be toggled separately in Settings
+
+### Changed
+- **Engine Depth Range** — Settings spinner now goes from 1 to 40 (was artificially capped at 20 via ComboBox); Stockfish accepts any depth and the old cap was unnecessary
+- **Explanation Complexity Removed** — The Beginner/Intermediate/Advanced/Master explanation tier system has been removed entirely; all explanations use plain language; `ComplexityLevel` enum and `AdjustForComplexity` logic are gone
+
+### Fixed
+- **Bot Game End — Settings Lost** — After checkmate or stalemate, challenge/friendly mode settings were permanently lost because `HandleBotGameEnd` never called `RestoreChallengeSnapshot`; now correctly restores all settings at natural game end
+- **Classification Continues After New Game** — Clicking New Game / Load FEN / Load PGN / vs Bot while a game was being classified kept the engine loop running in the background until completion; classification is now cancelled immediately via `CancellationTokenSource`
+
+### Improved
+- **OnPaint Performance** — `_labelFont`, `_badgeFont`, and `_badgeSf` (StringFormat) are now cached fields in `ChessBoardControl`; previously recreated as GDI objects on every paint frame (60fps during animations)
+
+---
+
 ## [3.8.1] - 2026-05-14
 
 ### Fixed

@@ -1,4 +1,4 @@
-## ChessDroid v3.8.1 — User Guide
+## ChessDroid v3.9.0 — User Guide
 
 ### Welcome to ChessDroid!
 
@@ -50,7 +50,7 @@ Challenge a Stockfish engine directly on the Analysis Board.
 
 **Starting a game:**
 1. Click the **vs Bot** button on the Analysis Board
-2. Choose your difficulty: Easy, Medium, Hard, Expert, or Master
+2. Choose your difficulty: drag the slider to pick any level from 1 (weakest) to 20 (strongest)
 3. Pick your color (White or Black)
 4. Click Start — the board auto-flips if you play Black
 
@@ -494,4 +494,4 @@ ChessDroid is released under the MIT License. Free and open-source forever!
 **Enjoy analyzing with ChessDroid!**
 
 *Last Updated: 2026-05-14*
-*Version: 3.8.1*
+*Version: 3.9.0*

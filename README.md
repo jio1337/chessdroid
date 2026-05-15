@@ -3,7 +3,7 @@
 [![.NET](https://img.shields.io/badge/.NET-8.0-blue.svg)](https://dotnet.microsoft.com/download/dotnet/8.0)
 [![Platform](https://img.shields.io/badge/platform-Windows-lightgrey.svg)](https://www.microsoft.com/windows)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-3.8.1-brightgreen.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-3.9.0-brightgreen.svg)](CHANGELOG.md)
 
 **Offline chess analysis & training for Windows**
 
@@ -24,11 +24,13 @@ chessdroid is a desktop application built for focused chess study. Analyze posit
 - **Move Classification** — Review games with Chess.com-style quality symbols (Brilliant !!, Blunder ??, Mistake ?, Inaccuracy ?!)
 - **Move Quality Badge** — Colored symbol badge overlaid on the destination square during game navigation (teal=Brilliant, yellow=Inaccuracy, orange=Mistake, red=Blunder)
 - **Evaluation Bar** — Visual representation of position evaluation with smooth transitions
+- **Eval Graph** — Score history chart across all moves; click any point to navigate to that position
+- **Piece Animations** — Smooth animated piece movement; castling animates the rook; configurable speed
 - **FEN Support** — Load any position via FEN string or start from the standard position
 
 ### Engine Matches & Bot Mode
 - **Engine vs Engine** — Watch engines battle head-to-head on the analysis board
-- **Play vs Bot** — Challenge Stockfish at configurable difficulty (Easy → Master). Board auto-flips for Black, analysis keeps running, take back undoes both moves
+- **Play vs Bot** — Challenge Stockfish at any skill level (1–20). Board auto-flips for Black, analysis keeps running, take back undoes both moves
 - **Configurable Time Controls** — Fixed Depth, Time per Move, or Classical time controls
 - **Start from Any Position** — Set up openings manually and have engines continue from there
 - **Live Clock Display** — Real-time clock with active side highlighting
@@ -56,8 +58,7 @@ chessdroid is a desktop application built for focused chess study. Analyze posit
 ### Customization
 - **Dark/Light Themes** — Fully-featured dark mode with automatic theme persistence
 - **Custom Board Colors** — Full RGB color picker for light and dark squares; colors persist across sessions
-- **Complexity Levels** — Choose from Beginner, Intermediate, Advanced, or Master explanations
-- **Feature Toggles** — Customize analysis display (Tactical, Positional, Endgame, Opening, Win%, WDL, Engine Arrows, etc.)
+- **Feature Toggles** — Customize analysis display (Tactical, Positional, Endgame, Opening, Win%, WDL, Engine Arrows, Eval Graph, Animations, etc.)
 - **Multiple Piece Sets** — Switch between Chess.com, Lichess, or custom piece templates
 
 ## Requirements
