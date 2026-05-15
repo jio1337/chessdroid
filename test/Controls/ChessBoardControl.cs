@@ -29,7 +29,7 @@ namespace ChessDroid.Controls
         // Selection state
         private int selectedRow = -1;
         private int selectedCol = -1;
-        private List<(int row, int col)> legalMoveSquares = new List<(int, int)>();
+        private HashSet<(int row, int col)> legalMoveSquares = new HashSet<(int, int)>();
 
         // Drag state
         private bool isDragging = false;
@@ -112,6 +112,10 @@ namespace ChessDroid.Controls
             Alignment = System.Drawing.StringAlignment.Center,
             LineAlignment = System.Drawing.StringAlignment.Center
         };
+
+        // Cached GDI+ objects for OnPaint — reused every frame, color updated before each use
+        private readonly SolidBrush _paintBrush = new SolidBrush(Color.Black);
+        private readonly Pen _legalMovePen = new Pen(Color.Black, 3);
 
         /// <summary>
         /// When false, disables mouse interaction (for engine-vs-engine matches).
@@ -596,10 +600,8 @@ namespace ChessDroid.Controls
                         squareColor = BlendColors(squareColor, selectedSquareColor);
 
                     // Draw square
-                    using (SolidBrush brush = new SolidBrush(squareColor))
-                    {
-                        g.FillRectangle(brush, rect);
-                    }
+                    _paintBrush.Color = squareColor;
+                    g.FillRectangle(_paintBrush, rect);
 
                     // Draw legal move indicators
                     if (legalMoveSquares.Contains((row, col)))
@@ -608,22 +610,18 @@ namespace ChessDroid.Controls
                         if (pieceAtTarget != '.')
                         {
                             // Capture - draw ring
-                            using (Pen pen = new Pen(legalMoveColor, 3))
-                            {
-                                int margin = squareSize / 10;
-                                g.DrawEllipse(pen, rect.X + margin, rect.Y + margin,
-                                    rect.Width - 2 * margin, rect.Height - 2 * margin);
-                            }
+                            _legalMovePen.Color = legalMoveColor;
+                            int margin = squareSize / 10;
+                            g.DrawEllipse(_legalMovePen, rect.X + margin, rect.Y + margin,
+                                rect.Width - 2 * margin, rect.Height - 2 * margin);
                         }
                         else
                         {
                             // Empty square - draw dot
-                            using (SolidBrush brush = new SolidBrush(legalMoveColor))
-                            {
-                                int dotSize = squareSize / 4;
-                                int offset = (squareSize - dotSize) / 2;
-                                g.FillEllipse(brush, rect.X + offset, rect.Y + offset, dotSize, dotSize);
-                            }
+                            _paintBrush.Color = legalMoveColor;
+                            int dotSize = squareSize / 4;
+                            int offset = (squareSize - dotSize) / 2;
+                            g.FillEllipse(_paintBrush, rect.X + offset, rect.Y + offset, dotSize, dotSize);
                         }
                     }
 
@@ -680,19 +678,15 @@ namespace ChessDroid.Controls
                 int fileIndex = isFlipped ? 7 - i : i;
                 string file = ((char)('a' + fileIndex)).ToString();
                 bool isLight = isFlipped ? fileIndex % 2 == 0 : (7 + fileIndex) % 2 == 0;
-                using (SolidBrush brush = new SolidBrush(isLight ? darkSquareColor : lightSquareColor))
-                {
-                    g.DrawString(file, coordFont, brush, i * squareSize + 2, 8 * squareSize - coordFont.Height - 2);
-                }
+                _paintBrush.Color = isLight ? darkSquareColor : lightSquareColor;
+                g.DrawString(file, coordFont, _paintBrush, i * squareSize + 2, 8 * squareSize - coordFont.Height - 2);
 
                 // Rank numbers (1-8)
                 int rankIndex = isFlipped ? i : 7 - i;
                 string rank = (rankIndex + 1).ToString();
                 isLight = (i) % 2 == 0;
-                using (SolidBrush brush = new SolidBrush(isLight ? darkSquareColor : lightSquareColor))
-                {
-                    g.DrawString(rank, coordFont, brush, 2, i * squareSize + 2);
-                }
+                _paintBrush.Color = isLight ? darkSquareColor : lightSquareColor;
+                g.DrawString(rank, coordFont, _paintBrush, 2, i * squareSize + 2);
             }
 
             // Draw square name labels if enabled (e.g. "e4", "d5")
@@ -716,8 +710,8 @@ namespace ChessDroid.Controls
                         SizeF textSize = g.MeasureString(squareName, _labelFont);
                         float x = displayCol * squareSize + (squareSize - textSize.Width) / 2f;
                         float y = displayRow * squareSize + (squareSize - textSize.Height) / 2f;
-                        using (SolidBrush brush = new SolidBrush(Color.FromArgb(140, baseColor)))
-                            g.DrawString(squareName, _labelFont, brush, x, y);
+                        _paintBrush.Color = Color.FromArgb(140, baseColor);
+                        g.DrawString(squareName, _labelFont, _paintBrush, x, y);
                     }
                 }
             }
@@ -742,8 +736,8 @@ namespace ChessDroid.Controls
                 int badgeX = (displayCol + 1) * squareSize - badgeSize - 2;
                 int badgeY = displayRow * squareSize + 2;
 
-                using (SolidBrush bg = new SolidBrush(badgeColor))
-                    g.FillEllipse(bg, badgeX, badgeY, badgeSize, badgeSize);
+                _paintBrush.Color = badgeColor;
+                g.FillEllipse(_paintBrush, badgeX, badgeY, badgeSize, badgeSize);
 
                 float fontSize = Math.Max(6f, badgeSize * 0.42f);
                 if (_badgeFont == null || Math.Abs(_badgeFont.Size - fontSize) > 0.1f)
@@ -751,9 +745,9 @@ namespace ChessDroid.Controls
                     _badgeFont?.Dispose();
                     _badgeFont = new Font("Segoe UI", fontSize, FontStyle.Bold);
                 }
-                using (SolidBrush fg = new SolidBrush(Color.White))
-                    g.DrawString(_moveAnnotationSymbol, _badgeFont, fg,
-                        new RectangleF(badgeX, badgeY, badgeSize, badgeSize), _badgeSf);
+                _paintBrush.Color = Color.White;
+                g.DrawString(_moveAnnotationSymbol, _badgeFont, _paintBrush,
+                    new RectangleF(badgeX, badgeY, badgeSize, badgeSize), _badgeSf);
             }
         }
 
@@ -1165,9 +1159,9 @@ namespace ChessDroid.Controls
             Invalidate();
         }
 
-        private List<(int row, int col)> GetLegalMovesForPiece(int row, int col)
+        private HashSet<(int row, int col)> GetLegalMovesForPiece(int row, int col)
         {
-            var moves = new List<(int row, int col)>();
+            var moves = new HashSet<(int row, int col)>();
             char piece = board.GetPiece(row, col);
 
             if (piece == '.') return moves;
@@ -1644,6 +1638,8 @@ namespace ChessDroid.Controls
                 pieceFallbackFont?.Dispose();
                 _labelFont?.Dispose();
                 _badgeFont?.Dispose();
+                _paintBrush.Dispose();
+                _legalMovePen.Dispose();
                 foreach (var img in pieceImages.Values)
                 {
                     img?.Dispose();
