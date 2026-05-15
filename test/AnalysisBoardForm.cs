@@ -22,7 +22,7 @@ namespace ChessDroid
         private static readonly Regex PgnContinuationRegex = new(@"[0-9]+\.\.\.", RegexOptions.Compiled);
         private static readonly Regex PgnMoveNumberRegex = new(@"^\d+\.?$", RegexOptions.Compiled);
         private static readonly Regex PgnAttachedMoveRegex = new(@"^\d+\.(.+)$", RegexOptions.Compiled);
-        private static readonly Regex PgnEvalCommentRegex = new(@"\[([+\-]?\d+\.?\d*)\]", RegexOptions.Compiled);
+        private static readonly Regex PgnEvalCommentRegex = new(@"\[([+\-]?\d+[.,]?\d*)\]", RegexOptions.Compiled);
 
         /// <summary>
         /// Cached engine analysis result for a position.
@@ -104,6 +104,7 @@ namespace ChessDroid
                 ColorTranslator.FromHtml(config.LightSquareColor),
                 ColorTranslator.FromHtml(config.DarkSquareColor));
             boardControl.ShowSquareLabels = config.ShowSquareLabels;
+            boardControl.ShowLastMoveHighlight = config.ShowLastMoveHighlight;
             boardControl.AnimationDurationMs = config.AnimationDurationMs;
             InitializeServices();
             InitializeMatchControls();
@@ -599,6 +600,7 @@ namespace ChessDroid
                     ColorTranslator.FromHtml(config.LightSquareColor),
                     ColorTranslator.FromHtml(config.DarkSquareColor));
                 boardControl.ShowSquareLabels = config.ShowSquareLabels;
+                boardControl.ShowLastMoveHighlight = config.ShowLastMoveHighlight;
                 if (!config.ShowThreatArrows) boardControl.ClearThreatArrows();
                 if (_evalGraph != null) _evalGraph.Visible = config.ShowEvalGraph;
                 boardControl.AnimationDurationMs = config.AnimationDurationMs;
@@ -641,6 +643,7 @@ namespace ChessDroid
 
             // Load the position we landed on
             boardControl.LoadFEN(moveTree.CurrentNode.FEN);
+            SetLastMoveHighlight();
             UpdateMoveList();
             UpdateFenDisplay();
             UpdateTurnLabel();
@@ -658,6 +661,7 @@ namespace ChessDroid
                 try
                 {
                     boardControl.LoadFEN(moveTree.CurrentNode.FEN);
+                    SetLastMoveHighlight();
                     UpdateMoveAnnotation(moveTree.CurrentNode);
                     UpdateFenDisplay();
                     UpdateTurnLabel();
@@ -692,6 +696,7 @@ namespace ChessDroid
                 try
                 {
                     boardControl.LoadFEN(moveTree.CurrentNode.FEN);
+                    SetLastMoveHighlight();
                     if (config?.ShowAnimations == true && !string.IsNullOrEmpty(moveTree.CurrentNode.UciMove))
                         boardControl.StartAnimation(moveTree.CurrentNode.UciMove);
                     UpdateMoveAnnotation(moveTree.CurrentNode);
@@ -1011,6 +1016,7 @@ namespace ChessDroid
                     var node = displayedNodes[selected];
                     moveTree.GoToNode(node);
                     boardControl.LoadFEN(node.FEN);
+                    SetLastMoveHighlight();
                     UpdateMoveAnnotation(node);
                     UpdateFenDisplay();
                     UpdateTurnLabel();
@@ -1072,6 +1078,18 @@ namespace ChessDroid
             return base.ProcessCmdKey(ref msg, keyData);
         }
 
+        private void SetLastMoveHighlight()
+        {
+            if (!config.ShowLastMoveHighlight) { boardControl.LastMove = null; return; }
+            var node = moveTree.CurrentNode;
+            if (string.IsNullOrEmpty(node.UciMove) || node.UciMove.Length < 4) { boardControl.LastMove = null; return; }
+            int fromCol = node.UciMove[0] - 'a';
+            int fromRow = 7 - (node.UciMove[1] - '1');
+            int toCol   = node.UciMove[2] - 'a';
+            int toRow   = 7 - (node.UciMove[3] - '1');
+            boardControl.LastMove = (fromRow, fromCol, toRow, toCol);
+        }
+
         private void NavigateToStart()
         {
             if (_autoPlaying) StopAutoPlay();
@@ -1080,6 +1098,7 @@ namespace ChessDroid
             {
                 moveTree.GoToStart();
                 boardControl.LoadFEN(moveTree.CurrentNode.FEN);
+                SetLastMoveHighlight();
                 boardControl.ClearMoveAnnotation();
                 UpdateFenDisplay();
                 UpdateTurnLabel();
@@ -1106,6 +1125,7 @@ namespace ChessDroid
             {
                 moveTree.GoToEnd();
                 boardControl.LoadFEN(moveTree.CurrentNode.FEN);
+                SetLastMoveHighlight();
                 UpdateMoveAnnotation(moveTree.CurrentNode);
                 UpdateFenDisplay();
                 UpdateTurnLabel();
@@ -1142,6 +1162,7 @@ namespace ChessDroid
                 {
                     moveTree.GoToNode(target);
                     boardControl.LoadFEN(target.FEN);
+                    SetLastMoveHighlight();
                     UpdateMoveAnnotation(target);
                     UpdateFenDisplay();
                     UpdateTurnLabel();
@@ -3131,6 +3152,7 @@ namespace ChessDroid
                     {
                         string symbol = !string.IsNullOrEmpty(nag) ? GetSymbolForNag(nag) : "";
                         double? evalAfter = !string.IsNullOrEmpty(comment) ? ParseEvalFromComment(comment) : null;
+                        if (evalAfter.HasValue) node.Evaluation = evalAfter.Value;
                         var quality = !string.IsNullOrEmpty(symbol)
                             ? GetQualityForSymbol(symbol)
                             : !string.IsNullOrEmpty(comment)
@@ -3194,7 +3216,9 @@ namespace ChessDroid
 
                 moveTree.GoToStart();
                 boardControl.LoadFEN(moveTree.CurrentNode.FEN);
+                SetLastMoveHighlight();
                 UpdateMoveListSelection();
+                RefreshEvalGraph();
             }
             catch (Exception ex)
             {
@@ -3894,8 +3918,7 @@ namespace ChessDroid
 
         private static string BuildPgnComment(MoveReviewResult result)
         {
-            string sign = result.EvalAfter >= 0 ? "+" : "-";
-            string eval = $"[{sign}{Math.Abs(result.EvalAfter):F2}]";
+            string eval = $"[{result.EvalAfter.ToString("+0.00;-0.00", System.Globalization.CultureInfo.InvariantCulture)}]";
             string label = result.Quality switch
             {
                 MoveQualityAnalyzer.MoveQuality.Brilliant => "Brilliant",
@@ -3916,7 +3939,7 @@ namespace ChessDroid
         {
             var m = PgnEvalCommentRegex.Match(comment);
             if (!m.Success) return null;
-            return double.TryParse(m.Groups[1].Value,
+            return double.TryParse(m.Groups[1].Value.Replace(',', '.'),
                 System.Globalization.NumberStyles.Float,
                 System.Globalization.CultureInfo.InvariantCulture, out double v) ? v : (double?)null;
         }

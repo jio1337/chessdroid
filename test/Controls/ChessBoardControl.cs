@@ -124,6 +124,8 @@ namespace ChessDroid.Controls
         public event EventHandler? BoardChanged;
         public event EventHandler? AnimationCompleted;
 
+        public bool ShowLastMoveHighlight { get; set; } = true;
+
         private const string STARTING_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
         public ChessBoardControl()
@@ -577,7 +579,7 @@ namespace ChessDroid.Controls
                     Color squareColor = isLightSquare ? lightSquareColor : darkSquareColor;
 
                     // Highlight last move
-                    if (lastMove.HasValue)
+                    if (lastMove.HasValue && ShowLastMoveHighlight)
                     {
                         if (row == lastMove.Value.fromRow && col == lastMove.Value.fromCol)
                             squareColor = BlendColors(squareColor, lastMoveFromColor);

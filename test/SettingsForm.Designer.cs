@@ -73,6 +73,8 @@ namespace ChessDroid
             chkSquareLabels = new CheckBox();
             lblThreatArrows = new Label();
             chkThreatArrows = new CheckBox();
+            lblLastMoveHighlight = new Label();
+            chkLastMoveHighlight = new CheckBox();
             lblBookArrows = new Label();
             chkBookArrows = new CheckBox();
             lblEvalGraph = new Label();
@@ -467,6 +469,8 @@ namespace ChessDroid
             grpBoardColors.Controls.Add(chkSquareLabels);
             grpBoardColors.Controls.Add(lblThreatArrows);
             grpBoardColors.Controls.Add(chkThreatArrows);
+            grpBoardColors.Controls.Add(lblLastMoveHighlight);
+            grpBoardColors.Controls.Add(chkLastMoveHighlight);
             grpBoardColors.Controls.Add(lblEvalGraph);
             grpBoardColors.Controls.Add(chkEvalGraph);
             grpBoardColors.Controls.Add(lblAnimations);
@@ -476,7 +480,7 @@ namespace ChessDroid
             grpBoardColors.ForeColor = Color.White;
             grpBoardColors.Location = new Point(13, 452);
             grpBoardColors.Name = "grpBoardColors";
-            grpBoardColors.Size = new Size(298, 214);
+            grpBoardColors.Size = new Size(298, 233);
             grpBoardColors.TabIndex = 12;
             grpBoardColors.TabStop = false;
             grpBoardColors.Text = "Board Colors";
@@ -614,58 +618,77 @@ namespace ChessDroid
             chkBookArrows.TabIndex = 18;
             toolTip1.SetToolTip(chkBookArrows, "Show opening book move arrows on the board");
             chkBookArrows.UseVisualStyleBackColor = true;
-            // 
+            //
+            // lblLastMoveHighlight
+            //
+            lblLastMoveHighlight.Location = new Point(12, 141);
+            lblLastMoveHighlight.Name = "lblLastMoveHighlight";
+            lblLastMoveHighlight.Size = new Size(116, 19);
+            lblLastMoveHighlight.TabIndex = 19;
+            lblLastMoveHighlight.Text = "Move Highlight:";
+            toolTip1.SetToolTip(lblLastMoveHighlight, "Highlight the last move's from/to squares on the board");
+            //
+            // chkLastMoveHighlight
+            //
+            chkLastMoveHighlight.AutoSize = true;
+            chkLastMoveHighlight.Location = new Point(166, 143);
+            chkLastMoveHighlight.Name = "chkLastMoveHighlight";
+            chkLastMoveHighlight.Size = new Size(15, 14);
+            chkLastMoveHighlight.TabIndex = 20;
+            toolTip1.SetToolTip(chkLastMoveHighlight, "Highlight the last move's from/to squares on the board");
+            chkLastMoveHighlight.UseVisualStyleBackColor = true;
+            //
             // lblEvalGraph
-            // 
-            lblEvalGraph.Location = new Point(12, 142);
+            //
+            lblEvalGraph.Location = new Point(12, 161);
             lblEvalGraph.Name = "lblEvalGraph";
             lblEvalGraph.Size = new Size(104, 19);
             lblEvalGraph.TabIndex = 11;
             lblEvalGraph.Text = "Eval Graph:";
             toolTip1.SetToolTip(lblEvalGraph, "Show the evaluation graph above the analysis output");
-            // 
+            //
             // chkEvalGraph
-            // 
+            //
             chkEvalGraph.AutoSize = true;
-            chkEvalGraph.Location = new Point(166, 144);
+            chkEvalGraph.Location = new Point(166, 163);
             chkEvalGraph.Name = "chkEvalGraph";
             chkEvalGraph.Size = new Size(15, 14);
             chkEvalGraph.TabIndex = 12;
             toolTip1.SetToolTip(chkEvalGraph, "Show the evaluation graph above the analysis output");
             chkEvalGraph.UseVisualStyleBackColor = true;
-            // 
+            //
             // lblAnimations
-            // 
-            lblAnimations.Location = new Point(12, 162);
+            //
+            lblAnimations.Location = new Point(12, 181);
             lblAnimations.Name = "lblAnimations";
             lblAnimations.Size = new Size(86, 19);
             lblAnimations.TabIndex = 13;
             lblAnimations.Text = "Animations:";
             toolTip1.SetToolTip(lblAnimations, "Enable smooth piece move animations");
-            // 
+            //
             // chkAnimations
-            // 
+            //
             chkAnimations.AutoSize = true;
-            chkAnimations.Location = new Point(166, 163);
+            chkAnimations.Location = new Point(166, 182);
             chkAnimations.Name = "chkAnimations";
             chkAnimations.Size = new Size(15, 14);
             chkAnimations.TabIndex = 14;
             toolTip1.SetToolTip(chkAnimations, "Enable smooth piece move animations");
             chkAnimations.UseVisualStyleBackColor = true;
-            // 
+            //
             // lblAnimationSpeed
-            // 
-            lblAnimationSpeed.Location = new Point(12, 183);
+            //
+            lblAnimationSpeed.Location = new Point(12, 202);
             lblAnimationSpeed.Name = "lblAnimationSpeed";
             lblAnimationSpeed.Size = new Size(104, 19);
             lblAnimationSpeed.TabIndex = 15;
             lblAnimationSpeed.Text = "Speed (ms):";
             toolTip1.SetToolTip(lblAnimationSpeed, "Animation duration in milliseconds (50 = very fast, 500 = slow)");
-            // 
+            //
             // numAnimationMs
-            // 
+            //
             numAnimationMs.Increment = new decimal(new int[] { 25, 0, 0, 0 });
-            numAnimationMs.Location = new Point(166, 182);
+            numAnimationMs.Location = new Point(166, 201);
             numAnimationMs.Maximum = new decimal(new int[] { 500, 0, 0, 0 });
             numAnimationMs.Minimum = new decimal(new int[] { 50, 0, 0, 0 });
             numAnimationMs.Name = "numAnimationMs";
@@ -950,7 +973,7 @@ namespace ChessDroid
             AutoSizeMode = AutoSizeMode.GrowAndShrink;
             BackColor = Color.FromArgb(45, 45, 48);
             CancelButton = btnCancel;
-            ClientSize = new Size(585, 677);
+            ClientSize = new Size(585, 696);
             Controls.Add(chkDarkMode);
             Controls.Add(btnCancel);
             Controls.Add(btnHelp);
@@ -1032,6 +1055,8 @@ namespace ChessDroid
         private System.Windows.Forms.CheckBox chkSquareLabels;
         private System.Windows.Forms.Label lblThreatArrows;
         private System.Windows.Forms.CheckBox chkThreatArrows;
+        private System.Windows.Forms.Label lblLastMoveHighlight;
+        private System.Windows.Forms.CheckBox chkLastMoveHighlight;
         private System.Windows.Forms.Label lblBookArrows;
         private System.Windows.Forms.CheckBox chkBookArrows;
         private System.Windows.Forms.Label lblEvalGraph;

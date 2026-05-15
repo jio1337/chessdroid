@@ -104,6 +104,7 @@ namespace ChessDroid
             cmbColorPreset.SelectedIndex = presetMatch;
             chkSquareLabels.Checked = config.ShowSquareLabels;
             chkThreatArrows.Checked = config.ShowThreatArrows;
+            chkLastMoveHighlight.Checked = config.ShowLastMoveHighlight;
             chkBookArrows.Checked = config.ShowBookArrows;
             chkEvalGraph.Checked = config.ShowEvalGraph;
             chkAnimations.Checked = config.ShowAnimations;
@@ -162,6 +163,7 @@ namespace ChessDroid
             config.DarkSquareColor = ColorTranslator.ToHtml(btnDarkColor.BackColor);
             config.ShowSquareLabels = chkSquareLabels.Checked;
             config.ShowThreatArrows = chkThreatArrows.Checked;
+            config.ShowLastMoveHighlight = chkLastMoveHighlight.Checked;
             config.ShowBookArrows = chkBookArrows.Checked;
             config.ShowEvalGraph = chkEvalGraph.Checked;
             config.ShowAnimations = chkAnimations.Checked;
@@ -386,6 +388,10 @@ namespace ChessDroid
                 lblThreatArrows.BackColor = Color.FromArgb(45, 45, 48);
                 chkThreatArrows.ForeColor = Color.White;
                 chkThreatArrows.BackColor = Color.FromArgb(45, 45, 48);
+                lblLastMoveHighlight.ForeColor = Color.White;
+                lblLastMoveHighlight.BackColor = Color.FromArgb(45, 45, 48);
+                chkLastMoveHighlight.ForeColor = Color.White;
+                chkLastMoveHighlight.BackColor = Color.FromArgb(45, 45, 48);
                 lblBookArrows.ForeColor = Color.White;
                 lblBookArrows.BackColor = Color.FromArgb(45, 45, 48);
                 chkBookArrows.ForeColor = Color.White;
@@ -543,6 +549,10 @@ namespace ChessDroid
                 lblThreatArrows.BackColor = Color.WhiteSmoke;
                 chkThreatArrows.ForeColor = Color.Black;
                 chkThreatArrows.BackColor = Color.WhiteSmoke;
+                lblLastMoveHighlight.ForeColor = Color.Black;
+                lblLastMoveHighlight.BackColor = Color.WhiteSmoke;
+                chkLastMoveHighlight.ForeColor = Color.Black;
+                chkLastMoveHighlight.BackColor = Color.WhiteSmoke;
                 lblBookArrows.ForeColor = Color.Black;
                 lblBookArrows.BackColor = Color.WhiteSmoke;
                 chkBookArrows.ForeColor = Color.Black;
