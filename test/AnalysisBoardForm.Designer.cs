@@ -35,6 +35,8 @@ namespace ChessDroid
             leftPanel = new Panel();
             evalBar = new EvalBarControl();
             boardControl = new ChessBoardControl();
+            _materialTop = new MaterialStripControl();
+            _materialBottom = new MaterialStripControl();
             lblTurn = new Label();
             lblPieces = new Label();
             cmbPieces = new ComboBox();
@@ -118,6 +120,8 @@ namespace ChessDroid
             // 
             leftPanel.Controls.Add(evalBar);
             leftPanel.Controls.Add(boardControl);
+            leftPanel.Controls.Add(_materialTop);
+            leftPanel.Controls.Add(_materialBottom);
             leftPanel.Controls.Add(lblTurn);
             leftPanel.Controls.Add(lblPieces);
             leftPanel.Controls.Add(cmbPieces);
@@ -158,9 +162,23 @@ namespace ChessDroid
             boardControl.TabIndex = 0;
             boardControl.MoveMade += BoardControl_MoveMade;
             boardControl.BoardChanged += BoardControl_BoardChanged;
-            // 
+            //
+            // _materialTop
+            //
+            _materialTop.Location = new Point(38, 10);
+            _materialTop.Name = "_materialTop";
+            _materialTop.Size = new Size(480, 22);
+            _materialTop.TabIndex = 32;
+            //
+            // _materialBottom
+            //
+            _materialBottom.Location = new Point(38, 490);
+            _materialBottom.Name = "_materialBottom";
+            _materialBottom.Size = new Size(480, 22);
+            _materialBottom.TabIndex = 33;
+            //
             // lblTurn
-            // 
+            //
             lblTurn.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
             lblTurn.Location = new Point(10, 500);
             lblTurn.Name = "lblTurn";
@@ -727,6 +745,8 @@ namespace ChessDroid
         // Left panel - Board and controls
         private EvalBarControl evalBar;
         private ChessBoardControl boardControl;
+        private MaterialStripControl _materialTop;
+        private MaterialStripControl _materialBottom;
         private Label lblTurn;
         private Label lblPieces;
         private ComboBox cmbPieces;

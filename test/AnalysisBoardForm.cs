@@ -224,6 +224,11 @@ namespace ChessDroid
             btnStopMatch.BackColor = scheme.StopMatchButtonBackColor;
             btnStopMatch.ForeColor = Color.White;
 
+            // Material strips text color
+            Color stripTextColor = isDarkMode ? Color.FromArgb(200, 200, 200) : Color.FromArgb(70, 70, 70);
+            _materialTop?.SetTextColor(stripTextColor);
+            _materialBottom?.SetTextColor(stripTextColor);
+
             // Update FEN display
             UpdateFenDisplay();
 
@@ -306,6 +311,8 @@ namespace ChessDroid
                 if (!string.IsNullOrEmpty(templateToUse))
                 {
                     boardControl.SetTemplateSet(templateToUse);
+                    _materialTop?.SetTemplateSet(templateToUse);
+                    _materialBottom?.SetTemplateSet(templateToUse);
                 }
             }
             catch (Exception ex)
@@ -320,6 +327,8 @@ namespace ChessDroid
             if (!string.IsNullOrEmpty(selectedTemplate))
             {
                 boardControl.SetTemplateSet(selectedTemplate);
+                _materialTop?.SetTemplateSet(selectedTemplate);
+                _materialBottom?.SetTemplateSet(selectedTemplate);
 
                 // Remember the selection for next time
                 if (config != null && config.SelectedSite != selectedTemplate)
@@ -368,7 +377,8 @@ namespace ChessDroid
         private void LeftPanel_Resize(object? sender, EventArgs e)
         {
             // Guard against resize during initialization
-            if (boardControl == null || lblTurn == null || btnNewGame == null || lblPieces == null || cmbPieces == null || btnEditPosition == null)
+            if (boardControl == null || lblTurn == null || btnNewGame == null || lblPieces == null || cmbPieces == null || btnEditPosition == null
+                || _materialTop == null || _materialBottom == null)
                 return;
 
             if (sender is Panel panel)
@@ -382,8 +392,10 @@ namespace ChessDroid
 
                 // Calculate the largest square that fits in the available space
                 // Leave room for eval bar on the left and controls below (about 110 pixels)
+                // and two 22px material strips (one above, one below the board)
+                const int STRIP_H = 22;
                 int availableWidth = panel.Width - 20 - evalBarTotal; // 10px padding each side + eval bar
-                int availableHeight = panel.Height - 110; // Room for controls below
+                int availableHeight = panel.Height - 110 - 2 * STRIP_H; // Room for controls below + strips
 
                 int boardSize = Math.Min(availableWidth, availableHeight);
                 boardSize = Math.Max(boardSize, 300); // Minimum size
@@ -396,13 +408,19 @@ namespace ChessDroid
                 // Position board first, then match eval bar to its exact height
                 int boardX = groupX + evalBarTotal;
                 boardControl.Size = new Size(boardSize, boardSize);
-                boardControl.Location = new Point(boardX, 5);
+                boardControl.Location = new Point(boardX, 5 + STRIP_H);
 
                 evalBar.Location = new Point(groupX, boardControl.Top);
                 evalBar.Size = new Size(evalBarWidth, boardControl.Height);
 
+                // Material strips: above and below the board
+                _materialTop.Location = new Point(boardX, 5);
+                _materialTop.Size = new Size(boardSize, STRIP_H);
+                _materialBottom.Location = new Point(boardX, boardControl.Bottom);
+                _materialBottom.Size = new Size(boardSize, STRIP_H);
+
                 // Reposition controls below the board (aligned with board, not eval bar)
-                int controlsY = boardControl.Bottom + 5;
+                int controlsY = boardControl.Bottom + STRIP_H + 5;
 
                 lblTurn.Location = new Point(boardX, controlsY);
 
@@ -501,6 +519,7 @@ namespace ChessDroid
             finally { isNavigating = false; }
             UpdateFenDisplay();
             UpdateTurnLabel();
+            UpdateMaterialStrips();
 
             // Auto-analyze if enabled (skip in bot mode — analysis runs after bot responds)
             if (!matchRunning && !_botModeActive)
@@ -538,6 +557,7 @@ namespace ChessDroid
         {
             UpdateFenDisplay();
             UpdateTurnLabel();
+            UpdateMaterialStrips();
         }
 
         private void BtnNewGame_Click(object? sender, EventArgs e)
@@ -617,6 +637,7 @@ namespace ChessDroid
         private void BtnFlipBoard_Click(object? sender, EventArgs e)
         {
             boardControl.FlipBoard();
+            UpdateMaterialStrips();
         }
 
         private void BtnTakeBack_Click(object? sender, EventArgs e)
@@ -1088,6 +1109,60 @@ namespace ChessDroid
             int toCol   = node.UciMove[2] - 'a';
             int toRow   = 7 - (node.UciMove[3] - '1');
             boardControl.LastMove = (fromRow, fromCol, toRow, toCol);
+            UpdateMaterialStrips();
+        }
+
+        private void UpdateMaterialStrips()
+        {
+            if (_materialTop == null || _materialBottom == null) return;
+
+            string fen = boardControl.GetFEN();
+            string placement = fen.Contains(' ') ? fen[..fen.IndexOf(' ')] : fen;
+
+            // Count pieces currently on the board
+            var counts = new Dictionary<char, int>();
+            foreach (char c in placement)
+                if (char.IsLetter(c)) counts[c] = counts.GetValueOrDefault(c) + 1;
+
+            static int PieceVal(char p) => char.ToLower(p) switch { 'q' => 9, 'r' => 5, 'b' => 3, 'n' => 3, 'p' => 1, _ => 0 };
+
+            // Black pieces captured by white (lowercase chars)
+            var whiteCaptured = new List<char>();
+            foreach (var (p, start) in new (char, int)[] { ('p', 8), ('n', 2), ('b', 2), ('r', 2), ('q', 1) })
+            {
+                int gone = Math.Max(0, start - counts.GetValueOrDefault(p, 0));
+                for (int i = 0; i < gone; i++) whiteCaptured.Add(p);
+            }
+
+            // White pieces captured by black (uppercase chars)
+            var blackCaptured = new List<char>();
+            foreach (var (p, start) in new (char, int)[] { ('P', 8), ('N', 2), ('B', 2), ('R', 2), ('Q', 1) })
+            {
+                int gone = Math.Max(0, start - counts.GetValueOrDefault(p, 0));
+                for (int i = 0; i < gone; i++) blackCaptured.Add(p);
+            }
+
+            // Sort ascending (pawns first, queen last — chess.com convention)
+            whiteCaptured.Sort((a, b) => PieceVal(a).CompareTo(PieceVal(b)));
+            blackCaptured.Sort((a, b) => PieceVal(a).CompareTo(PieceVal(b)));
+
+            int whiteGained = whiteCaptured.Sum(PieceVal);
+            int blackGained = blackCaptured.Sum(PieceVal);
+            int diff = whiteGained - blackGained; // >0 = white is winning materially
+
+            // Top strip is near the side at the top of the board; bottom strip near the bottom side.
+            // When unflipped: white at bottom → bottom strip = white's captures, top = black's captures.
+            // When flipped: black at bottom → swap.
+            if (!boardControl.IsFlipped)
+            {
+                _materialTop.UpdateMaterial(blackCaptured.ToArray(), diff < 0 ? -diff : 0);
+                _materialBottom.UpdateMaterial(whiteCaptured.ToArray(), diff > 0 ? diff : 0);
+            }
+            else
+            {
+                _materialTop.UpdateMaterial(whiteCaptured.ToArray(), diff > 0 ? diff : 0);
+                _materialBottom.UpdateMaterial(blackCaptured.ToArray(), diff < 0 ? -diff : 0);
+            }
         }
 
         private void NavigateToStart()
