@@ -949,9 +949,16 @@ namespace ChessDroid.Services
                 State = EngineState.Error;
                 return (null, null);
             }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                // User stopped the match — propagate so the caller records UserStopped, not stalemate
+                State = EngineState.Error;
+                throw;
+            }
             catch (OperationCanceledException)
             {
-                Debug.WriteLine("GetMoveForMatchAsync: Cancelled or timed out");
+                // Internal timeout — return null so caller treats it as no legal move
+                Debug.WriteLine("GetMoveForMatchAsync: Timed out");
                 State = EngineState.Error;
                 return (null, null);
             }

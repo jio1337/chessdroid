@@ -122,6 +122,7 @@ namespace ChessDroid.Controls
         // Events
         public event EventHandler<MoveEventArgs>? MoveMade;
         public event EventHandler? BoardChanged;
+        public event EventHandler? AnimationCompleted;
 
         private const string STARTING_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
@@ -541,6 +542,7 @@ namespace ChessDroid.Controls
                 _animProgress = 1f;
                 _animating = false;
                 _animTimer.Stop();
+                AnimationCompleted?.Invoke(this, EventArgs.Empty);
             }
             Invalidate();
         }

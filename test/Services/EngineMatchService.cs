@@ -28,6 +28,10 @@ namespace ChessDroid.Services
         private bool isRunning;
         private CancellationTokenSource? matchCts;
 
+        // Animation sync — set WaitForAnimation = true when board animations are enabled
+        public bool WaitForAnimation { get; set; } = false;
+        private TaskCompletionSource<bool>? _animTcs;
+
         private readonly AppConfig config;
         private EngineMatchTimeControl timeControl = new();
 
@@ -122,6 +126,18 @@ namespace ChessDroid.Services
                 // Run the match loop
                 await RunMatchLoopAsync(matchCts.Token);
             }
+            catch (OperationCanceledException)
+            {
+                // Cancellation propagated from delay/animation wait between moves (e.g. fixed-depth stop)
+                OnStatusChanged?.Invoke("Match stopped");
+                OnMatchEnded?.Invoke(new EngineMatchResult
+                {
+                    Outcome = MatchOutcome.Interrupted,
+                    Termination = MatchTermination.UserStopped,
+                    TotalMoves = moveCount,
+                    TimeControl = timeControl.Type
+                });
+            }
             catch (Exception ex)
             {
                 Debug.WriteLine($"EngineMatchService: StartMatch error - {ex.Message}");
@@ -130,7 +146,8 @@ namespace ChessDroid.Services
                 {
                     Outcome = MatchOutcome.Interrupted,
                     Termination = MatchTermination.EngineError,
-                    TotalMoves = moveCount
+                    TotalMoves = moveCount,
+                    TimeControl = timeControl.Type
                 });
             }
             finally
@@ -142,6 +159,11 @@ namespace ChessDroid.Services
         public void StopMatch()
         {
             matchCts?.Cancel();
+        }
+
+        public void NotifyAnimationCompleted()
+        {
+            _animTcs?.TrySetResult(true);
         }
 
         private async Task RunMatchLoopAsync(CancellationToken ct)
@@ -309,8 +331,20 @@ namespace ChessDroid.Services
                     return;
                 }
 
-                // Brief yield for UI responsiveness
-                await Task.Delay(30, ct);
+                // Wait for the board animation to finish before requesting the next move.
+                // Falls back to a 700ms safety timeout so the match never hangs if the
+                // AnimationCompleted event is somehow missed.
+                if (WaitForAnimation)
+                {
+                    _animTcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                    try { await _animTcs.Task.WaitAsync(TimeSpan.FromMilliseconds(700), ct); }
+                    catch (TimeoutException) { }
+                    _animTcs = null;
+                }
+                else
+                {
+                    await Task.Delay(30, ct);
+                }
             }
 
             // If we reach here, cancellation was requested
@@ -358,7 +392,8 @@ namespace ChessDroid.Services
                 Termination = termination,
                 TotalMoves = moveCount,
                 WhiteTimeRemainingMs = whiteRemainingMs,
-                BlackTimeRemainingMs = blackRemainingMs
+                BlackTimeRemainingMs = blackRemainingMs,
+                TimeControl = timeControl.Type
             };
 
             OnStatusChanged?.Invoke(result.GetResultString());

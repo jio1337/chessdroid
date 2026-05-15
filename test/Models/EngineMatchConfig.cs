@@ -87,6 +87,7 @@ namespace ChessDroid.Models
         public int TotalMoves { get; set; }
         public long WhiteTimeRemainingMs { get; set; }
         public long BlackTimeRemainingMs { get; set; }
+        public TimeControlType TimeControl { get; set; }
 
         public string GetResultString()
         {

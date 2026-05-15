@@ -68,6 +68,7 @@ namespace ChessDroid
         private System.Windows.Forms.Timer clockTimer = null!;
         private bool matchRunning = false;
         private double? _previousMatchEval; // Track previous eval for brilliant move detection
+        private bool _awaitingMatchAnimation = false;
 
         // Bot mode
         private bool _botModeActive = false;
@@ -1314,6 +1315,8 @@ namespace ChessDroid
             matchService.OnClockUpdated += MatchService_OnClockUpdated;
             matchService.OnMatchEnded += MatchService_OnMatchEnded;
             matchService.OnStatusChanged += MatchService_OnStatusChanged;
+            matchService.WaitForAnimation = config.ShowAnimations;
+            boardControl.AnimationCompleted += MatchBoard_AnimationCompleted;
 
             // Initialize clocks display
             if (tc.Type == TimeControlType.TotalPlusIncrement)
@@ -1341,6 +1344,13 @@ namespace ChessDroid
             matchService?.StopMatch();
         }
 
+        private void MatchBoard_AnimationCompleted(object? sender, EventArgs e)
+        {
+            if (!_awaitingMatchAnimation) return;
+            _awaitingMatchAnimation = false;
+            matchService?.NotifyAnimationCompleted();
+        }
+
         private void MatchService_OnMovePlayed(string uciMove, string fen, long moveTimeMs, string? eval)
         {
             if (InvokeRequired)
@@ -1357,6 +1367,11 @@ namespace ChessDroid
 
                 // Make the move on the visual board
                 boardControl.MakeMove(uciMove);
+                if (config?.ShowAnimations == true)
+                {
+                    _awaitingMatchAnimation = true;
+                    boardControl.StartAnimation(uciMove);
+                }
 
                 // Convert to SAN and add to move tree
                 string san = ConvertUciToSan(uciMove, fenBeforeMove);
@@ -1447,7 +1462,8 @@ namespace ChessDroid
 
             // Show result
             analysisOutput.AppendText($"\n\n{result.GetResultString()}\n");
-            if (result.Termination != MatchTermination.UserStopped)
+            if (result.TimeControl == TimeControlType.TotalPlusIncrement &&
+                result.Termination != MatchTermination.UserStopped)
             {
                 analysisOutput.AppendText($"White remaining: {FormatClock(result.WhiteTimeRemainingMs)}\n");
                 analysisOutput.AppendText($"Black remaining: {FormatClock(result.BlackTimeRemainingMs)}\n");
@@ -1460,6 +1476,8 @@ namespace ChessDroid
             SetMatchControlsEnabled(false);
 
             // Clean up match service
+            boardControl.AnimationCompleted -= MatchBoard_AnimationCompleted;
+            _awaitingMatchAnimation = false;
             if (matchService != null)
             {
                 matchService.OnMovePlayed -= MatchService_OnMovePlayed;
