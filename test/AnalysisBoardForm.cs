@@ -83,6 +83,12 @@ namespace ChessDroid
         // Console font (managed here to allow proper disposal on change)
         private Font _consoleFont = new Font("Consolas", 10f);
 
+        // Game library
+        private GameLibraryService? _libraryService;
+        private Dictionary<string, string> _pgnHeaders = new();
+        private string _matchWhiteName = "";
+        private string _matchBlackName = "";
+
         private EvalGraphControl? _evalGraph;
 
         public AnalysisBoardForm(AppConfig config, ChessEngineService? sharedEngineService = null)
@@ -171,7 +177,7 @@ namespace ChessDroid
             // Standard buttons
             foreach (var btn in new[] { btnSettings, btnNewGame, btnFlipBoard, btnTakeBack, btnPrevMove,
                                         btnNextMove, btnAutoPlay, btnPlayBot, btnEditPosition, btnLoadFen, btnCopyFen, btnClassifyMoves,
-                                        btnExportPgn, btnImportPgn })
+                                        btnExportPgn, btnImportPgn, btnSaveToLibrary, btnOpenLibrary })
             {
                 btn.BackColor = scheme.ButtonBackColor;
                 btn.ForeColor = scheme.ButtonForeColor;
@@ -277,6 +283,9 @@ namespace ChessDroid
                 if (_currentClassification != null)
                     consoleFormatter.DisplayClassificationSummary(_currentClassification);
             };
+
+            // Initialize game library
+            _libraryService = new GameLibraryService(AppDomain.CurrentDomain.BaseDirectory);
 
             // Initialize opening book service
             openingBookService = new PolyglotBookService();
@@ -586,6 +595,9 @@ namespace ChessDroid
             _currentClassification = null;
             _classificationLookup = null;
             consoleFormatter?.SetActiveClassification(null);
+            _pgnHeaders = new();
+            _matchWhiteName = "";
+            _matchBlackName = "";
             UpdateFenDisplay();
             UpdateTurnLabel();
             lblStatus.Text = "New game started";
@@ -1347,6 +1359,8 @@ namespace ChessDroid
 
             string whiteEngineName = cmbWhiteEngine.SelectedItem.ToString()!;
             string blackEngineName = cmbBlackEngine.SelectedItem.ToString()!;
+            _matchWhiteName = Path.GetFileNameWithoutExtension(whiteEngineName);
+            _matchBlackName = Path.GetFileNameWithoutExtension(blackEngineName);
 
             // Resolve engine paths
             string enginesPath = config.GetEnginesPath();
@@ -3019,6 +3033,57 @@ namespace ChessDroid
             }
         }
 
+        private void BtnSaveToLibrary_Click(object? sender, EventArgs e)
+        {
+            if (_libraryService == null) return;
+            if (moveTree.GetMainLine().Count == 0)
+            {
+                lblStatus.Text = "No game to save";
+                return;
+            }
+
+            // Find the deepest position in the main line that has a known ECO opening
+            string opening = OpeningBook.GetOpeningDisplay(moveTree.Root.FEN);
+            foreach (var node in moveTree.GetMainLine())
+            {
+                string o = OpeningBook.GetOpeningDisplay(node.FEN);
+                if (!string.IsNullOrEmpty(o)) opening = o;
+            }
+
+            var game = new Models.SavedGame
+            {
+                White = !string.IsNullOrEmpty(_matchWhiteName) ? _matchWhiteName : _pgnHeaders.GetValueOrDefault("White", "?"),
+                Black = !string.IsNullOrEmpty(_matchBlackName) ? _matchBlackName : _pgnHeaders.GetValueOrDefault("Black", "?"),
+                Event = _pgnHeaders.GetValueOrDefault("Event", "Chess Analysis"),
+                Result = _pgnHeaders.GetValueOrDefault("Result", "*"),
+                EngineName = engineService?.EngineName ?? "",
+                EngineDepth = config?.EngineDepth ?? 0,
+                WhiteAccuracy = _currentClassification?.WhiteAccuracy,
+                BlackAccuracy = _currentClassification?.BlackAccuracy,
+                HasClassification = _currentClassification != null,
+                Opening = opening,
+                Pgn = GeneratePgn()
+            };
+
+            _libraryService.Save(game);
+
+            string label = game.White == "?" && game.Black == "?"
+                ? "game"
+                : $"{game.White} vs {game.Black}";
+            lblStatus.Text = $"Saved \"{label}\" to library";
+        }
+
+        private void BtnOpenLibrary_Click(object? sender, EventArgs e)
+        {
+            if (_libraryService == null) return;
+
+            using var dialog = new GameLibraryDialog(_libraryService, config?.Theme == "Dark");
+            if (dialog.ShowDialog(this) == DialogResult.OK && dialog.SelectedGame != null)
+            {
+                ImportPgn(dialog.SelectedGame.Pgn);
+            }
+        }
+
         /// <summary>
         /// Generates PGN string from the current move tree.
         /// </summary>
@@ -3151,6 +3216,10 @@ namespace ChessDroid
                         break;
                     }
                 }
+
+                _pgnHeaders = headers;
+                _matchWhiteName = "";
+                _matchBlackName = "";
 
                 string startFen = headers.TryGetValue("FEN", out var fenValue)
                     ? fenValue
@@ -3518,6 +3587,7 @@ namespace ChessDroid
 
             int whiteMoves = 0;
             int blackMoves = 0;
+            var lastGraphRefresh = DateTime.UtcNow;
 
             for (int i = 0; i < mainLine.Count; i++)
             {
@@ -3758,6 +3828,14 @@ namespace ChessDroid
                     {
                         blackMoves++;
                         classification.BlackCounts[finalQuality]++;
+                    }
+
+                    // Throttled graph refresh — update the visual at most every 500ms so the
+                    // user sees the graph fill in progressively without hammering GDI on every move.
+                    if ((DateTime.UtcNow - lastGraphRefresh).TotalMilliseconds >= 500)
+                    {
+                        RefreshEvalGraph();
+                        lastGraphRefresh = DateTime.UtcNow;
                     }
                 }
                 catch (OperationCanceledException)

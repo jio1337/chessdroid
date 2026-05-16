@@ -62,6 +62,8 @@ namespace ChessDroid
             btnClassifyMoves = new Button();
             btnExportPgn = new Button();
             btnImportPgn = new Button();
+            btnSaveToLibrary = new Button();
+            btnOpenLibrary = new Button();
             lblMoves = new Label();
             rightPanel = new Panel();
             pnlBoardControls = new Panel();
@@ -367,13 +369,18 @@ namespace ChessDroid
             // 
             // pnlPgnButtons
             // 
+            // DockStyle.Top controls stack top-to-bottom in reverse Controls-add order.
+            // Add order (last-in = top): Classify → OpenLibrary → SaveToLibrary → Export
+            // Import uses DockStyle.Bottom and always pins to the bottom edge.
             pnlPgnButtons.Controls.Add(btnClassifyMoves);
+            pnlPgnButtons.Controls.Add(btnOpenLibrary);
+            pnlPgnButtons.Controls.Add(btnSaveToLibrary);
             pnlPgnButtons.Controls.Add(btnExportPgn);
             pnlPgnButtons.Controls.Add(btnImportPgn);
             pnlPgnButtons.Dock = DockStyle.Bottom;
-            pnlPgnButtons.Location = new Point(5, 530);
+            pnlPgnButtons.Location = new Point(5, 480);
             pnlPgnButtons.Name = "pnlPgnButtons";
-            pnlPgnButtons.Size = new Size(114, 95);
+            pnlPgnButtons.Size = new Size(114, 152);
             pnlPgnButtons.TabIndex = 2;
             // 
             // btnClassifyMoves
@@ -405,12 +412,34 @@ namespace ChessDroid
             btnImportPgn.Dock = DockStyle.Bottom;
             btnImportPgn.FlatStyle = FlatStyle.Flat;
             btnImportPgn.Font = new Font("Courier New", 8.25F);
-            btnImportPgn.Location = new Point(0, 65);
+            btnImportPgn.Location = new Point(0, 122);
             btnImportPgn.Name = "btnImportPgn";
             btnImportPgn.Size = new Size(114, 30);
             btnImportPgn.TabIndex = 2;
             btnImportPgn.Text = "Import PGN";
             btnImportPgn.Click += BtnImportPgn_Click;
+            //
+            // btnSaveToLibrary
+            //
+            btnSaveToLibrary.Dock = DockStyle.Top;
+            btnSaveToLibrary.FlatStyle = FlatStyle.Flat;
+            btnSaveToLibrary.Font = new Font("Courier New", 8.25F);
+            btnSaveToLibrary.Name = "btnSaveToLibrary";
+            btnSaveToLibrary.Size = new Size(114, 28);
+            btnSaveToLibrary.TabIndex = 3;
+            btnSaveToLibrary.Text = "💾 Save";
+            btnSaveToLibrary.Click += BtnSaveToLibrary_Click;
+            //
+            // btnOpenLibrary
+            //
+            btnOpenLibrary.Dock = DockStyle.Top;
+            btnOpenLibrary.FlatStyle = FlatStyle.Flat;
+            btnOpenLibrary.Font = new Font("Courier New", 8.25F);
+            btnOpenLibrary.Name = "btnOpenLibrary";
+            btnOpenLibrary.Size = new Size(114, 28);
+            btnOpenLibrary.TabIndex = 4;
+            btnOpenLibrary.Text = "📚 Library";
+            btnOpenLibrary.Click += BtnOpenLibrary_Click;
             // 
             // lblMoves
             // 
@@ -468,6 +497,8 @@ namespace ChessDroid
             toolTip.SetToolTip(btnPlayBot,  "Play vs Bot");
             toolTip.SetToolTip(btnEditPosition, "Edit Position");
             toolTip.SetToolTip(btnSettings, "Settings");
+            toolTip.SetToolTip(btnSaveToLibrary, "Save current game to library");
+            toolTip.SetToolTip(btnOpenLibrary, "Open game library");
             //
             // analysisOutput
             // 
@@ -799,6 +830,8 @@ namespace ChessDroid
         private Button btnClassifyMoves;
         private Button btnExportPgn;
         private Button btnImportPgn;
+        private Button btnSaveToLibrary;
+        private Button btnOpenLibrary;
 
         // Right panel - Engine Match
         private GroupBox grpEngineMatch;
