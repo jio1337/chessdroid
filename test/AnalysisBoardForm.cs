@@ -88,6 +88,7 @@ namespace ChessDroid
         private Dictionary<string, string> _pgnHeaders = new();
         private string _matchWhiteName = "";
         private string _matchBlackName = "";
+        private string _libraryGameId = "";
 
         private EvalGraphControl? _evalGraph;
 
@@ -598,6 +599,7 @@ namespace ChessDroid
             _pgnHeaders = new();
             _matchWhiteName = "";
             _matchBlackName = "";
+            _libraryGameId = "";
             UpdateFenDisplay();
             UpdateTurnLabel();
             lblStatus.Text = "New game started";
@@ -3050,10 +3052,13 @@ namespace ChessDroid
                 if (!string.IsNullOrEmpty(o)) opening = o;
             }
 
+            string white = !string.IsNullOrEmpty(_matchWhiteName) ? _matchWhiteName : _pgnHeaders.GetValueOrDefault("White", "?");
+            string black = !string.IsNullOrEmpty(_matchBlackName) ? _matchBlackName : _pgnHeaders.GetValueOrDefault("Black", "?");
+
             var game = new Models.SavedGame
             {
-                White = !string.IsNullOrEmpty(_matchWhiteName) ? _matchWhiteName : _pgnHeaders.GetValueOrDefault("White", "?"),
-                Black = !string.IsNullOrEmpty(_matchBlackName) ? _matchBlackName : _pgnHeaders.GetValueOrDefault("Black", "?"),
+                White = white,
+                Black = black,
                 Event = _pgnHeaders.GetValueOrDefault("Event", "Chess Analysis"),
                 Result = _pgnHeaders.GetValueOrDefault("Result", "*"),
                 EngineName = engineService?.EngineName ?? "",
@@ -3062,10 +3067,15 @@ namespace ChessDroid
                 BlackAccuracy = _currentClassification?.BlackAccuracy,
                 HasClassification = _currentClassification != null,
                 Opening = opening,
-                Pgn = GeneratePgn()
+                Pgn = GeneratePgn(white, black)
             };
 
+            // Overwrite existing library record instead of creating a duplicate
+            if (!string.IsNullOrEmpty(_libraryGameId))
+                game.Id = _libraryGameId;
+
             _libraryService.Save(game);
+            _libraryGameId = game.Id;
 
             string label = game.White == "?" && game.Black == "?"
                 ? "game"
@@ -3080,15 +3090,31 @@ namespace ChessDroid
             using var dialog = new GameLibraryDialog(_libraryService, config?.Theme == "Dark");
             if (dialog.ShowDialog(this) == DialogResult.OK && dialog.SelectedGame != null)
             {
-                ImportPgn(dialog.SelectedGame.Pgn);
+                var saved = dialog.SelectedGame;
+                ImportPgn(saved.Pgn);
+                // Restore library identity so re-saving overwrites the same record
+                _libraryGameId = saved.Id;
+                if (saved.White != "?") _pgnHeaders["White"] = saved.White;
+                if (saved.Black != "?") _pgnHeaders["Black"] = saved.Black;
+                // Restore accuracy scores and activate the review link
+                if (_currentClassification != null && saved.HasClassification)
+                {
+                    if (saved.WhiteAccuracy.HasValue) _currentClassification.WhiteAccuracy = saved.WhiteAccuracy.Value;
+                    if (saved.BlackAccuracy.HasValue) _currentClassification.BlackAccuracy = saved.BlackAccuracy.Value;
+                    consoleFormatter?.SetActiveClassification(_currentClassification);
+                    consoleFormatter?.DisplayClassificationSummary(_currentClassification);
+                }
             }
         }
 
         /// <summary>
         /// Generates PGN string from the current move tree.
         /// </summary>
-        private string GeneratePgn()
+        private string GeneratePgn(string? white = null, string? black = null)
         {
+            white ??= !string.IsNullOrEmpty(_matchWhiteName) ? _matchWhiteName : _pgnHeaders.GetValueOrDefault("White", "?");
+            black ??= !string.IsNullOrEmpty(_matchBlackName) ? _matchBlackName : _pgnHeaders.GetValueOrDefault("Black", "?");
+
             var sb = new System.Text.StringBuilder();
 
             // Standard PGN headers
@@ -3096,8 +3122,8 @@ namespace ChessDroid
             sb.AppendLine("[Site \"chessdroid\"]");
             sb.AppendLine($"[Date \"{DateTime.Now:yyyy.MM.dd}\"]");
             sb.AppendLine("[Round \"?\"]");
-            sb.AppendLine("[White \"?\"]");
-            sb.AppendLine("[Black \"?\"]");
+            sb.AppendLine($"[White \"{white}\"]");
+            sb.AppendLine($"[Black \"{black}\"]");
             sb.AppendLine("[Result \"*\"]");
             if (_classificationLookup != null)
             {
@@ -3220,6 +3246,7 @@ namespace ChessDroid
                 _pgnHeaders = headers;
                 _matchWhiteName = "";
                 _matchBlackName = "";
+                _libraryGameId = "";
 
                 string startFen = headers.TryGetValue("FEN", out var fenValue)
                     ? fenValue
