@@ -3055,6 +3055,17 @@ namespace ChessDroid
             string white = !string.IsNullOrEmpty(_matchWhiteName) ? _matchWhiteName : _pgnHeaders.GetValueOrDefault("White", "?");
             string black = !string.IsNullOrEmpty(_matchBlackName) ? _matchBlackName : _pgnHeaders.GetValueOrDefault("Black", "?");
 
+            // If re-saving a library game and names are still unknown, use whatever was last saved
+            if (!string.IsNullOrEmpty(_libraryGameId) && _libraryService != null)
+            {
+                var existing = _libraryService.Load(_libraryGameId);
+                if (existing != null)
+                {
+                    if (white == "?") white = existing.White;
+                    if (black == "?") black = existing.Black;
+                }
+            }
+
             var game = new Models.SavedGame
             {
                 White = white,

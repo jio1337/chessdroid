@@ -38,6 +38,14 @@ namespace ChessDroid.Services
                 JsonSerializer.Serialize(game, _jsonOptions));
         }
 
+        public SavedGame? Load(string id)
+        {
+            string path = Path.Combine(GamesFolder, $"{id}.json");
+            if (!File.Exists(path)) return null;
+            try { return JsonSerializer.Deserialize<SavedGame>(File.ReadAllText(path), _jsonOptions); }
+            catch { return null; }
+        }
+
         public void Delete(string id)
         {
             string path = Path.Combine(GamesFolder, $"{id}.json");
