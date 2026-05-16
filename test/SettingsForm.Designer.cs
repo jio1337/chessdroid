@@ -83,6 +83,8 @@ namespace ChessDroid
             chkAnimations = new CheckBox();
             lblAnimationSpeed = new Label();
             numAnimationMs = new NumericUpDown();
+            lblMaterialStrips = new Label();
+            chkMaterialStrips = new CheckBox();
             grpExplanations = new GroupBox();
             chkTactical = new CheckBox();
             chkPositional = new CheckBox();
@@ -477,10 +479,12 @@ namespace ChessDroid
             grpBoardColors.Controls.Add(chkAnimations);
             grpBoardColors.Controls.Add(lblAnimationSpeed);
             grpBoardColors.Controls.Add(numAnimationMs);
+            grpBoardColors.Controls.Add(lblMaterialStrips);
+            grpBoardColors.Controls.Add(chkMaterialStrips);
             grpBoardColors.ForeColor = Color.White;
             grpBoardColors.Location = new Point(13, 452);
             grpBoardColors.Name = "grpBoardColors";
-            grpBoardColors.Size = new Size(298, 233);
+            grpBoardColors.Size = new Size(298, 253);
             grpBoardColors.TabIndex = 12;
             grpBoardColors.TabStop = false;
             grpBoardColors.Text = "Board Colors";
@@ -696,7 +700,26 @@ namespace ChessDroid
             numAnimationMs.TabIndex = 16;
             toolTip1.SetToolTip(numAnimationMs, "Animation duration in milliseconds (50 = very fast, 500 = slow)");
             numAnimationMs.Value = new decimal(new int[] { 150, 0, 0, 0 });
-            // 
+            //
+            // lblMaterialStrips
+            //
+            lblMaterialStrips.Location = new Point(12, 222);
+            lblMaterialStrips.Name = "lblMaterialStrips";
+            lblMaterialStrips.Size = new Size(116, 19);
+            lblMaterialStrips.TabIndex = 21;
+            lblMaterialStrips.Text = "Material Strips:";
+            toolTip1.SetToolTip(lblMaterialStrips, "Show captured pieces and material advantage above/below the board");
+            //
+            // chkMaterialStrips
+            //
+            chkMaterialStrips.AutoSize = true;
+            chkMaterialStrips.Location = new Point(166, 224);
+            chkMaterialStrips.Name = "chkMaterialStrips";
+            chkMaterialStrips.Size = new Size(15, 14);
+            chkMaterialStrips.TabIndex = 22;
+            toolTip1.SetToolTip(chkMaterialStrips, "Show captured pieces and material advantage above/below the board");
+            chkMaterialStrips.UseVisualStyleBackColor = true;
+            //
             // grpExplanations
             // 
             grpExplanations.Controls.Add(chkTactical);
@@ -973,7 +996,7 @@ namespace ChessDroid
             AutoSizeMode = AutoSizeMode.GrowAndShrink;
             BackColor = Color.FromArgb(45, 45, 48);
             CancelButton = btnCancel;
-            ClientSize = new Size(585, 696);
+            ClientSize = new Size(585, 716);
             Controls.Add(chkDarkMode);
             Controls.Add(btnCancel);
             Controls.Add(btnHelp);
@@ -1065,6 +1088,8 @@ namespace ChessDroid
         private System.Windows.Forms.CheckBox chkAnimations;
         private System.Windows.Forms.Label lblAnimationSpeed;
         private System.Windows.Forms.NumericUpDown numAnimationMs;
+        private System.Windows.Forms.Label lblMaterialStrips;
+        private System.Windows.Forms.CheckBox chkMaterialStrips;
         private System.Windows.Forms.Button btnSave;
         private System.Windows.Forms.Button btnReset;
         private System.Windows.Forms.Button btnHelp;

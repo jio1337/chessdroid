@@ -111,6 +111,7 @@ namespace ChessDroid
             numAnimationMs.Value = Math.Max(50, Math.Min(500, config.AnimationDurationMs));
             numAnimationMs.Enabled = config.ShowAnimations;
             chkAnimations.CheckedChanged += (s, e) => numAnimationMs.Enabled = chkAnimations.Checked;
+            chkMaterialStrips.Checked = config.ShowMaterialStrips;
 
             // Explanation settings
             chkTactical.Checked = config.ShowTacticalAnalysis;
@@ -168,6 +169,7 @@ namespace ChessDroid
             config.ShowEvalGraph = chkEvalGraph.Checked;
             config.ShowAnimations = chkAnimations.Checked;
             config.AnimationDurationMs = (int)numAnimationMs.Value;
+            config.ShowMaterialStrips = chkMaterialStrips.Checked;
 
             // Save explanation settings
             config.ShowTacticalAnalysis = chkTactical.Checked;
@@ -408,6 +410,10 @@ namespace ChessDroid
                 lblAnimationSpeed.BackColor = Color.FromArgb(45, 45, 48);
                 numAnimationMs.ForeColor = Color.White;
                 numAnimationMs.BackColor = Color.FromArgb(45, 45, 48);
+                lblMaterialStrips.ForeColor = Color.White;
+                lblMaterialStrips.BackColor = Color.FromArgb(45, 45, 48);
+                chkMaterialStrips.ForeColor = Color.White;
+                chkMaterialStrips.BackColor = Color.FromArgb(45, 45, 48);
                 // Play Style GroupBox
                 grpLc0Features.ForeColor = Color.Cyan;
                 grpLc0Features.BackColor = Color.FromArgb(45, 45, 48);
@@ -569,6 +575,10 @@ namespace ChessDroid
                 lblAnimationSpeed.BackColor = Color.WhiteSmoke;
                 numAnimationMs.ForeColor = Color.Black;
                 numAnimationMs.BackColor = Color.WhiteSmoke;
+                lblMaterialStrips.ForeColor = Color.Black;
+                lblMaterialStrips.BackColor = Color.WhiteSmoke;
+                chkMaterialStrips.ForeColor = Color.Black;
+                chkMaterialStrips.BackColor = Color.WhiteSmoke;
 
                 // Play Style GroupBox
                 grpLc0Features.ForeColor = Color.DarkCyan;

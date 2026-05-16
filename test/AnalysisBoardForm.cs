@@ -117,6 +117,7 @@ namespace ChessDroid
             this.Shown += async (s, e) =>
             {
                 LeftPanel_Resize(leftPanel, EventArgs.Empty);
+                PnlBoardControls_Resize(pnlBoardControls, EventArgs.Empty);
                 this.MinimumSize = this.Size; // initial size becomes the enforced minimum
                 await InitializeEngineAsync();
             };
@@ -153,6 +154,7 @@ namespace ChessDroid
 
             // Form colors
             this.BackColor = scheme.FormBackColor;
+            pnlBoardControls.BackColor = scheme.FormBackColor;
 
             // Labels
             lblTurn.ForeColor = scheme.TextColor;
@@ -377,8 +379,7 @@ namespace ChessDroid
         private void LeftPanel_Resize(object? sender, EventArgs e)
         {
             // Guard against resize during initialization
-            if (boardControl == null || lblTurn == null || btnNewGame == null || lblPieces == null || cmbPieces == null || btnEditPosition == null
-                || _materialTop == null || _materialBottom == null)
+            if (boardControl == null || _materialTop == null || _materialBottom == null)
                 return;
 
             if (sender is Panel panel)
@@ -390,100 +391,95 @@ namespace ChessDroid
                 evalBar.Visible = showEvalBar;
                 int evalBarTotal = showEvalBar ? evalBarWidth + evalBarGap : 0;
 
-                // Calculate the largest square that fits in the available space
-                // Leave room for eval bar on the left and controls below (about 110 pixels)
-                // and two 22px material strips (one above, one below the board)
-                const int STRIP_H = 22;
-                int availableWidth = panel.Width - 20 - evalBarTotal; // 10px padding each side + eval bar
-                int availableHeight = panel.Height - 110 - 2 * STRIP_H; // Room for controls below + strips
+                // Material strips above/below board
+                bool showStrips = config?.ShowMaterialStrips != false;
+                int STRIP_H = showStrips ? 22 : 0;
+                _materialTop.Visible = showStrips;
+                _materialBottom.Visible = showStrips;
+
+                // Board fills the full left panel — only small top/bottom margins
+                const int margin = 5;
+                int availableWidth = panel.Width - 20 - evalBarTotal;
+                int availableHeight = panel.Height - 2 * margin - 2 * STRIP_H;
 
                 int boardSize = Math.Min(availableWidth, availableHeight);
-                boardSize = Math.Max(boardSize, 300); // Minimum size
+                boardSize = Math.Max(boardSize, 300);
 
-                // Right-align the board+evalbar so it sits flush against the moves list
+                // Right-align board+evalbar flush against the moves list
                 int groupWidth = boardSize + evalBarTotal;
-                int groupX = panel.Width - groupWidth;
-                groupX = Math.Max(groupX, 10); // Minimum left margin
+                int groupX = Math.Max(panel.Width - groupWidth, 10);
 
-                // Position board first, then match eval bar to its exact height
                 int boardX = groupX + evalBarTotal;
                 boardControl.Size = new Size(boardSize, boardSize);
-                boardControl.Location = new Point(boardX, 5 + STRIP_H);
+                boardControl.Location = new Point(boardX, margin + STRIP_H);
 
                 evalBar.Location = new Point(groupX, boardControl.Top);
                 evalBar.Size = new Size(evalBarWidth, boardControl.Height);
 
                 // Material strips: above and below the board
-                _materialTop.Location = new Point(boardX, 5);
+                _materialTop.Location = new Point(boardX, margin);
                 _materialTop.Size = new Size(boardSize, STRIP_H);
                 _materialBottom.Location = new Point(boardX, boardControl.Bottom);
                 _materialBottom.Size = new Size(boardSize, STRIP_H);
-
-                // Reposition controls below the board (aligned with board, not eval bar)
-                int controlsY = boardControl.Bottom + STRIP_H + 5;
-
-                lblTurn.Location = new Point(boardX, controlsY);
-
-                // Pieces selector (right of turn label)
-                lblPieces.Location = new Point(boardX + 200, controlsY + 3);
-                cmbPieces.Location = new Point(boardX + 255, controlsY);
-                cmbPieces.Width = Math.Min(120, boardSize - 270);
-
-                int buttonY = controlsY + 25;
-                int buttonWidth = Math.Min(90, (boardSize - 30) / 5);
-                int buttonSpacing = 5;
-
-                btnNewGame.Location = new Point(boardX, buttonY);
-                btnNewGame.Width = buttonWidth;
-
-                btnFlipBoard.Location = new Point(boardX + buttonWidth + buttonSpacing, buttonY);
-                btnFlipBoard.Width = buttonWidth;
-
-                btnTakeBack.Location = new Point(boardX + 2 * (buttonWidth + buttonSpacing), buttonY);
-                btnTakeBack.Width = buttonWidth;
-
-                // Navigation buttons (smaller)
-                int navButtonWidth = 35;
-                int autoPlayWidth = 40;
-                int navX = boardX + 3 * (buttonWidth + buttonSpacing);
-                btnPrevMove.Location = new Point(navX, buttonY);
-                btnPrevMove.Width = navButtonWidth;
-                btnNextMove.Location = new Point(navX + navButtonWidth + 2, buttonY);
-                btnNextMove.Width = navButtonWidth;
-                btnAutoPlay.Location = new Point(btnNextMove.Right + 2, buttonY);
-                btnAutoPlay.Width = autoPlayWidth;
-
-                // Bot button (after nav buttons)
-                int botX = btnAutoPlay.Right + buttonSpacing;
-                int editBtnWidth = 28;
-                btnPlayBot.Location = new Point(botX, buttonY);
-                btnPlayBot.Width = Math.Max(60, boardX + boardSize - botX - editBtnWidth - buttonSpacing);
-
-                // Edit position button (pencil icon, rightmost)
-                btnEditPosition.Location = new Point(btnPlayBot.Right + buttonSpacing, buttonY);
-                btnEditPosition.Width = editBtnWidth;
-
-                // FEN input row
-                int fenY = buttonY + 32;
-                int fenLabelWidth = 35;
-                int fenButtonWidth = 55;
-                // Account for: label + input + gap + Load + gap + Copy + gap + Settings(28) + margin(5)
-                int fenInputWidth = Math.Max(150, boardSize - fenLabelWidth - 2 * fenButtonWidth - 48);
-
-                lblFen.Location = new Point(boardX, fenY + 3);
-                txtFen.Location = new Point(boardX + fenLabelWidth, fenY);
-                txtFen.Width = fenInputWidth;
-                btnLoadFen.Location = new Point(txtFen.Right + 5, fenY);
-                btnCopyFen.Location = new Point(btnLoadFen.Right + 5, fenY);
-                btnSettings.Location = new Point(btnCopyFen.Right + 5, fenY);
-
-                // Status label
-                lblStatus.Location = new Point(boardX, fenY + 30);
-                lblStatus.Width = boardSize;
-
-                // Let middle and right panels fill the full form height
-                // (they use Dock.Fill in the TableLayoutPanel)
             }
+        }
+
+        private void PnlBoardControls_Resize(object? sender, EventArgs e)
+        {
+            if (lblTurn == null || pnlBoardControls == null) return;
+
+            int w = pnlBoardControls.Width;
+            const int pad = 4;
+            const int gap = 4;
+
+            // Row 1 (Y=3): "White to move" label left, Pieces selector right
+            lblTurn.Location = new Point(pad, 3);
+            cmbPieces.Width = 95;
+            cmbPieces.Location = new Point(w - cmbPieces.Width - pad, 0);
+            lblPieces.Location = new Point(cmbPieces.Left - lblPieces.Width - gap, 3);
+
+            // Row 2 (Y=28): all action buttons
+            const int buttonY = 28;
+            const int navW = 35;
+            const int autoW = 40;
+            const int editW = 28;
+            int fixedW = navW + navW + autoW + editW + 6 * gap;
+            int buttonWidth = Math.Max(40, Math.Min(80, (w - pad - fixedW) / 3));
+
+            btnNewGame.Location = new Point(pad, buttonY);
+            btnNewGame.Width = buttonWidth;
+            btnFlipBoard.Location = new Point(btnNewGame.Right + gap, buttonY);
+            btnFlipBoard.Width = buttonWidth;
+            btnTakeBack.Location = new Point(btnFlipBoard.Right + gap, buttonY);
+            btnTakeBack.Width = buttonWidth;
+
+            btnPrevMove.Location = new Point(btnTakeBack.Right + gap, buttonY);
+            btnNextMove.Location = new Point(btnPrevMove.Right + 2, buttonY);
+            btnAutoPlay.Location = new Point(btnNextMove.Right + 2, buttonY);
+
+            btnEditPosition.Location = new Point(w - editW - pad, buttonY);
+            btnPlayBot.Location = new Point(btnAutoPlay.Right + gap, buttonY);
+            btnPlayBot.Width = Math.Max(30, btnEditPosition.Left - btnPlayBot.Left - gap);
+
+            // Row 3 (Y=60): FEN row — label | input | Load | Copy | ⚙
+            const int fenY = 60;
+            const int fenLblW = 35;
+            const int fenBtnW = 52;
+            const int settingsW = 28;
+            int inputW = Math.Max(60, w - pad - fenLblW - 2 * fenBtnW - settingsW - 4 * gap);
+
+            lblFen.Location = new Point(pad, fenY + 3);
+            txtFen.Location = new Point(pad + fenLblW, fenY);
+            txtFen.Width = inputW;
+            btnLoadFen.Location = new Point(txtFen.Right + gap, fenY);
+            btnLoadFen.Width = fenBtnW;
+            btnCopyFen.Location = new Point(btnLoadFen.Right + gap, fenY);
+            btnCopyFen.Width = fenBtnW;
+            btnSettings.Location = new Point(btnCopyFen.Right + gap, fenY);
+
+            // Row 4 (Y=88): Status text
+            lblStatus.Location = new Point(pad, 88);
+            lblStatus.Width = w - 2 * pad;
         }
 
         private void GrpEngineMatch_Resize(object? sender, EventArgs e)

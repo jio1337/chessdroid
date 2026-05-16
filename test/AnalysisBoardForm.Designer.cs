@@ -62,6 +62,7 @@ namespace ChessDroid
             btnImportPgn = new Button();
             lblMoves = new Label();
             rightPanel = new Panel();
+            pnlBoardControls = new Panel();
             analysisOutput = new RichTextBox();
             grpEngineMatch = new GroupBox();
             lblWhiteEngine = new Label();
@@ -90,6 +91,7 @@ namespace ChessDroid
             middlePanel.SuspendLayout();
             pnlPgnButtons.SuspendLayout();
             rightPanel.SuspendLayout();
+            pnlBoardControls.SuspendLayout();
             grpEngineMatch.SuspendLayout();
             pnlTimeParams.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)numDepth).BeginInit();
@@ -122,23 +124,6 @@ namespace ChessDroid
             leftPanel.Controls.Add(boardControl);
             leftPanel.Controls.Add(_materialTop);
             leftPanel.Controls.Add(_materialBottom);
-            leftPanel.Controls.Add(lblTurn);
-            leftPanel.Controls.Add(lblPieces);
-            leftPanel.Controls.Add(cmbPieces);
-            leftPanel.Controls.Add(btnSettings);
-            leftPanel.Controls.Add(btnNewGame);
-            leftPanel.Controls.Add(btnFlipBoard);
-            leftPanel.Controls.Add(btnTakeBack);
-            leftPanel.Controls.Add(btnPrevMove);
-            leftPanel.Controls.Add(btnNextMove);
-            leftPanel.Controls.Add(btnAutoPlay);
-            leftPanel.Controls.Add(btnPlayBot);
-            leftPanel.Controls.Add(btnEditPosition);
-            leftPanel.Controls.Add(lblFen);
-            leftPanel.Controls.Add(txtFen);
-            leftPanel.Controls.Add(btnLoadFen);
-            leftPanel.Controls.Add(btnCopyFen);
-            leftPanel.Controls.Add(lblStatus);
             leftPanel.Dock = DockStyle.Fill;
             leftPanel.Location = new Point(8, 8);
             leftPanel.Name = "leftPanel";
@@ -436,17 +421,43 @@ namespace ChessDroid
             lblMoves.Text = "Moves";
             // 
             // rightPanel
-            // 
+            //
             rightPanel.Controls.Add(analysisOutput);
             rightPanel.Controls.Add(grpEngineMatch);
             rightPanel.Controls.Add(lblAnalysis);
+            rightPanel.Controls.Add(pnlBoardControls); // last = docks to very top
             rightPanel.Dock = DockStyle.Fill;
             rightPanel.Location = new Point(713, 8);
             rightPanel.Name = "rightPanel";
             rightPanel.Padding = new Padding(5);
             rightPanel.Size = new Size(347, 630);
             rightPanel.TabIndex = 2;
-            // 
+            //
+            // pnlBoardControls
+            //
+            pnlBoardControls.Controls.Add(lblTurn);
+            pnlBoardControls.Controls.Add(lblPieces);
+            pnlBoardControls.Controls.Add(cmbPieces);
+            pnlBoardControls.Controls.Add(btnNewGame);
+            pnlBoardControls.Controls.Add(btnFlipBoard);
+            pnlBoardControls.Controls.Add(btnTakeBack);
+            pnlBoardControls.Controls.Add(btnPrevMove);
+            pnlBoardControls.Controls.Add(btnNextMove);
+            pnlBoardControls.Controls.Add(btnAutoPlay);
+            pnlBoardControls.Controls.Add(btnPlayBot);
+            pnlBoardControls.Controls.Add(btnEditPosition);
+            pnlBoardControls.Controls.Add(lblFen);
+            pnlBoardControls.Controls.Add(txtFen);
+            pnlBoardControls.Controls.Add(btnLoadFen);
+            pnlBoardControls.Controls.Add(btnCopyFen);
+            pnlBoardControls.Controls.Add(btnSettings);
+            pnlBoardControls.Controls.Add(lblStatus);
+            pnlBoardControls.Dock = DockStyle.Top;
+            pnlBoardControls.Height = 110;
+            pnlBoardControls.Name = "pnlBoardControls";
+            pnlBoardControls.TabIndex = 5;
+            pnlBoardControls.Resize += PnlBoardControls_Resize;
+            //
             // analysisOutput
             // 
             analysisOutput.BorderStyle = BorderStyle.FixedSingle;
@@ -723,6 +734,8 @@ namespace ChessDroid
             leftPanel.PerformLayout();
             middlePanel.ResumeLayout(false);
             pnlPgnButtons.ResumeLayout(false);
+            pnlBoardControls.ResumeLayout(false);
+            pnlBoardControls.PerformLayout();
             rightPanel.ResumeLayout(false);
             grpEngineMatch.ResumeLayout(false);
             grpEngineMatch.PerformLayout();
@@ -741,6 +754,7 @@ namespace ChessDroid
         private Panel leftPanel;
         private Panel middlePanel;
         private Panel rightPanel;
+        private Panel pnlBoardControls;
 
         // Left panel - Board and controls
         private EvalBarControl evalBar;

@@ -36,6 +36,7 @@ namespace ChessDroid
         public bool ShowAnimations { get; set; } = true;
         public int AnimationDurationMs { get; set; } = 150;
         public bool ShowLastMoveHighlight { get; set; } = true;
+        public bool ShowMaterialStrips { get; set; } = true;
 
         // Explanation settings
         public bool ShowTacticalAnalysis { get; set; } = true; // Show tactical patterns
@@ -179,6 +180,7 @@ namespace ChessDroid
             ShowAnimations = other.ShowAnimations;
             AnimationDurationMs = other.AnimationDurationMs;
             ShowLastMoveHighlight = other.ShowLastMoveHighlight;
+            ShowMaterialStrips = other.ShowMaterialStrips;
             ShowTacticalAnalysis = other.ShowTacticalAnalysis;
             ShowPositionalAnalysis = other.ShowPositionalAnalysis;
             ShowEndgameAnalysis = other.ShowEndgameAnalysis;
