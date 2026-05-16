@@ -397,27 +397,28 @@ namespace ChessDroid
                 _materialTop.Visible = showStrips;
                 _materialBottom.Visible = showStrips;
 
-                // Board fills the full left panel — only small top/bottom margins
-                const int margin = 5;
+                // Board is centered in leftPanel — use all available space
                 int availableWidth = panel.Width - 20 - evalBarTotal;
-                int availableHeight = panel.Height - 2 * margin - 2 * STRIP_H;
+                int availableHeight = panel.Height - 2 * STRIP_H;
 
                 int boardSize = Math.Min(availableWidth, availableHeight);
                 boardSize = Math.Max(boardSize, 300);
 
-                // Right-align board+evalbar flush against the moves list
+                // Center board+evalbar horizontally and vertically
                 int groupWidth = boardSize + evalBarTotal;
-                int groupX = Math.Max(panel.Width - groupWidth, 10);
+                int groupX = Math.Max((panel.Width - groupWidth) / 2, 5);
+
+                int topSpace = Math.Max(0, (panel.Height - boardSize - 2 * STRIP_H) / 2);
 
                 int boardX = groupX + evalBarTotal;
                 boardControl.Size = new Size(boardSize, boardSize);
-                boardControl.Location = new Point(boardX, margin + STRIP_H);
+                boardControl.Location = new Point(boardX, topSpace + STRIP_H);
 
                 evalBar.Location = new Point(groupX, boardControl.Top);
                 evalBar.Size = new Size(evalBarWidth, boardControl.Height);
 
-                // Material strips: above and below the board
-                _materialTop.Location = new Point(boardX, margin);
+                // Material strips hug the board top/bottom
+                _materialTop.Location = new Point(boardX, topSpace);
                 _materialTop.Size = new Size(boardSize, STRIP_H);
                 _materialBottom.Location = new Point(boardX, boardControl.Bottom);
                 _materialBottom.Size = new Size(boardSize, STRIP_H);
@@ -438,48 +439,50 @@ namespace ChessDroid
             cmbPieces.Location = new Point(w - cmbPieces.Width - pad, 0);
             lblPieces.Location = new Point(cmbPieces.Left - lblPieces.Width - gap, 3);
 
-            // Row 2 (Y=28): all action buttons
+            // Row 2 (Y=28): icon buttons — all fixed widths, no dynamic scaling
             const int buttonY = 28;
-            const int navW = 35;
-            const int autoW = 40;
-            const int editW = 28;
-            int fixedW = navW + navW + autoW + editW + 6 * gap;
-            int buttonWidth = Math.Max(40, Math.Min(80, (w - pad - fixedW) / 3));
+            const int iconW  = 30;  // ⊕ ⇅ ↩ ♞
+            const int navW   = 35;  // ◀ ▶
+            const int autoW  = 38;  // >>
+            const int editW  = 28;  // ✏
 
-            btnNewGame.Location = new Point(pad, buttonY);
-            btnNewGame.Width = buttonWidth;
-            btnFlipBoard.Location = new Point(btnNewGame.Right + gap, buttonY);
-            btnFlipBoard.Width = buttonWidth;
-            btnTakeBack.Location = new Point(btnFlipBoard.Right + gap, buttonY);
-            btnTakeBack.Width = buttonWidth;
+            btnNewGame.Width    = iconW;
+            btnFlipBoard.Width  = iconW;
+            btnTakeBack.Width   = iconW;
+            btnPrevMove.Width   = navW;
+            btnNextMove.Width   = navW;
+            btnAutoPlay.Width   = autoW;
+            btnPlayBot.Width    = iconW;
+            btnEditPosition.Width = editW;
 
-            btnPrevMove.Location = new Point(btnTakeBack.Right + gap, buttonY);
-            btnNextMove.Location = new Point(btnPrevMove.Right + 2, buttonY);
-            btnAutoPlay.Location = new Point(btnNextMove.Right + 2, buttonY);
-
-            btnEditPosition.Location = new Point(w - editW - pad, buttonY);
-            btnPlayBot.Location = new Point(btnAutoPlay.Right + gap, buttonY);
-            btnPlayBot.Width = Math.Max(30, btnEditPosition.Left - btnPlayBot.Left - gap);
+            btnNewGame.Location    = new Point(pad, buttonY);
+            btnFlipBoard.Location  = new Point(btnNewGame.Right   + gap, buttonY);
+            btnTakeBack.Location   = new Point(btnFlipBoard.Right + gap, buttonY);
+            btnPrevMove.Location   = new Point(btnTakeBack.Right  + gap, buttonY);
+            btnNextMove.Location   = new Point(btnPrevMove.Right  + 2,   buttonY);
+            btnAutoPlay.Location   = new Point(btnNextMove.Right  + 2,   buttonY);
+            btnPlayBot.Location    = new Point(btnAutoPlay.Right  + gap, buttonY);
+            btnEditPosition.Location = new Point(btnPlayBot.Right + gap, buttonY);
 
             // Row 3 (Y=60): FEN row — label | input | Load | Copy | ⚙
-            const int fenY = 60;
-            const int fenLblW = 35;
-            const int fenBtnW = 52;
+            const int fenY     = 60;
+            const int fenLblW  = 35;
+            const int fenBtnW  = 50;
             const int settingsW = 28;
             int inputW = Math.Max(60, w - pad - fenLblW - 2 * fenBtnW - settingsW - 4 * gap);
 
-            lblFen.Location = new Point(pad, fenY + 3);
-            txtFen.Location = new Point(pad + fenLblW, fenY);
-            txtFen.Width = inputW;
-            btnLoadFen.Location = new Point(txtFen.Right + gap, fenY);
-            btnLoadFen.Width = fenBtnW;
-            btnCopyFen.Location = new Point(btnLoadFen.Right + gap, fenY);
-            btnCopyFen.Width = fenBtnW;
+            lblFen.Location   = new Point(pad, fenY + 3);
+            txtFen.Location   = new Point(pad + fenLblW, fenY);
+            txtFen.Width      = inputW;
+            btnLoadFen.Location  = new Point(txtFen.Right + gap, fenY);
+            btnLoadFen.Width     = fenBtnW;
+            btnCopyFen.Location  = new Point(btnLoadFen.Right + gap, fenY);
+            btnCopyFen.Width     = fenBtnW;
             btnSettings.Location = new Point(btnCopyFen.Right + gap, fenY);
 
             // Row 4 (Y=88): Status text
             lblStatus.Location = new Point(pad, 88);
-            lblStatus.Width = w - 2 * pad;
+            lblStatus.Width    = w - 2 * pad;
         }
 
         private void GrpEngineMatch_Resize(object? sender, EventArgs e)
@@ -1740,7 +1743,8 @@ namespace ChessDroid
 
             _botModeActive = true;
             _botMoveCts = new CancellationTokenSource();
-            btnPlayBot.Text = "Stop Bot";
+            btnPlayBot.Text = "⏹";
+            toolTip.SetToolTip(btnPlayBot, "Stop Bot");
             boardControl.InteractionEnabled = true;
 
             if (_botSettings.ChallengeMode)
@@ -1889,7 +1893,8 @@ namespace ChessDroid
 
             analysisOutput.AppendText($"\n{result}\n");
             boardControl.InteractionEnabled = false;
-            btnPlayBot.Text = "vs Bot";
+            btnPlayBot.Text = "♞";
+            toolTip.SetToolTip(btnPlayBot, "Play vs Bot");
             btnStartMatch.Enabled = true;
 
             _botEngine?.Dispose();
@@ -2087,7 +2092,8 @@ namespace ChessDroid
             _botEngine = null;
             _botSettings = null;
 
-            btnPlayBot.Text = "vs Bot";
+            btnPlayBot.Text = "♞";
+            toolTip.SetToolTip(btnPlayBot, "Play vs Bot");
             btnStartMatch.Enabled = true;
             boardControl.InteractionEnabled = true;
 

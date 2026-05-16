@@ -31,6 +31,8 @@ namespace ChessDroid
         private void InitializeComponent()
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(AnalysisBoardForm));
+            components = new System.ComponentModel.Container();
+            toolTip = new System.Windows.Forms.ToolTip(components);
             mainLayout = new TableLayoutPanel();
             leftPanel = new Panel();
             evalBar = new EvalBarControl();
@@ -204,34 +206,34 @@ namespace ChessDroid
             // btnNewGame
             // 
             btnNewGame.FlatStyle = FlatStyle.Flat;
-            btnNewGame.Font = new Font("Courier New", 8.25F);
-            btnNewGame.Location = new Point(43, 530);
+            btnNewGame.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
+            btnNewGame.Location = new Point(4, 28);
             btnNewGame.Name = "btnNewGame";
-            btnNewGame.Size = new Size(90, 28);
+            btnNewGame.Size = new Size(30, 28);
             btnNewGame.TabIndex = 2;
-            btnNewGame.Text = "New Game";
+            btnNewGame.Text = "↺";
             btnNewGame.Click += BtnNewGame_Click;
-            // 
+            //
             // btnFlipBoard
-            // 
+            //
             btnFlipBoard.FlatStyle = FlatStyle.Flat;
-            btnFlipBoard.Font = new Font("Courier New", 8.25F);
-            btnFlipBoard.Location = new Point(138, 530);
+            btnFlipBoard.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
+            btnFlipBoard.Location = new Point(38, 28);
             btnFlipBoard.Name = "btnFlipBoard";
-            btnFlipBoard.Size = new Size(90, 28);
+            btnFlipBoard.Size = new Size(30, 28);
             btnFlipBoard.TabIndex = 3;
-            btnFlipBoard.Text = "Flip Board";
+            btnFlipBoard.Text = "⇅";
             btnFlipBoard.Click += BtnFlipBoard_Click;
-            // 
+            //
             // btnTakeBack
-            // 
+            //
             btnTakeBack.FlatStyle = FlatStyle.Flat;
-            btnTakeBack.Font = new Font("Courier New", 8.25F);
-            btnTakeBack.Location = new Point(233, 530);
+            btnTakeBack.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
+            btnTakeBack.Location = new Point(72, 28);
             btnTakeBack.Name = "btnTakeBack";
-            btnTakeBack.Size = new Size(90, 28);
+            btnTakeBack.Size = new Size(30, 28);
             btnTakeBack.TabIndex = 4;
-            btnTakeBack.Text = "Take Back";
+            btnTakeBack.Text = "↩";
             btnTakeBack.Click += BtnTakeBack_Click;
             // 
             // btnPrevMove
@@ -260,22 +262,22 @@ namespace ChessDroid
             // 
             btnAutoPlay.FlatStyle = FlatStyle.Flat;
             btnAutoPlay.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
-            btnAutoPlay.Location = new Point(408, 530);
+            btnAutoPlay.Location = new Point(230, 28);
             btnAutoPlay.Name = "btnAutoPlay";
-            btnAutoPlay.Size = new Size(64, 28);
+            btnAutoPlay.Size = new Size(38, 28);
             btnAutoPlay.TabIndex = 25;
             btnAutoPlay.Text = ">>";
             btnAutoPlay.Click += BtnAutoPlay_Click;
-            // 
+            //
             // btnPlayBot
-            // 
+            //
             btnPlayBot.FlatStyle = FlatStyle.Flat;
-            btnPlayBot.Font = new Font("Courier New", 8.25F);
-            btnPlayBot.Location = new Point(478, 530);
+            btnPlayBot.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
+            btnPlayBot.Location = new Point(272, 28);
             btnPlayBot.Name = "btnPlayBot";
-            btnPlayBot.Size = new Size(32, 28);
+            btnPlayBot.Size = new Size(30, 28);
             btnPlayBot.TabIndex = 24;
-            btnPlayBot.Text = "vs Bot";
+            btnPlayBot.Text = "♞";
             btnPlayBot.Click += BtnPlayBot_Click;
             // 
             // btnEditPosition
@@ -457,6 +459,15 @@ namespace ChessDroid
             pnlBoardControls.Name = "pnlBoardControls";
             pnlBoardControls.TabIndex = 5;
             pnlBoardControls.Resize += PnlBoardControls_Resize;
+            toolTip.SetToolTip(btnNewGame,  "New Game");
+            toolTip.SetToolTip(btnFlipBoard, "Flip Board");
+            toolTip.SetToolTip(btnTakeBack, "Take Back");
+            toolTip.SetToolTip(btnPrevMove, "Previous Move");
+            toolTip.SetToolTip(btnNextMove, "Next Move");
+            toolTip.SetToolTip(btnAutoPlay, "Auto-play");
+            toolTip.SetToolTip(btnPlayBot,  "Play vs Bot");
+            toolTip.SetToolTip(btnEditPosition, "Edit Position");
+            toolTip.SetToolTip(btnSettings, "Settings");
             //
             // analysisOutput
             // 
@@ -755,6 +766,7 @@ namespace ChessDroid
         private Panel middlePanel;
         private Panel rightPanel;
         private Panel pnlBoardControls;
+        private System.Windows.Forms.ToolTip toolTip;
 
         // Left panel - Board and controls
         private EvalBarControl evalBar;
