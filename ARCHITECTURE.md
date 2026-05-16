@@ -2,11 +2,11 @@
 
 ## Overview
 
-ChessDroid is a pure offline chess analysis application that combines tactical pattern recognition with deep positional understanding inspired by world-class chess engines (Ethereal and Stockfish). As of v3.9.0, the application is centered around the Analysis Board — an interactive workspace for deep chess analysis with visual engine arrows, threat arrows, eval graph, PV line exploration, piece animations, free-draw annotation, bot mode, continuous analysis, annotated PGN round-trips, square highlighting, auto-play, and full board customization.
+ChessDroid is a pure offline chess analysis application that combines tactical pattern recognition with deep positional understanding inspired by world-class chess engines (Ethereal and Stockfish). As of v3.10.0, the application is centered around the Analysis Board — an interactive workspace for deep chess analysis with visual engine arrows, threat arrows, eval graph, PV line exploration, piece animations, free-draw annotation, bot mode, continuous analysis, annotated PGN round-trips, square highlighting, auto-play, game accuracy scoring, interactive game review, material strips, and full board customization.
 
 ---
 
-## System Architecture (v3.9.0)
+## System Architecture (v3.10.0)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -726,5 +726,5 @@ https://github.com/jio1337/chessdroid/issues
 
 ---
 
-**Last Updated:** 2026-05-14
-**Document Version:** 3.9.0
+**Last Updated:** 2026-05-15
+**Document Version:** 3.10.0

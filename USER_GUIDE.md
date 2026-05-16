@@ -1,4 +1,4 @@
-## ChessDroid v3.9.0 — User Guide
+## ChessDroid v3.10.0 — User Guide
 
 ### Welcome to ChessDroid!
 
@@ -367,7 +367,24 @@ Create a folder in `Templates/` with 12 PNG files (wK, wQ, wR, wB, wN, wP, bK, b
 
 ## Version History
 
-**v3.8.1** — Bug Fixes & Light Theme Polish (Current)
+**v3.10.0** — Game Review & Accuracy (Current)
+- Game accuracy score per side using the Lichess win-probability formula; shown after Classify Moves
+- Interactive game review: click any quality count in the summary to jump to the first move of that quality
+- [← Game Review] link in analysis output for instant return to the accuracy summary while navigating
+- Material difference strips above and below the board (toggle in Settings → Board Colors)
+- Reorganized board controls: icon buttons (↺⇅↩♞), board fills full left-panel height with centering
+- Last-move highlight during keyboard navigation (← →)
+- Eval graph populated immediately when importing an annotated PGN
+- Performance: GDI object caching in EvalBarControl and EvalGraphControl; ThreatDetection LINQ eliminated
+
+**v3.9.0** — Eval Graph, Animations & Bot Levels
+- Eval graph (score history chart) in right panel; click any point to navigate to that move
+- Smooth piece animations (150ms); castling animates the rook; configurable 50–500ms
+- Bot difficulty now a full 1–20 level slider instead of Easy/Medium/Hard tiers
+- Classification cancellation: clicking New Game or Load while classifying stops immediately
+- Engine depth range expanded to 1–40
+
+**v3.8.1** — Bug Fixes & Light Theme Polish
 - [See line] board corruption fixed: clicking any PV line on positions with non-standard FEN characters no longer causes pieces to disappear
 - Light theme readability improvements: position labels, continuous analysis separator, and Recommended move section are now clearly visible on white backgrounds
 
@@ -493,5 +510,5 @@ ChessDroid is released under the MIT License. Free and open-source forever!
 
 **Enjoy analyzing with ChessDroid!**
 
-*Last Updated: 2026-05-14*
-*Version: 3.9.0*
+*Last Updated: 2026-05-15*
+*Version: 3.10.0*

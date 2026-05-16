@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [3.10.0] - 2026-05-15
+
+### Added
+- **Game Accuracy Score** — Lichess win-probability formula (logistic base-10/scale-4.0) applied per side after game review; displayed as "White X.X% Black Y.Y%" in the status bar and as a color-coded header in the console (green ≥90%, yellow-green ≥75%, orange ≥60%, red below)
+- **Interactive Game Review** — After Classify Moves, the console shows a quality table with W/B count columns and color-coded symbols; clicking any non-zero count navigates to the first move of that quality for that side
+- **[← Game Review] Link** — Persists in the analysis output while a classification is active, so you can step through individual moves and return to the accuracy summary at any time without re-running classification
+- **Material Difference Strips** — Captured material shown as advantage strips above and below the board; toggle via Settings → Board Colors
+- **Board Controls Reorganized** — Turn label, icon buttons, FEN row, and status label now live in a dedicated top panel in the right column; board fills the full left panel height with vertical centering
+- **Icon Buttons** — New Game (↺), Flip (⇅), Take Back (↩), navigation (◀ ▶ ▶▶), Bot (♞/⏹) use Segoe UI glyph characters for a cleaner toolbar
+- **Last-Move Highlight in Navigation** — Stepping through moves with ← → highlights source and destination squares for each move
+- **Eval Graph on PGN Import** — Importing an annotated PGN with stored evaluations now populates the eval graph immediately without requiring a fresh analysis pass
+
+### Fixed
+- **Brilliant Moves Missing from Game Review** — Classification counts used the pre-override quality instead of the post-override `finalQuality`, so Brilliant moves manually detected in the classify loop were not reflected in the review statistics
+- **Game Review Disappearing** — After classification, `UpdateMoveListWithClassification()` triggered `MoveListBox_SelectedIndexChanged` → `TriggerAutoAnalysis` which overwrote the accuracy summary in under a second; fixed by wrapping with `isNavigating` flag
+
+### Improved
+- **EvalBarControl Paint** — `SolidBrush` (×2) and `Pen` now cached as readonly fields; eliminated ~240 GDI allocations per second at 60fps
+- **EvalGraphControl Paint** — `List<PointF>` cached and reused via `Clear()` each paint; 5 theme-aware GDI resources (brushes + pens) cached and rebuilt only on theme change; `new Region(RectangleF)` replaced with `g.SetClip(RectangleF)` to avoid Region heap allocation; proper `Dispose` added
+- **ThreatDetection** — All LINQ chains in analysis hot paths replaced with explicit loops: `.Any()` → `HasThreatType` helper, `.Where().ToList()` → `RemoveAll` in-place, `GroupBy().OrderByDescending().Take().ToList()` → `List.Sort()` + manual dedup loop; runs ~40× per game review so savings compound
+- **ClassifyMoves Loop** — `RefreshEvalGraph()` removed from inside the per-move loop (was called 40+ times; single call after the loop is correct); FEN `.Split(' ')` replaced with `IndexOf`-based side check (no string array allocation per move)
+
+---
+
 ## [3.9.0] - 2026-05-14
 
 ### Added
