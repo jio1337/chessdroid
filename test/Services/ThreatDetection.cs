@@ -98,7 +98,7 @@ namespace ChessDroid.Services
 
                 // If the moved piece doesn't give direct check/mate, scan ALL our pieces for
                 // mate-in-1 threats (e.g. a battery move that threatens Qxg2#)
-                if (!pieceWillBeRecaptured && !threatsAfter.Any(t => t.Type == ThreatType.CheckmateThreat))
+                if (!pieceWillBeRecaptured && !HasThreatType(threatsAfter, ThreatType.CheckmateThreat))
                 {
                     DetectMateInOneThreat(afterMove, movingPlayerIsWhite, threatsAfter);
                 }
@@ -127,13 +127,12 @@ namespace ChessDroid.Services
                 DetectEnPassantThreat(board, enPassantSquare, movingPlayerIsWhite, threatsAfter);
 
                 // Filter out threats that already existed before the move
-                // A threat is "new" if its description didn't exist in threatsBefore
-                var beforeDescriptions = new HashSet<string>(threatsBefore.Select(t => t.Description));
-                threatsAfter = threatsAfter.Where(t => !beforeDescriptions.Contains(t.Description)).ToList();
+                var beforeDescriptions = new HashSet<string>(threatsBefore.Count);
+                foreach (var t in threatsBefore) beforeDescriptions.Add(t.Description);
+                threatsAfter.RemoveAll(t => beforeDescriptions.Contains(t.Description));
 
                 // Extra filter for pawns: if we were ALREADY attacking a pawn before the move
                 // (even if it could escape via forward push), don't claim "wins pawn" as newly created.
-                // Example: bishop already on the diagonal to c4; Nc3 blocks c3 but didn't create the attacker.
                 var preAttackedPawnSquares = new HashSet<string>();
                 for (int r = 0; r < 8; r++)
                 {
@@ -141,30 +140,34 @@ namespace ChessDroid.Services
                     {
                         char p = board.GetPiece(r, c);
                         if (p == '.') continue;
-                        if (char.IsUpper(p) == movingPlayerIsWhite) continue; // Must be enemy
+                        if (char.IsUpper(p) == movingPlayerIsWhite) continue;
                         if (PieceHelper.GetPieceType(p) != PieceType.Pawn) continue;
                         if (IsSquareAttackedBy(board, r, c, movingPlayerIsWhite) &&
                             !IsSquareAttackedBy(board, r, c, !movingPlayerIsWhite))
                             preAttackedPawnSquares.Add(GetSquareName(r, c));
                     }
                 }
-                threatsAfter = threatsAfter.Where(t =>
-                    !(t.Type == ThreatType.HangingPiece &&
-                      t.Description.StartsWith("wins pawn") &&
-                      preAttackedPawnSquares.Contains(t.Square))).ToList();
+                threatsAfter.RemoveAll(t =>
+                    t.Type == ThreatType.HangingPiece &&
+                    t.Description.StartsWith("wins pawn") &&
+                    preAttackedPawnSquares.Contains(t.Square));
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"ThreatDetection error: {ex.Message}");
             }
 
-            // Sort by severity (highest first) and take top threats, deduplicate
-            return threatsAfter
-                .GroupBy(t => t.Description)
-                .Select(g => g.First())
-                .OrderByDescending(t => t.Severity)
-                .Take(3)
-                .ToList();
+            // Sort by severity (highest first), deduplicate by description, take top 3
+            threatsAfter.Sort((a, b) => b.Severity.CompareTo(a.Severity));
+            var result = new List<Threat>(3);
+            var seen = new HashSet<string>(threatsAfter.Count);
+            foreach (var t in threatsAfter)
+            {
+                if (result.Count >= 3) break;
+                if (seen.Add(t.Description))
+                    result.Add(t);
+            }
+            return result;
         }
 
         /// <summary>
@@ -204,7 +207,7 @@ namespace ChessDroid.Services
                 DetectOpponentEnPassantThreat(board, enPassantSquare, weAreWhite, threats);
 
                 // Check if opponent can deliver checkmate in one move
-                if (!threats.Any(t => t.Type == ThreatType.CheckmateThreat))
+                if (!HasThreatType(threats, ThreatType.CheckmateThreat))
                 {
                     DetectMateInOneThreat(board, opponentIsWhite, threats);
                 }
@@ -214,12 +217,16 @@ namespace ChessDroid.Services
                 Debug.WriteLine($"ThreatDetection opponent error: {ex.Message}");
             }
 
-            return threats
-                .GroupBy(t => t.Description)
-                .Select(g => g.First())
-                .OrderByDescending(t => t.Severity)
-                .Take(3)
-                .ToList();
+            threats.Sort((a, b) => b.Severity.CompareTo(a.Severity));
+            var result = new List<Threat>(3);
+            var seen = new HashSet<string>(threats.Count);
+            foreach (var t in threats)
+            {
+                if (result.Count >= 3) break;
+                if (seen.Add(t.Description))
+                    result.Add(t);
+            }
+            return result;
         }
 
         #region Our Threat Detection Methods
@@ -460,7 +467,10 @@ namespace ChessDroid.Services
             }
 
             // Fork = attacking 2+ pieces worth 3+ points each (or King)
-            var valuableAttacked = attackedPieces.Where(p => p.value >= 3 || char.ToUpper(p.piece) == 'K').ToList();
+            var valuableAttacked = new List<(int row, int col, char piece, int value)>();
+            foreach (var p in attackedPieces)
+                if (p.value >= 3 || char.ToUpper(p.piece) == 'K')
+                    valuableAttacked.Add(p);
 
             if (valuableAttacked.Count >= 2)
             {
@@ -469,20 +479,23 @@ namespace ChessDroid.Services
 
                 // A fork is only real if we genuinely win material:
                 // each "at risk" piece must be undefended OR worth more than the forking piece OR be the king
-                var atRisk = valuableAttacked.Where(p =>
-                    char.ToUpper(p.piece) == 'K' ||
-                    !ChessUtilities.IsSquareDefended(board, p.row, p.col, !movingPlayerIsWhite) ||
-                    p.value > forkingValue).ToList();
+                var atRisk = new List<(int row, int col, char piece, int value)>();
+                foreach (var p in valuableAttacked)
+                {
+                    if (char.ToUpper(p.piece) == 'K' ||
+                        !ChessUtilities.IsSquareDefended(board, p.row, p.col, !movingPlayerIsWhite) ||
+                        p.value > forkingValue)
+                        atRisk.Add(p);
+                }
 
                 if (atRisk.Count < 2) return;
 
-                var pieceNames = atRisk
-                    .Select(p => ChessUtilities.GetPieceName(PieceHelper.GetPieceType(p.piece)))
-                    .Take(2);
+                string name1 = ChessUtilities.GetPieceName(PieceHelper.GetPieceType(atRisk[0].piece));
+                string name2 = ChessUtilities.GetPieceName(PieceHelper.GetPieceType(atRisk[1].piece));
 
                 threats.Add(new Threat
                 {
-                    Description = $"forks {string.Join(" and ", pieceNames)}",
+                    Description = $"forks {name1} and {name2}",
                     Type = ThreatType.Fork,
                     Severity = 5,
                     Square = GetSquareName(pieceRow, pieceCol)
@@ -1133,35 +1146,38 @@ namespace ChessDroid.Services
                         }
                     }
 
-                    var valuableAttacked = attackedPieces.Where(p => p.value >= 3 || char.ToUpper(p.piece) == 'K').ToList();
+                    var valuableAttacked = new List<(char piece, int value, string square, int row, int col, bool isDefended)>();
+                    foreach (var p in attackedPieces)
+                        if (p.value >= 3 || char.ToUpper(p.piece) == 'K')
+                            valuableAttacked.Add(p);
 
                     if (valuableAttacked.Count >= 2)
                     {
-                        // For a fork to be a REAL threat, we need to check if opponent actually wins material
-                        // Fork works if: at least one piece is undefended, OR attacker value < lowest target value (can trade up)
-                        bool hasUndefendedPiece = valuableAttacked.Any(p => !p.isDefended);
-                        int lowestTargetValue = valuableAttacked.Min(p => p.value);
+                        // For a fork to be a REAL threat, opponent must actually win material
+                        bool hasUndefendedPiece = false;
+                        int lowestTargetValue = int.MaxValue;
+                        foreach (var p in valuableAttacked)
+                        {
+                            if (!p.isDefended) hasUndefendedPiece = true;
+                            if (p.value < lowestTargetValue) lowestTargetValue = p.value;
+                        }
 
-                        // If all pieces are defended AND attacker is worth same or more, fork doesn't win material
-                        // We can just take the attacker and only lose one trade
                         if (!hasUndefendedPiece && attackerValue >= lowestTargetValue)
                             continue;
 
-                        // If the forking piece can be captured for free or profitably, it's not a real fork
                         bool forkPieceDefended = IsSquareAttackedBy(board, r, c, opponentIsWhite);
                         if (!forkPieceDefended)
-                            continue; // Forking piece is hanging — we simply take it
+                            continue;
                         int ourLowestForker = GetLowestAttackerValue(board, r, c, !opponentIsWhite);
                         if (ourLowestForker > 0 && ourLowestForker < attackerValue)
-                            continue; // We can capture the forking piece with a cheaper piece (profitable)
+                            continue;
 
-                        var pieceNames = valuableAttacked
-                            .Select(p => ChessUtilities.GetPieceName(PieceHelper.GetPieceType(p.piece)))
-                            .Take(2);
+                        string name1 = ChessUtilities.GetPieceName(PieceHelper.GetPieceType(valuableAttacked[0].piece));
+                        string name2 = ChessUtilities.GetPieceName(PieceHelper.GetPieceType(valuableAttacked[1].piece));
 
                         threats.Add(new Threat
                         {
-                            Description = $"opponent forks {string.Join(" and ", pieceNames)}",
+                            Description = $"opponent forks {name1} and {name2}",
                             Type = ThreatType.Fork,
                             Severity = 5,
                             Square = GetSquareName(r, c)
@@ -1461,6 +1477,13 @@ namespace ChessDroid.Services
         #endregion Board Snapshot Helpers
 
         #region Helper Methods
+
+        private static bool HasThreatType(List<Threat> threats, ThreatType type)
+        {
+            foreach (var t in threats)
+                if (t.Type == type) return true;
+            return false;
+        }
 
         private static string GetSquareName(int row, int col) => ChessUtilities.GetSquareName(row, col);
 

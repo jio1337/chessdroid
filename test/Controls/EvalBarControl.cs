@@ -21,6 +21,11 @@ namespace ChessDroid.Controls
         // Font for eval text
         private readonly Font evalFont = new Font("Segoe UI", 8f, FontStyle.Bold);
 
+        // Cached GDI objects — created once, reused every OnPaint
+        private readonly SolidBrush _blackBrush;
+        private readonly SolidBrush _whiteBrush;
+        private readonly Pen _borderPen;
+
         public EvalBarControl()
         {
             this.DoubleBuffered = true;
@@ -30,6 +35,10 @@ namespace ChessDroid.Controls
                 ControlStyles.OptimizedDoubleBuffer |
                 ControlStyles.ResizeRedraw,
                 true);
+
+            _blackBrush = new SolidBrush(blackColor);
+            _whiteBrush = new SolidBrush(whiteColor);
+            _borderPen  = new Pen(borderColor, 1f);
         }
 
         /// <summary>
@@ -103,16 +112,10 @@ namespace ChessDroid.Controls
             int blackHeight = h - whiteHeight;
 
             // Draw black section (top)
-            using (var blackBrush = new SolidBrush(blackColor))
-            {
-                g.FillRectangle(blackBrush, 0, 0, w, blackHeight);
-            }
+            g.FillRectangle(_blackBrush, 0, 0, w, blackHeight);
 
             // Draw white section (bottom)
-            using (var whiteBrush = new SolidBrush(whiteColor))
-            {
-                g.FillRectangle(whiteBrush, 0, blackHeight, w, whiteHeight);
-            }
+            g.FillRectangle(_whiteBrush, 0, blackHeight, w, whiteHeight);
 
             // Draw eval text
             string evalText = GetEvalText();
@@ -124,34 +127,28 @@ namespace ChessDroid.Controls
                 // Place text on the dominant side
                 bool whiteIsBetter = evaluation >= 0 && (!isMate || mateIn > 0);
                 float textY;
-                Color textColor;
+                SolidBrush textBrush;
 
                 if (whiteIsBetter)
                 {
                     // Text in white section (bottom), near the boundary
                     textY = blackHeight + 4f;
                     textY = Math.Min(textY, h - textSize.Height - 2f);
-                    textColor = blackColor;
+                    textBrush = _blackBrush;
                 }
                 else
                 {
                     // Text in black section (top), near the boundary
                     textY = blackHeight - textSize.Height - 4f;
                     textY = Math.Max(textY, 2f);
-                    textColor = whiteColor;
+                    textBrush = _whiteBrush;
                 }
 
-                using (var textBrush = new SolidBrush(textColor))
-                {
-                    g.DrawString(evalText, evalFont, textBrush, textX, textY);
-                }
+                g.DrawString(evalText, evalFont, textBrush, textX, textY);
             }
 
             // Draw border
-            using (var borderPen = new Pen(borderColor, 1f))
-            {
-                g.DrawRectangle(borderPen, 0, 0, w - 1, h - 1);
-            }
+            g.DrawRectangle(_borderPen, 0, 0, w - 1, h - 1);
         }
 
         private string GetEvalText()
@@ -174,6 +171,9 @@ namespace ChessDroid.Controls
             if (disposing)
             {
                 evalFont.Dispose();
+                _blackBrush.Dispose();
+                _whiteBrush.Dispose();
+                _borderPen.Dispose();
             }
             base.Dispose(disposing);
         }

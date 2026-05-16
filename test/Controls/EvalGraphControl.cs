@@ -13,18 +13,50 @@ namespace ChessDroid.Controls
         private bool _isDarkMode = true;
         private readonly List<(MoveNode node, float x)> _nodePositions = new();
 
+        // Cached polygon points list — reused every paint, avoiding per-frame List<PointF> allocation
+        private readonly List<PointF> _points = new();
+        private static readonly List<MoveNode> _emptyMainLine = new();
+
+        // Cached GDI objects — rebuilt only when theme changes
+        private SolidBrush? _whiteAdvBrush;
+        private SolidBrush? _blackAdvBrush;
+        private Pen? _linePen;
+        private Pen? _centerLinePen;
+        private Pen? _borderPen;
+        private readonly Pen _currentNodePen = new Pen(Color.FromArgb(180, 80, 200, 255), 1.5f);
+
         public EvalGraphControl()
         {
             DoubleBuffered = true;
             SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.ResizeRedraw, true);
             Cursor = Cursors.Hand;
+            RebuildThemeResources();
+        }
+
+        private void RebuildThemeResources()
+        {
+            _whiteAdvBrush?.Dispose();
+            _blackAdvBrush?.Dispose();
+            _linePen?.Dispose();
+            _centerLinePen?.Dispose();
+            _borderPen?.Dispose();
+
+            _whiteAdvBrush = new SolidBrush(_isDarkMode ? Color.FromArgb(195, 195, 195) : Color.FromArgb(225, 225, 225));
+            _blackAdvBrush = new SolidBrush(_isDarkMode ? Color.FromArgb(55, 55, 55)  : Color.FromArgb(90, 90, 90));
+            _linePen       = new Pen(_isDarkMode ? Color.FromArgb(140, 140, 140) : Color.FromArgb(100, 100, 100), 1.5f);
+            _centerLinePen = new Pen(_isDarkMode ? Color.FromArgb(70, 70, 70)    : Color.FromArgb(155, 155, 155), 1f);
+            _borderPen     = new Pen(_isDarkMode ? Color.FromArgb(60, 60, 60)    : Color.FromArgb(180, 180, 180));
         }
 
         public void SetData(MoveTree? tree, MoveNode? currentNode, bool isDarkMode)
         {
             _moveTree = tree;
             _currentNode = currentNode;
-            _isDarkMode = isDarkMode;
+            if (_isDarkMode != isDarkMode)
+            {
+                _isDarkMode = isDarkMode;
+                RebuildThemeResources();
+            }
             Invalidate();
         }
 
@@ -39,7 +71,7 @@ namespace ChessDroid.Controls
 
             _nodePositions.Clear();
 
-            var mainLine = _moveTree?.GetMainLine() ?? new List<MoveNode>();
+            var mainLine = _moveTree?.GetMainLine() ?? _emptyMainLine;
             if (mainLine.Count == 0)
             {
                 DrawCenterLine(g);
@@ -52,8 +84,9 @@ namespace ChessDroid.Controls
             float midY = h / 2f;
             const float maxEval = 5f;
 
-            // Build polygon points: baseline-start → eval points → baseline-end
-            var points = new List<PointF> { new PointF(0, midY) };
+            // Build polygon points into cached list — no per-frame List<PointF> allocation
+            _points.Clear();
+            _points.Add(new PointF(0, midY));
             for (int i = 0; i < mainLine.Count; i++)
             {
                 float x = (i + 0.5f) * w / mainLine.Count;
@@ -61,39 +94,25 @@ namespace ChessDroid.Controls
                     ? (float)Math.Max(-maxEval, Math.Min(maxEval, ev))
                     : 0f;
                 float y = Math.Max(1, Math.Min(h - 1, midY - eval / maxEval * midY));
-                points.Add(new PointF(x, y));
+                _points.Add(new PointF(x, y));
                 _nodePositions.Add((mainLine[i], x));
             }
-            points.Add(new PointF(w, midY));
-            var pts = points.ToArray();
+            _points.Add(new PointF(w, midY));
+            var pts = _points.ToArray();
 
-            // White advantage (above midY)
-            Color whiteAdv = _isDarkMode ? Color.FromArgb(195, 195, 195) : Color.FromArgb(225, 225, 225);
-            using (var clip = new Region(new RectangleF(0, 0, w, midY)))
-            {
-                g.SetClip(clip, CombineMode.Replace);
-                using var brush = new SolidBrush(whiteAdv);
-                g.FillPolygon(brush, pts);
-                g.ResetClip();
-            }
+            // White advantage (above midY) — SetClip(RectangleF) avoids Region allocation
+            g.SetClip(new RectangleF(0, 0, w, midY));
+            g.FillPolygon(_whiteAdvBrush!, pts);
+            g.ResetClip();
 
             // Black advantage (below midY)
-            Color blackAdv = _isDarkMode ? Color.FromArgb(55, 55, 55) : Color.FromArgb(90, 90, 90);
-            using (var clip = new Region(new RectangleF(0, midY, w, h - midY)))
-            {
-                g.SetClip(clip, CombineMode.Replace);
-                using var brush = new SolidBrush(blackAdv);
-                g.FillPolygon(brush, pts);
-                g.ResetClip();
-            }
+            g.SetClip(new RectangleF(0, midY, w, h - midY));
+            g.FillPolygon(_blackAdvBrush!, pts);
+            g.ResetClip();
 
             // Eval curve (skip baseline endpoints) — DrawLines needs at least 2 points
-            if (points.Count > 3)
-            {
-                Color lineColor = _isDarkMode ? Color.FromArgb(140, 140, 140) : Color.FromArgb(100, 100, 100);
-                using var pen = new Pen(lineColor, 1.5f);
-                g.DrawLines(pen, pts[1..^1]);
-            }
+            if (_points.Count > 3)
+                g.DrawLines(_linePen!, pts[1..^1]);
 
             DrawCenterLine(g);
 
@@ -102,10 +121,7 @@ namespace ChessDroid.Controls
             {
                 var pos = _nodePositions.FirstOrDefault(np => ReferenceEquals(np.node, _currentNode));
                 if (pos.node != null)
-                {
-                    using var pen = new Pen(Color.FromArgb(180, 80, 200, 255), 1.5f);
-                    g.DrawLine(pen, pos.x, 0, pos.x, h);
-                }
+                    g.DrawLine(_currentNodePen, pos.x, 0, pos.x, h);
             }
 
             DrawBorder(g);
@@ -113,17 +129,27 @@ namespace ChessDroid.Controls
 
         private void DrawCenterLine(Graphics g)
         {
-            Color c = _isDarkMode ? Color.FromArgb(70, 70, 70) : Color.FromArgb(155, 155, 155);
-            using var pen = new Pen(c, 1f);
             float midY = Height / 2f;
-            g.DrawLine(pen, 0, midY, Width, midY);
+            g.DrawLine(_centerLinePen!, 0, midY, Width, midY);
         }
 
         private void DrawBorder(Graphics g)
         {
-            Color c = _isDarkMode ? Color.FromArgb(60, 60, 60) : Color.FromArgb(180, 180, 180);
-            using var pen = new Pen(c);
-            g.DrawRectangle(pen, 0, 0, Width - 1, Height - 1);
+            g.DrawRectangle(_borderPen!, 0, 0, Width - 1, Height - 1);
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                _whiteAdvBrush?.Dispose();
+                _blackAdvBrush?.Dispose();
+                _linePen?.Dispose();
+                _centerLinePen?.Dispose();
+                _borderPen?.Dispose();
+                _currentNodePen.Dispose();
+            }
+            base.Dispose(disposing);
         }
 
         protected override void OnMouseClick(MouseEventArgs e)
