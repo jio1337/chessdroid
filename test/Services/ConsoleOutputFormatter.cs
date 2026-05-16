@@ -13,17 +13,31 @@ namespace ChessDroid.Services
         private readonly AppConfig config;
         private readonly Func<string, string, List<string>, string, string> generateExplanation;
 
-        // [See line] clickable markers: character range → PV data
-        private readonly List<(int start, int length, string pvUci, string fen)> _seeLineMarkers = new();
+        // Clickable marker infrastructure — supports [See line], count navigation, and game review link
+        private enum ClickAction { InsertPv, NavigateToNode, ShowGameReview }
+        private sealed class ClickMarker
+        {
+            public int Start;
+            public int Length;
+            public ClickAction Action;
+            public string? PvUci;   // InsertPv
+            public string? Fen;     // InsertPv
+            public MoveNode? Node;  // NavigateToNode
+        }
+        private readonly List<ClickMarker> _markers = new();
+
+        private MoveClassificationResult? _activeClassification;
+
+        /// <summary>Fired when user clicks a [See line] link.</summary>
+        public Action<string, string>? OnSeeLineClicked;
+        /// <summary>Fired when user clicks a quality count in the game review — navigates to that move.</summary>
+        public Action<MoveNode>? OnNavigateToNode;
+        /// <summary>Fired when user clicks the [← Game Review] link in analysis output.</summary>
+        public Action? OnShowGameReview;
 
         // Book context stored before engine starts — lets live updates prepend opening/book info
         private string? _activeBookFen;
         private List<BookMove>? _activeBookMoves;
-
-        /// <summary>
-        /// Fired when user clicks a [See line] link. Parameters: (pvUci, startFen)
-        /// </summary>
-        public Action<string, string>? OnSeeLineClicked;
 
         public ConsoleOutputFormatter(
             RichTextBox richTextBox,
@@ -57,7 +71,7 @@ namespace ChessDroid.Services
             _activeBookFen = fen;
             _activeBookMoves = bookMoves;
             Clear();
-            _seeLineMarkers.Clear();
+            _markers.Clear();
             AppendOpeningAndBook(fen, bookMoves);
         }
 
@@ -89,11 +103,22 @@ namespace ChessDroid.Services
         private void RichTextBox_MouseClick(object? sender, MouseEventArgs e)
         {
             int charIndex = richTextBox.GetCharIndexFromPosition(e.Location);
-            foreach (var marker in _seeLineMarkers)
+            foreach (var marker in _markers)
             {
-                if (charIndex >= marker.start && charIndex < marker.start + marker.length)
+                if (charIndex >= marker.Start && charIndex < marker.Start + marker.Length)
                 {
-                    OnSeeLineClicked?.Invoke(marker.pvUci, marker.fen);
+                    switch (marker.Action)
+                    {
+                        case ClickAction.InsertPv:
+                            OnSeeLineClicked?.Invoke(marker.PvUci!, marker.Fen!);
+                            break;
+                        case ClickAction.NavigateToNode:
+                            OnNavigateToNode?.Invoke(marker.Node!);
+                            break;
+                        case ClickAction.ShowGameReview:
+                            OnShowGameReview?.Invoke();
+                            break;
+                    }
                     return;
                 }
             }
@@ -102,15 +127,7 @@ namespace ChessDroid.Services
         private void RichTextBox_MouseMove(object? sender, MouseEventArgs e)
         {
             int charIndex = richTextBox.GetCharIndexFromPosition(e.Location);
-            bool onMarker = false;
-            foreach (var marker in _seeLineMarkers)
-            {
-                if (charIndex >= marker.start && charIndex < marker.start + marker.length)
-                {
-                    onMarker = true;
-                    break;
-                }
-            }
+            bool onMarker = _markers.Any(m => charIndex >= m.Start && charIndex < m.Start + m.Length);
             richTextBox.Cursor = onMarker ? Cursors.Hand : Cursors.Default;
         }
 
@@ -150,7 +167,7 @@ namespace ChessDroid.Services
                 Color linkColor = GetThemeColor(Color.Cyan, Color.Blue);
                 AppendTextWithFormat("[See line]", richTextBox.BackColor, linkColor, FontStyle.Underline);
                 int markerLength = richTextBox.TextLength - markerStart;
-                _seeLineMarkers.Add((markerStart, markerLength, pvUciLine, completeFen));
+                _markers.Add(new ClickMarker { Start = markerStart, Length = markerLength, Action = ClickAction.InsertPv, PvUci = pvUciLine, Fen = completeFen });
             }
 
             AppendTextWithFormat(Environment.NewLine, richTextBox.BackColor, headerForeColor, FontStyle.Regular);
@@ -1919,6 +1936,118 @@ namespace ChessDroid.Services
         }
 
         /// <summary>
+        /// Displays the game review summary after move classification completes.
+        /// Shows accuracy scores for both sides and a breakdown by move quality.
+        /// </summary>
+        public void DisplayClassificationSummary(MoveClassificationResult classification)
+        {
+            richTextBox.Clear();
+            _markers.Clear();
+            ResetBackground();
+
+            bool isDark = config?.Theme == "Dark";
+            Color back    = richTextBox.BackColor;
+            Color sepClr  = isDark ? Color.FromArgb(75, 75, 75) : Color.Gray;
+            Color text     = isDark ? Color.White : Color.Black;
+            Color subtext  = isDark ? Color.LightGray : Color.DimGray;
+            Color linkClr  = GetThemeColor(Color.Cyan, Color.Blue);
+
+            string sep = new string('─', 38);
+            AppendTextWithFormat(sep + "\n", back, sepClr, FontStyle.Regular);
+            AppendTextWithFormat("  Game Review\n", back, text, FontStyle.Bold);
+            AppendTextWithFormat(sep + "\n", back, sepClr, FontStyle.Regular);
+
+            // Accuracy scores
+            Color wAcc = AccuracyColor(classification.WhiteAccuracy, isDark);
+            Color bAcc = AccuracyColor(classification.BlackAccuracy, isDark);
+            AppendTextWithFormat("\n  White  ", back, subtext, FontStyle.Regular);
+            AppendTextWithFormat($"{classification.WhiteAccuracy:F1}%", back, wAcc, FontStyle.Bold);
+            AppendTextWithFormat("        Black  ", back, subtext, FontStyle.Regular);
+            AppendTextWithFormat($"{classification.BlackAccuracy:F1}%\n\n", back, bAcc, FontStyle.Bold);
+
+            // Column headers — aligned to match the number columns below
+            AppendTextWithFormat($"  {"",4}{"",12}{"W",5}  {"B",5}\n", back, subtext, FontStyle.Italic);
+
+            // Per-quality breakdown — symbol, label, white count (clickable), black count (clickable)
+            var rows = new[]
+            {
+                (MoveQualityAnalyzer.MoveQuality.Brilliant,  "!!", "Brilliant"),
+                (MoveQualityAnalyzer.MoveQuality.Best,       "✓✓", "Best"),
+                (MoveQualityAnalyzer.MoveQuality.Excellent,  "✓",  "Excellent"),
+                (MoveQualityAnalyzer.MoveQuality.Good,       "·",  "Good"),
+                (MoveQualityAnalyzer.MoveQuality.Inaccuracy, "?!", "Inaccuracy"),
+                (MoveQualityAnalyzer.MoveQuality.Mistake,    "?",  "Mistake"),
+                (MoveQualityAnalyzer.MoveQuality.Blunder,    "??", "Blunder"),
+            };
+
+            foreach (var (quality, symbol, label) in rows)
+            {
+                int w = classification.WhiteCounts.TryGetValue(quality, out int wc) ? wc : 0;
+                int b = classification.BlackCounts.TryGetValue(quality, out int bc) ? bc : 0;
+                if (w == 0 && b == 0) continue;
+
+                var firstWhite = w > 0 ? classification.MoveResults.FirstOrDefault(r =>  r.IsWhiteMove && r.Quality == quality) : null;
+                var firstBlack = b > 0 ? classification.MoveResults.FirstOrDefault(r => !r.IsWhiteMove && r.Quality == quality) : null;
+
+                Color qColor = QualityColor(quality, isDark);
+                AppendTextWithFormat($"  {symbol,-4}", back, qColor,  FontStyle.Bold);
+                AppendTextWithFormat($"{label,-12}",   back, subtext, FontStyle.Regular);
+
+                // White count — right-aligned in 5 chars, underlined if clickable, dash if zero
+                string wDisplay = w > 0 ? w.ToString() : "—";
+                int wStart = richTextBox.TextLength;
+                AppendTextWithFormat($"{wDisplay,5}", back, w > 0 ? qColor : subtext, FontStyle.Regular);
+                if (w > 0 && firstWhite?.Node != null)
+                    _markers.Add(new ClickMarker { Start = wStart, Length = richTextBox.TextLength - wStart, Action = ClickAction.NavigateToNode, Node = firstWhite.Node });
+
+                AppendTextWithFormat("  ", back, back, FontStyle.Regular);
+
+                // Black count — right-aligned in 5 chars, underlined if clickable, dash if zero
+                string bDisplay = b > 0 ? b.ToString() : "—";
+                int bStart = richTextBox.TextLength;
+                AppendTextWithFormat($"{bDisplay,5}", back, b > 0 ? qColor : subtext, FontStyle.Regular);
+                if (b > 0 && firstBlack?.Node != null)
+                    _markers.Add(new ClickMarker { Start = bStart, Length = richTextBox.TextLength - bStart, Action = ClickAction.NavigateToNode, Node = firstBlack.Node });
+
+                richTextBox.AppendText("\n");
+            }
+
+            AppendTextWithFormat("\n" + sep + "\n", back, sepClr, FontStyle.Regular);
+
+            richTextBox.SelectionStart = richTextBox.TextLength;
+            richTextBox.ScrollToCaret();
+        }
+
+        /// <summary>
+        /// Sets the active game review classification. When non-null, a [← Game Review] link
+        /// is prepended to every analysis output so the user can return to the summary.
+        /// </summary>
+        public void SetActiveClassification(MoveClassificationResult? classification)
+        {
+            _activeClassification = classification;
+        }
+
+        private static Color AccuracyColor(double accuracy, bool isDark)
+        {
+            if (accuracy >= 90) return isDark ? Color.LimeGreen    : Color.ForestGreen;
+            if (accuracy >= 75) return isDark ? Color.YellowGreen  : Color.DarkOliveGreen;
+            if (accuracy >= 60) return isDark ? Color.Orange       : Color.SaddleBrown;
+            return isDark ? Color.OrangeRed : Color.Firebrick;
+        }
+
+        private static Color QualityColor(MoveQualityAnalyzer.MoveQuality quality, bool isDark) => quality switch
+        {
+            MoveQualityAnalyzer.MoveQuality.Brilliant  => isDark ? Color.FromArgb(30, 220, 170) : Color.Teal,
+            MoveQualityAnalyzer.MoveQuality.Best       => isDark ? Color.LimeGreen : Color.ForestGreen,
+            MoveQualityAnalyzer.MoveQuality.Excellent  => isDark ? Color.LimeGreen : Color.ForestGreen,
+            MoveQualityAnalyzer.MoveQuality.Good       => isDark ? Color.LightGray : Color.DimGray,
+            MoveQualityAnalyzer.MoveQuality.Inaccuracy => isDark ? Color.Orange    : Color.DarkGoldenrod,
+            MoveQualityAnalyzer.MoveQuality.Mistake    => isDark ? Color.OrangeRed : Color.Chocolate,
+            MoveQualityAnalyzer.MoveQuality.Blunder    => Color.Crimson,
+            _                                          => isDark ? Color.LightGray : Color.DimGray,
+        };
+
+        /// <summary>
         /// Clears the console
         /// </summary>
         public void Clear()
@@ -2044,7 +2173,17 @@ namespace ChessDroid.Services
             string fen = completeFen ?? throw new ArgumentNullException(nameof(completeFen));
 
             Clear();
-            _seeLineMarkers.Clear();
+            _markers.Clear();
+
+            // [← Game Review] link — shown when a game review is active
+            if (_activeClassification != null)
+            {
+                Color linkClr = GetThemeColor(Color.Cyan, Color.Blue);
+                int rStart = richTextBox.TextLength;
+                AppendTextWithFormat("[← Game Review]", richTextBox.BackColor, linkClr, FontStyle.Underline);
+                _markers.Add(new ClickMarker { Start = rStart, Length = richTextBox.TextLength - rStart, Action = ClickAction.ShowGameReview });
+                richTextBox.AppendText("\n");
+            }
 
             // Extract whose turn it is from FEN for WDL display
             string[] fenPartsForWdl = fen.Split(' ');
@@ -2440,11 +2579,21 @@ namespace ChessDroid.Services
         public void DisplayLiveLines(string fen, string evaluation, List<string> pvs, List<string> evals, WDLInfo? wdl, int depth)
         {
             Clear();
-            _seeLineMarkers.Clear();
+            _markers.Clear();
 
             bool isDark = config?.Theme == "Dark";
             bool whiteToMove = fen.Split(' ') is { Length: > 1 } p && p[1] == "w";
             string side = whiteToMove ? "White" : "Black";
+
+            // [← Game Review] link if a review is active
+            if (_activeClassification != null)
+            {
+                Color linkClr = GetThemeColor(Color.Cyan, Color.Blue);
+                int rStart = richTextBox.TextLength;
+                AppendTextWithFormat("[← Game Review]", richTextBox.BackColor, linkClr, FontStyle.Underline);
+                _markers.Add(new ClickMarker { Start = rStart, Length = richTextBox.TextLength - rStart, Action = ClickAction.ShowGameReview });
+                richTextBox.AppendText("\n");
+            }
 
             // Header
             richTextBox.SelectionColor = GetThemeColor(Color.Silver, Color.DimGray);

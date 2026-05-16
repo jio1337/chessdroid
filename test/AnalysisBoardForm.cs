@@ -266,7 +266,17 @@ namespace ChessDroid
                 analysisOutput,
                 config,
                 MovesExplanation.GenerateMoveExplanation);
-            consoleFormatter.OnSeeLineClicked += InsertPvIntoMoveTree;
+            consoleFormatter.OnSeeLineClicked  += InsertPvIntoMoveTree;
+            consoleFormatter.OnNavigateToNode  += node =>
+            {
+                int idx = displayedNodes.IndexOf(node);
+                if (idx >= 0) moveListBox.SelectedIndex = idx;
+            };
+            consoleFormatter.OnShowGameReview  += () =>
+            {
+                if (_currentClassification != null)
+                    consoleFormatter.DisplayClassificationSummary(_currentClassification);
+            };
 
             // Initialize opening book service
             openingBookService = new PolyglotBookService();
@@ -575,6 +585,7 @@ namespace ChessDroid
             _analysisCache.Clear(); // Clear analysis cache for new game
             _currentClassification = null;
             _classificationLookup = null;
+            consoleFormatter?.SetActiveClassification(null);
             UpdateFenDisplay();
             UpdateTurnLabel();
             lblStatus.Text = "New game started";
@@ -1702,6 +1713,7 @@ namespace ChessDroid
             _analysisCache.Clear();
             _currentClassification = null;
             _classificationLookup = null;
+            consoleFormatter?.SetActiveClassification(null);
             analysisOutput.Clear();
             evalBar?.Reset();
 
@@ -3690,8 +3702,8 @@ namespace ChessDroid
                             if (bestPvEval.HasValue && secondPvEval.HasValue)
                             {
                                 double evalSwing = Math.Abs(bestPvEval.Value - secondPvEval.Value);
-                                string[] fenParts = beforeFen.Split(' ');
-                                bool whiteToMove = fenParts.Length > 1 && fenParts[1] == "w";
+                                int _sp = beforeFen.IndexOf(' ');
+                                bool whiteToMove = _sp >= 0 && _sp + 1 < beforeFen.Length && beforeFen[_sp + 1] == 'w';
 
                                 bool isOnlyWinningMove;
                                 if (whiteToMove)
@@ -3719,7 +3731,6 @@ namespace ChessDroid
 
                     // Store eval on node so the graph has data for every move
                     node.Evaluation = evalAfter;
-                    RefreshEvalGraph();
 
                     // Store the result
                     var moveResult = new MoveReviewResult
@@ -3737,16 +3748,16 @@ namespace ChessDroid
                     };
                     classification.MoveResults.Add(moveResult);
 
-                    // Update stats
+                    // Update stats — use finalQuality so brilliant overrides are counted correctly
                     if (node.IsWhiteMove)
                     {
                         whiteMoves++;
-                        classification.WhiteCounts[quality.Quality]++;
+                        classification.WhiteCounts[finalQuality]++;
                     }
                     else
                     {
                         blackMoves++;
-                        classification.BlackCounts[quality.Quality]++;
+                        classification.BlackCounts[finalQuality]++;
                     }
                 }
                 catch (OperationCanceledException)
@@ -3772,14 +3783,21 @@ namespace ChessDroid
             // Store final stats
             classification.WhiteMoveCount = whiteMoves;
             classification.BlackMoveCount = blackMoves;
+            classification.WhiteAccuracy = ComputeAccuracy(classification.MoveResults, forWhite: true);
+            classification.BlackAccuracy = ComputeAccuracy(classification.MoveResults, forWhite: false);
 
             _currentClassification = classification;
 
-            // Update the move list with classification symbols
+            // isNavigating prevents MoveListBox_SelectedIndexChanged from firing TriggerAutoAnalysis
+            // when we update item text with classification symbols — otherwise analysis overwrites the summary
+            isNavigating = true;
             UpdateMoveListWithClassification();
-            RefreshEvalGraph();
+            isNavigating = false;
 
-            lblStatus.Text = $"Classification complete - {whiteMoves + blackMoves} moves analyzed";
+            RefreshEvalGraph();
+            consoleFormatter?.SetActiveClassification(classification);
+            consoleFormatter?.DisplayClassificationSummary(classification);
+            lblStatus.Text = $"Game review — White {classification.WhiteAccuracy:F1}%  Black {classification.BlackAccuracy:F1}%";
         }
 
         /// <summary>
@@ -3837,6 +3855,29 @@ namespace ChessDroid
         private bool IsDraw(double eval)
         {
             return Math.Abs(eval) < 0.05;
+        }
+
+        private static double ComputeAccuracy(List<MoveReviewResult> results, bool forWhite)
+        {
+            var moves = results.Where(r => r.IsWhiteMove == forWhite).ToList();
+            if (moves.Count == 0) return 100.0;
+
+            double totalWinLoss = 0;
+            foreach (var m in moves)
+            {
+                // EvalBefore/EvalAfter are in White's perspective (pawns). Flip for Black.
+                double evalBefore = forWhite ? m.EvalBefore : -m.EvalBefore;
+                double evalAfter  = forWhite ? m.EvalAfter  : -m.EvalAfter;
+
+                // Logistic win probability from player's perspective (same scale as GetMoveClassification)
+                double wpBefore = 1.0 / (1.0 + Math.Pow(10, -evalBefore / 4.0));
+                double wpAfter  = 1.0 / (1.0 + Math.Pow(10, -evalAfter  / 4.0));
+                totalWinLoss += Math.Max(0, wpBefore - wpAfter);
+            }
+
+            // Lichess accuracy formula: avgWinLoss in percentage points (0–100)
+            double avgWinLoss = totalWinLoss / moves.Count * 100.0;
+            return Math.Max(0, Math.Min(100, 103.1668 * Math.Exp(-0.04354 * avgWinLoss) - 3.1669));
         }
 
         private void UpdateMoveListWithClassification()

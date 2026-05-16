@@ -38,5 +38,9 @@ namespace ChessDroid.Models
         // Move counts
         public int WhiteMoveCount { get; set; }
         public int BlackMoveCount { get; set; }
+
+        // Accuracy scores (0–100)
+        public double WhiteAccuracy { get; set; }
+        public double BlackAccuracy { get; set; }
     }
 }
