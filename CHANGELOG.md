@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [3.11.0] - 2026-05-16
+
+### Added
+- **Game Library** — Save any position/game to a persistent local library; games are stored as JSON files with player names, date, result, PGN moves, and accuracy scores
+- **Load from Library** — Browse saved games in a dialog, load them back onto the board with full move tree and accuracy data restored
+- **Inline Rename** — Double-click any game name in the library to rename it in place without reopening a dialog
+- **Engine Match Auto-Save** — Engine vs engine matches are automatically saved to the library when they finish, with both engine names captured as player names
+- **Re-save Dedup** — Re-saving a game that already exists in the library overwrites the existing entry rather than creating a duplicate
+
+---
+
 ## [3.10.0] - 2026-05-15
 
 ### Added

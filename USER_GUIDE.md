@@ -1,4 +1,4 @@
-## ChessDroid v3.10.0 — User Guide
+## ChessDroid v3.11.0 — User Guide
 
 ### Welcome to ChessDroid!
 
@@ -367,7 +367,14 @@ Create a folder in `Templates/` with 12 PNG files (wK, wQ, wR, wB, wN, wP, bK, b
 
 ## Version History
 
-**v3.10.0** — Game Review & Accuracy (Current)
+**v3.11.0** — Game Library (Current)
+- Save any game to a persistent local library with player names, date, result, PGN, and accuracy scores
+- Load saved games back onto the board with full move tree and accuracy data restored
+- Inline rename: double-click any game name in the library to rename it
+- Engine vs engine matches auto-saved to the library when they finish
+- Re-saving an existing game overwrites rather than duplicating
+
+**v3.10.0** — Game Review & Accuracy
 - Game accuracy score per side using the Lichess win-probability formula; shown after Classify Moves
 - Interactive game review: click any quality count in the summary to jump to the first move of that quality
 - [← Game Review] link in analysis output for instant return to the accuracy summary while navigating
@@ -510,5 +517,5 @@ ChessDroid is released under the MIT License. Free and open-source forever!
 
 **Enjoy analyzing with ChessDroid!**
 
-*Last Updated: 2026-05-15*
-*Version: 3.10.0*
+*Last Updated: 2026-05-16*
+*Version: 3.11.0*
