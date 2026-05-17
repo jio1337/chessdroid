@@ -3085,7 +3085,7 @@ namespace ChessDroid
             if (!string.IsNullOrEmpty(_libraryGameId))
                 game.Id = _libraryGameId;
 
-            _libraryService.Save(game);
+            _libraryService!.Save(game);
             _libraryGameId = game.Id;
 
             string label = game.White == "?" && game.Black == "?"
