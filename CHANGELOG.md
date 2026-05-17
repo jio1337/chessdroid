@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [3.12.0] - 2026-05-17
+
+### Added
+- **SVG Piece Sets** — Drop any SVG piece set folder into the Templates directory and chessdroid picks it up automatically; supports Lichess (`wK.svg`) and PyChess (`wk.svg`) naming conventions
+- **Analysis Color Redesign** — Reworked console output color scheme and spacing for improved readability in both light and dark mode
+- **Material Strip Theming** — Pill backgrounds are now theme-aware: white tint in dark mode, dark tint in light mode; 2px breathing gap between strips and board edges
+
+### Fixed
+- **Recommended Section** — Collapsed to first move + reason only; no longer shows every candidate when multiple moves share the top classification
+- **Material Strip Piece Visibility** — Pieces now render correctly on both light and dark backgrounds using the appropriate fallback chain (PNG → SVG uppercase → SVG lowercase → Unicode glyph)
+- **Layout on Any Monitor** — Board column width is now driven by panel height via `mainLayout.Resize → AdjustColumnWidths()`; no horizontal dead space when maximized on any resolution
+
+### Improved
+- **SVG Drag Performance** — All piece bitmaps are pre-scaled once to the board's square size; `DrawImage` is a 1:1 pixel copy every frame instead of a bicubic rescale, making SVG sets as smooth as Chess.com PNG pieces during dragging
+
+---
+
 ## [3.11.0] - 2026-05-16
 
 ### Added

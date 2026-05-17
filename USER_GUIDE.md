@@ -1,4 +1,4 @@
-## ChessDroid v3.11.0 — User Guide
+## ChessDroid v3.12.0 — User Guide
 
 ### Welcome to ChessDroid!
 
@@ -367,7 +367,14 @@ Create a folder in `Templates/` with 12 PNG files (wK, wQ, wR, wB, wN, wP, bK, b
 
 ## Version History
 
-**v3.11.0** — Game Library (Current)
+**v3.12.0** — Custom Piece Sets (Current)
+- SVG piece set support: drop any SVG folder into Templates and chessdroid auto-discovers it
+- Analysis output color redesign and spacing improvements
+- Material strips are now theme-aware with proper light/dark pill backgrounds
+- Board column width driven by window height — no dead horizontal space on any monitor
+- SVG drag performance: pre-scaled bitmaps, as smooth as Chess.com PNG sets
+
+**v3.11.0** — Game Library
 - Save any game to a persistent local library with player names, date, result, PGN, and accuracy scores
 - Load saved games back onto the board with full move tree and accuracy data restored
 - Inline rename: double-click any game name in the library to rename it
@@ -517,5 +524,5 @@ ChessDroid is released under the MIT License. Free and open-source forever!
 
 **Enjoy analyzing with ChessDroid!**
 
-*Last Updated: 2026-05-16*
-*Version: 3.11.0*
+*Last Updated: 2026-05-17*
+*Version: 3.12.0*
