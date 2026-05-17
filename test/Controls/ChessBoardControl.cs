@@ -93,8 +93,10 @@ namespace ChessDroid.Controls
         private int _annotationRow = -1;
         private int _annotationCol = -1;
 
-        // Piece images
+        // Piece images — source bitmaps + pre-scaled cache for fast drag painting
         private Dictionary<char, Image?> pieceImages = new Dictionary<char, Image?>();
+        private Dictionary<char, Bitmap?> _scaledImages = new();
+        private int _lastScaledSquareSize = 0;
         private string currentTemplateSet = "Lichess";
 
         // Font for coordinates (fallback for pieces if images fail)
@@ -169,6 +171,9 @@ namespace ChessDroid.Controls
             foreach (var img in pieceImages.Values)
                 img?.Dispose();
             pieceImages.Clear();
+            foreach (var bmp in _scaledImages.Values) bmp?.Dispose();
+            _scaledImages.Clear();
+            _lastScaledSquareSize = 0;
 
             string basePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Templates", templateSet);
 
@@ -229,6 +234,29 @@ namespace ChessDroid.Controls
                 Debug.WriteLine($"Failed to render SVG {path}: {ex.Message}");
                 return null;
             }
+        }
+
+        // Pre-scales all piece images to the actual draw size so DrawImage is a 1:1 copy every frame.
+        // Called once per squareSize change — bicubic quality here, zero cost at paint time.
+        private void RescaleImages(int squareSize)
+        {
+            foreach (var bmp in _scaledImages.Values) bmp?.Dispose();
+            _scaledImages.Clear();
+
+            int sz = squareSize - 2 * (squareSize / 16); // mirrors DrawPiece padding
+            if (sz <= 0) { _lastScaledSquareSize = squareSize; return; }
+
+            foreach (var kvp in pieceImages)
+            {
+                if (kvp.Value == null) { _scaledImages[kvp.Key] = null; continue; }
+                var bmp = new Bitmap(sz, sz, System.Drawing.Imaging.PixelFormat.Format32bppPArgb);
+                using var gfx = Graphics.FromImage(bmp);
+                gfx.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+                gfx.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                gfx.DrawImage(kvp.Value, 0, 0, sz, sz);
+                _scaledImages[kvp.Key] = bmp;
+            }
+            _lastScaledSquareSize = squareSize;
         }
 
         #region Public Properties
@@ -685,7 +713,7 @@ namespace ChessDroid.Controls
                     pieceSize,
                     pieceSize
                 );
-                DrawPiece(g, dragPiece, dragRect, pieceSize);
+                DrawPiece(g, dragPiece, dragRect, squareSize);
             }
 
             // Draw coordinates
@@ -836,10 +864,13 @@ namespace ChessDroid.Controls
 
         private void DrawPiece(Graphics g, char piece, Rectangle rect, int squareSize)
         {
-            // Try to draw from image first
-            if (pieceImages.TryGetValue(piece, out Image? img) && img != null)
+            // Rebuild scaled cache if squareSize changed (window resize or first paint)
+            if (_lastScaledSquareSize != squareSize)
+                RescaleImages(squareSize);
+
+            // Try to draw from pre-scaled cache — 1:1 pixel copy, no per-frame scaling cost
+            if (_scaledImages.TryGetValue(piece, out Bitmap? scaled) && scaled != null)
             {
-                // Add small padding so pieces don't touch the edge
                 int padding = squareSize / 16;
                 Rectangle pieceRect = new Rectangle(
                     rect.X + padding,
@@ -847,7 +878,7 @@ namespace ChessDroid.Controls
                     rect.Width - 2 * padding,
                     rect.Height - 2 * padding
                 );
-                g.DrawImage(img, pieceRect);
+                g.DrawImage(scaled, pieceRect);
             }
             else
             {
@@ -1664,11 +1695,10 @@ namespace ChessDroid.Controls
                 _badgeFont?.Dispose();
                 _paintBrush.Dispose();
                 _legalMovePen.Dispose();
-                foreach (var img in pieceImages.Values)
-                {
-                    img?.Dispose();
-                }
+                foreach (var img in pieceImages.Values) img?.Dispose();
                 pieceImages.Clear();
+                foreach (var bmp in _scaledImages.Values) bmp?.Dispose();
+                _scaledImages.Clear();
             }
             base.Dispose(disposing);
         }
