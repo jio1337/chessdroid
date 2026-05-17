@@ -77,6 +77,7 @@ namespace ChessDroid
         private CancellationTokenSource? _botMoveCts;
         private AppConfig? _challengeSnapshot; // non-null while challenge mode is active
         private bool _bookArrowsActive = false; // true when book arrows are shown (suppress engine arrows)
+        private bool _inColumnResize = false;
         private System.Windows.Forms.Timer _autoPlayTimer = null!;
         private bool _autoPlaying = false;
 
@@ -123,6 +124,7 @@ namespace ChessDroid
             // Shown fires after TableLayoutPanel finalizes its layout — recalculate positions then
             this.Shown += async (s, e) =>
             {
+                AdjustColumnWidths();
                 LeftPanel_Resize(leftPanel, EventArgs.Empty);
                 PnlBoardControls_Resize(pnlBoardControls, EventArgs.Empty);
                 this.MinimumSize = this.Size; // initial size becomes the enforced minimum
@@ -398,53 +400,89 @@ namespace ChessDroid
 
         #region Event Handlers
 
+        // ── Column sizing ────────────────────────────────────────────────────────
+        // AdjustColumnWidths fires on mainLayout.Resize (before leftPanel.Resize).
+        // It sets column 0 to the exact width the board needs so the board is
+        // height-constrained with no horizontal dead space on any monitor.
+
+        private void MainLayout_Resize(object? sender, EventArgs e) => AdjustColumnWidths();
+
+        private void AdjustColumnWidths()
+        {
+            if (_inColumnResize || mainLayout == null || mainLayout.Width <= 1 || mainLayout.Height <= 1)
+                return;
+
+            bool showStrips = config?.ShowMaterialStrips != false;
+            int STRIP_H  = showStrips ? 22 : 0;
+            int STRIP_GAP = showStrips ? 2 : 0;
+            bool showEvalBar = config?.ShowEvalBar != false;
+            int evalBarTotal = showEvalBar ? 28 : 0; // 24px bar + 4px gap
+
+            // Ideal left-panel width = board size (= available height) + eval bar + padding
+            int availH    = mainLayout.Height - 2 * STRIP_H - 2 * STRIP_GAP;
+            int boardSize = Math.Max(300, availH);
+            int idealLeft = boardSize + evalBarTotal + 20;
+
+            // Never steal more than 65 % — right panel must always have room
+            int totalW = mainLayout.Width - mainLayout.Padding.Horizontal - 130;
+            idealLeft = Math.Clamp(idealLeft, 350, Math.Max(350, (int)(totalW * 0.65)));
+
+            var cs0 = mainLayout.ColumnStyles[0];
+            if (cs0.SizeType == SizeType.Absolute && Math.Abs(cs0.Width - idealLeft) <= 1)
+                return; // already correct
+
+            _inColumnResize = true;
+            mainLayout.SuspendLayout();
+            mainLayout.ColumnStyles[0] = new ColumnStyle(SizeType.Absolute, idealLeft);
+            mainLayout.ColumnStyles[2] = new ColumnStyle(SizeType.Percent, 100F);
+            mainLayout.ResumeLayout(true); // triggers leftPanel.Resize with correct width
+            _inColumnResize = false;
+        }
+
+        // ── Board positioning ────────────────────────────────────────────────────
+        // LeftPanel_Resize only positions controls; column width is already correct
+        // by the time this fires (AdjustColumnWidths ran first via mainLayout.Resize).
+
         private void LeftPanel_Resize(object? sender, EventArgs e)
         {
-            // Guard against resize during initialization
             if (boardControl == null || _materialTop == null || _materialBottom == null)
                 return;
 
             if (sender is Panel panel)
             {
-                // Eval bar dimensions
                 const int evalBarWidth = 24;
-                const int evalBarGap = 4;
+                const int evalBarGap   = 4;
                 bool showEvalBar = config?.ShowEvalBar != false;
-                evalBar.Visible = showEvalBar;
+                evalBar.Visible  = showEvalBar;
                 int evalBarTotal = showEvalBar ? evalBarWidth + evalBarGap : 0;
 
-                // Material strips above/below board
                 bool showStrips = config?.ShowMaterialStrips != false;
-                int STRIP_H = showStrips ? 22 : 0;
-                int STRIP_GAP = showStrips ? 4 : 0;
-                _materialTop.Visible = showStrips;
+                int STRIP_H  = showStrips ? 22 : 0;
+                int STRIP_GAP = showStrips ? 2 : 0;
+                _materialTop.Visible    = showStrips;
                 _materialBottom.Visible = showStrips;
 
-                // Board is centered in leftPanel — use all available space
-                int availableWidth = panel.Width - 20 - evalBarTotal;
+                int availableWidth  = panel.Width  - 20 - evalBarTotal;
                 int availableHeight = panel.Height - 2 * STRIP_H - 2 * STRIP_GAP;
 
                 int boardSize = Math.Min(availableWidth, availableHeight);
                 boardSize = Math.Max(boardSize, 300);
 
-                // Center board+evalbar horizontally and vertically
                 int groupWidth = boardSize + evalBarTotal;
                 int groupX = Math.Max((panel.Width - groupWidth) / 2, 5);
-
                 int topSpace = Math.Max(0, (panel.Height - boardSize - 2 * STRIP_H - 2 * STRIP_GAP) / 2);
 
                 int boardX = groupX + evalBarTotal;
-                boardControl.Size = new Size(boardSize, boardSize);
+                boardControl.Size     = new Size(boardSize, boardSize);
                 boardControl.Location = new Point(boardX, topSpace + STRIP_H + STRIP_GAP);
 
                 evalBar.Location = new Point(groupX, boardControl.Top);
-                evalBar.Size = new Size(evalBarWidth, boardControl.Height);
+                evalBar.Size     = new Size(evalBarWidth, boardControl.Height);
 
-                // Material strips with gap above/below board
                 _materialTop.Location = new Point(boardX, topSpace);
-                _materialTop.Size = new Size(boardSize, STRIP_H);
+                _materialTop.Size     = new Size(boardSize, STRIP_H);
                 _materialBottom.Location = new Point(boardX, boardControl.Bottom + STRIP_GAP);
-                _materialBottom.Size = new Size(boardSize, STRIP_H);
+                _materialBottom.Size     = new Size(boardSize, STRIP_H);
             }
         }
 

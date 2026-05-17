@@ -107,9 +107,9 @@ namespace ChessDroid
             // mainLayout
             // 
             mainLayout.ColumnCount = 3;
-            mainLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 62F));
+            mainLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 59F));
             mainLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 130F));
-            mainLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 38F));
+            mainLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 41F));
             mainLayout.Controls.Add(leftPanel, 0, 0);
             mainLayout.Controls.Add(middlePanel, 1, 0);
             mainLayout.Controls.Add(rightPanel, 2, 0);
@@ -134,6 +134,7 @@ namespace ChessDroid
             leftPanel.Size = new Size(569, 630);
             leftPanel.TabIndex = 0;
             leftPanel.Resize += LeftPanel_Resize;
+            mainLayout.Resize += MainLayout_Resize;
             // 
             // evalBar
             // 
