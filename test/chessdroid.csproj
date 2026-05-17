@@ -64,5 +64,11 @@
     </None>
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="Engines\**\*.*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 
 </Project>
