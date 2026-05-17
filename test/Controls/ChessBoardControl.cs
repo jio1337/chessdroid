@@ -166,44 +166,68 @@ namespace ChessDroid.Controls
 
         private void LoadPieceImages(string templateSet)
         {
-            // Dispose old images
             foreach (var img in pieceImages.Values)
-            {
                 img?.Dispose();
-            }
             pieceImages.Clear();
 
             string basePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Templates", templateSet);
 
-            // Map piece chars to file names
-            var pieceFiles = new Dictionary<char, string>
+            // stem = color prefix + uppercase piece letter (e.g. "wK", "bP")
+            var pieceStems = new Dictionary<char, string>
             {
-                { 'K', "wK.png" }, { 'Q', "wQ.png" }, { 'R', "wR.png" },
-                { 'B', "wB.png" }, { 'N', "wN.png" }, { 'P', "wP.png" },
-                { 'k', "bK.png" }, { 'q', "bQ.png" }, { 'r', "bR.png" },
-                { 'b', "bB.png" }, { 'n', "bN.png" }, { 'p', "bP.png" }
+                { 'K', "wK" }, { 'Q', "wQ" }, { 'R', "wR" },
+                { 'B', "wB" }, { 'N', "wN" }, { 'P', "wP" },
+                { 'k', "bK" }, { 'q', "bQ" }, { 'r', "bR" },
+                { 'b', "bB" }, { 'n', "bN" }, { 'p', "bP" }
             };
 
-            foreach (var kvp in pieceFiles)
+            foreach (var kvp in pieceStems)
+                pieceImages[kvp.Key] = TryLoadPiece(basePath, kvp.Value);
+        }
+
+        private static Image? TryLoadPiece(string basePath, string stem)
+        {
+            // 1. PNG — existing sets (wK.png)
+            string png = Path.Combine(basePath, stem + ".png");
+            if (File.Exists(png))
             {
-                string filePath = Path.Combine(basePath, kvp.Value);
-                if (File.Exists(filePath))
-                {
-                    try
-                    {
-                        pieceImages[kvp.Key] = Image.FromFile(filePath);
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"Failed to load piece image {filePath}: {ex.Message}");
-                        pieceImages[kvp.Key] = null;
-                    }
-                }
-                else
-                {
-                    Debug.WriteLine($"Piece image not found: {filePath}");
-                    pieceImages[kvp.Key] = null;
-                }
+                try { return Image.FromFile(png); }
+                catch (Exception ex) { Debug.WriteLine($"Failed to load {png}: {ex.Message}"); }
+            }
+
+            // 2. SVG — Lichess convention (wK.svg, uppercase piece)
+            string svg = Path.Combine(basePath, stem + ".svg");
+            if (File.Exists(svg))
+                return RenderSvg(svg);
+
+            // 3. SVG — PyChess convention (wk.svg, all lowercase)
+            string svgLower = Path.Combine(basePath, stem.ToLowerInvariant() + ".svg");
+            if (File.Exists(svgLower))
+                return RenderSvg(svgLower);
+
+            Debug.WriteLine($"Piece not found: {stem} in {basePath}");
+            return null;
+        }
+
+        private static readonly System.Text.RegularExpressions.Regex _svgFilterAttr =
+            new(@"\s+filter=""url\([^)]+\)""", System.Text.RegularExpressions.RegexOptions.Compiled);
+
+        private static Image? RenderSvg(string path)
+        {
+            try
+            {
+                // Strip filter="url(#...)" attributes before rendering — the Svg library
+                // mishandles chained filter primitives (feComposite/feFlood/feOffset) and
+                // produces garbage output. Pieces render correctly without the drop-shadow filters.
+                string xml = File.ReadAllText(path);
+                xml = _svgFilterAttr.Replace(xml, "");
+                var doc = Svg.SvgDocument.FromSvg<Svg.SvgDocument>(xml);
+                return doc.Draw(256, 256);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Failed to render SVG {path}: {ex.Message}");
+                return null;
             }
         }
 

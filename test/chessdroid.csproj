@@ -21,6 +21,7 @@
     <PackageReference Include="ChessDotNetCore" Version="1.6.0" />
     <PackageReference Include="pgn.NET" Version="1.2.1" />
     <PackageReference Include="RestSharp" Version="112.1.0" />
+    <PackageReference Include="Svg" Version="3.4.7" />
     <PackageReference Include="System.Management" Version="10.0.1" />
   </ItemGroup>
 
@@ -52,6 +53,13 @@
   <!-- Copy Books folder to output -->
   <ItemGroup>
     <None Include="Books\**\*.*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <!-- Copy piece set templates to output -->
+  <ItemGroup>
+    <None Include="Templates\**\*.*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
