@@ -85,7 +85,7 @@ namespace ChessDroid.Services
                 string openingDisplay = OpeningBook.GetOpeningDisplay(fen);
                 if (!string.IsNullOrEmpty(openingDisplay) && openingDisplay != "Starting Position")
                 {
-                    richTextBox.SelectionColor = GetThemeColor(Color.CornflowerBlue, Color.MidnightBlue);
+                    richTextBox.SelectionColor = GetThemeColor(Color.FromArgb(152, 144, 128), Color.FromArgb(64, 54, 40));
                     richTextBox.AppendText($"Opening: {openingDisplay}{Environment.NewLine}");
                     ResetFormatting();
                 }
@@ -164,7 +164,7 @@ namespace ChessDroid.Services
             {
                 AppendTextWithFormat(" ", richTextBox.BackColor, headerForeColor, FontStyle.Regular);
                 int markerStart = richTextBox.TextLength;
-                Color linkColor = GetThemeColor(Color.Cyan, Color.Blue);
+                Color linkColor = GetThemeColor(Color.FromArgb(88, 166, 204), Color.FromArgb(32, 88, 140));
                 AppendTextWithFormat("[See line]", richTextBox.BackColor, linkColor, FontStyle.Underline);
                 int markerLength = richTextBox.TextLength - markerStart;
                 _markers.Add(new ClickMarker { Start = markerStart, Length = markerLength, Action = ClickAction.InsertPv, PvUci = pvUciLine, Fen = completeFen });
@@ -238,14 +238,14 @@ namespace ChessDroid.Services
                     if (!string.IsNullOrEmpty(defensesText))
                     {
                         AppendTextWithFormat(" | ", richTextBox.BackColor, GetThemeColor(Color.Gray, Color.DarkSlateGray), FontStyle.Regular);
-                        AppendTextWithFormat($"🛡 {defensesText}", richTextBox.BackColor, GetThemeColor(Color.CornflowerBlue, Color.MidnightBlue), FontStyle.Regular);
+                        AppendTextWithFormat($"🛡 {defensesText}", richTextBox.BackColor, GetThemeColor(Color.FromArgb(88, 144, 184), Color.FromArgb(32, 88, 140)), FontStyle.Regular);
                     }
 
                     // Add threats on same line if present
                     if (!string.IsNullOrEmpty(threatsText))
                     {
                         AppendTextWithFormat(" | ", richTextBox.BackColor, GetThemeColor(Color.Gray, Color.DarkSlateGray), FontStyle.Regular);
-                        AppendTextWithFormat($"⚔ {threatsText}", richTextBox.BackColor, GetThemeColor(Color.LimeGreen, Color.DarkGreen), FontStyle.Regular);
+                        AppendTextWithFormat($"⚔ {threatsText}", richTextBox.BackColor, GetThemeColor(Color.FromArgb(100, 126, 154), Color.FromArgb(60, 82, 108)), FontStyle.Regular);
                     }
 
                     AppendTextWithFormat(Environment.NewLine, richTextBox.BackColor, explanationColor, FontStyle.Regular);
@@ -276,7 +276,7 @@ namespace ChessDroid.Services
 
                     if (!string.IsNullOrEmpty(defensesText))
                     {
-                        AppendTextWithFormat($"🛡 {defensesText}", richTextBox.BackColor, GetThemeColor(Color.CornflowerBlue, Color.MidnightBlue), FontStyle.Regular);
+                        AppendTextWithFormat($"🛡 {defensesText}", richTextBox.BackColor, GetThemeColor(Color.FromArgb(88, 144, 184), Color.FromArgb(32, 88, 140)), FontStyle.Regular);
                         if (!string.IsNullOrEmpty(threatsText))
                         {
                             AppendTextWithFormat(" | ", richTextBox.BackColor, GetThemeColor(Color.Gray, Color.DarkSlateGray), FontStyle.Regular);
@@ -285,7 +285,7 @@ namespace ChessDroid.Services
 
                     if (!string.IsNullOrEmpty(threatsText))
                     {
-                        AppendTextWithFormat($"⚔ {threatsText}", richTextBox.BackColor, GetThemeColor(Color.LimeGreen, Color.DarkGreen), FontStyle.Regular);
+                        AppendTextWithFormat($"⚔ {threatsText}", richTextBox.BackColor, GetThemeColor(Color.FromArgb(100, 126, 154), Color.FromArgb(60, 82, 108)), FontStyle.Regular);
                     }
 
                     AppendTextWithFormat(Environment.NewLine, richTextBox.BackColor, explanationColor, FontStyle.Regular);
@@ -1926,11 +1926,11 @@ namespace ChessDroid.Services
             // If the drop is small, we return null to show no classification.
             bool isDark = config?.Theme == "Dark";
             if (winProbDrop >= 0.20)
-                return ("Blunder", "??", Color.Crimson);
+                return ("Blunder", "??", isDark ? Color.FromArgb(196, 90, 90) : Color.FromArgb(160, 30, 30));
             else if (winProbDrop >= 0.10)
-                return ("Mistake", "?", isDark ? Color.OrangeRed : Color.Chocolate);
+                return ("Mistake", "?", isDark ? Color.FromArgb(200, 130, 80) : Color.FromArgb(160, 80, 20));
             else if (winProbDrop >= 0.05)
-                return ("Inaccuracy", "?!", isDark ? Color.Orange : Color.DarkGoldenrod);
+                return ("Inaccuracy", "?!", isDark ? Color.FromArgb(196, 170, 80) : Color.FromArgb(150, 112, 16));
             else
                 return ("", "", Color.Transparent); // No label for small drops
         }
@@ -2073,7 +2073,7 @@ namespace ChessDroid.Services
 
             // Win percentage - green shade based on value (darker for light mode)
             Color winColor = winPercent > 60
-                ? GetThemeColor(Color.LimeGreen, Color.DarkGreen)
+                ? GetThemeColor(Color.FromArgb(100, 126, 154), Color.FromArgb(60, 82, 108))
                 : winPercent > 40
                     ? GetThemeColor(Color.MediumSeaGreen, Color.SeaGreen)
                     : GetThemeColor(Color.DarkSeaGreen, Color.ForestGreen);
@@ -2268,10 +2268,13 @@ namespace ChessDroid.Services
                 var (isBrilliant, explanation) = IsBrilliantMove(fen, firstMove, evalForBrilliant.Value, null);
                 if (isBrilliant)
                 {
-                    bestMoveClassification = ("Brilliant", "!!", GetThemeColor(Color.Cyan, Color.Teal));
+                    bestMoveClassification = ("Brilliant", "!!", GetThemeColor(Color.FromArgb(70, 178, 178), Color.FromArgb(0, 120, 120)));
                     brilliantExplanation = explanation;
                 }
             }
+
+            // Explanation color — shared across all three lines
+            Color pvExplanationColor = isDarkMode ? Color.FromArgb(158, 178, 200) : Color.FromArgb(60, 82, 108);
 
             // Best line - show if enabled
             if (showBestLine)
@@ -2283,13 +2286,15 @@ namespace ChessDroid.Services
                     fen,
                     pvs,
                     firstMove,
-                    isDarkMode ? Color.PaleGreen : Color.DarkGreen,
-                    isDarkMode ? Color.LightGreen : Color.ForestGreen,
+                    isDarkMode ? Color.FromArgb(214, 202, 182) : Color.FromArgb(22, 14, 4),
+                    pvExplanationColor,
                     showThreats: true,
                     isOnlyWinningMove: isOnlyWinningMove,
                     classification: bestMoveClassification,
                     overrideExplanation: brilliantExplanation,
                     pvUciLine: pvs.Count > 0 ? pvs[0] : null);
+                if (showSecondLine || showThirdLine)
+                    richTextBox.AppendText(Environment.NewLine);
             }
 
             // Second best - show threats if enabled
@@ -2322,12 +2327,14 @@ namespace ChessDroid.Services
                     fen,
                     pvs,
                     secondMove,
-                    isDarkMode ? Color.Khaki : Color.SaddleBrown,
-                    isDarkMode ? Color.LightGoldenrodYellow : Color.Sienna,
+                    isDarkMode ? Color.FromArgb(196, 186, 168) : Color.FromArgb(44, 34, 20),
+                    pvExplanationColor,
                     showThreats: true,
                     isOnlyWinningMove: false,
                     classification: secondClassification,
                     pvUciLine: pvs[1]);
+                if (showThirdLine)
+                    richTextBox.AppendText(Environment.NewLine);
             }
 
             // Third best - show threats if enabled
@@ -2360,8 +2367,8 @@ namespace ChessDroid.Services
                     fen,
                     pvs,
                     thirdMove,
-                    isDarkMode ? Color.LightCoral : Color.Maroon,
-                    isDarkMode ? Color.Salmon : Color.DarkRed,
+                    isDarkMode ? Color.FromArgb(176, 172, 160) : Color.FromArgb(68, 64, 76),
+                    pvExplanationColor,
                     showThreats: true,
                     isOnlyWinningMove: false,
                     classification: thirdClassification,
@@ -2414,25 +2421,14 @@ namespace ChessDroid.Services
                         <= 80 => "Aggressive",
                         _ => "Very Aggressive"
                     };
-                    Color styleColor = config.Aggressiveness switch
-                    {
-                        <= 20 => isDarkMode ? Color.SteelBlue : Color.MidnightBlue,
-                        <= 40 => isDarkMode ? Color.CadetBlue : Color.DarkCyan,
-                        <= 60 => isDarkMode ? Color.Gold : Color.Sienna,
-                        <= 80 => isDarkMode ? Color.OrangeRed : Color.Firebrick,
-                        _ => isDarkMode ? Color.Crimson : Color.DarkRed
-                    };
+                    Color styleColor = isDarkMode ? Color.FromArgb(120, 140, 162) : Color.FromArgb(72, 90, 112);
                     richTextBox.SelectionColor = styleColor;
                     richTextBox.AppendText($"Style: {playStyle} ({config.Aggressiveness}){Environment.NewLine}");
                     ResetFormatting();
 
                     // Use best line colors when it's the only line shown, orange when shown alongside other lines
-                    Color headerColor = allLinesHidden
-                        ? (isDarkMode ? Color.PaleGreen : Color.DarkGreen)
-                        : (isDarkMode ? Color.Orange : Color.SaddleBrown);
-                    Color explanationColor = allLinesHidden
-                        ? (isDarkMode ? Color.LightGreen : Color.ForestGreen)
-                        : (isDarkMode ? Color.Gold : Color.Sienna);
+                    Color headerColor = isDarkMode ? Color.FromArgb(202, 162, 106) : Color.FromArgb(146, 72, 8);
+                    Color explanationColor = pvExplanationColor;
 
                     if (allLinesHidden)
                     {
@@ -2536,7 +2532,7 @@ namespace ChessDroid.Services
 
             // Critical advantages
             if (lower.Contains("unstoppable") || lower.Contains("forced checkmate"))
-                return GetThemeColor(Color.LimeGreen, Color.DarkGreen);
+                return GetThemeColor(Color.FromArgb(100, 126, 154), Color.FromArgb(60, 82, 108));
 
             // Drawing indicators
             if (lower.Contains("draw") || lower.Contains("insufficient") ||
@@ -2580,9 +2576,9 @@ namespace ChessDroid.Services
                 if (opponentThreats.Count > 0)
                 {
                     richTextBox.AppendText(Environment.NewLine);
-                    AppendTextWithFormat("⚠ Opponent threats: ", richTextBox.BackColor, GetThemeColor(Color.Orange, Color.Firebrick), FontStyle.Bold);
+                    AppendTextWithFormat("⚠ Opponent threats: ", richTextBox.BackColor, GetThemeColor(Color.FromArgb(190, 100, 100), Color.FromArgb(146, 50, 50)), FontStyle.Bold);
                     string oppThreatText = string.Join(", ", opponentThreats.Select(t => t.Description));
-                    AppendTextWithFormat($"{oppThreatText}{Environment.NewLine}", richTextBox.BackColor, GetThemeColor(Color.Coral, Color.Maroon), FontStyle.Regular);
+                    AppendTextWithFormat($"{oppThreatText}{Environment.NewLine}", richTextBox.BackColor, GetThemeColor(Color.FromArgb(170, 110, 110), Color.FromArgb(120, 50, 50)), FontStyle.Regular);
                 }
             }
             catch (Exception ex)
