@@ -237,6 +237,8 @@ namespace ChessDroid
             Color stripTextColor = isDarkMode ? Color.FromArgb(200, 200, 200) : Color.FromArgb(70, 70, 70);
             _materialTop?.SetTextColor(stripTextColor);
             _materialBottom?.SetTextColor(stripTextColor);
+            _materialTop?.SetDarkMode(isDarkMode);
+            _materialBottom?.SetDarkMode(isDarkMode);
 
             // Update FEN display
             UpdateFenDisplay();
@@ -414,12 +416,13 @@ namespace ChessDroid
                 // Material strips above/below board
                 bool showStrips = config?.ShowMaterialStrips != false;
                 int STRIP_H = showStrips ? 22 : 0;
+                int STRIP_GAP = showStrips ? 4 : 0;
                 _materialTop.Visible = showStrips;
                 _materialBottom.Visible = showStrips;
 
                 // Board is centered in leftPanel — use all available space
                 int availableWidth = panel.Width - 20 - evalBarTotal;
-                int availableHeight = panel.Height - 2 * STRIP_H;
+                int availableHeight = panel.Height - 2 * STRIP_H - 2 * STRIP_GAP;
 
                 int boardSize = Math.Min(availableWidth, availableHeight);
                 boardSize = Math.Max(boardSize, 300);
@@ -428,19 +431,19 @@ namespace ChessDroid
                 int groupWidth = boardSize + evalBarTotal;
                 int groupX = Math.Max((panel.Width - groupWidth) / 2, 5);
 
-                int topSpace = Math.Max(0, (panel.Height - boardSize - 2 * STRIP_H) / 2);
+                int topSpace = Math.Max(0, (panel.Height - boardSize - 2 * STRIP_H - 2 * STRIP_GAP) / 2);
 
                 int boardX = groupX + evalBarTotal;
                 boardControl.Size = new Size(boardSize, boardSize);
-                boardControl.Location = new Point(boardX, topSpace + STRIP_H);
+                boardControl.Location = new Point(boardX, topSpace + STRIP_H + STRIP_GAP);
 
                 evalBar.Location = new Point(groupX, boardControl.Top);
                 evalBar.Size = new Size(evalBarWidth, boardControl.Height);
 
-                // Material strips hug the board top/bottom
+                // Material strips with gap above/below board
                 _materialTop.Location = new Point(boardX, topSpace);
                 _materialTop.Size = new Size(boardSize, STRIP_H);
-                _materialBottom.Location = new Point(boardX, boardControl.Bottom);
+                _materialBottom.Location = new Point(boardX, boardControl.Bottom + STRIP_GAP);
                 _materialBottom.Size = new Size(boardSize, STRIP_H);
             }
         }
