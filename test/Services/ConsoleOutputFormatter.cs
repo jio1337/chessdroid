@@ -2434,18 +2434,37 @@ namespace ChessDroid.Services
                         ? (isDarkMode ? Color.LightGreen : Color.ForestGreen)
                         : (isDarkMode ? Color.Gold : Color.Sienna);
 
-                    DisplayMoveLine(
-                        "Recommended",
-                        recommendedSan,
-                        formattedRecommendedEval,
-                        fen,
-                        pvs,
-                        bestMove,
-                        headerColor,
-                        explanationColor,
-                        showThreats: allLinesHidden, // Show threats when it's the only line
-                        isOnlyWinningMove: false,
-                        classification: null);
+                    if (allLinesHidden)
+                    {
+                        // No lines shown above — use full DisplayMoveLine so the section is self-contained
+                        DisplayMoveLine(
+                            "Recommended",
+                            recommendedSan,
+                            formattedRecommendedEval,
+                            fen,
+                            pvs,
+                            bestMove,
+                            headerColor,
+                            explanationColor,
+                            showThreats: true,
+                            isOnlyWinningMove: false,
+                            classification: null);
+                    }
+                    else
+                    {
+                        // Lines are visible above — show only first move + one-line reason to avoid repeating the full PV
+                        string firstSanMove = recommendedSan.Split(' ')[0];
+                        AppendTextWithFormat($"Recommended: {firstSanMove}", richTextBox.BackColor, headerColor, FontStyle.Bold);
+                        AppendTextWithFormat(Environment.NewLine, richTextBox.BackColor, headerColor, FontStyle.Regular);
+
+                        string explanation = generateExplanation(bestMove, fen, pvs, recommendedEval);
+                        explanation = RemoveRedundantPassedPawnPhrases(explanation);
+                        if (!string.IsNullOrEmpty(explanation))
+                            AppendTextWithFormat($"  → {explanation}", richTextBox.BackColor, explanationColor, FontStyle.Italic);
+
+                        AppendTextWithFormat(Environment.NewLine, richTextBox.BackColor, explanationColor, FontStyle.Regular);
+                        ResetFormatting();
+                    }
                 }
             }
 
