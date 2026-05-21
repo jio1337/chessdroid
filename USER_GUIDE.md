@@ -1,4 +1,4 @@
-## ChessDroid v3.12.0 — User Guide
+## ChessDroid v3.13.0 — User Guide
 
 ### Welcome to ChessDroid!
 
@@ -367,7 +367,12 @@ Create a folder in `Templates/` with 12 PNG files (wK, wQ, wR, wB, wN, wP, bK, b
 
 ## Version History
 
-**v3.12.0** — Custom Piece Sets (Current)
+**v3.13.0** — Engine Match & Analysis Polish (Current)
+- Neutral eval arbiter in engine matches (Stockfish 18 judges every position)
+- Smooth eval bar animation — lerps to new values, full fill on mate
+- Correct checkmate notation (`Qh4#`), game-over output, and threat labels
+
+**v3.12.0** — Custom Piece Sets
 - SVG piece set support: drop any SVG folder into Templates and chessdroid auto-discovers it
 - Analysis output color redesign and spacing improvements
 - Material strips are now theme-aware with proper light/dark pill backgrounds
@@ -524,5 +529,5 @@ ChessDroid is released under the MIT License. Free and open-source forever!
 
 **Enjoy analyzing with ChessDroid!**
 
-*Last Updated: 2026-05-17*
-*Version: 3.12.0*
+*Last Updated: 2026-05-20*
+*Version: 3.13.0*

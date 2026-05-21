@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [3.13.0] - 2026-05-20
+
+### Added
+- **Engine Match Neutral Arbiter** — Stockfish 18 re-evaluates every position after each engine move; match header now shows `Arbiter: stockfish18.exe (depth 14)`. Eliminates eval bar oscillation between different playing engines.
+- **Smooth Eval Bar Animation** — Eval bar lerps to new values over ~300ms instead of snapping. Lerp runs in visual-percent space so transitions to/from mate feel the same speed as normal eval changes.
+- **Full Fill on Mate** — Eval bar fills completely black or white on checkmate (no residual sliver).
+
+### Fixed
+- **Checkmate notation** — Moves that deliver checkmate now correctly display `#` (e.g. `Qh4#`). Check moves display `+`. Both fixed in the SAN converter for move list and PV lines.
+- **Game-over analysis output** — Analyzing a checkmate/stalemate position no longer shows "Best line: (none)". Shows "Checkmate — Black/White wins!" or "Stalemate — Draw" in amber text with eval bar updated accordingly.
+- **Threat label on checkmate** — Threat detection now shows "Checkmate — Black/White wins!" instead of "king is in check!" when the position is terminal.
+
+---
+
 ## [3.12.0] - 2026-05-17
 
 ### Added
