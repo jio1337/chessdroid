@@ -2288,6 +2288,26 @@ namespace ChessDroid
                         }, ct);
 
                     // Engine finished at max depth — switch to full analysis display
+                    // If bestMove is still empty the position is terminal (checkmate/stalemate)
+                    if (!ct.IsCancellationRequested && (lastBestMove == "(none)" || lastBestMove == "0000" || string.IsNullOrEmpty(lastBestMove)))
+                    {
+                        var board = ChessBoard.FromFEN(fen);
+                        bool stmIsWhite = fen.Split(' ').ElementAtOrDefault(1) == "w";
+                        if (ChessUtilities.IsKingInCheck(board, stmIsWhite))
+                        {
+                            string winner = stmIsWhite ? "Black" : "White";
+                            consoleFormatter?.ShowGameOver($"Checkmate — {winner} wins!");
+                            evalBar?.SetMate(stmIsWhite ? -1 : 1);
+                            lblStatus.Text = $"Checkmate — {winner} wins";
+                        }
+                        else
+                        {
+                            consoleFormatter?.ShowGameOver("Stalemate — Draw");
+                            evalBar?.Reset();
+                            lblStatus.Text = "Stalemate — Draw";
+                        }
+                        return;
+                    }
                     if (!ct.IsCancellationRequested && !string.IsNullOrEmpty(lastBestMove))
                     {
                         _analysisCache[cacheKey] = new CachedAnalysis
@@ -2344,10 +2364,25 @@ namespace ChessDroid
             {
                 var result = await engineService.GetBestMoveAsync(fen, depth, multiPV, ct: ct);
 
-                if (string.IsNullOrEmpty(result.bestMove))
+                if (string.IsNullOrEmpty(result.bestMove) || result.bestMove == "(none)" || result.bestMove == "0000")
                 {
-                    Debug.WriteLine($"[Analysis] FAILED — bestMove empty. Engine state: {engineService.State}. FEN: {fen}");
-                    lblStatus.Text = "Analysis failed";
+                    // No legal moves — checkmate or stalemate
+                    var board = ChessBoard.FromFEN(fen);
+                    bool sideToMoveIsWhite = fen.Split(' ').ElementAtOrDefault(1) == "w";
+                    bool inCheck = ChessUtilities.IsKingInCheck(board, sideToMoveIsWhite);
+                    if (inCheck)
+                    {
+                        string winner = sideToMoveIsWhite ? "Black" : "White";
+                        consoleFormatter?.ShowGameOver($"Checkmate — {winner} wins!");
+                        evalBar?.SetMate(sideToMoveIsWhite ? -1 : 1);
+                        lblStatus.Text = $"Checkmate — {winner} wins";
+                    }
+                    else
+                    {
+                        consoleFormatter?.ShowGameOver("Stalemate — Draw");
+                        evalBar?.Reset();
+                        lblStatus.Text = "Stalemate — Draw";
+                    }
                     return;
                 }
 

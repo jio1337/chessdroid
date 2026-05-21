@@ -278,11 +278,17 @@ namespace ChessDroid.Services
 
                 // Convert to SAN
                 string sanMove = ConvertUCIToSAN(token, tempFen, canReachSquare, findAllPiecesOfSameType);
-                sanMoves.Add(sanMove);
 
                 // Apply move and update state
                 applyUciMove(board, token, ref castling, ref ep);
                 currentSide = (currentSide == "w") ? "b" : "w";
+
+                // Append check/checkmate suffix
+                bool nextMoverIsWhite = currentSide == "w";
+                if (ChessUtilities.IsKingInCheck(board, nextMoverIsWhite))
+                    sanMove += ChessUtilities.IsKingMated(board, nextMoverIsWhite) ? "#" : "+";
+
+                sanMoves.Add(sanMove);
             }
 
             return string.Join(" ", sanMoves);

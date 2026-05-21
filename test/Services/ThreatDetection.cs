@@ -1000,14 +1000,15 @@ namespace ChessDroid.Services
             var (kingRow, kingCol) = board.GetKingPosition(weAreWhite);
             if (kingRow < 0) return;
 
-            // Check if our king is in check
+            // Check if our king is in check (or mated)
             if (IsSquareAttackedBy(board, kingRow, kingCol, !weAreWhite))
             {
+                bool mated = ChessUtilities.IsKingMated(board, weAreWhite);
                 threats.Add(new Threat
                 {
-                    Description = "king is in check!",
+                    Description = mated ? $"Checkmate — {(weAreWhite ? "Black" : "White")} wins!" : "king is in check!",
                     Type = ThreatType.Check,
-                    Severity = 5,
+                    Severity = mated ? 10 : 5,
                     Square = GetSquareName(kingRow, kingCol)
                 });
             }

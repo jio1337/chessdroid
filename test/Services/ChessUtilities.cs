@@ -144,6 +144,41 @@ namespace ChessDroid.Services
         public static bool IsSquareDefended(ChessBoard board, int row, int col, bool byWhite)
             => IsSquareAttackedBy(board, row, col, byWhite);
 
+        public static bool IsKingInCheck(ChessBoard board, bool kingIsWhite)
+        {
+            var (kingRow, kingCol) = board.GetKingPosition(kingIsWhite);
+            if (kingRow < 0) return false;
+            return IsSquareAttackedBy(board, kingRow, kingCol, !kingIsWhite);
+        }
+
+        /// <summary>
+        /// Simplified checkmate detection: king is in check with no escape square.
+        /// Does not check blocking or capturing the attacker — accurate enough for notation (#/+)
+        /// and for detected-game-over situations where the engine already confirmed (none).
+        /// </summary>
+        public static bool IsKingMated(ChessBoard board, bool kingIsWhite)
+        {
+            var (kingRow, kingCol) = board.GetKingPosition(kingIsWhite);
+            if (kingRow < 0) return false;
+            if (!IsSquareAttackedBy(board, kingRow, kingCol, !kingIsWhite)) return false;
+
+            char king = kingIsWhite ? 'K' : 'k';
+            for (int dr = -1; dr <= 1; dr++)
+            for (int dc = -1; dc <= 1; dc++)
+            {
+                if (dr == 0 && dc == 0) continue;
+                int nr = kingRow + dr, nc = kingCol + dc;
+                if (nr < 0 || nr > 7 || nc < 0 || nc > 7) continue;
+                char target = board.GetPiece(nr, nc);
+                if (target != '.' && char.IsUpper(target) == kingIsWhite) continue; // own piece blocks
+                var test = new ChessBoard(board.GetArray());
+                test.SetPiece(kingRow, kingCol, '.');
+                test.SetPiece(nr, nc, king);
+                if (!IsSquareAttackedBy(test, nr, nc, !kingIsWhite)) return false; // escape exists
+            }
+            return true;
+        }
+
         // =============================
         // PATH VALIDATION
         // =============================

@@ -2055,6 +2055,16 @@ namespace ChessDroid.Services
             richTextBox.Clear();
         }
 
+        public void ShowGameOver(string message)
+        {
+            richTextBox.Clear();
+            _markers.Clear();
+            bool isDark = config?.Theme == "Dark";
+            Color color = isDark ? Color.FromArgb(220, 180, 100) : Color.FromArgb(140, 80, 20);
+            AppendTextWithFormat(message, richTextBox.BackColor, color, FontStyle.Bold);
+            richTextBox.AppendText("\n");
+        }
+
         /// <summary>
         /// Displays WDL (Win/Draw/Loss) information with sharpness indicator
         /// Inspired by Leela Chess Zero's evaluation model
