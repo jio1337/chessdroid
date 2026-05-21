@@ -93,7 +93,7 @@ namespace ChessDroid.Controls
             isMate = true;
             mateIn = mateInMoves;
             _targetEvaluation = mateInMoves > 0 ? 10000 : -10000;
-            _targetPercent = mateInMoves > 0 ? 96.0 : 4.0;
+            _targetPercent = mateInMoves > 0 ? 100.0 : 0.0;
             _animTimer.Start();
         }
 
