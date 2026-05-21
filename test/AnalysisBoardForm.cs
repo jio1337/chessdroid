@@ -1461,6 +1461,8 @@ namespace ChessDroid
             analysisOutput.SelectionColor = analysisOutput.ForeColor;
             analysisOutput.AppendText($"Engine Match: {whiteEngineName} vs {blackEngineName}\n");
             analysisOutput.AppendText($"Time Control: {tc}\n");
+            string arbiterFile = Path.GetFileName(config.SelectedEngine ?? "");
+            analysisOutput.AppendText($"Arbiter: {arbiterFile} (depth {EngineMatchService.DefaultAnnotatorDepth})\n");
             if (chkFromPosition.Checked)
             {
                 analysisOutput.AppendText("Starting from custom position\n");
@@ -1479,6 +1481,7 @@ namespace ChessDroid
             matchService.OnMatchEnded += MatchService_OnMatchEnded;
             matchService.OnStatusChanged += MatchService_OnStatusChanged;
             matchService.WaitForAnimation = config.ShowAnimations;
+            matchService.AnnotatorEngine = engineService; // Stockfish 18 as neutral annotator
             boardControl.AnimationCompleted += MatchBoard_AnimationCompleted;
 
             // Initialize clocks display

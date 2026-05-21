@@ -30,6 +30,12 @@ namespace ChessDroid.Services
 
         // Animation sync — set WaitForAnimation = true when board animations are enabled
         public bool WaitForAnimation { get; set; } = false;
+
+        // When set, this engine annotates every move with a neutral evaluation instead of
+        // using each playing engine's self-reported score (which oscillates between engines).
+        public ChessEngineService? AnnotatorEngine { get; set; }
+        public int AnnotatorDepth { get; set; } = DefaultAnnotatorDepth;
+        public const int DefaultAnnotatorDepth = 14;
         private TaskCompletionSource<bool>? _animTcs;
 
         private readonly AppConfig config;
@@ -288,8 +294,29 @@ namespace ChessDroid.Services
                 gameState.WhiteToMove = !gameState.WhiteToMove;
                 moveCount++;
 
-                // Fire move played event with evaluation
+                // Re-evaluate the resulting position with the neutral annotator (Stockfish 18).
+                // Each playing engine reports its own score from its own perspective — those values
+                // differ between engines and zigzag on alternate moves. The annotator always
+                // evaluates from White's perspective at a fixed depth, giving a stable eval bar.
                 string newFen = gameState.ToCompleteFEN();
+                if (AnnotatorEngine?.State == EngineState.Ready)
+                {
+                    try
+                    {
+                        string? annotatorEval = await AnnotatorEngine.GetPositionEvalAsync(newFen, AnnotatorDepth, ct);
+                        if (!string.IsNullOrEmpty(annotatorEval))
+                            moveEval = annotatorEval;
+                    }
+                    catch (OperationCanceledException) when (ct.IsCancellationRequested)
+                    {
+                        throw;
+                    }
+                    catch
+                    {
+                        // Annotation failed — fall back to playing engine's eval
+                    }
+                }
+
                 OnMovePlayed?.Invoke(bestMove, newFen, moveTimeMs, moveEval);
                 OnClockUpdated?.Invoke(whiteRemainingMs, blackRemainingMs, gameState.WhiteToMove);
 

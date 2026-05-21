@@ -9,9 +9,14 @@ namespace ChessDroid.Controls
     /// </summary>
     public class EvalBarControl : Control
     {
-        private double evaluation; // Centipawns from White's perspective
+        private double evaluation;        // Current displayed value (centipawns, White's perspective)
+        private double _targetEvaluation; // Value we're animating toward
         private bool isMate;
         private int mateIn; // Positive = White delivers mate, Negative = Black delivers mate
+
+        // Smooth transition — lerp evaluation → _targetEvaluation over ~300ms at 16ms ticks
+        private readonly System.Windows.Forms.Timer _animTimer;
+        private const double LerpSpeed = 0.18; // fraction of remaining gap closed per tick
 
         // Colors
         private readonly Color whiteColor = Color.FromArgb(238, 238, 238);
@@ -39,6 +44,24 @@ namespace ChessDroid.Controls
             _blackBrush = new SolidBrush(blackColor);
             _whiteBrush = new SolidBrush(whiteColor);
             _borderPen  = new Pen(borderColor, 1f);
+
+            _animTimer = new System.Windows.Forms.Timer { Interval = 16 };
+            _animTimer.Tick += AnimTimer_Tick;
+        }
+
+        private void AnimTimer_Tick(object? sender, EventArgs e)
+        {
+            double delta = _targetEvaluation - evaluation;
+            if (Math.Abs(delta) < 0.5)
+            {
+                evaluation = _targetEvaluation;
+                _animTimer.Stop();
+            }
+            else
+            {
+                evaluation += delta * LerpSpeed;
+            }
+            Invalidate();
         }
 
         /// <summary>
@@ -49,8 +72,8 @@ namespace ChessDroid.Controls
         {
             isMate = false;
             mateIn = 0;
-            evaluation = centipawns;
-            Invalidate();
+            _targetEvaluation = centipawns;
+            _animTimer.Start();
         }
 
         /// <summary>
@@ -60,18 +83,20 @@ namespace ChessDroid.Controls
         {
             isMate = true;
             mateIn = mateInMoves;
-            evaluation = mateInMoves > 0 ? 10000 : -10000;
-            Invalidate();
+            _targetEvaluation = mateInMoves > 0 ? 10000 : -10000;
+            _animTimer.Start();
         }
 
         /// <summary>
-        /// Resets the bar to equal (0.0).
+        /// Resets the bar to equal (0.0) instantly (no animation).
         /// </summary>
         public void Reset()
         {
             isMate = false;
             mateIn = 0;
+            _animTimer.Stop();
             evaluation = 0;
+            _targetEvaluation = 0;
             Invalidate();
         }
 
@@ -154,11 +179,10 @@ namespace ChessDroid.Controls
         private string GetEvalText()
         {
             if (isMate)
-            {
                 return $"M{Math.Abs(mateIn)}";
-            }
 
-            double pawns = evaluation / 100.0;
+            // Show the target value so the label doesn't float during animation
+            double pawns = _targetEvaluation / 100.0;
             if (Math.Abs(pawns) < 0.05)
                 return "0.0";
 
@@ -170,6 +194,8 @@ namespace ChessDroid.Controls
         {
             if (disposing)
             {
+                _animTimer.Stop();
+                _animTimer.Dispose();
                 evalFont.Dispose();
                 _blackBrush.Dispose();
                 _whiteBrush.Dispose();
