@@ -9,14 +9,16 @@ namespace ChessDroid.Controls
     /// </summary>
     public class EvalBarControl : Control
     {
-        private double evaluation;        // Current displayed value (centipawns, White's perspective)
-        private double _targetEvaluation; // Value we're animating toward
+        private double _displayPercent = 50.0; // Current animated bar fill % (what's drawn)
+        private double _targetPercent  = 50.0; // Where the bar is heading
+        private double _targetEvaluation;      // Raw centipawn value — used only for text display
         private bool isMate;
         private int mateIn; // Positive = White delivers mate, Negative = Black delivers mate
 
-        // Smooth transition — lerp evaluation → _targetEvaluation over ~300ms at 16ms ticks
+        // Lerp in visual-percent space so the animation speed is uniform regardless of eval magnitude.
+        // Going from equal to +0.7 looks the same speed as going from +0.7 to mate.
         private readonly System.Windows.Forms.Timer _animTimer;
-        private const double LerpSpeed = 0.18; // fraction of remaining gap closed per tick
+        private const double LerpSpeed = 0.18; // fraction of remaining gap closed per 16ms tick
 
         // Colors
         private readonly Color whiteColor = Color.FromArgb(238, 238, 238);
@@ -49,17 +51,23 @@ namespace ChessDroid.Controls
             _animTimer.Tick += AnimTimer_Tick;
         }
 
+        private static double CentipawnsToPercent(double cp)
+        {
+            double t = Math.Tanh(cp / 500.0);
+            return Math.Clamp(50.0 + 50.0 * t, 4.0, 96.0);
+        }
+
         private void AnimTimer_Tick(object? sender, EventArgs e)
         {
-            double delta = _targetEvaluation - evaluation;
-            if (Math.Abs(delta) < 0.5)
+            double delta = _targetPercent - _displayPercent;
+            if (Math.Abs(delta) < 0.1)
             {
-                evaluation = _targetEvaluation;
+                _displayPercent = _targetPercent;
                 _animTimer.Stop();
             }
             else
             {
-                evaluation += delta * LerpSpeed;
+                _displayPercent += delta * LerpSpeed;
             }
             Invalidate();
         }
@@ -73,6 +81,7 @@ namespace ChessDroid.Controls
             isMate = false;
             mateIn = 0;
             _targetEvaluation = centipawns;
+            _targetPercent = CentipawnsToPercent(centipawns);
             _animTimer.Start();
         }
 
@@ -84,6 +93,7 @@ namespace ChessDroid.Controls
             isMate = true;
             mateIn = mateInMoves;
             _targetEvaluation = mateInMoves > 0 ? 10000 : -10000;
+            _targetPercent = mateInMoves > 0 ? 96.0 : 4.0;
             _animTimer.Start();
         }
 
@@ -95,30 +105,13 @@ namespace ChessDroid.Controls
             isMate = false;
             mateIn = 0;
             _animTimer.Stop();
-            evaluation = 0;
+            _displayPercent = 50.0;
+            _targetPercent  = 50.0;
             _targetEvaluation = 0;
             Invalidate();
         }
 
-        /// <summary>
-        /// Converts centipawn evaluation to white's percentage of the bar.
-        /// Uses a sigmoid curve so the bar responds smoothly.
-        /// </summary>
-        private double GetWhitePercent()
-        {
-            if (isMate)
-            {
-                return mateIn > 0 ? 96.0 : 4.0;
-            }
-
-            // Sigmoid: 50 + 50 * tanh(cp / 500)
-            // ±200cp ≈ 69/31%, ±400cp ≈ 84/16%, ±700cp ≈ 94/6%
-            double t = Math.Tanh(evaluation / 500.0);
-            double pct = 50.0 + 50.0 * t;
-
-            // Clamp so both colors are always slightly visible
-            return Math.Clamp(pct, 4.0, 96.0);
-        }
+        private double GetWhitePercent() => _displayPercent;
 
         protected override void OnPaint(PaintEventArgs e)
         {
@@ -150,7 +143,7 @@ namespace ChessDroid.Controls
                 float textX = (w - textSize.Width) / 2f;
 
                 // Place text on the dominant side
-                bool whiteIsBetter = evaluation >= 0 && (!isMate || mateIn > 0);
+                bool whiteIsBetter = _targetEvaluation >= 0 && (!isMate || mateIn > 0);
                 float textY;
                 SolidBrush textBrush;
 
