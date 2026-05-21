@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [3.13.0] - 2026-05-20
 
 ### Added
-- **Engine Match Neutral Arbiter** — Stockfish 18 re-evaluates every position after each engine move; match header now shows `Arbiter: stockfish18.exe (depth 14)`. Eliminates eval bar oscillation between different playing engines.
+- **Engine Match Neutral Arbiter** — Stockfish 18 re-evaluates every position after each engine move at your configured engine depth. Match header shows `Arbiter: stockfish18.exe (depth X)`. Eliminates eval bar oscillation between different playing engines.
 - **Smooth Eval Bar Animation** — Eval bar lerps to new values over ~300ms instead of snapping. Lerp runs in visual-percent space so transitions to/from mate feel the same speed as normal eval changes.
 - **Full Fill on Mate** — Eval bar fills completely black or white on checkmate (no residual sliver).
 
