@@ -517,15 +517,16 @@ namespace ChessDroid
                 _materialTop.Visible    = showStrips;
                 _materialBottom.Visible = showStrips;
 
+                const int V_PAD = 8;
                 int availableWidth  = panel.Width  - 20 - evalBarTotal;
-                int availableHeight = panel.Height - 2 * STRIP_H - 2 * STRIP_GAP;
+                int availableHeight = panel.Height - 2 * STRIP_H - 2 * STRIP_GAP - 2 * V_PAD;
 
                 int boardSize = Math.Min(availableWidth, availableHeight);
                 boardSize = Math.Max(boardSize, 300);
 
                 int groupWidth = boardSize + evalBarTotal;
                 int groupX = Math.Max(panel.Width - groupWidth - 5, 5);
-                int topSpace = Math.Max(0, (panel.Height - boardSize - 2 * STRIP_H - 2 * STRIP_GAP) / 2);
+                int topSpace = Math.Max(V_PAD, (panel.Height - boardSize - 2 * STRIP_H - 2 * STRIP_GAP) / 2);
 
                 int boardX = groupX + evalBarTotal;
                 boardControl.Size     = new Size(boardSize, boardSize);
@@ -814,6 +815,7 @@ namespace ChessDroid
 
         private void BtnPrevMove_Click(object? sender, EventArgs e)
         {
+            if (matchService?.IsRunning == true) return;
             StopAutoPlay();
             _pvAnimationCts?.Cancel();
             if (moveTree.GoBack())
@@ -850,6 +852,7 @@ namespace ChessDroid
 
         private void BtnNextMove_Click(object? sender, EventArgs e)
         {
+            if (matchService?.IsRunning == true) return;
             _pvAnimationCts?.Cancel();
             if (moveTree.GoForward())
             {
@@ -885,6 +888,7 @@ namespace ChessDroid
 
         private void BtnAutoPlay_Click(object? sender, EventArgs e)
         {
+            if (matchService?.IsRunning == true) return;
             if (_autoPlaying)
                 StopAutoPlay();
             else
@@ -1165,8 +1169,8 @@ namespace ChessDroid
 
         private void MoveListBox_SelectedIndexChanged(object? sender, EventArgs e)
         {
-            // Skip if we're already navigating (triggered by UpdateMoveListSelection)
             if (isNavigating) return;
+            if (matchService?.IsRunning == true) return;
 
             int selected = moveListBox.SelectedIndex;
             if (selected >= 0 && selected < displayedNodes.Count)
@@ -1891,7 +1895,11 @@ namespace ChessDroid
                 return;
             }
 
-            using var dialog = new BotSettingsDialog(config?.Theme == "Dark");
+            string[] availableEngines = Directory.Exists(config.GetEnginesPath())
+                ? Directory.GetFiles(config.GetEnginesPath(), "*.exe").Select(Path.GetFileName).Where(f => f != null).Cast<string>().ToArray()
+                : Array.Empty<string>();
+            using var dialog = new BotSettingsDialog(config?.Theme == "Dark",
+                availableEngines, config?.EngineProfiles ?? new(), config?.SelectedEngine ?? "");
             if (dialog.ShowDialog() != DialogResult.OK)
                 return;
 
@@ -1925,7 +1933,9 @@ namespace ChessDroid
             {
                 lblStatus.Text = "Starting bot engine...";
                 string enginesPath = config!.GetEnginesPath();
-                string enginePath = Path.Combine(enginesPath, config.SelectedEngine);
+                string engineFile = !string.IsNullOrEmpty(_botSettings.EngineFileName)
+                    ? _botSettings.EngineFileName : config.SelectedEngine;
+                string enginePath = Path.Combine(enginesPath, engineFile);
 
                 _botEngine = new ChessEngineService(config);
                 await _botEngine.InitializeAsync(enginePath);

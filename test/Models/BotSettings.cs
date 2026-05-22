@@ -5,6 +5,7 @@ namespace ChessDroid.Models
         public int SkillLevel { get; set; } = 8; // 1–20, maps directly to Stockfish Skill Level
         public bool BotPlaysWhite { get; set; } = false;
         public bool ChallengeMode { get; set; } = false;
+        public string EngineFileName { get; set; } = "";
 
         public int GetSkillLevel() => SkillLevel;
 

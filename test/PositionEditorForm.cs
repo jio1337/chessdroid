@@ -70,21 +70,46 @@ namespace ChessDroid
 
         // ── Image loading ──────────────────────────────────────────────
 
+        private static readonly System.Text.RegularExpressions.Regex _svgFilterAttr =
+            new(@"\s+filter=""url\([^)]+\)""", System.Text.RegularExpressions.RegexOptions.Compiled);
+
         private void LoadImages(string templateSet, string templatesPath)
         {
-            var map = new Dictionary<char, string>
-            {
-                {'K',"wK.png"},{'Q',"wQ.png"},{'R',"wR.png"},{'B',"wB.png"},{'N',"wN.png"},{'P',"wP.png"},
-                {'k',"bK.png"},{'q',"bQ.png"},{'r',"bR.png"},{'b',"bB.png"},{'n',"bN.png"},{'p',"bP.png"}
-            };
+            string[] stems = { "wK","wQ","wR","wB","wN","wP","bK","bQ","bR","bB","bN","bP" };
+            char[]   keys  = { 'K', 'Q', 'R', 'B', 'N', 'P', 'k', 'q', 'r', 'b', 'n', 'p' };
 
             string baseDir = Path.Combine(templatesPath, templateSet);
-            foreach (var kv in map)
+            for (int i = 0; i < stems.Length; i++)
+                _images[keys[i]] = LoadPieceImage(baseDir, stems[i]);
+        }
+
+        private static Image? LoadPieceImage(string baseDir, string stem)
+        {
+            // PNG first
+            string png = Path.Combine(baseDir, stem + ".png");
+            if (File.Exists(png))
             {
-                string path = Path.Combine(baseDir, kv.Value);
-                try { _images[kv.Key] = File.Exists(path) ? Image.FromFile(path) : null; }
-                catch { _images[kv.Key] = null; }
+                try { return Image.FromFile(png); } catch { }
             }
+            // SVG (Lichess naming: wK.svg)
+            string svg = Path.Combine(baseDir, stem + ".svg");
+            if (File.Exists(svg)) return RenderSvg(svg);
+            // SVG (PyChess naming: wk.svg)
+            string svgLow = Path.Combine(baseDir, stem.ToLowerInvariant() + ".svg");
+            if (File.Exists(svgLow)) return RenderSvg(svgLow);
+            return null;
+        }
+
+        private static Image? RenderSvg(string path)
+        {
+            try
+            {
+                string xml = File.ReadAllText(path);
+                xml = _svgFilterAttr.Replace(xml, "");
+                var doc = Svg.SvgDocument.FromSvg<Svg.SvgDocument>(xml);
+                return doc.Draw(128, 128);
+            }
+            catch { return null; }
         }
 
         // ── Theme ──────────────────────────────────────────────────────
