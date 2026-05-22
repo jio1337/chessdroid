@@ -539,13 +539,16 @@ namespace ChessDroid
                 _materialBottom.Location = new Point(boardX, boardControl.Bottom + STRIP_GAP);
                 _materialBottom.Size     = new Size(boardSize, STRIP_H);
 
-                // Engine info labels — right-aligned, overlaid on the material strip rows
+                // Engine info labels — swap positions when board is flipped
                 const int infoW = 170;
                 int infoH = Math.Max(STRIP_H, 14);
-                _lblBlackEngineInfo.Location = new Point(boardX + boardSize - infoW, topSpace);
-                _lblBlackEngineInfo.Size = new Size(infoW, infoH);
-                _lblWhiteEngineInfo.Location = new Point(boardX + boardSize - infoW, boardControl.Bottom + STRIP_GAP);
-                _lblWhiteEngineInfo.Size = new Size(infoW, infoH);
+                bool flipped = boardControl.IsFlipped;
+                var topInfoLabel    = flipped ? _lblWhiteEngineInfo : _lblBlackEngineInfo;
+                var bottomInfoLabel = flipped ? _lblBlackEngineInfo : _lblWhiteEngineInfo;
+                topInfoLabel.Location    = new Point(boardX + boardSize - infoW, topSpace);
+                topInfoLabel.Size        = new Size(infoW, infoH);
+                bottomInfoLabel.Location = new Point(boardX + boardSize - infoW, boardControl.Bottom + STRIP_GAP);
+                bottomInfoLabel.Size     = new Size(infoW, infoH);
             }
         }
 
@@ -774,6 +777,7 @@ namespace ChessDroid
         {
             boardControl.FlipBoard();
             UpdateMaterialStrips();
+            LeftPanel_Resize(leftPanel, EventArgs.Empty);
         }
 
         private void BtnTakeBack_Click(object? sender, EventArgs e)
