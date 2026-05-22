@@ -208,8 +208,8 @@ namespace ChessDroid
 
         private void ApplyTheme()
         {
-            bool isDarkMode = config?.Theme == "Dark";
-            var scheme = ThemeService.GetColorScheme(isDarkMode);
+            var scheme = ThemeService.GetColorScheme(config?.Theme ?? "Dark");
+            bool isDarkMode = ThemeService.IsDarkTheme(config?.Theme);
 
             // Form colors
             this.BackColor = scheme.FormBackColor;
@@ -984,7 +984,7 @@ namespace ChessDroid
             }
 
             string currentFen = boardControl.GetFEN();
-            bool isDark = config?.Theme == "Dark";
+            bool isDark = ThemeService.IsDarkTheme(config?.Theme);
             string templateSet = config?.SelectedSite ?? "Lichess";
             string templatesPath = config?.GetTemplatesPath() ?? "Templates";
 
@@ -1029,7 +1029,7 @@ namespace ChessDroid
             // reference to a previously-disposed font object.
             Font drawFont = moveListBox.Font;
             string text = moveListBox.Items[e.Index]?.ToString() ?? "";
-            bool isDark = config?.Theme == "Dark";
+            bool isDark = ThemeService.IsDarkTheme(config?.Theme);
 
             // Check if text contains a classification symbol
             string moveText = text;
@@ -1602,7 +1602,7 @@ namespace ChessDroid
 
         private void BtnEngineProfiles_Click(object? sender, EventArgs e)
         {
-            bool isDark = config?.Theme == "Dark";
+            bool isDark = ThemeService.IsDarkTheme(config?.Theme);
             using var dlg = new EngineProfilesDialog(config!, isDark);
             dlg.ShowDialog(this);
         }
@@ -1824,7 +1824,7 @@ namespace ChessDroid
             // Highlight active side using theme colors
             if (matchRunning)
             {
-                var scheme = ThemeService.GetColorScheme(config?.Theme == "Dark");
+                var scheme = ThemeService.GetColorScheme(config?.Theme ?? "Dark");
                 lblWhiteClock.BackColor = whiteToMove ? scheme.ClockActiveBackColor : scheme.ClockBackColor;
                 lblBlackClock.BackColor = !whiteToMove ? scheme.ClockActiveBackColor : scheme.ClockBackColor;
             }
@@ -1898,7 +1898,7 @@ namespace ChessDroid
             string[] availableEngines = Directory.Exists(config.GetEnginesPath())
                 ? Directory.GetFiles(config.GetEnginesPath(), "*.exe").Select(Path.GetFileName).Where(f => f != null).Cast<string>().ToArray()
                 : Array.Empty<string>();
-            using var dialog = new BotSettingsDialog(config?.Theme == "Dark",
+            using var dialog = new BotSettingsDialog(ThemeService.IsDarkTheme(config?.Theme),
                 availableEngines, config?.EngineProfiles ?? new(), config?.SelectedEngine ?? "");
             if (dialog.ShowDialog() != DialogResult.OK)
                 return;
@@ -2915,8 +2915,8 @@ namespace ChessDroid
         {
             lblTurn.Text = boardControl.WhiteToMove ? "White to move" : "Black to move";
             lblTurn.ForeColor = boardControl.WhiteToMove
-                ? (config?.Theme == "Dark" ? Color.White : Color.Black)
-                : (config?.Theme == "Dark" ? Color.LightGray : Color.DimGray);
+                ? (ThemeService.IsDarkTheme(config?.Theme) ? Color.White : Color.Black)
+                : (ThemeService.IsDarkTheme(config?.Theme) ? Color.LightGray : Color.DimGray);
         }
 
         private void UpdateMoveListSelection()
@@ -2940,7 +2940,7 @@ namespace ChessDroid
         {
             if (_evalGraph == null || moveTree == null) return;
             var current = moveTree.CurrentNode == moveTree.Root ? null : moveTree.CurrentNode;
-            _evalGraph.SetData(moveTree, current, config?.Theme == "Dark");
+            _evalGraph.SetData(moveTree, current, ThemeService.IsDarkTheme(config?.Theme));
         }
 
         private void EvalGraph_MoveNodeSelected(MoveNode node)
@@ -3171,7 +3171,7 @@ namespace ChessDroid
                 MinimizeBox = false
             };
 
-            bool isDark = config?.Theme == "Dark";
+            bool isDark = ThemeService.IsDarkTheme(config?.Theme);
             inputForm.BackColor = isDark ? Color.FromArgb(40, 40, 48) : Color.White;
 
             var lblInstructions = new Label
@@ -3323,7 +3323,7 @@ namespace ChessDroid
         {
             if (_libraryService == null) return;
 
-            using var dialog = new GameLibraryDialog(_libraryService, config?.Theme == "Dark");
+            using var dialog = new GameLibraryDialog(_libraryService, ThemeService.IsDarkTheme(config?.Theme));
             if (dialog.ShowDialog(this) == DialogResult.OK && dialog.SelectedGame != null)
             {
                 var saved = dialog.SelectedGame;

@@ -385,7 +385,7 @@ namespace ChessDroid.Services
         /// </summary>
         private Color GetThemeColor(Color darkModeColor, Color lightModeColor)
         {
-            bool isDarkMode = config?.Theme == "Dark";
+            bool isDarkMode = ThemeService.IsDarkTheme(config?.Theme);
             return isDarkMode ? darkModeColor : lightModeColor;
         }
 
@@ -1924,7 +1924,7 @@ namespace ChessDroid.Services
             // NOTE: When showing alternatives to the "only winning move", we only
             // display NEGATIVE classifications (Blunder, Mistake, Inaccuracy).
             // If the drop is small, we return null to show no classification.
-            bool isDark = config?.Theme == "Dark";
+            bool isDark = ThemeService.IsDarkTheme(config?.Theme);
             if (winProbDrop >= 0.20)
                 return ("Blunder", "??", isDark ? Color.FromArgb(196, 90, 90) : Color.FromArgb(160, 30, 30));
             else if (winProbDrop >= 0.10)
@@ -1945,7 +1945,7 @@ namespace ChessDroid.Services
             _markers.Clear();
             ResetBackground();
 
-            bool isDark = config?.Theme == "Dark";
+            bool isDark = ThemeService.IsDarkTheme(config?.Theme);
             Color back    = richTextBox.BackColor;
             Color sepClr  = isDark ? Color.FromArgb(75, 75, 75) : Color.Gray;
             Color text     = isDark ? Color.White : Color.Black;
@@ -2059,7 +2059,7 @@ namespace ChessDroid.Services
         {
             richTextBox.Clear();
             _markers.Clear();
-            bool isDark = config?.Theme == "Dark";
+            bool isDark = ThemeService.IsDarkTheme(config?.Theme);
             Color color = isDark ? Color.FromArgb(220, 180, 100) : Color.FromArgb(140, 80, 20);
             AppendTextWithFormat(message, richTextBox.BackColor, color, FontStyle.Bold);
             richTextBox.AppendText("\n");
@@ -2102,7 +2102,7 @@ namespace ChessDroid.Services
 
             // Sharpness indicator from the current side's perspective
             string character = GetDisplayPositionCharacter(winPercent, lossPercent, drawPercent, wdl.Sharpness);
-            Color sharpnessColor = WDLUtilities.GetSharpnessColor(wdl.Sharpness, config?.Theme == "Dark");
+            Color sharpnessColor = WDLUtilities.GetSharpnessColor(wdl.Sharpness, ThemeService.IsDarkTheme(config?.Theme));
             richTextBox.SelectionColor = sharpnessColor;
             richTextBox.AppendText($"({character})");
 
@@ -2208,7 +2208,7 @@ namespace ChessDroid.Services
             AppendOpeningAndBook(fen, bookMoves);
 
             // Determine if dark mode is enabled for color selection
-            bool isDarkMode = config?.Theme == "Dark";
+            bool isDarkMode = ThemeService.IsDarkTheme(config?.Theme);
 
             // Detect "only winning move" scenario:
             // Best move is winning but second-best loses the advantage
@@ -2606,7 +2606,7 @@ namespace ChessDroid.Services
             Clear();
             _markers.Clear();
 
-            bool isDark = config?.Theme == "Dark";
+            bool isDark = ThemeService.IsDarkTheme(config?.Theme);
             bool whiteToMove = fen.Split(' ') is { Length: > 1 } p && p[1] == "w";
             string side = whiteToMove ? "White" : "Black";
 

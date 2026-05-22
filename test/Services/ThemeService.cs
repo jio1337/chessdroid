@@ -1,8 +1,5 @@
 namespace ChessDroid.Services
 {
-    /// <summary>
-    /// Color scheme for application theme
-    /// </summary>
     public class ColorScheme
     {
         // Main form colors
@@ -36,26 +33,23 @@ namespace ChessDroid.Services
         public Color WhiteClockForeColor { get; set; }
         public Color BlackClockForeColor { get; set; }
 
-        // Move classification symbol colors (same for both themes)
-        public static readonly Color BrilliantColor = Color.FromArgb(26, 179, 148);   // Cyan/teal
-        public static readonly Color BlunderColor = Color.FromArgb(202, 52, 49);      // Red
-        public static readonly Color InaccuracyColor = Color.FromArgb(247, 199, 72);  // Yellow
-        public static readonly Color MistakeColor = Color.FromArgb(232, 106, 51);     // Orange
-        public static readonly Color OnlyMoveColor = Color.FromArgb(91, 139, 245);    // Blue
-        public static readonly Color BestMoveColor = Color.FromArgb(120, 210, 80);    // Vivid green
-        public static readonly Color ExcellentMoveColor = Color.FromArgb(160, 190, 100); // Muted green
-        public static readonly Color GoodMoveColor = Color.FromArgb(140, 160, 120);   // Sage/gray-green
+        // Move classification symbol colors (same for all themes)
+        public static readonly Color BrilliantColor = Color.FromArgb(26, 179, 148);
+        public static readonly Color BlunderColor = Color.FromArgb(202, 52, 49);
+        public static readonly Color InaccuracyColor = Color.FromArgb(247, 199, 72);
+        public static readonly Color MistakeColor = Color.FromArgb(232, 106, 51);
+        public static readonly Color OnlyMoveColor = Color.FromArgb(91, 139, 245);
+        public static readonly Color BestMoveColor = Color.FromArgb(120, 210, 80);
+        public static readonly Color ExcellentMoveColor = Color.FromArgb(160, 190, 100);
+        public static readonly Color GoodMoveColor = Color.FromArgb(140, 160, 120);
     }
 
-    /// <summary>
-    /// Manages application theme (Dark/Light mode)
-    /// Extracted from MainForm to centralize theme management
-    /// </summary>
     public class ThemeService
     {
+        public static readonly string[] ThemeNames = { "Dark", "Light", "Cyberpunk", "Dracula", "Nord", "Sepia" };
+
         private static readonly ColorScheme DarkScheme = new ColorScheme
         {
-            // Main form
             BackgroundColor = Color.FromArgb(30, 30, 35),
             LabelBackColor = Color.FromArgb(60, 60, 65),
             LabelForeColor = Color.White,
@@ -70,7 +64,6 @@ namespace ChessDroid.Services
             CheckboxBackColor = Color.FromArgb(30, 30, 35),
             CheckboxForeColor = Color.White,
 
-            // Analysis Board
             FormBackColor = Color.FromArgb(30, 30, 35),
             PanelColor = Color.FromArgb(40, 40, 48),
             TextColor = Color.FromArgb(220, 220, 220),
@@ -89,7 +82,6 @@ namespace ChessDroid.Services
 
         private static readonly ColorScheme LightScheme = new ColorScheme
         {
-            // Main form
             BackgroundColor = Color.WhiteSmoke,
             LabelBackColor = Color.Gainsboro,
             LabelForeColor = Color.Black,
@@ -104,7 +96,6 @@ namespace ChessDroid.Services
             CheckboxBackColor = Color.WhiteSmoke,
             CheckboxForeColor = Color.Black,
 
-            // Analysis Board
             FormBackColor = Color.FromArgb(245, 245, 245),
             PanelColor = Color.White,
             TextColor = Color.Black,
@@ -121,12 +112,152 @@ namespace ChessDroid.Services
             BlackClockForeColor = Color.DimGray
         };
 
-        /// <summary>
-        /// Gets the color scheme for a theme
-        /// </summary>
-        public static ColorScheme GetColorScheme(bool isDarkMode)
+        // Neon-on-black — 1999 or 2077, take your pick
+        private static readonly ColorScheme CyberpunkScheme = new ColorScheme
         {
-            return isDarkMode ? DarkScheme : LightScheme;
-        }
+            BackgroundColor = Color.FromArgb(10, 10, 20),
+            LabelBackColor = Color.FromArgb(20, 20, 40),
+            LabelForeColor = Color.FromArgb(0, 240, 255),
+            Button1BackColor = Color.FromArgb(20, 20, 40),
+            Button1ForeColor = Color.FromArgb(255, 0, 180),
+            ButtonResetBackColor = Color.FromArgb(20, 20, 40),
+            ButtonResetForeColor = Color.FromArgb(255, 60, 60),
+            ButtonSettingsBackColor = Color.FromArgb(20, 20, 40),
+            ButtonSettingsForeColor = Color.FromArgb(255, 200, 0),
+            ConsoleBackColor = Color.FromArgb(5, 5, 15),
+            ConsoleForeColor = Color.FromArgb(0, 255, 160),
+            CheckboxBackColor = Color.FromArgb(10, 10, 20),
+            CheckboxForeColor = Color.FromArgb(0, 240, 255),
+
+            FormBackColor = Color.FromArgb(10, 10, 20),
+            PanelColor = Color.FromArgb(18, 18, 35),
+            TextColor = Color.FromArgb(0, 240, 255),
+            StatusColor = Color.FromArgb(100, 100, 160),
+            ButtonBackColor = Color.FromArgb(25, 25, 50),
+            ButtonForeColor = Color.FromArgb(200, 200, 255),
+            AnalyzeButtonBackColor = Color.FromArgb(120, 0, 180),
+            GroupBoxBackColor = Color.FromArgb(15, 15, 28),
+            ClockBackColor = Color.FromArgb(20, 20, 40),
+            ClockActiveBackColor = Color.FromArgb(0, 80, 120),
+            StartMatchButtonBackColor = Color.FromArgb(0, 120, 80),
+            StopMatchButtonBackColor = Color.FromArgb(160, 0, 80),
+            WhiteClockForeColor = Color.FromArgb(0, 240, 255),
+            BlackClockForeColor = Color.FromArgb(180, 0, 255)
+        };
+
+        // Dracula — the classic dark theme for people with good taste
+        private static readonly ColorScheme DraculaScheme = new ColorScheme
+        {
+            BackgroundColor = Color.FromArgb(40, 42, 54),
+            LabelBackColor = Color.FromArgb(68, 71, 90),
+            LabelForeColor = Color.FromArgb(248, 248, 242),
+            Button1BackColor = Color.FromArgb(68, 71, 90),
+            Button1ForeColor = Color.FromArgb(189, 147, 249),
+            ButtonResetBackColor = Color.FromArgb(68, 71, 90),
+            ButtonResetForeColor = Color.FromArgb(255, 85, 85),
+            ButtonSettingsBackColor = Color.FromArgb(68, 71, 90),
+            ButtonSettingsForeColor = Color.FromArgb(255, 184, 108),
+            ConsoleBackColor = Color.FromArgb(40, 42, 54),
+            ConsoleForeColor = Color.FromArgb(248, 248, 242),
+            CheckboxBackColor = Color.FromArgb(40, 42, 54),
+            CheckboxForeColor = Color.FromArgb(248, 248, 242),
+
+            FormBackColor = Color.FromArgb(40, 42, 54),
+            PanelColor = Color.FromArgb(55, 57, 72),
+            TextColor = Color.FromArgb(248, 248, 242),
+            StatusColor = Color.FromArgb(98, 114, 164),
+            ButtonBackColor = Color.FromArgb(68, 71, 90),
+            ButtonForeColor = Color.FromArgb(248, 248, 242),
+            AnalyzeButtonBackColor = Color.FromArgb(98, 114, 164),
+            GroupBoxBackColor = Color.FromArgb(48, 50, 64),
+            ClockBackColor = Color.FromArgb(68, 71, 90),
+            ClockActiveBackColor = Color.FromArgb(40, 90, 60),
+            StartMatchButtonBackColor = Color.FromArgb(60, 130, 75),
+            StopMatchButtonBackColor = Color.FromArgb(150, 50, 50),
+            WhiteClockForeColor = Color.FromArgb(248, 248, 242),
+            BlackClockForeColor = Color.FromArgb(189, 147, 249)
+        };
+
+        // Nord — deep navy ice, frost text, Arctic cold shoulder energy
+        private static readonly ColorScheme NordScheme = new ColorScheme
+        {
+            BackgroundColor = Color.FromArgb(22, 32, 50),
+            LabelBackColor = Color.FromArgb(35, 50, 72),
+            LabelForeColor = Color.FromArgb(136, 192, 208),
+            Button1BackColor = Color.FromArgb(35, 50, 72),
+            Button1ForeColor = Color.FromArgb(143, 188, 187),
+            ButtonResetBackColor = Color.FromArgb(35, 50, 72),
+            ButtonResetForeColor = Color.FromArgb(191, 97, 106),
+            ButtonSettingsBackColor = Color.FromArgb(35, 50, 72),
+            ButtonSettingsForeColor = Color.FromArgb(235, 203, 139),
+            ConsoleBackColor = Color.FromArgb(18, 26, 42),
+            ConsoleForeColor = Color.FromArgb(136, 192, 208),
+            CheckboxBackColor = Color.FromArgb(22, 32, 50),
+            CheckboxForeColor = Color.FromArgb(136, 192, 208),
+
+            FormBackColor = Color.FromArgb(22, 32, 50),
+            PanelColor = Color.FromArgb(32, 46, 68),
+            TextColor = Color.FromArgb(136, 192, 208),
+            StatusColor = Color.FromArgb(88, 130, 160),
+            ButtonBackColor = Color.FromArgb(42, 60, 88),
+            ButtonForeColor = Color.FromArgb(200, 220, 235),
+            AnalyzeButtonBackColor = Color.FromArgb(60, 100, 150),
+            GroupBoxBackColor = Color.FromArgb(28, 40, 60),
+            ClockBackColor = Color.FromArgb(42, 60, 88),
+            ClockActiveBackColor = Color.FromArgb(35, 85, 75),
+            StartMatchButtonBackColor = Color.FromArgb(40, 100, 80),
+            StopMatchButtonBackColor = Color.FromArgb(140, 50, 55),
+            WhiteClockForeColor = Color.FromArgb(216, 235, 245),
+            BlackClockForeColor = Color.FromArgb(143, 188, 187)
+        };
+
+        // Sepia — aged parchment and dark ink, not a beige accident
+        private static readonly ColorScheme SepiaScheme = new ColorScheme
+        {
+            BackgroundColor = Color.FromArgb(220, 198, 152),
+            LabelBackColor = Color.FromArgb(195, 168, 115),
+            LabelForeColor = Color.FromArgb(45, 25, 8),
+            Button1BackColor = Color.FromArgb(195, 168, 115),
+            Button1ForeColor = Color.FromArgb(90, 50, 15),
+            ButtonResetBackColor = Color.FromArgb(195, 168, 115),
+            ButtonResetForeColor = Color.FromArgb(160, 50, 30),
+            ButtonSettingsBackColor = Color.FromArgb(195, 168, 115),
+            ButtonSettingsForeColor = Color.FromArgb(120, 80, 10),
+            ConsoleBackColor = Color.FromArgb(240, 220, 170),
+            ConsoleForeColor = Color.FromArgb(45, 25, 8),
+            CheckboxBackColor = Color.FromArgb(220, 198, 152),
+            CheckboxForeColor = Color.FromArgb(45, 25, 8),
+
+            FormBackColor = Color.FromArgb(220, 198, 152),
+            PanelColor = Color.FromArgb(242, 225, 182),
+            TextColor = Color.FromArgb(45, 25, 8),
+            StatusColor = Color.FromArgb(110, 80, 40),
+            ButtonBackColor = Color.FromArgb(195, 168, 115),
+            ButtonForeColor = Color.FromArgb(45, 25, 8),
+            AnalyzeButtonBackColor = Color.FromArgb(148, 98, 20),
+            GroupBoxBackColor = Color.FromArgb(232, 212, 165),
+            ClockBackColor = Color.FromArgb(195, 168, 115),
+            ClockActiveBackColor = Color.FromArgb(165, 135, 75),
+            StartMatchButtonBackColor = Color.FromArgb(85, 115, 55),
+            StopMatchButtonBackColor = Color.FromArgb(160, 60, 40),
+            WhiteClockForeColor = Color.FromArgb(45, 25, 8),
+            BlackClockForeColor = Color.FromArgb(90, 50, 15)
+        };
+
+        public static ColorScheme GetColorScheme(string theme) => theme switch
+        {
+            "Cyberpunk" => CyberpunkScheme,
+            "Dracula"   => DraculaScheme,
+            "Nord"      => NordScheme,
+            "Sepia"     => SepiaScheme,
+            "Light"     => LightScheme,
+            _           => DarkScheme
+        };
+
+        public static bool IsDarkTheme(string? theme) => theme switch
+        {
+            "Light" or "Sepia" => false,
+            _                  => true
+        };
     }
 }

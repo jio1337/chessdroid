@@ -142,8 +142,12 @@ namespace ChessDroid
             numAutoPlayInterval.Value = Math.Clamp(config.AutoPlayInterval, 200, 2000);
 
             // Load theme preference
-            chkDarkMode.Checked = config.Theme == "Dark";
-            ApplyTheme(config.Theme == "Dark");
+            cmbTheme.Items.Clear();
+            foreach (var name in ChessDroid.Services.ThemeService.ThemeNames)
+                cmbTheme.Items.Add(name);
+            int themeIdx = Array.IndexOf(ChessDroid.Services.ThemeService.ThemeNames, config.Theme);
+            cmbTheme.SelectedIndex = themeIdx >= 0 ? themeIdx : 0;
+            ApplyTheme(config.Theme);
         }
 
         private void BtnSave_Click(object? sender, EventArgs e)
@@ -154,7 +158,7 @@ namespace ChessDroid
             config.MoveTimeoutMs = (int)numMoveTimeout.Value;
             config.EngineDepth = (int)numEngineDepth.Value;
             config.MinAnalysisTimeMs = (int)numMinAnalysisTime.Value;
-            config.Theme = chkDarkMode.Checked ? "Dark" : "Light";
+            config.Theme = cmbTheme.SelectedItem?.ToString() ?? "Dark";
 
             // Save display options
             config.SelectedEngine = cmbEngine.SelectedItem?.ToString() ?? "";
@@ -280,14 +284,15 @@ namespace ChessDroid
             btnDarkColor.BackColor = ColorTranslator.FromHtml(dark);
         }
 
-        private void ChkDarkMode_CheckedChanged(object? sender, EventArgs e)
+        private void CmbTheme_SelectedIndexChanged(object? sender, EventArgs e)
         {
-            ApplyTheme(chkDarkMode.Checked);
+            ApplyTheme(cmbTheme.SelectedItem?.ToString() ?? "Dark");
         }
 
-        private void ApplyTheme(bool isDarkMode)
+        private void ApplyTheme(string theme)
         {
-            // Suspend layout to prevent flickering and improve performance
+            bool isDarkMode = ChessDroid.Services.ThemeService.IsDarkTheme(theme);
+
             this.SuspendLayout();
 
             if (isDarkMode)
@@ -451,9 +456,11 @@ namespace ChessDroid
                 btnCancel.ForeColor = Color.LightGray;
                 btnCancel.BackColor = Color.FromArgb(45, 45, 48);
 
-                // Dark Mode Checkbox
-                chkDarkMode.ForeColor = Color.White;
-                chkDarkMode.BackColor = Color.FromArgb(45, 45, 48);
+                // Theme selector
+                lblTheme.ForeColor = Color.White;
+                lblTheme.BackColor = Color.FromArgb(45, 45, 48);
+                cmbTheme.ForeColor = Color.White;
+                cmbTheme.BackColor = Color.FromArgb(60, 60, 65);
             }
             else
             {
@@ -617,9 +624,11 @@ namespace ChessDroid
                 btnCancel.ForeColor = Color.DarkSlateGray;
                 btnCancel.BackColor = Color.Gainsboro;
 
-                // Dark Mode Checkbox
-                chkDarkMode.ForeColor = Color.Black;
-                chkDarkMode.BackColor = Color.WhiteSmoke;
+                // Theme selector
+                lblTheme.ForeColor = Color.Black;
+                lblTheme.BackColor = Color.WhiteSmoke;
+                cmbTheme.ForeColor = Color.Black;
+                cmbTheme.BackColor = Color.White;
             }
 
             // Resume layout to apply all changes at once

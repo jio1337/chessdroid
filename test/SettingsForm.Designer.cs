@@ -104,7 +104,8 @@ namespace ChessDroid
             btnReset = new Button();
             btnHelp = new Button();
             btnCancel = new Button();
-            chkDarkMode = new CheckBox();
+            lblTheme = new Label();
+            cmbTheme = new ComboBox();
             toolTip1 = new ToolTip(components);
             grpEngine.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)numMinAnalysisTime).BeginInit();
@@ -972,21 +973,28 @@ namespace ChessDroid
             btnCancel.Text = "Cancel";
             btnCancel.UseVisualStyleBackColor = true;
             btnCancel.Click += BtnCancel_Click;
-            // 
-            // chkDarkMode
-            // 
-            chkDarkMode.AutoSize = true;
-            chkDarkMode.Checked = true;
-            chkDarkMode.CheckState = CheckState.Checked;
-            chkDarkMode.Font = new Font("Courier New", 14.25F);
-            chkDarkMode.ForeColor = Color.White;
-            chkDarkMode.Location = new Point(386, 583);
-            chkDarkMode.Name = "chkDarkMode";
-            chkDarkMode.Size = new Size(128, 25);
-            chkDarkMode.TabIndex = 8;
-            chkDarkMode.Text = "Dark Mode";
-            chkDarkMode.UseVisualStyleBackColor = true;
-            chkDarkMode.CheckedChanged += ChkDarkMode_CheckedChanged;
+            //
+            // lblTheme
+            //
+            lblTheme.Font = new Font("Courier New", 10F);
+            lblTheme.ForeColor = Color.White;
+            lblTheme.Location = new Point(386, 583);
+            lblTheme.Name = "lblTheme";
+            lblTheme.Size = new Size(52, 20);
+            lblTheme.Text = "Theme:";
+            lblTheme.TextAlign = ContentAlignment.MiddleLeft;
+            //
+            // cmbTheme
+            //
+            cmbTheme.DropDownStyle = ComboBoxStyle.DropDownList;
+            cmbTheme.Font = new Font("Courier New", 10F);
+            cmbTheme.ForeColor = Color.White;
+            cmbTheme.BackColor = Color.FromArgb(60, 60, 65);
+            cmbTheme.Location = new Point(444, 580);
+            cmbTheme.Name = "cmbTheme";
+            cmbTheme.Size = new Size(128, 23);
+            cmbTheme.TabIndex = 8;
+            cmbTheme.SelectedIndexChanged += CmbTheme_SelectedIndexChanged;
             // 
             // SettingsForm
             // 
@@ -997,7 +1005,8 @@ namespace ChessDroid
             BackColor = Color.FromArgb(45, 45, 48);
             CancelButton = btnCancel;
             ClientSize = new Size(585, 716);
-            Controls.Add(chkDarkMode);
+            Controls.Add(lblTheme);
+            Controls.Add(cmbTheme);
             Controls.Add(btnCancel);
             Controls.Add(btnHelp);
             Controls.Add(btnReset);
@@ -1094,7 +1103,8 @@ namespace ChessDroid
         private System.Windows.Forms.Button btnReset;
         private System.Windows.Forms.Button btnHelp;
         private System.Windows.Forms.Button btnCancel;
-        private System.Windows.Forms.CheckBox chkDarkMode;
+        private System.Windows.Forms.Label lblTheme;
+        private System.Windows.Forms.ComboBox cmbTheme;
         private System.Windows.Forms.ToolTip toolTip1;
         private System.Windows.Forms.GroupBox grpExplanations;
         private System.Windows.Forms.CheckBox chkTactical;
