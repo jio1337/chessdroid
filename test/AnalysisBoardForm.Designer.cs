@@ -42,6 +42,7 @@ namespace ChessDroid
             lblTurn = new Label();
             lblPieces = new Label();
             cmbPieces = new ComboBox();
+            cmbBoardColor = new ComboBox();
             btnSettings = new Button();
             btnNewGame = new Button();
             btnFlipBoard = new Button();
@@ -86,6 +87,7 @@ namespace ChessDroid
             numIncrement = new NumericUpDown();
             lblWhiteClock = new Label();
             lblBlackClock = new Label();
+            btnEngineProfiles = new Button();
             btnStartMatch = new Button();
             btnStopMatch = new Button();
             chkFromPosition = new CheckBox();
@@ -185,8 +187,18 @@ namespace ChessDroid
             lblPieces.TabIndex = 21;
             lblPieces.Text = "Pieces:";
             // 
+            // cmbBoardColor
+            //
+            cmbBoardColor.DropDownStyle = ComboBoxStyle.DropDownList;
+            cmbBoardColor.Font = new Font("Courier New", 8.25F);
+            cmbBoardColor.Location = new Point(10, 0);
+            cmbBoardColor.Name = "cmbBoardColor";
+            cmbBoardColor.Size = new Size(120, 22);
+            cmbBoardColor.TabIndex = 35;
+            cmbBoardColor.SelectedIndexChanged += CmbBoardColor_SelectedIndexChanged;
+            //
             // cmbPieces
-            // 
+            //
             cmbPieces.DropDownStyle = ComboBoxStyle.DropDownList;
             cmbPieces.Font = new Font("Courier New", 8.25F);
             cmbPieces.Location = new Point(462, 534);
@@ -468,6 +480,7 @@ namespace ChessDroid
             // pnlBoardControls
             //
             pnlBoardControls.Controls.Add(lblTurn);
+            pnlBoardControls.Controls.Add(cmbBoardColor);
             pnlBoardControls.Controls.Add(lblPieces);
             pnlBoardControls.Controls.Add(cmbPieces);
             pnlBoardControls.Controls.Add(btnNewGame);
@@ -525,6 +538,7 @@ namespace ChessDroid
             grpEngineMatch.Controls.Add(pnlTimeParams);
             grpEngineMatch.Controls.Add(lblWhiteClock);
             grpEngineMatch.Controls.Add(lblBlackClock);
+            grpEngineMatch.Controls.Add(btnEngineProfiles);
             grpEngineMatch.Controls.Add(btnStartMatch);
             grpEngineMatch.Controls.Add(btnStopMatch);
             grpEngineMatch.Controls.Add(chkFromPosition);
@@ -549,6 +563,7 @@ namespace ChessDroid
             // 
             // cmbWhiteEngine
             // 
+            cmbWhiteEngine.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             cmbWhiteEngine.DropDownStyle = ComboBoxStyle.DropDownList;
             cmbWhiteEngine.Font = new Font("Courier New", 9F);
             cmbWhiteEngine.Location = new Point(65, 19);
@@ -567,6 +582,7 @@ namespace ChessDroid
             // 
             // cmbBlackEngine
             // 
+            cmbBlackEngine.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             cmbBlackEngine.DropDownStyle = ComboBoxStyle.DropDownList;
             cmbBlackEngine.Font = new Font("Courier New", 9F);
             cmbBlackEngine.Location = new Point(65, 47);
@@ -694,8 +710,20 @@ namespace ChessDroid
             numIncrement.Value = new decimal(new int[] { 2, 0, 0, 0 });
             numIncrement.Visible = false;
             // 
+            // btnEngineProfiles
+            //
+            btnEngineProfiles.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            btnEngineProfiles.FlatStyle = FlatStyle.Flat;
+            btnEngineProfiles.Font = new Font("Courier New", 9F);
+            btnEngineProfiles.Location = new Point(227, 19);
+            btnEngineProfiles.Name = "btnEngineProfiles";
+            btnEngineProfiles.Size = new Size(95, 51);
+            btnEngineProfiles.TabIndex = 12;
+            btnEngineProfiles.Text = "Profiles";
+            btnEngineProfiles.Click += BtnEngineProfiles_Click;
+            //
             // lblWhiteClock
-            // 
+            //
             lblWhiteClock.BorderStyle = BorderStyle.FixedSingle;
             lblWhiteClock.Font = new Font("Consolas", 14F, FontStyle.Bold);
             lblWhiteClock.Location = new Point(10, 140);
@@ -808,6 +836,7 @@ namespace ChessDroid
         private Label lblTurn;
         private Label lblPieces;
         private ComboBox cmbPieces;
+        private ComboBox cmbBoardColor;
         private Button btnSettings;
         private Button btnNewGame;
         private Button btnFlipBoard;
@@ -853,6 +882,7 @@ namespace ChessDroid
         private NumericUpDown numIncrement;
         private Label lblWhiteClock;
         private Label lblBlackClock;
+        private Button btnEngineProfiles;
         private Button btnStartMatch;
         private Button btnStopMatch;
         private CheckBox chkFromPosition;

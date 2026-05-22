@@ -69,6 +69,13 @@ namespace ChessDroid
         private bool matchRunning = false;
         private double? _previousMatchEval; // Track previous eval for brilliant move detection
         private bool _awaitingMatchAnimation = false;
+        private int _matchWhiteElo;
+        private int _matchBlackElo;
+        private string _matchWhiteFileName = "";
+        private string _matchBlackFileName = "";
+        // Overlay labels on top/bottom material strips showing engine name + ELO during a match
+        private Label _lblBlackEngineInfo = null!;
+        private Label _lblWhiteEngineInfo = null!;
 
         // Bot mode
         private bool _botModeActive = false;
@@ -101,6 +108,25 @@ namespace ChessDroid
 
             InitializeComponent();
 
+            // Engine info labels — overlay right side of material strips during engine matches
+            var infoLabelFont = new Font("Consolas", 8F);
+            _lblBlackEngineInfo = new Label
+            {
+                Visible = false, AutoSize = false,
+                TextAlign = ContentAlignment.MiddleRight,
+                Font = infoLabelFont, BackColor = Color.Transparent
+            };
+            _lblWhiteEngineInfo = new Label
+            {
+                Visible = false, AutoSize = false,
+                TextAlign = ContentAlignment.MiddleRight,
+                Font = infoLabelFont, BackColor = Color.Transparent
+            };
+            leftPanel.Controls.Add(_lblBlackEngineInfo);
+            leftPanel.Controls.Add(_lblWhiteEngineInfo);
+            _lblBlackEngineInfo.BringToFront();
+            _lblWhiteEngineInfo.BringToFront();
+
             _evalGraph = new EvalGraphControl { Dock = DockStyle.Top, Height = 65, Name = "evalGraph" };
             _evalGraph.MoveNodeSelected += EvalGraph_MoveNodeSelected;
             rightPanel.Controls.Add(_evalGraph);
@@ -117,6 +143,7 @@ namespace ChessDroid
             InitializeServices();
             InitializeMatchControls();
             PopulatePiecesComboBox();
+            PopulateBoardColorComboBox();
 
             // Initialize move tree with starting position
             moveTree = new MoveTree(boardControl.GetFEN());
@@ -173,9 +200,11 @@ namespace ChessDroid
             lblAnalysis.ForeColor = scheme.TextColor;
             lblPieces.ForeColor = scheme.TextColor;
 
-            // Pieces combobox
+            // Pieces + board color comboboxes
             cmbPieces.BackColor = scheme.ButtonBackColor;
             cmbPieces.ForeColor = scheme.TextColor;
+            cmbBoardColor.BackColor = scheme.ButtonBackColor;
+            cmbBoardColor.ForeColor = scheme.TextColor;
 
             // Standard buttons
             foreach (var btn in new[] { btnSettings, btnNewGame, btnFlipBoard, btnTakeBack, btnPrevMove,
@@ -234,6 +263,13 @@ namespace ChessDroid
             btnStartMatch.ForeColor = Color.White;
             btnStopMatch.BackColor = scheme.StopMatchButtonBackColor;
             btnStopMatch.ForeColor = Color.White;
+            btnEngineProfiles.BackColor = scheme.ButtonBackColor;
+            btnEngineProfiles.ForeColor = scheme.ButtonForeColor;
+
+            // Engine info overlay labels
+            Color infoLabelColor = isDarkMode ? Color.FromArgb(200, 200, 200) : Color.FromArgb(70, 70, 70);
+            _lblBlackEngineInfo.ForeColor = infoLabelColor;
+            _lblWhiteEngineInfo.ForeColor = infoLabelColor;
 
             // Material strips text color
             Color stripTextColor = isDarkMode ? Color.FromArgb(200, 200, 200) : Color.FromArgb(70, 70, 70);
@@ -365,6 +401,32 @@ namespace ChessDroid
             }
         }
 
+        private void PopulateBoardColorComboBox()
+        {
+            cmbBoardColor.Items.Clear();
+            foreach (var (name, _, _) in SettingsForm.ColorPresets)
+                cmbBoardColor.Items.Add(name);
+
+            int match = Array.FindIndex(SettingsForm.ColorPresets, p =>
+                string.Equals(p.Light, config.LightSquareColor, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(p.Dark,  config.DarkSquareColor,  StringComparison.OrdinalIgnoreCase));
+            cmbBoardColor.SelectedIndex = match; // -1 if custom colors, that's fine
+        }
+
+        private void CmbBoardColor_SelectedIndexChanged(object? sender, EventArgs e)
+        {
+            int idx = cmbBoardColor.SelectedIndex;
+            if (idx < 0 || idx >= SettingsForm.ColorPresets.Length) return;
+            var (_, light, dark) = SettingsForm.ColorPresets[idx];
+            boardControl.SetSquareColors(ColorTranslator.FromHtml(light), ColorTranslator.FromHtml(dark));
+            if (config != null)
+            {
+                config.LightSquareColor = light;
+                config.DarkSquareColor  = dark;
+                config.Save();
+            }
+        }
+
         private void InitializeMatchControls()
         {
             // Populate engine combo boxes
@@ -418,14 +480,13 @@ namespace ChessDroid
             bool showEvalBar = config?.ShowEvalBar != false;
             int evalBarTotal = showEvalBar ? 28 : 0; // 24px bar + 4px gap
 
-            // Ideal left-panel width = board size (= available height) + eval bar + padding
+            // Left panel: snug around the board — 5px margin each side, analysis gets the rest
+            const int minRight = 300;
+            int available = mainLayout.Width - mainLayout.Padding.Horizontal;
             int availH    = mainLayout.Height - 2 * STRIP_H - 2 * STRIP_GAP;
             int boardSize = Math.Max(300, availH);
-            int idealLeft = boardSize + evalBarTotal + 20;
-
-            // Never steal more than 65 % — right panel must always have room
-            int totalW = mainLayout.Width - mainLayout.Padding.Horizontal - 130;
-            idealLeft = Math.Clamp(idealLeft, 350, Math.Max(350, (int)(totalW * 0.65)));
+            int idealLeft = boardSize + evalBarTotal + 10; // 5px each side of board+evalbar
+            idealLeft = Math.Clamp(idealLeft, 350, available - 130 - minRight);
 
             var cs0 = mainLayout.ColumnStyles[0];
             if (cs0.SizeType == SizeType.Absolute && Math.Abs(cs0.Width - idealLeft) <= 1)
@@ -445,7 +506,8 @@ namespace ChessDroid
 
         private void LeftPanel_Resize(object? sender, EventArgs e)
         {
-            if (boardControl == null || _materialTop == null || _materialBottom == null)
+            if (boardControl == null || _materialTop == null || _materialBottom == null
+                || _lblBlackEngineInfo == null || _lblWhiteEngineInfo == null)
                 return;
 
             if (sender is Panel panel)
@@ -483,6 +545,14 @@ namespace ChessDroid
                 _materialTop.Size     = new Size(boardSize, STRIP_H);
                 _materialBottom.Location = new Point(boardX, boardControl.Bottom + STRIP_GAP);
                 _materialBottom.Size     = new Size(boardSize, STRIP_H);
+
+                // Engine info labels — right-aligned, overlaid on the material strip rows
+                const int infoW = 170;
+                int infoH = Math.Max(STRIP_H, 14);
+                _lblBlackEngineInfo.Location = new Point(boardX + boardSize - infoW, topSpace);
+                _lblBlackEngineInfo.Size = new Size(infoW, infoH);
+                _lblWhiteEngineInfo.Location = new Point(boardX + boardSize - infoW, boardControl.Bottom + STRIP_GAP);
+                _lblWhiteEngineInfo.Size = new Size(infoW, infoH);
             }
         }
 
@@ -494,11 +564,14 @@ namespace ChessDroid
             const int pad = 4;
             const int gap = 4;
 
-            // Row 1 (Y=3): "White to move" label left, Pieces selector right
+            // Row 1 (Y=3): "White to move" label left, BoardColor + Pieces selectors right
             lblTurn.Location = new Point(pad, 3);
             cmbPieces.Width = 95;
             cmbPieces.Location = new Point(w - cmbPieces.Width - pad, 0);
             lblPieces.Location = new Point(cmbPieces.Left - lblPieces.Width - gap, 3);
+            cmbBoardColor.Width = 110;
+            cmbBoardColor.Location = new Point(lblPieces.Left - cmbBoardColor.Width - gap, 0);
+            lblTurn.Visible = (pad + lblTurn.Width + gap) < cmbBoardColor.Left;
 
             // Row 2 (Y=28): icon buttons — all fixed widths, no dynamic scaling
             const int buttonY = 28;
@@ -640,6 +713,10 @@ namespace ChessDroid
             _pgnHeaders = new();
             _matchWhiteName = "";
             _matchBlackName = "";
+            _matchWhiteFileName = "";
+            _matchBlackFileName = "";
+            _lblBlackEngineInfo.Visible = false;
+            _lblWhiteEngineInfo.Visible = false;
             _libraryGameId = "";
             UpdateFenDisplay();
             UpdateTurnLabel();
@@ -684,6 +761,7 @@ namespace ChessDroid
                 boardControl.SetSquareColors(
                     ColorTranslator.FromHtml(config.LightSquareColor),
                     ColorTranslator.FromHtml(config.DarkSquareColor));
+                PopulateBoardColorComboBox(); // re-sync preset selector after custom color edits
                 boardControl.ShowSquareLabels = config.ShowSquareLabels;
                 boardControl.ShowLastMoveHighlight = config.ShowLastMoveHighlight;
                 if (!config.ShowThreatArrows) boardControl.ClearThreatArrows();
@@ -1405,6 +1483,15 @@ namespace ChessDroid
             _matchWhiteName = Path.GetFileNameWithoutExtension(whiteEngineName);
             _matchBlackName = Path.GetFileNameWithoutExtension(blackEngineName);
 
+            // Load engine profiles for ELO display
+            config.EngineProfiles.TryGetValue(whiteEngineName, out var whiteProfile);
+            config.EngineProfiles.TryGetValue(blackEngineName, out var blackProfile);
+            _matchWhiteElo = whiteProfile?.Elo ?? 0;
+            _matchBlackElo = blackProfile?.Elo ?? 0;
+            _matchWhiteFileName = whiteEngineName;
+            _matchBlackFileName = blackEngineName;
+            SetEngineInfoLabels(whiteProfile, blackProfile, whiteEngineName, blackEngineName);
+
             // Resolve engine paths
             string enginesPath = config.GetEnginesPath();
             string whiteEnginePath = Path.Combine(enginesPath, whiteEngineName);
@@ -1459,11 +1546,11 @@ namespace ChessDroid
             // Set up match log
             analysisOutput.Clear();
             analysisOutput.SelectionColor = analysisOutput.ForeColor;
-            analysisOutput.AppendText($"Engine Match: {whiteEngineName} vs {blackEngineName}\n");
+            analysisOutput.AppendText($"Engine Match: {GetEngineLabel(whiteEngineName, true)} vs {GetEngineLabel(blackEngineName, true)}\n");
             analysisOutput.AppendText($"Time Control: {tc}\n");
             string arbiterFile = Path.GetFileName(config.SelectedEngine ?? "");
             int arbiterDepth = config.EngineDepth;
-            analysisOutput.AppendText($"Arbiter: {arbiterFile} (depth {arbiterDepth})\n");
+            analysisOutput.AppendText($"Arbiter: {GetEngineLabel(arbiterFile, false)} (depth {arbiterDepth})\n");
             if (chkFromPosition.Checked)
             {
                 analysisOutput.AppendText("Starting from custom position\n");
@@ -1510,6 +1597,43 @@ namespace ChessDroid
         private void BtnStopMatch_Click(object? sender, EventArgs e)
         {
             matchService?.StopMatch();
+        }
+
+        private void BtnEngineProfiles_Click(object? sender, EventArgs e)
+        {
+            bool isDark = config?.Theme == "Dark";
+            using var dlg = new EngineProfilesDialog(config!, isDark);
+            dlg.ShowDialog(this);
+        }
+
+        private void SetEngineInfoLabels(EngineProfile? whiteProfile, EngineProfile? blackProfile,
+            string whiteFileName, string blackFileName)
+        {
+            static string BuildLabel(EngineProfile? profile, string fileName)
+            {
+                string name = !string.IsNullOrEmpty(profile?.DisplayName)
+                    ? profile.DisplayName
+                    : Path.GetFileNameWithoutExtension(fileName);
+                return profile?.Elo > 0 ? $"{name} [{profile.Elo}]" : name;
+            }
+
+            bool showStrips = config?.ShowMaterialStrips != false;
+            _lblBlackEngineInfo.Text = BuildLabel(blackProfile, blackFileName);
+            _lblWhiteEngineInfo.Text = BuildLabel(whiteProfile, whiteFileName);
+            _lblBlackEngineInfo.Visible = showStrips;
+            _lblWhiteEngineInfo.Visible = showStrips;
+        }
+
+        private string GetEngineLabel(string fileName, bool includeElo)
+        {
+            if (string.IsNullOrEmpty(fileName)) return fileName;
+            config.EngineProfiles.TryGetValue(fileName, out var profile);
+            string name = !string.IsNullOrEmpty(profile?.DisplayName)
+                ? profile.DisplayName
+                : Path.GetFileNameWithoutExtension(fileName);
+            if (includeElo && profile?.Elo > 0)
+                return $"{name} ({profile.Elo})";
+            return name;
         }
 
         private void MatchBoard_AnimationCompleted(object? sender, EventArgs e)
@@ -1636,6 +1760,19 @@ namespace ChessDroid
                 analysisOutput.AppendText($"White remaining: {FormatClock(result.WhiteTimeRemainingMs)}\n");
                 analysisOutput.AppendText($"Black remaining: {FormatClock(result.BlackTimeRemainingMs)}\n");
             }
+
+            // Elo change (FIDE K=10)
+            if (_matchWhiteElo > 0 && _matchBlackElo > 0 && result.Outcome != MatchOutcome.Interrupted)
+            {
+                double whiteScore = result.Outcome == MatchOutcome.WhiteWins ? 1.0
+                    : result.Outcome == MatchOutcome.Draw ? 0.5 : 0.0;
+                int whiteDelta = Services.EloCalculator.EloChange(_matchWhiteElo, _matchBlackElo, whiteScore);
+                int blackDelta = Services.EloCalculator.EloChange(_matchBlackElo, _matchWhiteElo, 1.0 - whiteScore);
+                string wLabel = GetEngineLabel(_matchWhiteFileName, true);
+                string bLabel = GetEngineLabel(_matchBlackFileName, true);
+                analysisOutput.AppendText($"\nElo change: {wLabel} {Services.EloCalculator.FormatDelta(whiteDelta)}  {bLabel} {Services.EloCalculator.FormatDelta(blackDelta)}\n");
+            }
+
             analysisOutput.ScrollToCaret();
 
             lblStatus.Text = result.GetResultString();
@@ -3338,6 +3475,10 @@ namespace ChessDroid
                 _pgnHeaders = headers;
                 _matchWhiteName = "";
                 _matchBlackName = "";
+                _matchWhiteFileName = "";
+                _matchBlackFileName = "";
+                _lblBlackEngineInfo.Visible = false;
+                _lblWhiteEngineInfo.Visible = false;
                 _libraryGameId = "";
 
                 string startFen = headers.TryGetValue("FEN", out var fenValue)
@@ -3994,7 +4135,50 @@ namespace ChessDroid
             RefreshEvalGraph();
             consoleFormatter?.SetActiveClassification(classification);
             consoleFormatter?.DisplayClassificationSummary(classification);
+
+            // Append Elo performance if player ratings are known (PGN headers or engine profiles)
+            var eloText = TryGetEloPerformanceText();
+            if (eloText != null) analysisOutput.AppendText(eloText);
+
             lblStatus.Text = $"Game review — White {classification.WhiteAccuracy:F1}%  Black {classification.BlackAccuracy:F1}%";
+        }
+
+        private string? TryGetEloPerformanceText()
+        {
+            // PGN headers take priority (imported games); fall back to engine match fields
+            int whiteElo = 0, blackElo = 0;
+
+            if (_pgnHeaders.TryGetValue("WhiteElo", out string? wStr) && int.TryParse(wStr, out int we) && we > 0)
+                whiteElo = we;
+            else if (_matchWhiteElo > 0)
+                whiteElo = _matchWhiteElo;
+
+            if (_pgnHeaders.TryGetValue("BlackElo", out string? bStr) && int.TryParse(bStr, out int be) && be > 0)
+                blackElo = be;
+            else if (_matchBlackElo > 0)
+                blackElo = _matchBlackElo;
+
+            if (whiteElo <= 0 || blackElo <= 0) return null;
+
+            string resultStr = _pgnHeaders.GetValueOrDefault("Result", "*");
+            double whiteScore = resultStr switch
+            {
+                "1-0"     => 1.0,
+                "0-1"     => 0.0,
+                "1/2-1/2" => 0.5,
+                _         => -1.0
+            };
+            if (whiteScore < 0) return null;
+
+            string white = !string.IsNullOrEmpty(_matchWhiteFileName) ? GetEngineLabel(_matchWhiteFileName, false)
+                : _pgnHeaders.GetValueOrDefault("White", "White");
+            string black = !string.IsNullOrEmpty(_matchBlackFileName) ? GetEngineLabel(_matchBlackFileName, false)
+                : _pgnHeaders.GetValueOrDefault("Black", "Black");
+
+            int whiteDelta = Services.EloCalculator.EloChange(whiteElo, blackElo, whiteScore);
+            int blackDelta = Services.EloCalculator.EloChange(blackElo, whiteElo, 1.0 - whiteScore);
+
+            return $"\nElo change: {white} {Services.EloCalculator.FormatDelta(whiteDelta)}  {black} {Services.EloCalculator.FormatDelta(blackDelta)}\n";
         }
 
         /// <summary>

@@ -2,6 +2,12 @@ using System.Text.Json;
 
 namespace ChessDroid
 {
+    public class EngineProfile
+    {
+        public string DisplayName { get; set; } = "";
+        public int Elo { get; set; } = 0; // 0 = unknown
+    }
+
     public class AppConfig
     {
         public string TemplatesFolder { get; set; } = "Templates";
@@ -67,6 +73,9 @@ namespace ChessDroid
         public string OpeningBooksFolder { get; set; } = "Books"; // Folder containing Polyglot .bin files (loads all)
         public bool UseOpeningBook { get; set; } = true; // Enable opening book move suggestions
         public bool ShowBookMoves { get; set; } = true; // Show book move suggestions in console
+
+        // Engine profiles: keyed by engine filename (e.g. "stockfish18.exe")
+        public Dictionary<string, EngineProfile> EngineProfiles { get; set; } = new();
 
         private static readonly string ConfigFilePath = Path.Combine(
             Application.StartupPath, "config.json");
@@ -201,6 +210,7 @@ namespace ChessDroid
             OpeningBooksFolder = other.OpeningBooksFolder;
             UseOpeningBook = other.UseOpeningBook;
             ShowBookMoves = other.ShowBookMoves;
+            EngineProfiles = new Dictionary<string, EngineProfile>(other.EngineProfiles);
         }
 
         public string GetTemplatesPath() => ResolveFolderPath(TemplatesFolder);

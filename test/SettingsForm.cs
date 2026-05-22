@@ -7,7 +7,7 @@ namespace ChessDroid
         private string _selectedFontFamily = "Consolas";
         private float _selectedFontSize = 10.0f;
 
-        private static readonly (string Name, string Light, string Dark)[] ColorPresets =
+        internal static readonly (string Name, string Light, string Dark)[] ColorPresets =
         {
             ("Brown (default)", "#F0D9B5", "#B58863"),
             ("Green",           "#EEEED2", "#769656"),
@@ -16,6 +16,11 @@ namespace ChessDroid
             ("Pink",            "#F5D6E3", "#C0708A"),
             ("Purple",          "#E8DCEF", "#8C69AA"),
             ("Gray",            "#E8E8E8", "#8A8A8A"),
+            ("Cyberpunk",       "#C0F2EE", "#8080C0"),
+            ("Midnight",        "#D0DCE8", "#607090"),
+            ("Forest",          "#D4E8CC", "#5A8A6A"),
+            ("Walnut",          "#EDD5A8", "#9C7050"),
+            ("Arctic",          "#DCF0F8", "#5890B0"),
         };
 
         public SettingsForm(AppConfig config, Action? onConfigChanged = null)
