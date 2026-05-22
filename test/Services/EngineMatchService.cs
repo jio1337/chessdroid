@@ -48,8 +48,14 @@ namespace ChessDroid.Services
         public event Action<string>? OnStatusChanged;
 
         public bool IsRunning => isRunning;
-        public long WhiteRemainingMs => whiteRemainingMs;
-        public long BlackRemainingMs => blackRemainingMs;
+        public long WhiteRemainingMs => isRunning && timeControl.Type == TimeControlType.TotalPlusIncrement
+            && gameState.WhiteToMove && moveStopwatch.IsRunning
+            ? Math.Max(0, whiteRemainingMs - moveStopwatch.ElapsedMilliseconds)
+            : whiteRemainingMs;
+        public long BlackRemainingMs => isRunning && timeControl.Type == TimeControlType.TotalPlusIncrement
+            && !gameState.WhiteToMove && moveStopwatch.IsRunning
+            ? Math.Max(0, blackRemainingMs - moveStopwatch.ElapsedMilliseconds)
+            : blackRemainingMs;
         public bool WhiteToMove => gameState.WhiteToMove;
 
         public EngineMatchService(AppConfig config)
