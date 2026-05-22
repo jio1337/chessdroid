@@ -173,7 +173,7 @@ namespace ChessDroid
                 // Inner split: moves | analysis
                 splitRightPanels.Panel1MinSize = 80;
                 splitRightPanels.Panel2MinSize = 200;
-                splitRightPanels.SplitterDistance = config.SplitterDistance > 0 ? config.SplitterDistance : 130;
+                splitRightPanels.SplitterDistance = config!.SplitterDistance > 0 ? config.SplitterDistance : 130;
 
                 LeftPanel_Resize(leftPanel, EventArgs.Empty);
                 PnlBoardControls_Resize(pnlBoardControls, EventArgs.Empty);
