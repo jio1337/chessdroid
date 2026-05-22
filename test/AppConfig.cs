@@ -77,6 +77,10 @@ namespace ChessDroid
         // Engine profiles: keyed by engine filename (e.g. "stockfish18.exe")
         public Dictionary<string, EngineProfile> EngineProfiles { get; set; } = new();
 
+        // UI layout
+        public int BoardSplitterDistance { get; set; } = -1; // -1 = compute from board height
+        public int SplitterDistance { get; set; } = -1; // -1 = use default (130px)
+
         private static readonly string ConfigFilePath = Path.Combine(
             Application.StartupPath, "config.json");
 
@@ -211,6 +215,8 @@ namespace ChessDroid
             UseOpeningBook = other.UseOpeningBook;
             ShowBookMoves = other.ShowBookMoves;
             EngineProfiles = new Dictionary<string, EngineProfile>(other.EngineProfiles);
+            BoardSplitterDistance = other.BoardSplitterDistance;
+            SplitterDistance = other.SplitterDistance;
         }
 
         public string GetTemplatesPath() => ResolveFolderPath(TemplatesFolder);

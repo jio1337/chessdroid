@@ -33,7 +33,7 @@ namespace ChessDroid
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(AnalysisBoardForm));
             components = new System.ComponentModel.Container();
             toolTip = new System.Windows.Forms.ToolTip(components);
-            mainLayout = new TableLayoutPanel();
+            outerSplit = new SplitContainer();
             leftPanel = new Panel();
             evalBar = new EvalBarControl();
             boardControl = new ChessBoardControl();
@@ -57,6 +57,7 @@ namespace ChessDroid
             btnLoadFen = new Button();
             btnCopyFen = new Button();
             lblStatus = new Label();
+            splitRightPanels = new SplitContainer();
             middlePanel = new Panel();
             moveListBox = new ListBox();
             pnlPgnButtons = new Panel();
@@ -92,8 +93,13 @@ namespace ChessDroid
             btnStopMatch = new Button();
             chkFromPosition = new CheckBox();
             lblAnalysis = new Label();
-            mainLayout.SuspendLayout();
+            outerSplit.Panel1.SuspendLayout();
+            outerSplit.Panel2.SuspendLayout();
+            outerSplit.SuspendLayout();
             leftPanel.SuspendLayout();
+            splitRightPanels.Panel1.SuspendLayout();
+            splitRightPanels.Panel2.SuspendLayout();
+            splitRightPanels.SuspendLayout();
             middlePanel.SuspendLayout();
             pnlPgnButtons.SuspendLayout();
             rightPanel.SuspendLayout();
@@ -105,24 +111,16 @@ namespace ChessDroid
             ((System.ComponentModel.ISupportInitialize)numTotalTime).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numIncrement).BeginInit();
             SuspendLayout();
-            // 
-            // mainLayout
-            // 
-            mainLayout.ColumnCount = 3;
-            mainLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 59F));
-            mainLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 130F));
-            mainLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 41F));
-            mainLayout.Controls.Add(leftPanel, 0, 0);
-            mainLayout.Controls.Add(middlePanel, 1, 0);
-            mainLayout.Controls.Add(rightPanel, 2, 0);
-            mainLayout.Dock = DockStyle.Fill;
-            mainLayout.Location = new Point(0, 0);
-            mainLayout.Name = "mainLayout";
-            mainLayout.Padding = new Padding(5);
-            mainLayout.RowCount = 1;
-            mainLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            mainLayout.Size = new Size(1068, 646);
-            mainLayout.TabIndex = 0;
+            //
+            // outerSplit
+            //
+            outerSplit.Dock = DockStyle.Fill;
+            outerSplit.Orientation = Orientation.Vertical;
+            outerSplit.Name = "outerSplit";
+            outerSplit.TabIndex = 0;
+            outerSplit.Panel1.Controls.Add(leftPanel);
+            outerSplit.Panel2.Controls.Add(splitRightPanels);
+            outerSplit.SplitterMoved += OuterSplit_SplitterMoved;
             // 
             // leftPanel
             // 
@@ -136,7 +134,6 @@ namespace ChessDroid
             leftPanel.Size = new Size(569, 630);
             leftPanel.TabIndex = 0;
             leftPanel.Resize += LeftPanel_Resize;
-            mainLayout.Resize += MainLayout_Resize;
             // 
             // evalBar
             // 
@@ -353,9 +350,19 @@ namespace ChessDroid
             lblStatus.Size = new Size(391, 20);
             lblStatus.TabIndex = 11;
             lblStatus.Text = "Ready";
-            // 
+            //
+            // splitRightPanels
+            //
+            splitRightPanels.Dock = DockStyle.Fill;
+            splitRightPanels.Orientation = Orientation.Vertical;
+            splitRightPanels.Name = "splitRightPanels";
+            splitRightPanels.TabIndex = 1;
+            splitRightPanels.Panel1.Controls.Add(middlePanel);
+            splitRightPanels.Panel2.Controls.Add(rightPanel);
+            splitRightPanels.SplitterMoved += SplitRightPanels_SplitterMoved;
+            //
             // middlePanel
-            // 
+            //
             middlePanel.Controls.Add(moveListBox);
             middlePanel.Controls.Add(pnlPgnButtons);
             middlePanel.Controls.Add(lblMoves);
@@ -792,7 +799,7 @@ namespace ChessDroid
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1068, 646);
-            Controls.Add(mainLayout);
+            Controls.Add(outerSplit);
             Icon = (Icon)resources.GetObject("$this.Icon");
             KeyPreview = true;
             MinimumSize = new Size(1000, 600);
@@ -800,9 +807,14 @@ namespace ChessDroid
             StartPosition = FormStartPosition.CenterScreen;
             Text = "chessdroid v3.13.0";
             KeyDown += AnalysisBoardForm_KeyDown;
-            mainLayout.ResumeLayout(false);
+            outerSplit.Panel1.ResumeLayout(false);
+            outerSplit.Panel2.ResumeLayout(false);
+            outerSplit.ResumeLayout(false);
             leftPanel.ResumeLayout(false);
             leftPanel.PerformLayout();
+            splitRightPanels.Panel1.ResumeLayout(false);
+            splitRightPanels.Panel2.ResumeLayout(false);
+            splitRightPanels.ResumeLayout(false);
             middlePanel.ResumeLayout(false);
             pnlPgnButtons.ResumeLayout(false);
             pnlBoardControls.ResumeLayout(false);
@@ -821,8 +833,9 @@ namespace ChessDroid
         #endregion
 
         // Layout panels
-        private TableLayoutPanel mainLayout;
+        private SplitContainer outerSplit;
         private Panel leftPanel;
+        private SplitContainer splitRightPanels;
         private Panel middlePanel;
         private Panel rightPanel;
         private Panel pnlBoardControls;

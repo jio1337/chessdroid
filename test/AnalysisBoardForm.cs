@@ -84,7 +84,6 @@ namespace ChessDroid
         private CancellationTokenSource? _botMoveCts;
         private AppConfig? _challengeSnapshot; // non-null while challenge mode is active
         private bool _bookArrowsActive = false; // true when book arrows are shown (suppress engine arrows)
-        private bool _inColumnResize = false;
         private System.Windows.Forms.Timer _autoPlayTimer = null!;
         private bool _autoPlaying = false;
 
@@ -148,13 +147,37 @@ namespace ChessDroid
             // Initialize move tree with starting position
             moveTree = new MoveTree(boardControl.GetFEN());
 
-            // Shown fires after TableLayoutPanel finalizes its layout — recalculate positions then
+            // Shown fires after the form is fully laid out — set splitter positions then
             this.Shown += async (s, e) =>
             {
-                AdjustColumnWidths();
+                // Outer split: board | (moves + analysis)
+                outerSplit.Panel1MinSize = 200;
+                outerSplit.Panel2MinSize = 280;
+                if (config.BoardSplitterDistance > 0)
+                {
+                    outerSplit.SplitterDistance = Math.Clamp(config.BoardSplitterDistance,
+                        outerSplit.Panel1MinSize, outerSplit.Width - outerSplit.Panel2MinSize);
+                }
+                else
+                {
+                    bool showStrips = config?.ShowMaterialStrips != false;
+                    int sh = showStrips ? 22 : 0;
+                    int sg = showStrips ? 2 : 0;
+                    int evalBarTotal = config?.ShowEvalBar != false ? 28 : 0;
+                    int boardSize = Math.Max(300, outerSplit.Height - 2 * sh - 2 * sg);
+                    int idealLeft = boardSize + evalBarTotal + 10;
+                    outerSplit.SplitterDistance = Math.Clamp(idealLeft,
+                        outerSplit.Panel1MinSize, outerSplit.Width - outerSplit.Panel2MinSize);
+                }
+
+                // Inner split: moves | analysis
+                splitRightPanels.Panel1MinSize = 80;
+                splitRightPanels.Panel2MinSize = 200;
+                splitRightPanels.SplitterDistance = config.SplitterDistance > 0 ? config.SplitterDistance : 130;
+
                 LeftPanel_Resize(leftPanel, EventArgs.Empty);
                 PnlBoardControls_Resize(pnlBoardControls, EventArgs.Empty);
-                this.MinimumSize = this.Size; // initial size becomes the enforced minimum
+                this.MinimumSize = this.Size;
                 await InitializeEngineAsync();
             };
         }
@@ -462,47 +485,17 @@ namespace ChessDroid
 
         #region Event Handlers
 
-        // ── Column sizing ────────────────────────────────────────────────────────
-        // AdjustColumnWidths fires on mainLayout.Resize (before leftPanel.Resize).
-        // It sets column 0 to the exact width the board needs so the board is
-        // height-constrained with no horizontal dead space on any monitor.
-
-        private void MainLayout_Resize(object? sender, EventArgs e) => AdjustColumnWidths();
-
-        private void AdjustColumnWidths()
+        private void OuterSplit_SplitterMoved(object? sender, SplitterEventArgs e)
         {
-            if (_inColumnResize || mainLayout == null || mainLayout.Width <= 1 || mainLayout.Height <= 1)
-                return;
-
-            bool showStrips = config?.ShowMaterialStrips != false;
-            int STRIP_H  = showStrips ? 22 : 0;
-            int STRIP_GAP = showStrips ? 2 : 0;
-            bool showEvalBar = config?.ShowEvalBar != false;
-            int evalBarTotal = showEvalBar ? 28 : 0; // 24px bar + 4px gap
-
-            // Left panel: snug around the board — 5px margin each side, analysis gets the rest
-            const int minRight = 300;
-            int available = mainLayout.Width - mainLayout.Padding.Horizontal;
-            int availH    = mainLayout.Height - 2 * STRIP_H - 2 * STRIP_GAP;
-            int boardSize = Math.Max(300, availH);
-            int idealLeft = boardSize + evalBarTotal + 10; // 5px each side of board+evalbar
-            idealLeft = Math.Clamp(idealLeft, 350, available - 130 - minRight);
-
-            var cs0 = mainLayout.ColumnStyles[0];
-            if (cs0.SizeType == SizeType.Absolute && Math.Abs(cs0.Width - idealLeft) <= 1)
-                return; // already correct
-
-            _inColumnResize = true;
-            mainLayout.SuspendLayout();
-            mainLayout.ColumnStyles[0] = new ColumnStyle(SizeType.Absolute, idealLeft);
-            mainLayout.ColumnStyles[2] = new ColumnStyle(SizeType.Percent, 100F);
-            mainLayout.ResumeLayout(true); // triggers leftPanel.Resize with correct width
-            _inColumnResize = false;
+            config.BoardSplitterDistance = outerSplit.SplitterDistance;
+            config.Save();
         }
 
-        // ── Board positioning ────────────────────────────────────────────────────
-        // LeftPanel_Resize only positions controls; column width is already correct
-        // by the time this fires (AdjustColumnWidths ran first via mainLayout.Resize).
+        private void SplitRightPanels_SplitterMoved(object? sender, SplitterEventArgs e)
+        {
+            config.SplitterDistance = splitRightPanels.SplitterDistance;
+            config.Save();
+        }
 
         private void LeftPanel_Resize(object? sender, EventArgs e)
         {
@@ -531,7 +524,7 @@ namespace ChessDroid
                 boardSize = Math.Max(boardSize, 300);
 
                 int groupWidth = boardSize + evalBarTotal;
-                int groupX = Math.Max((panel.Width - groupWidth) / 2, 5);
+                int groupX = Math.Max(panel.Width - groupWidth - 5, 5);
                 int topSpace = Math.Max(0, (panel.Height - boardSize - 2 * STRIP_H - 2 * STRIP_GAP) / 2);
 
                 int boardX = groupX + evalBarTotal;
