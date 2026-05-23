@@ -6,6 +6,8 @@ namespace ChessDroid
         private ListBox lstEngines = null!;
         private TextBox txtDisplayName = null!;
         private NumericUpDown numElo = null!;
+        private Label lblChessdroidValue = null!;
+        private Button btnResetChessdroid = null!;
         private Button btnSave = null!;
         private Button btnClose = null!;
         private string? selectedEngine;
@@ -21,7 +23,7 @@ namespace ChessDroid
         private void InitializeControls()
         {
             Text = "Engine Profiles";
-            Size = new Size(400, 300);
+            Size = new Size(400, 355);
             FormBorderStyle = FormBorderStyle.FixedDialog;
             StartPosition = FormStartPosition.CenterParent;
             MaximizeBox = false;
@@ -38,7 +40,7 @@ namespace ChessDroid
             lstEngines = new ListBox
             {
                 Location = new Point(15, 38),
-                Size = new Size(170, 185),
+                Size = new Size(170, 225),
                 Font = new Font("Courier New", 9F),
                 IntegralHeight = false
             };
@@ -63,7 +65,7 @@ namespace ChessDroid
 
             var lblElo = new Label
             {
-                Text = "ELO Rating:",
+                Text = "CCRL Rating:",
                 Location = new Point(200, 92),
                 Size = new Size(160, 18),
                 Font = new Font("Courier New", 9F)
@@ -75,7 +77,7 @@ namespace ChessDroid
                 Size = new Size(100, 22),
                 Font = new Font("Courier New", 9F),
                 Minimum = 0,
-                Maximum = 4000,
+                Maximum = 5000,
                 Value = 0,
                 Enabled = false
             };
@@ -89,10 +91,37 @@ namespace ChessDroid
                 ForeColor = Color.Gray
             };
 
+            var lblChessdroidHeader = new Label
+            {
+                Text = "Chessdroid Rating:",
+                Location = new Point(200, 163),
+                Size = new Size(160, 18),
+                Font = new Font("Courier New", 9F)
+            };
+
+            lblChessdroidValue = new Label
+            {
+                Text = "—",
+                Location = new Point(200, 183),
+                Size = new Size(160, 18),
+                Font = new Font("Courier New", 9F, FontStyle.Bold)
+            };
+
+            btnResetChessdroid = new Button
+            {
+                Text = "Reset Chessdroid",
+                Location = new Point(200, 207),
+                Size = new Size(160, 24),
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Courier New", 8F),
+                Enabled = false
+            };
+            btnResetChessdroid.Click += BtnResetChessdroid_Click;
+
             btnSave = new Button
             {
                 Text = "Save",
-                Location = new Point(200, 195),
+                Location = new Point(200, 245),
                 Size = new Size(75, 28),
                 FlatStyle = FlatStyle.Flat,
                 Font = new Font("Courier New", 9F, FontStyle.Bold),
@@ -103,7 +132,7 @@ namespace ChessDroid
             btnClose = new Button
             {
                 Text = "Close",
-                Location = new Point(285, 195),
+                Location = new Point(285, 245),
                 Size = new Size(75, 28),
                 FlatStyle = FlatStyle.Flat,
                 Font = new Font("Courier New", 9F)
@@ -115,6 +144,7 @@ namespace ChessDroid
                 lblList, lstEngines,
                 lblName, txtDisplayName,
                 lblElo, numElo, lblHint,
+                lblChessdroidHeader, lblChessdroidValue, btnResetChessdroid,
                 btnSave, btnClose
             });
 
@@ -139,29 +169,54 @@ namespace ChessDroid
             txtDisplayName.Enabled = hasSelection;
             numElo.Enabled = hasSelection;
             btnSave.Enabled = hasSelection;
+            btnResetChessdroid.Enabled = hasSelection;
 
-            if (!hasSelection) return;
+            if (!hasSelection)
+            {
+                lblChessdroidValue.Text = "—";
+                return;
+            }
 
             if (config.EngineProfiles.TryGetValue(selectedEngine!, out var profile))
             {
                 txtDisplayName.Text = profile.DisplayName;
-                numElo.Value = Math.Clamp(profile.Elo, 0, 4000);
+                numElo.Value = Math.Clamp(profile.Elo, 0, 5000);
+                RefreshChessdroidDisplay(profile);
             }
             else
             {
                 txtDisplayName.Text = Path.GetFileNameWithoutExtension(selectedEngine);
                 numElo.Value = 0;
+                lblChessdroidValue.Text = "—";
             }
+        }
+
+        private void RefreshChessdroidDisplay(EngineProfile? profile = null)
+        {
+            if (profile == null && selectedEngine != null)
+                config.EngineProfiles.TryGetValue(selectedEngine, out profile);
+
+            if (profile == null || profile.ChessdroidElo == 0)
+            {
+                lblChessdroidValue.Text = "— (no games yet)";
+                return;
+            }
+
+            string games = profile.GamesPlayed == 1 ? "1 game" : $"{profile.GamesPlayed} games";
+            lblChessdroidValue.Text = $"{profile.ChessdroidElo}  ({games})";
         }
 
         private void BtnSave_Click(object? sender, EventArgs e)
         {
             if (string.IsNullOrEmpty(selectedEngine)) return;
 
+            config.EngineProfiles.TryGetValue(selectedEngine, out var existing);
             config.EngineProfiles[selectedEngine] = new EngineProfile
             {
                 DisplayName = txtDisplayName.Text.Trim(),
-                Elo = (int)numElo.Value
+                Elo = (int)numElo.Value,
+                ChessdroidElo = existing?.ChessdroidElo ?? 0,
+                GamesPlayed = existing?.GamesPlayed ?? 0
             };
             config.Save();
 
@@ -172,6 +227,22 @@ namespace ChessDroid
                 btnSave.Text = "Save";
                 btnSave.Enabled = selectedEngine != null;
             }));
+        }
+
+        private void BtnResetChessdroid_Click(object? sender, EventArgs e)
+        {
+            if (string.IsNullOrEmpty(selectedEngine)) return;
+            if (!config.EngineProfiles.TryGetValue(selectedEngine, out var existing)) return;
+
+            config.EngineProfiles[selectedEngine] = new EngineProfile
+            {
+                DisplayName = existing.DisplayName,
+                Elo = existing.Elo,
+                ChessdroidElo = 0,
+                GamesPlayed = 0
+            };
+            config.Save();
+            RefreshChessdroidDisplay();
         }
 
         private void ApplyTheme(bool isDarkMode)
@@ -198,6 +269,8 @@ namespace ChessDroid
                 else if (c is NumericUpDown nud)
                     nud.BackColor = Color.FromArgb(60, 60, 65);
             }
+
+            lblChessdroidValue.ForeColor = Color.FromArgb(100, 200, 255);
         }
     }
 }

@@ -1762,7 +1762,7 @@ namespace ChessDroid
                 analysisOutput.AppendText($"Black remaining: {FormatClock(result.BlackTimeRemainingMs)}\n");
             }
 
-            // Elo change (FIDE K=10)
+            // Elo change (FIDE K=10, informational) + Chessdroid Rating update (K=32, persistent)
             if (_matchWhiteElo > 0 && _matchBlackElo > 0 && result.Outcome != MatchOutcome.Interrupted)
             {
                 double whiteScore = result.Outcome == MatchOutcome.WhiteWins ? 1.0
@@ -1772,6 +1772,35 @@ namespace ChessDroid
                 string wLabel = GetEngineLabel(_matchWhiteFileName, true);
                 string bLabel = GetEngineLabel(_matchBlackFileName, true);
                 analysisOutput.AppendText($"\nElo change: {wLabel} {Services.EloCalculator.FormatDelta(whiteDelta)}  {bLabel} {Services.EloCalculator.FormatDelta(blackDelta)}\n");
+
+                // Chessdroid Rating — seeds from CCRL on first game, then drifts with K=32
+                config.EngineProfiles.TryGetValue(_matchWhiteFileName, out var wProf);
+                config.EngineProfiles.TryGetValue(_matchBlackFileName, out var bProf);
+                if (wProf != null && bProf != null)
+                {
+                    int wCurr = wProf.ChessdroidElo > 0 ? wProf.ChessdroidElo : wProf.Elo;
+                    int bCurr = bProf.ChessdroidElo > 0 ? bProf.ChessdroidElo : bProf.Elo;
+                    int wChessDelta = Services.EloCalculator.EloChangeChessdroid(wCurr, bCurr, whiteScore);
+                    int bChessDelta = Services.EloCalculator.EloChangeChessdroid(bCurr, wCurr, 1.0 - whiteScore);
+                    int wNew = wCurr + wChessDelta;
+                    int bNew = bCurr + bChessDelta;
+
+                    config.EngineProfiles[_matchWhiteFileName] = new EngineProfile
+                    {
+                        DisplayName = wProf.DisplayName, Elo = wProf.Elo,
+                        ChessdroidElo = wNew, GamesPlayed = wProf.GamesPlayed + 1
+                    };
+                    config.EngineProfiles[_matchBlackFileName] = new EngineProfile
+                    {
+                        DisplayName = bProf.DisplayName, Elo = bProf.Elo,
+                        ChessdroidElo = bNew, GamesPlayed = bProf.GamesPlayed + 1
+                    };
+                    config.Save();
+
+                    string wName = !string.IsNullOrEmpty(wProf.DisplayName) ? wProf.DisplayName : Path.GetFileNameWithoutExtension(_matchWhiteFileName);
+                    string bName = !string.IsNullOrEmpty(bProf.DisplayName) ? bProf.DisplayName : Path.GetFileNameWithoutExtension(_matchBlackFileName);
+                    analysisOutput.AppendText($"Chessdroid:  {wName} {wCurr} → {wNew} ({Services.EloCalculator.FormatDelta(wChessDelta)})  |  {bName} {bCurr} → {bNew} ({Services.EloCalculator.FormatDelta(bChessDelta)})\n");
+                }
             }
 
             analysisOutput.ScrollToCaret();

@@ -5,7 +5,9 @@ namespace ChessDroid
     public class EngineProfile
     {
         public string DisplayName { get; set; } = "";
-        public int Elo { get; set; } = 0; // 0 = unknown
+        public int Elo { get; set; } = 0;              // CCRL reference rating, manually set
+        public int ChessdroidElo { get; set; } = 0;    // Dynamic rating from in-app matches; 0 = not yet seeded
+        public int GamesPlayed { get; set; } = 0;      // Games played inside Chessdroid
     }
 
     public class AppConfig
