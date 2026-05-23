@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [3.14.0] - 2026-05-23
+
+### Added
+- **6 UI Themes** — Dark, Light, Cyberpunk, Dracula, Nord, Sepia. Replaces the Dark/Light checkbox with a theme selector in Settings. All UI surfaces (board, console, panels, buttons, material strips) react to the selected theme.
+- **Chessdroid Rating** — Persistent internal engine ladder. Each engine earns a Chessdroid Rating that seeds from its CCRL reference on first game and updates via K=32 ELO after every match. Shown in match output as `Chessdroid: Berserk 13 3618 → 3624 (+6) | Ethereal 13 3417 → 3411 (-6)`. Survives restarts.
+- **Engine Profiles Dialog** — Set display name and CCRL reference rating per engine. Shows Chessdroid Rating + game count (read-only). Reset button to wipe an engine's ladder history.
+- **Resizable Panels** — Nested SplitContainer layout replaces TableLayoutPanel. Board | Moves | Analysis are three independently draggable panels. Splitter positions persist to config.json across sessions.
+- **Bot Engine Picker** — Bot Settings dialog now includes an engine selector. Choose any engine from the Engines folder to play as the bot, separate from the analysis engine.
+- **Position Editor Piece Images** — Custom Position Editor renders pieces using the currently selected piece template (SVG or PNG), matching the main board appearance.
+- **Engine Info Labels** — Engine name and ELO displayed on material strips during engine matches. Labels correctly swap positions when the board is flipped.
+- **Board Presets** — Five built-in color presets selectable via dropdown in Settings alongside the custom color pickers.
+
+### Fixed
+- **Engine info labels on board flip** — Labels now correctly reassign to top/bottom strip when the board is flipped mid-match.
+- **Nav lock during engine match** — Previous/Next/AutoPlay navigation is disabled while a match is running, preventing board state desync.
+- **Engine match clock** — Clock ticks down live between moves instead of jumping only on move receipt.
+- **Arbiter depth** — Engine match arbiter uses the configured engine depth from Settings instead of a hardcoded value.
+- **Null dereference warning** — Suppressed CS8602 on config access in the Shown handler.
+
+---
+
 ## [3.13.0] - 2026-05-20
 
 ### Added

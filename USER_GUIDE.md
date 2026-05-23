@@ -1,4 +1,4 @@
-## ChessDroid v3.13.0 — User Guide
+## ChessDroid v3.14.0 — User Guide
 
 ### Welcome to ChessDroid!
 
@@ -367,7 +367,13 @@ Create a folder in `Templates/` with 12 PNG files (wK, wQ, wR, wB, wN, wP, bK, b
 
 ## Version History
 
-**v3.13.0** — Engine Match & Analysis Polish (Current)
+**v3.14.0** — Theme Suite & Engine Ladder (Current)
+- 6 UI themes: Dark, Light, Cyberpunk, Dracula, Nord, Sepia
+- Chessdroid Rating — persistent K=32 engine ladder, seeds from CCRL
+- Resizable Board | Moves | Analysis panels with saved splitter positions
+- Bot engine picker, position editor piece images, engine info labels on strips
+
+**v3.13.0** — Engine Match & Analysis Polish
 - Neutral eval arbiter in engine matches (Stockfish 18 judges every position)
 - Smooth eval bar animation — lerps to new values, full fill on mate
 - Correct checkmate notation (`Qh4#`), game-over output, and threat labels
@@ -529,5 +535,5 @@ ChessDroid is released under the MIT License. Free and open-source forever!
 
 **Enjoy analyzing with ChessDroid!**
 
-*Last Updated: 2026-05-20*
-*Version: 3.13.0*
+*Last Updated: 2026-05-23*
+*Version: 3.14.0*
