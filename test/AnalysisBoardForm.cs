@@ -1807,6 +1807,14 @@ namespace ChessDroid
 
             lblStatus.Text = result.GetResultString();
 
+            // Set eval bar to reflect the actual result.
+            // The arbiter reports "Mate in 0" for the final checkmate position, which is ambiguous
+            // (SetMate(0) always resolves to full-black). Use SetTerminalMate instead.
+            if (result.Outcome == MatchOutcome.WhiteWins)
+                evalBar?.SetTerminalMate(true);
+            else if (result.Outcome == MatchOutcome.BlackWins)
+                evalBar?.SetTerminalMate(false);
+
             // Re-enable controls
             SetMatchControlsEnabled(false);
 

@@ -98,6 +98,19 @@ namespace ChessDroid.Controls
         }
 
         /// <summary>
+        /// Sets the bar to the terminal checkmate state (game already over). Displays "M0",
+        /// bar fills white if White won, black if Black won.
+        /// </summary>
+        public void SetTerminalMate(bool whiteWon)
+        {
+            isMate = true;
+            mateIn = 0;
+            _targetEvaluation = whiteWon ? 10000 : -10000;
+            _targetPercent = whiteWon ? 100.0 : 0.0;
+            _animTimer.Start();
+        }
+
+        /// <summary>
         /// Resets the bar to equal (0.0) instantly (no animation).
         /// </summary>
         public void Reset()
@@ -143,7 +156,7 @@ namespace ChessDroid.Controls
                 float textX = (w - textSize.Width) / 2f;
 
                 // Place text on the dominant side
-                bool whiteIsBetter = _targetEvaluation >= 0 && (!isMate || mateIn > 0);
+                bool whiteIsBetter = _targetEvaluation >= 0;
                 float textY;
                 SolidBrush textBrush;
 
