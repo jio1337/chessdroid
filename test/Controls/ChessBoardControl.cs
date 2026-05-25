@@ -63,6 +63,41 @@ namespace ChessDroid.Controls
         private List<(int fromRow, int fromCol, int toRow, int toCol, Color color)> _threatArrows = new();
         private static readonly Color ThreatArrowColor = Color.FromArgb(170, 200, 45, 45);
 
+        // Rainbow / Wave mode (share one hue-advance timer)
+        private bool _rainbowMode = false;
+        private bool _waveMode   = false;
+        private float _rainbowHue = 0f;
+        private readonly System.Windows.Forms.Timer _rainbowTimer;
+
+        // Visual FX
+        private bool _gradientBoard    = false;
+        private bool _vignetteEnabled  = false;
+        private int  _vignetteAlpha    = 110;
+        private bool _pieceGlowEnabled = false;
+
+        // Board frame
+        private bool  _boardFrameEnabled = false;
+        private int   _boardFrameWidth   = 26;
+        private Color _boardFrameColor   = Color.FromArgb(80, 50, 25);
+
+        // Particle system (game-end celebration)
+        private struct Particle { public float X, Y, VX, VY, Life, Size; public Color Color; public char Symbol; }
+        private readonly List<Particle> _particles = new();
+        private readonly System.Windows.Forms.Timer _particleTimer;
+        private Font? _particleFont;
+        private static readonly char[] _particleSymbols = { '♟','♛','♚','♜','♝','♞','♙','♕','♔','♖','♗','♘' };
+        private static readonly Random _particleRng = new();
+
+        // Training mode
+        private bool _trainingMode = false;
+        private bool _hoverSquareLabelEnabled = false;
+        private int _hoverRow = -1;
+        private int _hoverCol = -1;
+        private int _trainingHighlightRow = -1;
+        private int _trainingHighlightCol = -1;
+        private Color _trainingHighlightColor = Color.Transparent;
+        private Font? _hoverLabelFont;
+
         // Visual settings
         private Color lightSquareColor = Color.FromArgb(240, 217, 181);
         private Color darkSquareColor = Color.FromArgb(181, 136, 99);
@@ -124,11 +159,48 @@ namespace ChessDroid.Controls
         /// </summary>
         public bool InteractionEnabled { get; set; } = true;
 
+        public bool TrainingMode
+        {
+            get => _trainingMode;
+            set { _trainingMode = value; _hoverRow = -1; _hoverCol = -1; Invalidate(); }
+        }
+
+        public bool HoverSquareLabelEnabled
+        {
+            get => _hoverSquareLabelEnabled;
+            set { _hoverSquareLabelEnabled = value; Invalidate(); }
+        }
+
+        public bool RainbowMode
+        {
+            get => _rainbowMode;
+            set { _rainbowMode = value; if (value) _waveMode = false; UpdateHueTimer(); }
+        }
+        public bool WaveMode
+        {
+            get => _waveMode;
+            set { _waveMode = value; if (value) _rainbowMode = false; UpdateHueTimer(); }
+        }
+        private void UpdateHueTimer()
+        {
+            if (_rainbowMode || _waveMode) _rainbowTimer.Start();
+            else { _rainbowTimer.Stop(); Invalidate(); }
+        }
+
+        public bool GradientBoard    { get => _gradientBoard;    set { _gradientBoard    = value; Invalidate(); } }
+        public bool VignetteEnabled  { get => _vignetteEnabled;  set { _vignetteEnabled  = value; Invalidate(); } }
+        public int  VignetteAlpha    { get => _vignetteAlpha;    set { _vignetteAlpha    = Math.Clamp(value, 0, 255); Invalidate(); } }
+        public bool PieceGlowEnabled { get => _pieceGlowEnabled; set { _pieceGlowEnabled = value; Invalidate(); } }
+
+        public bool  BoardFrameEnabled { get => _boardFrameEnabled; set { _boardFrameEnabled = value; Invalidate(); } }
+        public int   BoardFrameWidth   { get => _boardFrameWidth;   set { _boardFrameWidth   = value; Invalidate(); } }
+        public Color BoardFrameColor   { get => _boardFrameColor;   set { _boardFrameColor   = value; Invalidate(); } }
 
         // Events
         public event EventHandler<MoveEventArgs>? MoveMade;
         public event EventHandler? BoardChanged;
         public event EventHandler? AnimationCompleted;
+        public event Action<int, int>? SquareClicked;
 
         public bool ShowLastMoveHighlight { get; set; } = true;
 
@@ -151,6 +223,12 @@ namespace ChessDroid.Controls
 
             _animTimer = new System.Windows.Forms.Timer { Interval = 16 };
             _animTimer.Tick += AnimTimer_Tick;
+
+            _rainbowTimer = new System.Windows.Forms.Timer { Interval = 16 };
+            _rainbowTimer.Tick += RainbowTimer_Tick;
+
+            _particleTimer = new System.Windows.Forms.Timer { Interval = 16 };
+            _particleTimer.Tick += ParticleTimer_Tick;
         }
 
         /// <summary>
@@ -516,6 +594,21 @@ namespace ChessDroid.Controls
             }
         }
 
+        public void SetTrainingHighlight(int row, int col, Color color)
+        {
+            _trainingHighlightRow = row;
+            _trainingHighlightCol = col;
+            _trainingHighlightColor = color;
+            Invalidate();
+        }
+
+        public void ClearTrainingHighlight()
+        {
+            _trainingHighlightRow = -1;
+            _trainingHighlightCol = -1;
+            Invalidate();
+        }
+
         /// <summary>
         /// Gets the piece character at the given internal coordinates (0=rank8, 7=rank1).
         /// </summary>
@@ -605,6 +698,89 @@ namespace ChessDroid.Controls
             Invalidate();
         }
 
+        private void RainbowTimer_Tick(object? sender, EventArgs e)
+        {
+            _rainbowHue = (_rainbowHue + 0.4f) % 360f;
+            Invalidate();
+        }
+
+        // Converts HSV (h=0-360, s=0-1, v=0-1) to a GDI Color.
+        private static Color HsvToRgb(float h, float s, float v)
+        {
+            float c = v * s;
+            float x = c * (1f - MathF.Abs(h / 60f % 2f - 1f));
+            float m = v - c;
+            float r, g, b;
+            if      (h < 60f)  { r = c; g = x; b = 0; }
+            else if (h < 120f) { r = x; g = c; b = 0; }
+            else if (h < 180f) { r = 0; g = c; b = x; }
+            else if (h < 240f) { r = 0; g = x; b = c; }
+            else if (h < 300f) { r = x; g = 0; b = c; }
+            else               { r = c; g = 0; b = x; }
+            return Color.FromArgb(
+                Math.Clamp((int)((r + m) * 255), 0, 255),
+                Math.Clamp((int)((g + m) * 255), 0, 255),
+                Math.Clamp((int)((b + m) * 255), 0, 255));
+        }
+
+        public void TriggerParticles()
+        {
+            _particles.Clear();
+            _particleFont?.Dispose();
+            _particleFont = new Font("Segoe UI", 18f, FontStyle.Bold);
+            int cx = Width / 2, cy = Height / 2;
+            for (int i = 0; i < 55; i++)
+            {
+                float angle = (float)(_particleRng.NextDouble() * Math.PI * 2);
+                float speed = (float)(_particleRng.NextDouble() * 9 + 2);
+                _particles.Add(new Particle
+                {
+                    X = cx, Y = cy,
+                    VX = MathF.Cos(angle) * speed,
+                    VY = MathF.Sin(angle) * speed - 5f,
+                    Life = 1.0f,
+                    Size = (float)(_particleRng.NextDouble() * 14 + 10),
+                    Color = Color.FromArgb(
+                        _particleRng.Next(120, 256),
+                        _particleRng.Next(120, 256),
+                        _particleRng.Next(120, 256)),
+                    Symbol = _particleSymbols[_particleRng.Next(_particleSymbols.Length)]
+                });
+            }
+            _particleTimer.Start();
+            Invalidate();
+        }
+
+        private void ParticleTimer_Tick(object? sender, EventArgs e)
+        {
+            bool any = false;
+            for (int i = _particles.Count - 1; i >= 0; i--)
+            {
+                var p = _particles[i];
+                p.X  += p.VX; p.Y  += p.VY;
+                p.VY += 0.35f;          // gravity
+                p.Life -= 0.018f;
+                if (p.Life <= 0) _particles.RemoveAt(i);
+                else { _particles[i] = p; any = true; }
+            }
+            if (!any)
+            {
+                _particleTimer.Stop();
+                _particleFont?.Dispose();
+                _particleFont = null;
+            }
+            Invalidate();
+        }
+
+        private static Color LightenColor(Color c, float amt) => Color.FromArgb(
+            Math.Clamp((int)(c.R + 255 * amt), 0, 255),
+            Math.Clamp((int)(c.G + 255 * amt), 0, 255),
+            Math.Clamp((int)(c.B + 255 * amt), 0, 255));
+        private static Color DarkenColor(Color c, float amt) => Color.FromArgb(
+            Math.Clamp((int)(c.R - 255 * amt), 0, 255),
+            Math.Clamp((int)(c.G - 255 * amt), 0, 255),
+            Math.Clamp((int)(c.B - 255 * amt), 0, 255));
+
         #endregion
 
         #region Painting
@@ -618,7 +794,16 @@ namespace ChessDroid.Controls
             g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
             g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.HighQuality;
 
-            int squareSize = Math.Min(Width, Height) / 8;
+            int frameOff   = _boardFrameEnabled ? _boardFrameWidth : 0;
+            int squareSize = Math.Min(Width - 2 * frameOff, Height - 2 * frameOff) / 8;
+            if (squareSize < 1) squareSize = 1;
+
+            // Draw board frame background
+            if (_boardFrameEnabled)
+            {
+                _paintBrush.Color = _boardFrameColor;
+                g.FillRectangle(_paintBrush, 0, 0, Width, Height);
+            }
 
             // Draw squares and pieces
             for (int row = 0; row < 8; row++)
@@ -628,11 +813,28 @@ namespace ChessDroid.Controls
                     int displayRow = isFlipped ? 7 - row : row;
                     int displayCol = isFlipped ? 7 - col : col;
 
-                    Rectangle rect = new Rectangle(displayCol * squareSize, displayRow * squareSize, squareSize, squareSize);
+                    Rectangle rect = new Rectangle(
+                        frameOff + displayCol * squareSize,
+                        frameOff + displayRow * squareSize,
+                        squareSize, squareSize);
 
                     // Determine square color
                     bool isLightSquare = (row + col) % 2 == 0;
-                    Color squareColor = isLightSquare ? lightSquareColor : darkSquareColor;
+                    Color squareColor;
+                    if (_rainbowMode || _waveMode)
+                    {
+                        float baseHue = _waveMode
+                            ? (_rainbowHue + (row + col) * 20f) % 360f
+                            : _rainbowHue;
+                        float rHue = isLightSquare ? baseHue : (baseHue + 40f) % 360f;
+                        squareColor = HsvToRgb(rHue,
+                            isLightSquare ? 0.50f : 0.70f,
+                            isLightSquare ? 0.88f : 0.58f);
+                    }
+                    else
+                    {
+                        squareColor = isLightSquare ? lightSquareColor : darkSquareColor;
+                    }
 
                     // Highlight last move
                     if (lastMove.HasValue && ShowLastMoveHighlight)
@@ -651,9 +853,18 @@ namespace ChessDroid.Controls
                     if (row == selectedRow && col == selectedCol)
                         squareColor = BlendColors(squareColor, selectedSquareColor);
 
-                    // Draw square
-                    _paintBrush.Color = squareColor;
-                    g.FillRectangle(_paintBrush, rect);
+                    // Draw square (gradient or flat)
+                    if (_gradientBoard)
+                    {
+                        using var lgb = new System.Drawing.Drawing2D.LinearGradientBrush(
+                            rect, LightenColor(squareColor, 0.12f), DarkenColor(squareColor, 0.12f), 45f);
+                        g.FillRectangle(lgb, rect);
+                    }
+                    else
+                    {
+                        _paintBrush.Color = squareColor;
+                        g.FillRectangle(_paintBrush, rect);
+                    }
 
                     // Draw legal move indicators
                     if (legalMoveSquares.Contains((row, col)))
@@ -683,21 +894,44 @@ namespace ChessDroid.Controls
                     bool isInFlight = _animating && row == _animToRow && col == _animToCol;
                     if (piece != '.' && !isBeingDragged && !isInFlight)
                     {
+                        if (_pieceGlowEnabled)
+                        {
+                            Color glowColor = char.IsUpper(piece)
+                                ? Color.FromArgb(255, 215, 0)   // gold — white pieces
+                                : Color.FromArgb(64, 144, 255); // blue — black pieces
+                            using var path = new System.Drawing.Drawing2D.GraphicsPath();
+                            path.AddEllipse(rect);
+                            using var pgb = new System.Drawing.Drawing2D.PathGradientBrush(path);
+                            pgb.CenterColor    = Color.FromArgb(80, glowColor);
+                            pgb.SurroundColors = new[] { Color.FromArgb(0, glowColor) };
+                            g.FillEllipse(pgb, rect);
+                        }
                         DrawPiece(g, piece, rect, squareSize);
                     }
                 }
             }
 
+            // Draw training highlight (colored flash over a square)
+            if (_trainingMode && _trainingHighlightRow >= 0)
+            {
+                int displayRow = isFlipped ? 7 - _trainingHighlightRow : _trainingHighlightRow;
+                int displayCol = isFlipped ? 7 - _trainingHighlightCol : _trainingHighlightCol;
+                _paintBrush.Color = _trainingHighlightColor;
+                g.FillRectangle(_paintBrush,
+                    frameOff + displayCol * squareSize, frameOff + displayRow * squareSize,
+                    squareSize, squareSize);
+            }
+
             // Draw user arrows
-            DrawArrows(g, squareSize);
+            DrawArrows(g, squareSize, frameOff);
 
             // Draw the animating piece floating above the board
             if (_animating)
             {
-                float fx = (isFlipped ? 7 - _animFromCol : _animFromCol) * squareSize;
-                float fy = (isFlipped ? 7 - _animFromRow : _animFromRow) * squareSize;
-                float tx = (isFlipped ? 7 - _animToCol   : _animToCol)   * squareSize;
-                float ty = (isFlipped ? 7 - _animToRow   : _animToRow)   * squareSize;
+                float fx = frameOff + (isFlipped ? 7 - _animFromCol : _animFromCol) * squareSize;
+                float fy = frameOff + (isFlipped ? 7 - _animFromRow : _animFromRow) * squareSize;
+                float tx = frameOff + (isFlipped ? 7 - _animToCol   : _animToCol)   * squareSize;
+                float ty = frameOff + (isFlipped ? 7 - _animToRow   : _animToRow)   * squareSize;
                 float cx = fx + (tx - fx) * _animProgress;
                 float cy = fy + (ty - fy) * _animProgress;
                 DrawPiece(g, _animPiece, new Rectangle((int)cx, (int)cy, squareSize, squareSize), squareSize);
@@ -730,15 +964,27 @@ namespace ChessDroid.Controls
                 int fileIndex = isFlipped ? 7 - i : i;
                 string file = ((char)('a' + fileIndex)).ToString();
                 bool isLight = isFlipped ? fileIndex % 2 == 0 : (7 + fileIndex) % 2 == 0;
-                _paintBrush.Color = isLight ? darkSquareColor : lightSquareColor;
-                g.DrawString(file, coordFont, _paintBrush, i * squareSize + 2, 8 * squareSize - coordFont.Height - 2);
+                _paintBrush.Color = (_rainbowMode || _waveMode)
+                    ? HsvToRgb(isLight ? (_rainbowHue + 40f) % 360f : _rainbowHue,
+                               isLight ? 0.70f : 0.50f,
+                               isLight ? 0.58f : 0.88f)
+                    : (_boardFrameEnabled ? LightenColor(_boardFrameColor, 0.45f)
+                                         : (isLight ? darkSquareColor : lightSquareColor));
+                g.DrawString(file, coordFont, _paintBrush,
+                    frameOff + i * squareSize + 2,
+                    frameOff + 8 * squareSize - coordFont.Height - 2);
 
                 // Rank numbers (1-8)
                 int rankIndex = isFlipped ? i : 7 - i;
                 string rank = (rankIndex + 1).ToString();
-                isLight = (i) % 2 == 0;
-                _paintBrush.Color = isLight ? darkSquareColor : lightSquareColor;
-                g.DrawString(rank, coordFont, _paintBrush, 2, i * squareSize + 2);
+                isLight = i % 2 == 0;
+                _paintBrush.Color = (_rainbowMode || _waveMode)
+                    ? HsvToRgb(isLight ? (_rainbowHue + 40f) % 360f : _rainbowHue,
+                               isLight ? 0.70f : 0.50f,
+                               isLight ? 0.58f : 0.88f)
+                    : (_boardFrameEnabled ? LightenColor(_boardFrameColor, 0.45f)
+                                         : (isLight ? darkSquareColor : lightSquareColor));
+                g.DrawString(rank, coordFont, _paintBrush, frameOff + 2, frameOff + i * squareSize + 2);
             }
 
             // Draw square name labels if enabled (e.g. "e4", "d5")
@@ -760,12 +1006,34 @@ namespace ChessDroid.Controls
                         Color baseColor = isLightSq ? darkSquareColor : lightSquareColor;
                         string squareName = $"{(char)('a' + col)}{8 - row}";
                         SizeF textSize = g.MeasureString(squareName, _labelFont);
-                        float x = displayCol * squareSize + (squareSize - textSize.Width) / 2f;
-                        float y = displayRow * squareSize + (squareSize - textSize.Height) / 2f;
+                        float x = frameOff + displayCol * squareSize + (squareSize - textSize.Width) / 2f;
+                        float y = frameOff + displayRow * squareSize + (squareSize - textSize.Height) / 2f;
                         _paintBrush.Color = Color.FromArgb(140, baseColor);
                         g.DrawString(squareName, _labelFont, _paintBrush, x, y);
                     }
                 }
+            }
+
+            // Draw hover square label (training mode, easy difficulty)
+            if (_trainingMode && _hoverSquareLabelEnabled && _hoverRow >= 0 && _hoverCol >= 0)
+            {
+                float hoverFontSize = Math.Max(14f, squareSize * 0.32f);
+                if (_hoverLabelFont == null || Math.Abs(_hoverLabelFont.Size - hoverFontSize) > 0.1f)
+                {
+                    _hoverLabelFont?.Dispose();
+                    _hoverLabelFont = new Font("Segoe UI", hoverFontSize, FontStyle.Bold);
+                }
+                int displayRow = isFlipped ? 7 - _hoverRow : _hoverRow;
+                int displayCol = isFlipped ? 7 - _hoverCol : _hoverCol;
+                string squareName = $"{(char)('a' + _hoverCol)}{8 - _hoverRow}";
+                SizeF textSize = g.MeasureString(squareName, _hoverLabelFont);
+                float x = frameOff + displayCol * squareSize + (squareSize - textSize.Width) / 2f;
+                float y = frameOff + displayRow * squareSize + (squareSize - textSize.Height) / 2f;
+                bool hoverLightSq = (_hoverRow + _hoverCol) % 2 == 0;
+                _paintBrush.Color = hoverLightSq
+                    ? Color.FromArgb(210, 40, 40, 40)
+                    : Color.FromArgb(210, 220, 220, 220);
+                g.DrawString(squareName, _hoverLabelFont, _paintBrush, x, y);
             }
 
             // Draw move annotation badge (e.g. "!!", "?", "??")
@@ -785,8 +1053,8 @@ namespace ChessDroid.Controls
                 };
 
                 int badgeSize = Math.Max(14, squareSize / 3);
-                int badgeX = (displayCol + 1) * squareSize - badgeSize - 2;
-                int badgeY = displayRow * squareSize + 2;
+                int badgeX = frameOff + (displayCol + 1) * squareSize - badgeSize - 2;
+                int badgeY = frameOff + displayRow * squareSize + 2;
 
                 _paintBrush.Color = badgeColor;
                 g.FillEllipse(_paintBrush, badgeX, badgeY, badgeSize, badgeSize);
@@ -801,60 +1069,75 @@ namespace ChessDroid.Controls
                 g.DrawString(_moveAnnotationSymbol, _badgeFont, _paintBrush,
                     new RectangleF(badgeX, badgeY, badgeSize, badgeSize), _badgeSf);
             }
+
+            // Vignette — four gradient strips fading inward from each edge
+            if (_vignetteEnabled)
+            {
+                int boardPx = squareSize * 8;
+                int vw = Math.Max(1, boardPx / 5);
+                var dark = Color.FromArgb(_vignetteAlpha, 0, 0, 0);
+                DrawVignetteStrip(g, frameOff, frameOff, boardPx, vw,
+                    System.Drawing.Drawing2D.LinearGradientMode.Vertical, dark, Color.Transparent);           // top
+                DrawVignetteStrip(g, frameOff, frameOff + boardPx - vw, boardPx, vw,
+                    System.Drawing.Drawing2D.LinearGradientMode.Vertical, Color.Transparent, dark);           // bottom
+                DrawVignetteStrip(g, frameOff, frameOff, vw, boardPx,
+                    System.Drawing.Drawing2D.LinearGradientMode.Horizontal, dark, Color.Transparent);         // left
+                DrawVignetteStrip(g, frameOff + boardPx - vw, frameOff, vw, boardPx,
+                    System.Drawing.Drawing2D.LinearGradientMode.Horizontal, Color.Transparent, dark);         // right
+            }
+
+            // Particles — game-end celebration
+            if (_particles.Count > 0 && _particleFont != null)
+            {
+                foreach (var p in _particles)
+                {
+                    _paintBrush.Color = Color.FromArgb((int)(p.Life * 230), p.Color);
+                    g.DrawString(p.Symbol.ToString(), _particleFont, _paintBrush, p.X, p.Y);
+                }
+            }
         }
 
-        private void DrawArrows(Graphics g, int squareSize)
+        private static void DrawVignetteStrip(Graphics g, int x, int y, int w, int h,
+            System.Drawing.Drawing2D.LinearGradientMode mode, Color c1, Color c2)
+        {
+            using var lgb = new System.Drawing.Drawing2D.LinearGradientBrush(
+                new Rectangle(x, y, w, h), c1, c2, mode);
+            g.FillRectangle(lgb, x, y, w, h);
+        }
+
+        private void DrawArrows(Graphics g, int squareSize, int frameOff)
         {
             g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
 
-            // Draw book arrows (underneath everything)
             foreach (var arrow in _bookArrows)
-            {
-                DrawArrow(g, squareSize, arrow.fromRow, arrow.fromCol, arrow.toRow, arrow.toCol, arrow.color);
-            }
-
-            // Draw threat arrows (hanging piece warnings, under engine arrows)
+                DrawArrow(g, squareSize, frameOff, arrow.fromRow, arrow.fromCol, arrow.toRow, arrow.toCol, arrow.color);
             foreach (var arrow in _threatArrows)
-            {
-                DrawArrow(g, squareSize, arrow.fromRow, arrow.fromCol, arrow.toRow, arrow.toCol, arrow.color);
-            }
-
-            // Draw engine analysis arrows (underneath user arrows)
+                DrawArrow(g, squareSize, frameOff, arrow.fromRow, arrow.fromCol, arrow.toRow, arrow.toCol, arrow.color);
             foreach (var arrow in engineArrows)
-            {
-                DrawArrow(g, squareSize, arrow.fromRow, arrow.fromCol, arrow.toRow, arrow.toCol, arrow.color);
-            }
-
-            // Draw user arrows
+                DrawArrow(g, squareSize, frameOff, arrow.fromRow, arrow.fromCol, arrow.toRow, arrow.toCol, arrow.color);
             foreach (var arrow in userArrows)
-            {
-                DrawArrow(g, squareSize, arrow.fromRow, arrow.fromCol, arrow.toRow, arrow.toCol, ArrowColor);
-            }
+                DrawArrow(g, squareSize, frameOff, arrow.fromRow, arrow.fromCol, arrow.toRow, arrow.toCol, ArrowColor);
 
-            // Draw in-progress arrow while dragging (snap to target square center)
             if (isDrawingArrow && arrowFromRow >= 0)
             {
-                int hoverCol = arrowDragPosition.X / squareSize;
-                int hoverRow = arrowDragPosition.Y / squareSize;
+                int hoverCol = (arrowDragPosition.X - frameOff) / squareSize;
+                int hoverRow = (arrowDragPosition.Y - frameOff) / squareSize;
                 int hoverBoardRow = isFlipped ? 7 - hoverRow : hoverRow;
                 int hoverBoardCol = isFlipped ? 7 - hoverCol : hoverCol;
-
                 if (hoverBoardRow >= 0 && hoverBoardRow <= 7 && hoverBoardCol >= 0 && hoverBoardCol <= 7
                     && !(hoverBoardRow == arrowFromRow && hoverBoardCol == arrowFromCol))
-                {
-                    DrawArrow(g, squareSize, arrowFromRow, arrowFromCol, hoverBoardRow, hoverBoardCol, ArrowColor);
-                }
+                    DrawArrow(g, squareSize, frameOff, arrowFromRow, arrowFromCol, hoverBoardRow, hoverBoardCol, ArrowColor);
             }
 
             g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.Default;
         }
 
-        private void DrawArrow(Graphics g, int squareSize, int fromRow, int fromCol, int toRow, int toCol, Color color)
+        private void DrawArrow(Graphics g, int squareSize, int frameOff, int fromRow, int fromCol, int toRow, int toCol, Color color)
         {
-            int x1 = (isFlipped ? 7 - fromCol : fromCol) * squareSize + squareSize / 2;
-            int y1 = (isFlipped ? 7 - fromRow : fromRow) * squareSize + squareSize / 2;
-            int x2 = (isFlipped ? 7 - toCol : toCol) * squareSize + squareSize / 2;
-            int y2 = (isFlipped ? 7 - toRow : toRow) * squareSize + squareSize / 2;
+            int x1 = frameOff + (isFlipped ? 7 - fromCol : fromCol) * squareSize + squareSize / 2;
+            int y1 = frameOff + (isFlipped ? 7 - fromRow : fromRow) * squareSize + squareSize / 2;
+            int x2 = frameOff + (isFlipped ? 7 - toCol   : toCol)   * squareSize + squareSize / 2;
+            int y2 = frameOff + (isFlipped ? 7 - toRow   : toRow)   * squareSize + squareSize / 2;
 
             float lineWidth = squareSize * 0.22f;
             using var pen = new Pen(color, lineWidth);
@@ -952,6 +1235,20 @@ namespace ChessDroid.Controls
         {
             base.OnMouseDown(e);
 
+            if (_trainingMode)
+            {
+                if (e.Button == MouseButtons.Left)
+                {
+                    int fo = GetFrameOff();
+                    int sq = Math.Max(1, Math.Min(Width - 2 * fo, Height - 2 * fo) / 8);
+                    int bRow = isFlipped ? 7 - (e.Y - fo) / sq : (e.Y - fo) / sq;
+                    int bCol = isFlipped ? 7 - (e.X - fo) / sq : (e.X - fo) / sq;
+                    if (bRow >= 0 && bRow <= 7 && bCol >= 0 && bCol <= 7)
+                        SquareClicked?.Invoke(bRow, bCol);
+                }
+                return;
+            }
+
             if (e.Button == MouseButtons.Right)
             {
                 HandleRightMouseDown(e);
@@ -969,9 +1266,10 @@ namespace ChessDroid.Controls
             if (!InteractionEnabled) return;
             if (e.Button != MouseButtons.Left) return;
 
-            int squareSize = Math.Min(Width, Height) / 8;
-            int clickCol = e.X / squareSize;
-            int clickRow = e.Y / squareSize;
+            int fo2 = GetFrameOff();
+            int squareSize = Math.Max(1, Math.Min(Width - 2 * fo2, Height - 2 * fo2) / 8);
+            int clickCol = (e.X - fo2) / squareSize;
+            int clickRow = (e.Y - fo2) / squareSize;
 
             int boardRow = isFlipped ? 7 - clickRow : clickRow;
             int boardCol = isFlipped ? 7 - clickCol : clickCol;
@@ -1011,6 +1309,33 @@ namespace ChessDroid.Controls
                 return;
             }
 
+            if (_trainingMode)
+            {
+                if (_hoverSquareLabelEnabled)
+                {
+                    int fo = GetFrameOff();
+                    int squareSize = Math.Max(1, Math.Min(Width - 2 * fo, Height - 2 * fo) / 8);
+                    int bRow = isFlipped ? 7 - (e.Y - fo) / squareSize : (e.Y - fo) / squareSize;
+                    int bCol = isFlipped ? 7 - (e.X - fo) / squareSize : (e.X - fo) / squareSize;
+                    if (bRow >= 0 && bRow <= 7 && bCol >= 0 && bCol <= 7)
+                    {
+                        if (bRow != _hoverRow || bCol != _hoverCol)
+                        {
+                            _hoverRow = bRow;
+                            _hoverCol = bCol;
+                            Invalidate();
+                        }
+                    }
+                    else if (_hoverRow >= 0)
+                    {
+                        _hoverRow = -1;
+                        _hoverCol = -1;
+                        Invalidate();
+                    }
+                }
+                return;
+            }
+
             if (!InteractionEnabled) return;
 
             if (e.Button != MouseButtons.Left || !mouseDownOnPiece)
@@ -1046,9 +1371,10 @@ namespace ChessDroid.Controls
             if (!InteractionEnabled) return;
             if (e.Button != MouseButtons.Left) return;
 
-            int squareSize = Math.Min(Width, Height) / 8;
-            int clickCol = e.X / squareSize;
-            int clickRow = e.Y / squareSize;
+            int fo3 = GetFrameOff();
+            int squareSize = Math.Max(1, Math.Min(Width - 2 * fo3, Height - 2 * fo3) / 8);
+            int clickCol = (e.X - fo3) / squareSize;
+            int clickRow = (e.Y - fo3) / squareSize;
 
             int boardRow = isFlipped ? 7 - clickRow : clickRow;
             int boardCol = isFlipped ? 7 - clickCol : clickCol;
@@ -1101,11 +1427,26 @@ namespace ChessDroid.Controls
             mouseDownOnPiece = false;
         }
 
+        protected override void OnMouseLeave(EventArgs e)
+        {
+            base.OnMouseLeave(e);
+            if (_trainingMode && _hoverRow >= 0)
+            {
+                _hoverRow = -1;
+                _hoverCol = -1;
+                if (_hoverSquareLabelEnabled) Invalidate();
+            }
+        }
+
+        private int GetFrameOff() => _boardFrameEnabled ? _boardFrameWidth : 0;
+
         private (int row, int col) GetBoardSquare(MouseEventArgs e)
         {
-            int squareSize = Math.Min(Width, Height) / 8;
-            int clickCol = e.X / squareSize;
-            int clickRow = e.Y / squareSize;
+            int fo = GetFrameOff();
+            int squareSize = Math.Min(Width - 2 * fo, Height - 2 * fo) / 8;
+            if (squareSize < 1) squareSize = 1;
+            int clickCol = (e.X - fo) / squareSize;
+            int clickRow = (e.Y - fo) / squareSize;
             int boardRow = isFlipped ? 7 - clickRow : clickRow;
             int boardCol = isFlipped ? 7 - clickCol : clickCol;
             return (boardRow, boardCol);
@@ -1692,6 +2033,7 @@ namespace ChessDroid.Controls
                 coordFont?.Dispose();
                 pieceFallbackFont?.Dispose();
                 _labelFont?.Dispose();
+                _hoverLabelFont?.Dispose();
                 _badgeFont?.Dispose();
                 _paintBrush.Dispose();
                 _legalMovePen.Dispose();
@@ -1699,6 +2041,11 @@ namespace ChessDroid.Controls
                 pieceImages.Clear();
                 foreach (var bmp in _scaledImages.Values) bmp?.Dispose();
                 _scaledImages.Clear();
+                _rainbowTimer.Stop();
+                _rainbowTimer.Dispose();
+                _particleTimer.Stop();
+                _particleTimer.Dispose();
+                _particleFont?.Dispose();
             }
             base.Dispose(disposing);
         }

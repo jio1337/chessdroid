@@ -21,6 +21,10 @@ namespace ChessDroid
             ("Forest",          "#D4E8CC", "#5A8A6A"),
             ("Walnut",          "#EDD5A8", "#9C7050"),
             ("Arctic",          "#DCF0F8", "#5890B0"),
+            ("Pink Soldier",    "#E070E0", "#942C4F"),
+            ("Sungrass",        "#D7E070", "#46942C"),
+            ("Space Traveler",  "#8C70E0", "#8B2C94"),
+            ("Atlantis",        "#70E0A8", "#2C8394"),
         };
 
         public SettingsForm(AppConfig config, Action? onConfigChanged = null)
@@ -118,6 +122,15 @@ namespace ChessDroid
             chkAnimations.CheckedChanged += (s, e) => numAnimationMs.Enabled = chkAnimations.Checked;
             chkMaterialStrips.Checked = config.ShowMaterialStrips;
 
+            // Board effects
+            chkGradient.Checked = config.GradientBoard;
+            chkVignette.Checked = config.BoardVignette;
+            numVigAlpha.Value = Math.Clamp(config.VignetteAlpha, 10, 240);
+            chkPieceGlow.Checked = config.PieceGlow;
+            chkBoardFrame.Checked = config.BoardFrame;
+            try { btnFrameColor.BackColor = ColorTranslator.FromHtml(config.BoardFrameColor); }
+            catch { btnFrameColor.BackColor = Color.FromArgb(80, 50, 25); }
+
             // Explanation settings
             chkTactical.Checked = config.ShowTacticalAnalysis;
             chkPositional.Checked = config.ShowPositionalAnalysis;
@@ -179,6 +192,14 @@ namespace ChessDroid
             config.ShowAnimations = chkAnimations.Checked;
             config.AnimationDurationMs = (int)numAnimationMs.Value;
             config.ShowMaterialStrips = chkMaterialStrips.Checked;
+
+            // Board effects
+            config.GradientBoard = chkGradient.Checked;
+            config.BoardVignette = chkVignette.Checked;
+            config.VignetteAlpha = (int)numVigAlpha.Value;
+            config.PieceGlow = chkPieceGlow.Checked;
+            config.BoardFrame = chkBoardFrame.Checked;
+            config.BoardFrameColor = ColorTranslator.ToHtml(btnFrameColor.BackColor);
 
             // Save explanation settings
             config.ShowTacticalAnalysis = chkTactical.Checked;
@@ -266,6 +287,13 @@ namespace ChessDroid
             using var dlg = new ColorDialog { Color = btnDarkColor.BackColor, FullOpen = true };
             if (dlg.ShowDialog(this) == DialogResult.OK)
                 btnDarkColor.BackColor = dlg.Color;
+        }
+
+        private void BtnFrameColor_Click(object? sender, EventArgs e)
+        {
+            using var dlg = new ColorDialog { Color = btnFrameColor.BackColor, FullOpen = true };
+            if (dlg.ShowDialog(this) == DialogResult.OK)
+                btnFrameColor.BackColor = dlg.Color;
         }
 
         private void BtnResetColors_Click(object? sender, EventArgs e)
@@ -424,6 +452,15 @@ namespace ChessDroid
                 lblMaterialStrips.BackColor = Color.FromArgb(45, 45, 48);
                 chkMaterialStrips.ForeColor = Color.White;
                 chkMaterialStrips.BackColor = Color.FromArgb(45, 45, 48);
+                // Board Effects GroupBox
+                grpBoardEffects.ForeColor = Color.White;
+                grpBoardEffects.BackColor = Color.FromArgb(45, 45, 48);
+                foreach (Control ctrl in grpBoardEffects.Controls)
+                {
+                    if (ctrl is CheckBox chk2) { chk2.ForeColor = Color.White; chk2.BackColor = Color.FromArgb(45, 45, 48); }
+                    else if (ctrl is NumericUpDown num2) { num2.ForeColor = Color.White; num2.BackColor = Color.FromArgb(60, 60, 65); }
+                }
+
                 // Play Style GroupBox
                 grpLc0Features.ForeColor = Color.Cyan;
                 grpLc0Features.BackColor = Color.FromArgb(45, 45, 48);
@@ -591,6 +628,15 @@ namespace ChessDroid
                 lblMaterialStrips.BackColor = Color.WhiteSmoke;
                 chkMaterialStrips.ForeColor = Color.Black;
                 chkMaterialStrips.BackColor = Color.WhiteSmoke;
+
+                // Board Effects GroupBox
+                grpBoardEffects.ForeColor = Color.Black;
+                grpBoardEffects.BackColor = Color.WhiteSmoke;
+                foreach (Control ctrl in grpBoardEffects.Controls)
+                {
+                    if (ctrl is CheckBox chk2) { chk2.ForeColor = Color.Black; chk2.BackColor = Color.WhiteSmoke; }
+                    else if (ctrl is NumericUpDown num2) { num2.ForeColor = Color.Black; num2.BackColor = Color.White; }
+                }
 
                 // Play Style GroupBox
                 grpLc0Features.ForeColor = Color.DarkCyan;

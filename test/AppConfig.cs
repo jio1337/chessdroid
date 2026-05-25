@@ -10,6 +10,13 @@ namespace ChessDroid
         public int GamesPlayed { get; set; } = 0;      // Games played inside Chessdroid
     }
 
+    public class TrainingPersonalBest
+    {
+        public int BestCorrect { get; set; } = 0;
+        public int BestQuestions { get; set; } = 0;
+        public double BestTime { get; set; } = double.MaxValue;
+    }
+
     public class AppConfig
     {
         public string TemplatesFolder { get; set; } = "Templates";
@@ -46,6 +53,15 @@ namespace ChessDroid
         public bool ShowLastMoveHighlight { get; set; } = true;
         public bool ShowMaterialStrips { get; set; } = true;
 
+        // Board visual effects
+        public bool GradientBoard { get; set; } = false;
+        public bool BoardVignette { get; set; } = false;
+        public int  VignetteAlpha { get; set; } = 110;
+        public bool PieceGlow { get; set; } = false;
+        public bool BoardFrame { get; set; } = false;
+        public int BoardFrameWidth { get; set; } = 26;
+        public string BoardFrameColor { get; set; } = "#503219";
+
         // Explanation settings
         public bool ShowTacticalAnalysis { get; set; } = true; // Show tactical patterns
         public bool ShowPositionalAnalysis { get; set; } = true; // Show positional evaluation
@@ -78,6 +94,9 @@ namespace ChessDroid
 
         // Engine profiles: keyed by engine filename (e.g. "stockfish18.exe")
         public Dictionary<string, EngineProfile> EngineProfiles { get; set; } = new();
+
+        // Square training personal bests: keyed by mode string e.g. "Challenge-Black"
+        public Dictionary<string, TrainingPersonalBest> TrainingPersonalBests { get; set; } = new();
 
         // UI layout
         public int BoardSplitterDistance { get; set; } = -1; // -1 = compute from board height
@@ -213,10 +232,19 @@ namespace ChessDroid
             ConsoleFontFamily = other.ConsoleFontFamily;
             ConsoleFontSize = other.ConsoleFontSize;
 
+            GradientBoard = other.GradientBoard;
+            BoardVignette = other.BoardVignette;
+            VignetteAlpha = other.VignetteAlpha;
+            PieceGlow = other.PieceGlow;
+            BoardFrame = other.BoardFrame;
+            BoardFrameWidth = other.BoardFrameWidth;
+            BoardFrameColor = other.BoardFrameColor;
+
             OpeningBooksFolder = other.OpeningBooksFolder;
             UseOpeningBook = other.UseOpeningBook;
             ShowBookMoves = other.ShowBookMoves;
             EngineProfiles = new Dictionary<string, EngineProfile>(other.EngineProfiles);
+            TrainingPersonalBests = new Dictionary<string, TrainingPersonalBest>(other.TrainingPersonalBests);
             BoardSplitterDistance = other.BoardSplitterDistance;
             SplitterDistance = other.SplitterDistance;
         }

@@ -52,6 +52,7 @@ namespace ChessDroid
             btnAutoPlay = new Button();
             btnPlayBot = new Button();
             btnEditPosition = new Button();
+            btnTraining = new Button();
             lblFen = new Label();
             txtFen = new TextBox();
             btnLoadFen = new Button();
@@ -302,7 +303,18 @@ namespace ChessDroid
             btnEditPosition.TabIndex = 25;
             btnEditPosition.Text = "✏";
             btnEditPosition.Click += BtnEditPosition_Click;
-            // 
+            //
+            // btnTraining
+            //
+            btnTraining.FlatStyle = FlatStyle.Flat;
+            btnTraining.Font = new Font("Segoe UI", 10F);
+            btnTraining.Location = new Point(510, 530);
+            btnTraining.Name = "btnTraining";
+            btnTraining.Size = new Size(28, 28);
+            btnTraining.TabIndex = 26;
+            btnTraining.Text = "♟";
+            btnTraining.Click += BtnTraining_Click;
+            //
             // lblFen
             // 
             lblFen.Font = new Font("Courier New", 8.25F, FontStyle.Regular, GraphicsUnit.Point, 0);
@@ -498,6 +510,7 @@ namespace ChessDroid
             pnlBoardControls.Controls.Add(btnAutoPlay);
             pnlBoardControls.Controls.Add(btnPlayBot);
             pnlBoardControls.Controls.Add(btnEditPosition);
+            pnlBoardControls.Controls.Add(btnTraining);
             pnlBoardControls.Controls.Add(lblFen);
             pnlBoardControls.Controls.Add(txtFen);
             pnlBoardControls.Controls.Add(btnLoadFen);
@@ -517,6 +530,7 @@ namespace ChessDroid
             toolTip.SetToolTip(btnAutoPlay, "Auto-play");
             toolTip.SetToolTip(btnPlayBot,  "Play vs Bot");
             toolTip.SetToolTip(btnEditPosition, "Edit Position");
+            toolTip.SetToolTip(btnTraining, "Square Training");
             toolTip.SetToolTip(btnSettings, "Settings");
             toolTip.SetToolTip(btnSaveToLibrary, "Save current game to library");
             toolTip.SetToolTip(btnOpenLibrary, "Open game library");
@@ -859,6 +873,7 @@ namespace ChessDroid
         private Button btnAutoPlay;
         private Button btnPlayBot;
         private Button btnEditPosition;
+        private Button btnTraining;
 
         private Label lblFen;
         private TextBox txtFen;

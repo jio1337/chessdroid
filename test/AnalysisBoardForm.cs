@@ -139,6 +139,7 @@ namespace ChessDroid
             boardControl.ShowSquareLabels = config.ShowSquareLabels;
             boardControl.ShowLastMoveHighlight = config.ShowLastMoveHighlight;
             boardControl.AnimationDurationMs = config.AnimationDurationMs;
+            ApplyBoardFxFromConfig();
             InitializeServices();
             InitializeMatchControls();
             PopulatePiecesComboBox();
@@ -178,6 +179,7 @@ namespace ChessDroid
                 LeftPanel_Resize(leftPanel, EventArgs.Empty);
                 PnlBoardControls_Resize(pnlBoardControls, EventArgs.Empty);
                 this.MinimumSize = this.Size;
+                InitTrainingPanel();
                 await InitializeEngineAsync();
             };
         }
@@ -231,7 +233,7 @@ namespace ChessDroid
 
             // Standard buttons
             foreach (var btn in new[] { btnSettings, btnNewGame, btnFlipBoard, btnTakeBack, btnPrevMove,
-                                        btnNextMove, btnAutoPlay, btnPlayBot, btnEditPosition, btnLoadFen, btnCopyFen, btnClassifyMoves,
+                                        btnNextMove, btnAutoPlay, btnPlayBot, btnEditPosition, btnTraining, btnLoadFen, btnCopyFen, btnClassifyMoves,
                                         btnExportPgn, btnImportPgn, btnSaveToLibrary, btnOpenLibrary })
             {
                 btn.BackColor = scheme.ButtonBackColor;
@@ -307,6 +309,7 @@ namespace ChessDroid
             if (_evalGraph != null) _evalGraph.Visible = config?.ShowEvalGraph ?? true;
             RefreshEvalGraph();
             ApplyConsoleFont();
+            ApplyTrainingTheme();
         }
 
         private void ApplyConsoleFont()
@@ -424,22 +427,58 @@ namespace ChessDroid
             }
         }
 
+        private void ApplyBoardFxFromConfig()
+        {
+            boardControl.GradientBoard    = config.GradientBoard;
+            boardControl.VignetteEnabled  = config.BoardVignette;
+            boardControl.VignetteAlpha    = config.VignetteAlpha;
+            boardControl.PieceGlowEnabled = config.PieceGlow;
+            boardControl.BoardFrameEnabled = config.BoardFrame;
+            boardControl.BoardFrameWidth  = config.BoardFrameWidth;
+            try { boardControl.BoardFrameColor = ColorTranslator.FromHtml(config.BoardFrameColor); }
+            catch { boardControl.BoardFrameColor = System.Drawing.Color.FromArgb(80, 50, 25); }
+        }
+
         private void PopulateBoardColorComboBox()
         {
             cmbBoardColor.Items.Clear();
             foreach (var (name, _, _) in SettingsForm.ColorPresets)
                 cmbBoardColor.Items.Add(name);
+            cmbBoardColor.Items.Add("🌈 Rainbow");
+            cmbBoardColor.Items.Add("🌊 Wave");
 
-            int match = Array.FindIndex(SettingsForm.ColorPresets, p =>
-                string.Equals(p.Light, config.LightSquareColor, StringComparison.OrdinalIgnoreCase) &&
-                string.Equals(p.Dark,  config.DarkSquareColor,  StringComparison.OrdinalIgnoreCase));
-            cmbBoardColor.SelectedIndex = match; // -1 if custom colors, that's fine
+            if (boardControl.RainbowMode)
+                cmbBoardColor.SelectedIndex = SettingsForm.ColorPresets.Length;
+            else if (boardControl.WaveMode)
+                cmbBoardColor.SelectedIndex = SettingsForm.ColorPresets.Length + 1;
+            else
+            {
+                int match = Array.FindIndex(SettingsForm.ColorPresets, p =>
+                    string.Equals(p.Light, config.LightSquareColor, StringComparison.OrdinalIgnoreCase) &&
+                    string.Equals(p.Dark,  config.DarkSquareColor,  StringComparison.OrdinalIgnoreCase));
+                cmbBoardColor.SelectedIndex = match;
+            }
         }
 
         private void CmbBoardColor_SelectedIndexChanged(object? sender, EventArgs e)
         {
             int idx = cmbBoardColor.SelectedIndex;
-            if (idx < 0 || idx >= SettingsForm.ColorPresets.Length) return;
+            if (idx < 0) return;
+
+            if (idx == SettingsForm.ColorPresets.Length)
+            {
+                boardControl.RainbowMode = true;
+                return;
+            }
+
+            if (idx == SettingsForm.ColorPresets.Length + 1)
+            {
+                boardControl.WaveMode = true;
+                return;
+            }
+
+            boardControl.RainbowMode = false;
+            boardControl.WaveMode = false;
             var (_, light, dark) = SettingsForm.ColorPresets[idx];
             boardControl.SetSquareColors(ColorTranslator.FromHtml(light), ColorTranslator.FromHtml(dark));
             if (config != null)
@@ -585,6 +624,7 @@ namespace ChessDroid
             btnAutoPlay.Width   = autoW;
             btnPlayBot.Width    = iconW;
             btnEditPosition.Width = editW;
+            btnTraining.Width   = iconW;
 
             btnNewGame.Location    = new Point(pad, buttonY);
             btnFlipBoard.Location  = new Point(btnNewGame.Right   + gap, buttonY);
@@ -594,6 +634,7 @@ namespace ChessDroid
             btnAutoPlay.Location   = new Point(btnNextMove.Right  + 2,   buttonY);
             btnPlayBot.Location    = new Point(btnAutoPlay.Right  + gap, buttonY);
             btnEditPosition.Location = new Point(btnPlayBot.Right + gap, buttonY);
+            btnTraining.Location   = new Point(btnEditPosition.Right + gap, buttonY);
 
             // Row 3 (Y=60): FEN row — label | input | Load | Copy | ⚙
             const int fenY     = 60;
@@ -667,6 +708,7 @@ namespace ChessDroid
         private async Task TriggerAutoAnalysis()
         {
             if (_autoPlaying) return;
+            if (_trainingGameActive) return;
 
             // Cancel previous analysis if still running
             autoAnalysisCts?.Cancel();
@@ -764,6 +806,7 @@ namespace ChessDroid
                 if (!config.ShowThreatArrows) boardControl.ClearThreatArrows();
                 if (_evalGraph != null) _evalGraph.Visible = config.ShowEvalGraph;
                 boardControl.AnimationDurationMs = config.AnimationDurationMs;
+                ApplyBoardFxFromConfig();
 
                 // Only clear cache when settings that affect analysis results change
                 if (analysisSettingsChanged)
@@ -1013,6 +1056,7 @@ namespace ChessDroid
             Clipboard.SetText(fen);
             lblStatus.Text = "FEN copied to clipboard";
         }
+
 
         private void MoveListBox_DrawItem(object? sender, DrawItemEventArgs e)
         {
@@ -1811,9 +1855,15 @@ namespace ChessDroid
             // The arbiter reports "Mate in 0" for the final checkmate position, which is ambiguous
             // (SetMate(0) always resolves to full-black). Use SetTerminalMate instead.
             if (result.Outcome == MatchOutcome.WhiteWins)
+            {
                 evalBar?.SetTerminalMate(true);
+                boardControl.TriggerParticles();
+            }
             else if (result.Outcome == MatchOutcome.BlackWins)
+            {
                 evalBar?.SetTerminalMate(false);
+                boardControl.TriggerParticles();
+            }
 
             // Re-enable controls
             SetMatchControlsEnabled(false);
@@ -2147,6 +2197,7 @@ namespace ChessDroid
             }
 
             analysisOutput.AppendText($"\n{result}\n");
+            if (inCheck) boardControl.TriggerParticles();
             boardControl.InteractionEnabled = false;
             btnPlayBot.Text = "♞";
             toolTip.SetToolTip(btnPlayBot, "Play vs Bot");
@@ -2482,6 +2533,7 @@ namespace ChessDroid
                             consoleFormatter?.ShowGameOver($"Checkmate — {winner} wins!");
                             evalBar?.SetMate(stmIsWhite ? -1 : 1);
                             lblStatus.Text = $"Checkmate — {winner} wins";
+                            boardControl.TriggerParticles();
                         }
                         else
                         {
@@ -2559,6 +2611,7 @@ namespace ChessDroid
                         consoleFormatter?.ShowGameOver($"Checkmate — {winner} wins!");
                         evalBar?.SetMate(sideToMoveIsWhite ? -1 : 1);
                         lblStatus.Text = $"Checkmate — {winner} wins";
+                        boardControl.TriggerParticles();
                     }
                     else
                     {
@@ -4560,6 +4613,556 @@ namespace ChessDroid
         }
 
         #endregion
+
+        #region Square Training
+
+        private const int TRAINING_WRONG_MS   = 280;
+        private const int TRAINING_CORRECT_MS = 380;
+        private const string TRAINING_EMPTY_FEN = "8/8/8/8/8/8/8/8 w - - 0 1";
+        private static readonly Random _trainingRng = new();
+
+        private bool _trainingUiVisible = false;
+        private bool _trainingGameActive = false;
+        private string? _trainingPreFen;
+        private bool _trainingPreFlipped;
+        private int  _trainingTargetRow, _trainingTargetCol;
+        private int  _trainingCorrect, _trainingWrong;
+        private int  _trainingQuestions;   // set from numericupdown at round start
+        private int  _trainingTimeLimitSec; // 0 = no limit
+        private bool _trainingAwaitingNext;
+        private DateTime _trainingRoundStart;
+        private bool _trainingInWrongFlash, _trainingInCorrectFlash;
+        private int  _trainingFlashMs;
+        private int  _trainingCorrectRow, _trainingCorrectCol;
+
+        private System.Windows.Forms.Timer? _trainingClockTimer;
+        private System.Windows.Forms.Timer? _trainingFlashTimer;
+
+        private Panel?          _pnlTraining;
+        private Panel?          _pnlTrainingStart;
+        private Panel?          _pnlTrainingGame;
+        private Panel?          _pnlTrainingResult;
+        private RadioButton?    _rbTrainingEasy;
+        private RadioButton?    _rbTrainingBlack;
+        private RadioButton?    _rbTrainingRandom;
+        private NumericUpDown?  _numQuestions;
+        private NumericUpDown?  _numTimeLimit;
+        private Label?       _lblTrainingRound;
+        private Label?       _lblTrainingTarget;
+        private Label?       _lblTrainingScore;
+        private Label?       _lblTrainingTimer;
+        private Label?       _lblTrainingFinalScore;
+        private Label?       _lblTrainingPB;
+
+        private void InitTrainingPanel()
+        {
+            _trainingClockTimer = new System.Windows.Forms.Timer { Interval = 100 };
+            _trainingClockTimer.Tick += (_, _) =>
+            {
+                TrainingUpdateStats();
+                if (_trainingGameActive && !_trainingAwaitingNext && TrainingCheckTimeExpired())
+                {
+                    _trainingAwaitingNext = true;
+                    _trainingFlashTimer?.Stop();
+                    boardControl.ClearTrainingHighlight();
+                    TrainingShowResult();
+                }
+            };
+            _trainingFlashTimer = new System.Windows.Forms.Timer { Interval = 16 };
+            _trainingFlashTimer.Tick += TrainingFlashTimer_Tick;
+
+            boardControl.SquareClicked += TrainingSquareClicked;
+
+            _pnlTraining = new Panel { Dock = DockStyle.Fill, Visible = false, Padding = new Padding(16, 12, 14, 10) };
+
+            // ── Start panel ───────────────────────────────────────────────────
+            _pnlTrainingStart = new Panel { Dock = DockStyle.Fill };
+            var lblTitle = new Label
+            {
+                Text = "Square Training",
+                Font = new Font("Courier New", 17f, FontStyle.Bold),
+                Dock = DockStyle.Top, Height = 38, TextAlign = ContentAlignment.MiddleLeft
+            };
+            var lblDesc = new Label
+            {
+                Text = "An empty board appears.\nClick the named square as fast as you can.\n10 questions per round.",
+                Font = new Font("Courier New", 10f),
+                Dock = DockStyle.Top, Height = 58, TextAlign = ContentAlignment.TopLeft
+            };
+            var pnlMode = new Panel { Dock = DockStyle.Top, Height = 72 };
+            var lblMode = new Label
+            {
+                Text = "Difficulty:", Font = new Font("Courier New", 10f, FontStyle.Bold),
+                AutoSize = true, Location = new Point(0, 2)
+            };
+            _rbTrainingEasy = new RadioButton
+            {
+                Text = "Easy  (hover shows the square name)",
+                Font = new Font("Courier New", 10f),
+                AutoSize = true, Location = new Point(0, 24), Checked = true
+            };
+            var rbTrainingChallenge = new RadioButton
+            {
+                Text = "Challenge  (no hints)",
+                Font = new Font("Courier New", 10f),
+                AutoSize = true, Location = new Point(0, 50)
+            };
+            pnlMode.Controls.AddRange(new Control[] { lblMode, _rbTrainingEasy, rbTrainingChallenge });
+
+            var pnlPerspective = new Panel { Dock = DockStyle.Top, Height = 50 };
+            var lblPerspective = new Label
+            {
+                Text = "Perspective:", Font = new Font("Courier New", 10f, FontStyle.Bold),
+                AutoSize = true, Location = new Point(0, 2)
+            };
+            var rbTrainingWhite = new RadioButton
+            {
+                Text = "White  ♔",
+                Font = new Font("Courier New", 10f),
+                AutoSize = true, Location = new Point(0, 24), Checked = true
+            };
+            _rbTrainingBlack = new RadioButton
+            {
+                Text = "Black  ♚",
+                Font = new Font("Courier New", 10f),
+                AutoSize = true, Location = new Point(110, 24)
+            };
+            _rbTrainingRandom = new RadioButton
+            {
+                Text = "Random",
+                Font = new Font("Courier New", 10f),
+                AutoSize = true, Location = new Point(200, 24)
+            };
+            pnlPerspective.Controls.AddRange(new Control[]
+                { lblPerspective, rbTrainingWhite, _rbTrainingBlack, _rbTrainingRandom });
+
+            var pnlCount = new Panel { Dock = DockStyle.Top, Height = 28 };
+            var lblQuestions = new Label
+            {
+                Text = "Questions:", Font = new Font("Courier New", 10f, FontStyle.Bold),
+                AutoSize = true, Location = new Point(0, 4)
+            };
+            _numQuestions = new NumericUpDown
+            {
+                Minimum = 5, Maximum = 100, Value = 10, Width = 54,
+                Font = new Font("Courier New", 10f), Location = new Point(112, 2)
+            };
+            pnlCount.Controls.AddRange(new Control[] { lblQuestions, _numQuestions });
+
+            var pnlTime = new Panel { Dock = DockStyle.Top, Height = 28 };
+            var lblTimeLimit = new Label
+            {
+                Text = "Time limit:", Font = new Font("Courier New", 10f, FontStyle.Bold),
+                AutoSize = true, Location = new Point(0, 4)
+            };
+            _numTimeLimit = new NumericUpDown
+            {
+                Minimum = 0, Maximum = 600, Value = 0, Width = 54,
+                Font = new Font("Courier New", 10f), Location = new Point(112, 2)
+            };
+            var lblTimeSuffix = new Label
+            {
+                Text = "s  (0 = no limit)", Font = new Font("Courier New", 9f),
+                AutoSize = true, Location = new Point(170, 5)
+            };
+            pnlTime.Controls.AddRange(new Control[] { lblTimeLimit, _numTimeLimit, lblTimeSuffix });
+
+            var pnlStartGap = new Panel { Dock = DockStyle.Top, Height = 10 };
+            var btnStart = new Button
+            {
+                Text = "Start", Font = new Font("Courier New", 11f, FontStyle.Bold),
+                Dock = DockStyle.Top, Height = 38, FlatStyle = FlatStyle.Flat
+            };
+            btnStart.Click += (_, _) => TrainingStartRound();
+            // DockStyle.Top stacks back-to-front: last item in Controls = topmost visually
+            _pnlTrainingStart.Controls.AddRange(new Control[]
+                { btnStart, pnlStartGap, pnlTime, pnlCount, pnlPerspective, pnlMode, lblDesc, lblTitle });
+
+            // ── Game panel ────────────────────────────────────────────────────
+            _pnlTrainingGame = new Panel { Dock = DockStyle.Fill, Visible = false };
+            _lblTrainingRound = new Label
+            {
+                Font = new Font("Courier New", 10f),
+                Dock = DockStyle.Top, Height = 22, TextAlign = ContentAlignment.MiddleCenter
+            };
+            _lblTrainingTarget = new Label
+            {
+                Font = new Font("Courier New", 44f, FontStyle.Bold),
+                Dock = DockStyle.Top, Height = 80, TextAlign = ContentAlignment.MiddleCenter
+            };
+            _lblTrainingScore = new Label
+            {
+                Font = new Font("Courier New", 15f, FontStyle.Bold),
+                Dock = DockStyle.Top, Height = 32, TextAlign = ContentAlignment.MiddleCenter
+            };
+            _lblTrainingTimer = new Label
+            {
+                Font = new Font("Courier New", 10f),
+                Dock = DockStyle.Top, Height = 22, TextAlign = ContentAlignment.MiddleCenter
+            };
+            _pnlTrainingGame.Controls.AddRange(new Control[]
+                { _lblTrainingTimer, _lblTrainingScore, _lblTrainingTarget, _lblTrainingRound });
+
+            // ── Result panel ──────────────────────────────────────────────────
+            _pnlTrainingResult = new Panel { Dock = DockStyle.Fill, Visible = false };
+            var lblComplete = new Label
+            {
+                Text = "Round Complete!",
+                Font = new Font("Courier New", 16f, FontStyle.Bold),
+                Dock = DockStyle.Top, Height = 40, TextAlign = ContentAlignment.MiddleCenter
+            };
+            _lblTrainingFinalScore = new Label
+            {
+                Font = new Font("Courier New", 12f),
+                Dock = DockStyle.Top, Height = 32, TextAlign = ContentAlignment.MiddleCenter
+            };
+            _lblTrainingPB = new Label
+            {
+                Font = new Font("Courier New", 10f),
+                Dock = DockStyle.Top, Height = 22, TextAlign = ContentAlignment.MiddleCenter
+            };
+            var btnTryAgain = new Button
+            {
+                Text = "Try Again", Font = new Font("Courier New", 11f, FontStyle.Bold),
+                Dock = DockStyle.Top, Height = 38, FlatStyle = FlatStyle.Flat, Margin = new Padding(0, 8, 0, 0)
+            };
+            btnTryAgain.Click += (_, _) => TrainingShowStartPanel();
+            var btnDone = new Button
+            {
+                Text = "Done", Font = new Font("Courier New", 10f),
+                Dock = DockStyle.Top, Height = 34, FlatStyle = FlatStyle.Flat, Margin = new Padding(0, 6, 0, 0)
+            };
+            btnDone.Click += (_, _) => StopTraining();
+            _pnlTrainingResult.Controls.AddRange(new Control[]
+                { btnDone, btnTryAgain, _lblTrainingPB, _lblTrainingFinalScore, lblComplete });
+
+            _pnlTraining.Controls.AddRange(new Control[]
+                { _pnlTrainingStart, _pnlTrainingGame, _pnlTrainingResult });
+            rightPanel.Controls.Add(_pnlTraining);
+
+            ApplyTrainingTheme();
+        }
+
+        // ── BtnTraining_Click (replaces the old ShowDialog version) ──────────
+
+        private void BtnTraining_Click(object? sender, EventArgs e)
+        {
+            if (_trainingUiVisible)
+                StopTraining();
+            else
+                StartTrainingUI();
+        }
+
+        private void StartTrainingUI()
+        {
+            _trainingUiVisible = true;
+            analysisOutput.Visible = false;
+            grpEngineMatch.Visible = false;
+            lblAnalysis.Visible = false;
+            if (_evalGraph != null) _evalGraph.Visible = false;
+            _pnlTraining!.Visible = true;
+            _pnlTraining.BringToFront();
+            TrainingShowStartPanel();
+
+            btnTraining.Text = "⏹";
+            toolTip.SetToolTip(btnTraining, "Stop Training");
+            SetTrainingButtonsEnabled(false);
+        }
+
+        private void StopTraining()
+        {
+            _trainingClockTimer?.Stop();
+            _trainingFlashTimer?.Stop();
+
+            if (_trainingGameActive)
+            {
+                boardControl.ClearTrainingHighlight();
+                boardControl.TrainingMode = false;
+                boardControl.IsFlipped = _trainingPreFlipped;
+                if (_trainingPreFen != null)
+                    boardControl.LoadFEN(_trainingPreFen);
+                _trainingPreFen = null;
+                _trainingGameActive = false;
+            }
+
+            _trainingUiVisible = false;
+            _pnlTraining!.Visible = false;
+            _pnlTraining.SendToBack();
+            analysisOutput.Visible = true;
+            grpEngineMatch.Visible = true;
+            lblAnalysis.Visible = true;
+            if (_evalGraph != null) _evalGraph.Visible = config?.ShowEvalGraph ?? true;
+
+            btnTraining.Text = "♟";
+            toolTip.SetToolTip(btnTraining, "Square Training");
+            SetTrainingButtonsEnabled(true);
+
+            _ = TriggerAutoAnalysis();
+        }
+
+        private void SetTrainingButtonsEnabled(bool enabled)
+        {
+            foreach (var btn in new[] { btnNewGame, btnFlipBoard, btnTakeBack, btnPrevMove,
+                                        btnNextMove, btnAutoPlay, btnPlayBot, btnEditPosition })
+                btn.Enabled = enabled;
+        }
+
+        private void TrainingShowStartPanel()
+        {
+            _trainingClockTimer?.Stop();
+            _trainingFlashTimer?.Stop();
+
+            if (_trainingGameActive)
+            {
+                boardControl.ClearTrainingHighlight();
+                boardControl.TrainingMode = false;
+                boardControl.IsFlipped = _trainingPreFlipped;
+                if (_trainingPreFen != null)
+                    boardControl.LoadFEN(_trainingPreFen);
+                _trainingPreFen = null;
+                _trainingGameActive = false;
+            }
+
+            _pnlTrainingStart!.Visible = true;
+            _pnlTrainingGame!.Visible = false;
+            _pnlTrainingResult!.Visible = false;
+        }
+
+        private string TrainingModeKey()
+        {
+            string diff = _rbTrainingEasy?.Checked == true ? "Easy" : "Challenge";
+            string side = _rbTrainingRandom?.Checked == true ? "Random"
+                        : _rbTrainingBlack?.Checked == true  ? "Black" : "White";
+            return $"{diff}-{side}";
+        }
+
+        private void TrainingStartRound()
+        {
+            _trainingPreFen = boardControl.GetFEN();
+            _trainingPreFlipped = boardControl.IsFlipped;
+            _trainingQuestions   = (int)(_numQuestions?.Value ?? 10);
+            _trainingTimeLimitSec = (int)(_numTimeLimit?.Value ?? 0);
+            autoAnalysisCts?.Cancel();
+
+            bool playAsBlack = _rbTrainingBlack?.Checked == true ||
+                               (_rbTrainingRandom?.Checked == true && _trainingRng.Next(2) == 1);
+            boardControl.IsFlipped = playAsBlack;
+            boardControl.TrainingMode = true;
+            boardControl.HoverSquareLabelEnabled = _rbTrainingEasy?.Checked == true;
+            boardControl.LoadFEN(TRAINING_EMPTY_FEN);
+
+            _trainingCorrect = 0;
+            _trainingWrong = 0;
+            _trainingAwaitingNext = false;
+            _trainingInWrongFlash = false;
+            _trainingInCorrectFlash = false;
+            _trainingGameActive = true;
+
+            _pnlTrainingStart!.Visible = false;
+            _pnlTrainingResult!.Visible = false;
+            _pnlTrainingGame!.Visible = true;
+
+            _trainingRoundStart = DateTime.Now;
+            _trainingClockTimer?.Start();
+            TrainingNextQuestion();
+        }
+
+        private void TrainingNextQuestion()
+        {
+            _trainingAwaitingNext = false;
+            boardControl.ClearTrainingHighlight();
+
+            if (_rbTrainingRandom?.Checked == true)
+                boardControl.IsFlipped = _trainingRng.Next(2) == 1;
+
+            _trainingTargetRow = _trainingRng.Next(0, 8);
+            _trainingTargetCol = _trainingRng.Next(0, 8);
+            string name = $"{(char)('a' + _trainingTargetCol)}{8 - _trainingTargetRow}";
+
+            if (_lblTrainingRound != null)
+                _lblTrainingRound.Text = $"Question  {_trainingCorrect + _trainingWrong + 1}  /  {_trainingQuestions}";
+            if (_lblTrainingTarget != null)
+                _lblTrainingTarget.Text = name;
+
+            TrainingUpdateStats();
+        }
+
+        private void TrainingSquareClicked(int row, int col)
+        {
+            if (!_trainingGameActive || _trainingAwaitingNext) return;
+            _trainingAwaitingNext = true;
+            _trainingFlashMs = 0;
+
+            if (row == _trainingTargetRow && col == _trainingTargetCol)
+            {
+                _trainingCorrect++;
+                _trainingInWrongFlash = false;
+                _trainingInCorrectFlash = true;
+                boardControl.SetTrainingHighlight(row, col, Color.FromArgb(175, 50, 205, 50));
+            }
+            else
+            {
+                _trainingWrong++;
+                _trainingInWrongFlash = true;
+                _trainingInCorrectFlash = false;
+                _trainingCorrectRow = _trainingTargetRow;
+                _trainingCorrectCol = _trainingTargetCol;
+                boardControl.SetTrainingHighlight(row, col, Color.FromArgb(175, 215, 50, 50));
+            }
+
+            TrainingUpdateStats();
+            _trainingFlashTimer?.Start();
+        }
+
+        private void TrainingFlashTimer_Tick(object? sender, EventArgs e)
+        {
+            _trainingFlashMs += 16;
+
+            if (_trainingInWrongFlash && _trainingFlashMs >= TRAINING_WRONG_MS)
+            {
+                _trainingInWrongFlash = false;
+                _trainingInCorrectFlash = true;
+                _trainingFlashMs = 0;
+                boardControl.SetTrainingHighlight(_trainingCorrectRow, _trainingCorrectCol,
+                    Color.FromArgb(175, 50, 205, 50));
+                return;
+            }
+
+            if (_trainingInCorrectFlash && _trainingFlashMs >= TRAINING_CORRECT_MS)
+            {
+                _trainingInCorrectFlash = false;
+                _trainingFlashTimer?.Stop();
+                boardControl.ClearTrainingHighlight();
+
+                if (_trainingCorrect + _trainingWrong >= _trainingQuestions || TrainingCheckTimeExpired())
+                    TrainingShowResult();
+                else
+                    TrainingNextQuestion();
+            }
+        }
+
+        private void TrainingUpdateStats()
+        {
+            if (_lblTrainingScore != null)
+                _lblTrainingScore.Text = $"{_trainingCorrect} ✓     {_trainingWrong} ✗";
+
+            if (_lblTrainingTimer != null)
+            {
+                double elapsed = (DateTime.Now - _trainingRoundStart).TotalSeconds;
+                if (_trainingTimeLimitSec > 0)
+                {
+                    double remaining = _trainingTimeLimitSec - elapsed;
+                    if (remaining < 0) remaining = 0;
+                    _lblTrainingTimer.Text = $"{remaining:F1}s remaining";
+                    _lblTrainingTimer.ForeColor = remaining <= 10 ? Color.OrangeRed : SystemColors.ControlText;
+                }
+                else
+                {
+                    _lblTrainingTimer.Text = $"{elapsed:F1}s";
+                    _lblTrainingTimer.ForeColor = SystemColors.ControlText;
+                }
+            }
+        }
+
+        private bool TrainingCheckTimeExpired()
+        {
+            if (_trainingTimeLimitSec <= 0) return false;
+            return (DateTime.Now - _trainingRoundStart).TotalSeconds >= _trainingTimeLimitSec;
+        }
+
+        private void TrainingShowResult()
+        {
+            _trainingClockTimer?.Stop();
+            double elapsed = (DateTime.Now - _trainingRoundStart).TotalSeconds;
+
+            boardControl.ClearTrainingHighlight();
+            boardControl.TrainingMode = false;
+            boardControl.IsFlipped = _trainingPreFlipped;
+            if (_trainingPreFen != null)
+                boardControl.LoadFEN(_trainingPreFen);
+            _trainingPreFen = null;
+            _trainingGameActive = false;
+
+            if (_lblTrainingFinalScore != null)
+                _lblTrainingFinalScore.Text = $"{_trainingCorrect} / {_trainingQuestions} correct  ·  {elapsed:F1}s";
+
+            // Personal best
+            string key = TrainingModeKey();
+            bool newPB = false;
+            if (config != null)
+            {
+                if (!config.TrainingPersonalBests.TryGetValue(key, out var pb))
+                    pb = new TrainingPersonalBest();
+
+                if (_trainingCorrect > pb.BestCorrect ||
+                    (_trainingCorrect == pb.BestCorrect && elapsed < pb.BestTime))
+                {
+                    pb.BestCorrect = _trainingCorrect;
+                    pb.BestQuestions = _trainingQuestions;
+                    pb.BestTime = elapsed;
+                    config.TrainingPersonalBests[key] = pb;
+                    config.Save();
+                    newPB = true;
+                }
+
+                if (_lblTrainingPB != null)
+                {
+                    string pbText = pb.BestTime == double.MaxValue
+                        ? ""
+                        : $"PB ({key}): {pb.BestCorrect}/{pb.BestQuestions} in {pb.BestTime:F1}s";
+                    _lblTrainingPB.Text = newPB ? $"New personal best!  {pbText}" : pbText;
+                }
+            }
+
+            _pnlTrainingGame!.Visible = false;
+            _pnlTrainingResult!.Visible = true;
+
+            _ = TriggerAutoAnalysis();
+        }
+
+        private void ApplyTrainingTheme()
+        {
+            if (_pnlTraining == null) return;
+            var scheme = ThemeService.GetColorScheme(config?.Theme ?? "Dark");
+
+            _pnlTraining.BackColor = scheme.FormBackColor;
+            ApplyThemeToChildren(_pnlTraining, scheme);
+        }
+
+        private void ApplyThemeToChildren(Control parent, ColorScheme scheme)
+        {
+            foreach (Control c in parent.Controls)
+            {
+                if (c is Label lbl)
+                {
+                    lbl.BackColor = Color.Transparent;
+                    lbl.ForeColor = scheme.TextColor;
+                }
+                else if (c is RadioButton rb)
+                {
+                    rb.BackColor = Color.Transparent;
+                    rb.ForeColor = scheme.TextColor;
+                }
+                else if (c is Button btn)
+                {
+                    btn.BackColor = scheme.ButtonBackColor;
+                    btn.ForeColor = scheme.ButtonForeColor;
+                }
+                else if (c is NumericUpDown nud)
+                {
+                    nud.BackColor = scheme.ButtonBackColor;
+                    nud.ForeColor = scheme.TextColor;
+                }
+                else if (c is Panel pnl)
+                {
+                    pnl.BackColor = Color.Transparent;
+                    ApplyThemeToChildren(pnl, scheme);
+                }
+            }
+        }
+
+        #endregion
+
+
     }
 }
-
