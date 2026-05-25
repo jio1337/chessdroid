@@ -268,7 +268,7 @@ namespace ChessDroid
             // Standard buttons
             foreach (var btn in new[] { btnSettings, btnNewGame, btnFlipBoard, btnTakeBack, btnPrevMove,
                                         btnNextMove, btnAutoPlay, btnPlayBot, btnEditPosition, btnTraining, btnLoadFen, btnCopyFen, btnClassifyMoves,
-                                        btnExportPgn, btnImportPgn, btnSaveToLibrary, btnOpenLibrary })
+                                        btnExportPgn, btnImportPgn, btnSaveToLibrary, btnOpenLibrary, btnOpenings })
             {
                 btn.BackColor = scheme.ButtonBackColor;
                 btn.ForeColor = scheme.ButtonForeColor;
@@ -3676,6 +3676,14 @@ namespace ChessDroid
                     consoleFormatter?.DisplayClassificationSummary(_currentClassification);
                 }
             }
+        }
+
+        private void BtnOpenings_Click(object? sender, EventArgs e)
+        {
+            string booksFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Books");
+            var entries = ChessDroid.Services.EcoBookService.LoadAll(booksFolder);
+            using var dialog = new OpeningExplorerDialog(entries, ImportPgn, ThemeService.IsDarkTheme(config?.Theme));
+            dialog.ShowDialog(this);
         }
 
         /// <summary>

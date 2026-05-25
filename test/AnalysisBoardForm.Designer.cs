@@ -67,6 +67,7 @@ namespace ChessDroid
             btnImportPgn = new Button();
             btnSaveToLibrary = new Button();
             btnOpenLibrary = new Button();
+            btnOpenings = new Button();
             lblMoves = new Label();
             rightPanel = new Panel();
             pnlBoardControls = new Panel();
@@ -402,9 +403,10 @@ namespace ChessDroid
             // pnlPgnButtons
             // 
             // DockStyle.Top controls stack top-to-bottom in reverse Controls-add order.
-            // Add order (last-in = top): Classify → OpenLibrary → SaveToLibrary → Export
+            // Add order (last-in = top): Classify → Openings → OpenLibrary → SaveToLibrary → Export
             // Import uses DockStyle.Bottom and always pins to the bottom edge.
             pnlPgnButtons.Controls.Add(btnClassifyMoves);
+            pnlPgnButtons.Controls.Add(btnOpenings);
             pnlPgnButtons.Controls.Add(btnOpenLibrary);
             pnlPgnButtons.Controls.Add(btnSaveToLibrary);
             pnlPgnButtons.Controls.Add(btnExportPgn);
@@ -412,7 +414,7 @@ namespace ChessDroid
             pnlPgnButtons.Dock = DockStyle.Bottom;
             pnlPgnButtons.Location = new Point(5, 480);
             pnlPgnButtons.Name = "pnlPgnButtons";
-            pnlPgnButtons.Size = new Size(114, 152);
+            pnlPgnButtons.Size = new Size(114, 180);
             pnlPgnButtons.TabIndex = 2;
             // 
             // btnClassifyMoves
@@ -472,7 +474,18 @@ namespace ChessDroid
             btnOpenLibrary.TabIndex = 4;
             btnOpenLibrary.Text = "📚 Library";
             btnOpenLibrary.Click += BtnOpenLibrary_Click;
-            // 
+            //
+            // btnOpenings
+            //
+            btnOpenings.Dock = DockStyle.Top;
+            btnOpenings.FlatStyle = FlatStyle.Flat;
+            btnOpenings.Font = new Font("Courier New", 8.25F);
+            btnOpenings.Name = "btnOpenings";
+            btnOpenings.Size = new Size(114, 28);
+            btnOpenings.TabIndex = 5;
+            btnOpenings.Text = "📖 Openings";
+            btnOpenings.Click += BtnOpenings_Click;
+            //
             // lblMoves
             // 
             lblMoves.Dock = DockStyle.Top;
@@ -534,6 +547,7 @@ namespace ChessDroid
             toolTip.SetToolTip(btnSettings, "Settings");
             toolTip.SetToolTip(btnSaveToLibrary, "Save current game to library");
             toolTip.SetToolTip(btnOpenLibrary, "Open game library");
+            toolTip.SetToolTip(btnOpenings, "Opening Explorer");
             //
             // analysisOutput
             // 
@@ -890,6 +904,7 @@ namespace ChessDroid
         private Button btnImportPgn;
         private Button btnSaveToLibrary;
         private Button btnOpenLibrary;
+        private Button btnOpenings;
 
         // Right panel - Engine Match
         private GroupBox grpEngineMatch;
