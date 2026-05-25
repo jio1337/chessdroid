@@ -414,7 +414,7 @@ namespace ChessDroid
             pnlPgnButtons.Dock = DockStyle.Bottom;
             pnlPgnButtons.Location = new Point(5, 480);
             pnlPgnButtons.Name = "pnlPgnButtons";
-            pnlPgnButtons.Size = new Size(114, 180);
+            pnlPgnButtons.Size = new Size(114, 184);
             pnlPgnButtons.TabIndex = 2;
             // 
             // btnClassifyMoves
