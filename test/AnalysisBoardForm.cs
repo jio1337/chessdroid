@@ -87,6 +87,25 @@ namespace ChessDroid
         private System.Windows.Forms.Timer _autoPlayTimer = null!;
         private bool _autoPlaying = false;
 
+        // Piece set hover preview — query the combobox's internal listbox for the hovered item
+        [StructLayout(LayoutKind.Sequential)]
+        private struct COMBOBOXINFO
+        {
+            public int cbSize;
+            public int rcItemLeft, rcItemTop, rcItemRight, rcItemBottom;
+            public int rcButtonLeft, rcButtonTop, rcButtonRight, rcButtonBottom;
+            public int stateButton;
+            public IntPtr hwndCombo, hwndItem, hwndList;
+        }
+        [DllImport("user32.dll")] private static extern bool GetComboBoxInfo(IntPtr hwnd, ref COMBOBOXINFO pcbi);
+        [DllImport("user32.dll")] private static extern int SendMessage(IntPtr hWnd, int msg, int wParam, int lParam);
+        private const int LB_GETCURSEL = 0x0188;
+        private string _hoverPreviewSaved = "";
+        private bool _dropDownOpen = false;
+        private bool _dropDownCommitted = false;
+        private bool _restoringPreview = false;
+        private System.Windows.Forms.Timer? _hoverPreviewTimer;
+
         // Console font (managed here to allow proper disposal on change)
         private Font _consoleFont = new Font("Consolas", 10f);
 
@@ -368,6 +387,18 @@ namespace ChessDroid
 
         private void PopulatePiecesComboBox()
         {
+            // Wire hover-preview events once (guard against double-subscribe on re-populate)
+            cmbPieces.DropDown     -= CmbPieces_DropDown;
+            cmbPieces.DropDownClosed -= CmbPieces_DropDownClosed;
+            cmbPieces.DropDown     += CmbPieces_DropDown;
+            cmbPieces.DropDownClosed += CmbPieces_DropDownClosed;
+
+            if (_hoverPreviewTimer == null)
+            {
+                _hoverPreviewTimer = new System.Windows.Forms.Timer { Interval = 50 };
+                _hoverPreviewTimer.Tick += HoverPreviewTimer_Tick;
+            }
+
             try
             {
                 string templatesFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Templates");
@@ -411,6 +442,9 @@ namespace ChessDroid
 
         private void CmbPieces_SelectedIndexChanged(object? sender, EventArgs e)
         {
+            if (_restoringPreview) return;
+            if (_dropDownOpen) _dropDownCommitted = true;
+
             string? selectedTemplate = cmbPieces.SelectedItem?.ToString();
             if (!string.IsNullOrEmpty(selectedTemplate))
             {
@@ -418,12 +452,49 @@ namespace ChessDroid
                 _materialTop?.SetTemplateSet(selectedTemplate);
                 _materialBottom?.SetTemplateSet(selectedTemplate);
 
-                // Remember the selection for next time
                 if (config != null && config.SelectedSite != selectedTemplate)
                 {
                     config.SelectedSite = selectedTemplate;
                     config.Save();
                 }
+            }
+        }
+
+        private void CmbPieces_DropDown(object? sender, EventArgs e)
+        {
+            _hoverPreviewSaved = cmbPieces.SelectedItem?.ToString() ?? "";
+            _dropDownOpen = true;
+            _dropDownCommitted = false;
+            _hoverPreviewTimer?.Start();
+        }
+
+        private void HoverPreviewTimer_Tick(object? sender, EventArgs e)
+        {
+            var info = new COMBOBOXINFO { cbSize = Marshal.SizeOf<COMBOBOXINFO>() };
+            if (!GetComboBoxInfo(cmbPieces.Handle, ref info) || info.hwndList == IntPtr.Zero) return;
+            int idx = SendMessage(info.hwndList, LB_GETCURSEL, 0, 0);
+            if (idx < 0 || idx >= cmbPieces.Items.Count) return;
+            string? hovered = cmbPieces.Items[idx]?.ToString();
+            if (string.IsNullOrEmpty(hovered)) return;
+            boardControl.SetTemplateSet(hovered);
+            _materialTop?.SetTemplateSet(hovered);
+            _materialBottom?.SetTemplateSet(hovered);
+        }
+
+        private void CmbPieces_DropDownClosed(object? sender, EventArgs e)
+        {
+            _hoverPreviewTimer?.Stop();
+            _dropDownOpen = false;
+
+            if (!_dropDownCommitted && !string.IsNullOrEmpty(_hoverPreviewSaved))
+            {
+                // User closed without clicking — restore original set
+                boardControl.SetTemplateSet(_hoverPreviewSaved);
+                _materialTop?.SetTemplateSet(_hoverPreviewSaved);
+                _materialBottom?.SetTemplateSet(_hoverPreviewSaved);
+                _restoringPreview = true;
+                cmbPieces.SelectedItem = _hoverPreviewSaved;
+                _restoringPreview = false;
             }
         }
 
