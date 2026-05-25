@@ -4943,6 +4943,7 @@ namespace ChessDroid
         private RadioButton? _rbOpRandom;
         private RadioButton? _rbOpSelected;
         private Label? _lblSelectedOpening;
+        private RadioButton? _rbWatchesNone;
         private RadioButton? _rbWatches1;
         private RadioButton? _rbWatches2;
         private RadioButton? _rbWatches3;
@@ -4988,7 +4989,7 @@ namespace ChessDroid
                 Font = new Font("Courier New", 10f),
                 Dock = DockStyle.Top, Height = 58, TextAlign = ContentAlignment.TopLeft
             };
-            var pnlMode = new Panel { Dock = DockStyle.Top, Height = 72 };
+            var pnlMode = new Panel { Dock = DockStyle.Top, Height = 84 };
             var lblMode = new Label
             {
                 Text = "Difficulty:", Font = new Font("Courier New", 10f, FontStyle.Bold),
@@ -5016,21 +5017,21 @@ namespace ChessDroid
             };
             var rbTrainingWhite = new RadioButton
             {
-                Text = "White  ♔",
+                Text = "White",
                 Font = new Font("Courier New", 10f),
                 AutoSize = true, Location = new Point(0, 24), Checked = true
             };
             _rbTrainingBlack = new RadioButton
             {
-                Text = "Black  ♚",
+                Text = "Black",
                 Font = new Font("Courier New", 10f),
-                AutoSize = true, Location = new Point(110, 24)
+                AutoSize = true, Location = new Point(80, 24)
             };
             _rbTrainingRandom = new RadioButton
             {
                 Text = "Random",
                 Font = new Font("Courier New", 10f),
-                AutoSize = true, Location = new Point(200, 24)
+                AutoSize = true, Location = new Point(160, 24)
             };
             pnlPerspective.Controls.AddRange(new Control[]
                 { lblPerspective, rbTrainingWhite, _rbTrainingBlack, _rbTrainingRandom });
@@ -5091,13 +5092,13 @@ namespace ChessDroid
             pnlModeSwitcher.Controls.AddRange(new Control[] { _btnSqMode, _btnOpMode });
 
             // ── Wrap square settings into collapsible panel ────────────
-            _pnlSquareSettings = new Panel { Dock = DockStyle.Top, Height = 240 };
+            _pnlSquareSettings = new Panel { Dock = DockStyle.Top, Height = 252 };
             // DockStyle.Top: last = topmost visually
             _pnlSquareSettings.Controls.AddRange(new Control[]
                 { pnlTime, pnlCount, pnlPerspective, pnlMode, lblDesc });
 
             // ── Opening settings ───────────────────────────────────────
-            _pnlOpeningSettings = new Panel { Dock = DockStyle.Top, Height = 134, Visible = false };
+            _pnlOpeningSettings = new Panel { Dock = DockStyle.Top, Height = 110, Visible = false };
 
             var pnlOpModeRow = new Panel { Dock = DockStyle.Top, Height = 30 };
             var lblOpMode = new Label
@@ -5141,23 +5142,28 @@ namespace ChessDroid
                 Text = "Watches:", Font = new Font("Courier New", 10f, FontStyle.Bold),
                 AutoSize = true, Location = new Point(0, 6)
             };
+            _rbWatchesNone = new RadioButton
+            {
+                Text = "None", Font = new Font("Courier New", 10f),
+                AutoSize = true, Location = new Point(82, 5)
+            };
             _rbWatches1 = new RadioButton
             {
                 Text = "1", Font = new Font("Courier New", 10f),
-                AutoSize = true, Location = new Point(82, 5)
+                AutoSize = true, Location = new Point(150, 5)
             };
             _rbWatches2 = new RadioButton
             {
                 Text = "2", Font = new Font("Courier New", 10f),
-                AutoSize = true, Location = new Point(120, 5), Checked = true
+                AutoSize = true, Location = new Point(188, 5), Checked = true
             };
             _rbWatches3 = new RadioButton
             {
                 Text = "3", Font = new Font("Courier New", 10f),
-                AutoSize = true, Location = new Point(158, 5)
+                AutoSize = true, Location = new Point(226, 5)
             };
             pnlWatchesRow.Controls.AddRange(new Control[]
-                { lblWatches, _rbWatches1, _rbWatches2, _rbWatches3 });
+                { lblWatches, _rbWatchesNone, _rbWatches1, _rbWatches2, _rbWatches3 });
 
             var lblOpDesc = new Label
             {
@@ -5654,7 +5660,9 @@ namespace ChessDroid
             _trainingPreFen = boardControl.GetFEN();
             _trainingPreFlipped = boardControl.IsFlipped;
             _selectedTrainingOpening = entry;
-            _selectedWatches = _rbWatches3?.Checked == true ? 3 : _rbWatches2?.Checked == true ? 2 : 1;
+            _selectedWatches = _rbWatches3?.Checked == true ? 3
+                             : _rbWatches2?.Checked == true ? 2
+                             : _rbWatches1?.Checked == true ? 1 : 0;
             _openingWatchesLeft = _selectedWatches;
 
             autoAnalysisCts?.Cancel();
@@ -5664,7 +5672,10 @@ namespace ChessDroid
             _pnlTrainingResult!.Visible = false;
             _pnlTrainingGame!.Visible = true;
 
-            OpeningTrainingStartWatch();
+            if (_selectedWatches == 0)
+                OpeningTrainingStartRecreate();
+            else
+                OpeningTrainingStartWatch();
         }
 
         private void OpeningTrainingStartWatch()
