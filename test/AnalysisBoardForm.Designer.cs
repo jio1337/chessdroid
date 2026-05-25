@@ -543,7 +543,7 @@ namespace ChessDroid
             toolTip.SetToolTip(btnAutoPlay, "Auto-play");
             toolTip.SetToolTip(btnPlayBot,  "Play vs Bot");
             toolTip.SetToolTip(btnEditPosition, "Edit Position");
-            toolTip.SetToolTip(btnTraining, "Square Training (Beta)");
+            toolTip.SetToolTip(btnTraining, "Training");
             toolTip.SetToolTip(btnSettings, "Settings");
             toolTip.SetToolTip(btnSaveToLibrary, "Save current game to library");
             toolTip.SetToolTip(btnOpenLibrary, "Open game library");

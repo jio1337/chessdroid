@@ -4935,6 +4935,7 @@ namespace ChessDroid
         private System.Windows.Forms.Timer? _openingAutoplayTimer;
 
         // Opening Training UI refs
+        private Label?  _lblTrainingTitle;
         private Button? _btnSqMode;
         private Button? _btnOpMode;
         private Panel? _pnlSquareSettings;
@@ -4974,12 +4975,13 @@ namespace ChessDroid
 
             // ── Start panel ───────────────────────────────────────────────────
             _pnlTrainingStart = new Panel { Dock = DockStyle.Fill };
-            var lblTitle = new Label
+            _lblTrainingTitle = new Label
             {
-                Text = "Square Training (Beta)",
+                Text = "Square Training",
                 Font = new Font("Courier New", 17f, FontStyle.Bold),
                 Dock = DockStyle.Top, Height = 38, TextAlign = ContentAlignment.MiddleLeft
             };
+            var lblTitle = _lblTrainingTitle;
             var lblDesc = new Label
             {
                 Text = "An empty board appears.\nClick the named square as fast as you can.\n10 questions per round.",
@@ -5304,7 +5306,7 @@ namespace ChessDroid
             if (_evalGraph != null) _evalGraph.Visible = config?.ShowEvalGraph ?? true;
 
             btnTraining.Text = "♟";
-            toolTip.SetToolTip(btnTraining, "Square Training (Beta)");
+            toolTip.SetToolTip(btnTraining, "Training");
             SetTrainingButtonsEnabled(true);
 
             _ = TriggerAutoAnalysis();
@@ -5547,6 +5549,8 @@ namespace ChessDroid
         private void SetTrainingMode(bool openingMode)
         {
             _openingModeSelected = openingMode;
+            if (_lblTrainingTitle != null)
+                _lblTrainingTitle.Text = openingMode ? "Opening Training" : "Square Training";
             if (_pnlSquareSettings != null) _pnlSquareSettings.Visible = !openingMode;
             if (_pnlOpeningSettings != null) _pnlOpeningSettings.Visible = openingMode;
             var scheme = ThemeService.GetColorScheme(config?.Theme ?? "Dark");
