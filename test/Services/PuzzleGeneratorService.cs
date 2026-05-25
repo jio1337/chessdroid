@@ -79,6 +79,7 @@ namespace ChessDroid.Services
             tmp.SetPiece(srcR, srcC, '.');
 
             if (!ChessUtilities.IsKingInCheck(tmp, kingIsWhite: false)) return null;
+            if ( ChessUtilities.IsKingInCheck(tmp, kingIsWhite: true))  return null; // knight was pinned
 
             // Build FEN (white to move, no castling, no en passant)
             string fen = $"{board.ToFEN()} w - - 0 1";
