@@ -4666,6 +4666,13 @@ namespace ChessDroid
         /// Strips chess annotation symbols from a SAN move.
         /// Removes: !!, !, ?!, ?, ??, !? from the end of the move.
         /// </summary>
+        // "Sicilian: Najdorf, 6.Be3 e5 7.Nb3" → "Sicilian: Najdorf" (hides moves during recreate)
+        private static string StripMovesFromOpeningName(string name)
+        {
+            var m = System.Text.RegularExpressions.Regex.Match(name, @",?\s*\d+\.");
+            return m.Success ? name[..m.Index].TrimEnd(',', ' ') : name;
+        }
+
         private static string StripAnnotationSymbols(string san)
         {
             if (string.IsNullOrEmpty(san)) return san;
@@ -5742,7 +5749,7 @@ namespace ChessDroid
             if (_lblTrainingRound != null)
                 _lblTrainingRound.Text = $"Watch  {watchNum} / {_selectedWatches}";
             if (_lblTrainingScore != null)
-                _lblTrainingScore.Text = $"{_selectedTrainingOpening?.Eco}  {_selectedTrainingOpening?.Name}";
+                _lblTrainingScore.Text = $"{_selectedTrainingOpening?.Eco}  {StripMovesFromOpeningName(_selectedTrainingOpening?.Name ?? "")}";
             if (_lblOpGameStatus != null)
                 _lblOpGameStatus.Text = $"Move  {_openingPlayIndex} / {_openingUciMoves.Count}";
             if (_openingPlayIndex == 0 && _lblTrainingTarget != null)
@@ -5763,7 +5770,7 @@ namespace ChessDroid
 
             if (_lblTrainingRound != null) _lblTrainingRound.Text = "Recreate";
             if (_lblTrainingTarget != null) _lblTrainingTarget.Text = "?";
-            if (_lblTrainingScore != null) _lblTrainingScore.Text = $"{_selectedTrainingOpening?.Eco}  {_selectedTrainingOpening?.Name}";
+            if (_lblTrainingScore != null) _lblTrainingScore.Text = $"{_selectedTrainingOpening?.Eco}  {StripMovesFromOpeningName(_selectedTrainingOpening?.Name ?? "")}";
             if (_lblOpGameStatus != null) _lblOpGameStatus.Text = $"Move  1 / {_openingUciMoves.Count}";
         }
 
