@@ -5947,7 +5947,7 @@ namespace ChessDroid
         {
             if (_lblPuzzleStatus != null) _lblPuzzleStatus.Text = "Generating…";
 
-            var puzzle = PuzzleGeneratorService.TryGenerateKnightFork();
+            var puzzle = PuzzleGeneratorService.TryGenerateRandom();
             if (puzzle == null)
             {
                 if (_lblPuzzleStatus != null) _lblPuzzleStatus.Text = "Could not generate. Try again.";
