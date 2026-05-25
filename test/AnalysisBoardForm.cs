@@ -1816,8 +1816,7 @@ namespace ChessDroid
             analysisOutput.AppendText($"Engine Match: {GetEngineLabel(whiteEngineName, true)} vs {GetEngineLabel(blackEngineName, true)}\n");
             analysisOutput.AppendText($"Time Control: {tc}\n");
             string arbiterFile = Path.GetFileName(config.SelectedEngine ?? "");
-            int arbiterDepth = config.EngineDepth;
-            analysisOutput.AppendText($"Arbiter: {GetEngineLabel(arbiterFile, false)} (depth {arbiterDepth})\n");
+            analysisOutput.AppendText($"Arbiter: {GetEngineLabel(arbiterFile, false)} (depth {config.ContinuousAnalysisMaxDepth})\n");
             if (chkFromPosition.Checked)
             {
                 analysisOutput.AppendText("Starting from custom position\n");
@@ -1835,6 +1834,7 @@ namespace ChessDroid
             matchService.OnClockUpdated += MatchService_OnClockUpdated;
             matchService.OnMatchEnded += MatchService_OnMatchEnded;
             matchService.OnStatusChanged += MatchService_OnStatusChanged;
+            matchService.OnAnnotatorEvalUpdated += MatchService_OnAnnotatorEvalUpdated;
             matchService.WaitForAnimation = config.ShowAnimations;
             matchService.AnnotatorEngine = engineService;
             matchService.AnnotatorDepth = config.EngineDepth;
@@ -2107,6 +2107,7 @@ namespace ChessDroid
                 matchService.OnClockUpdated -= MatchService_OnClockUpdated;
                 matchService.OnMatchEnded -= MatchService_OnMatchEnded;
                 matchService.OnStatusChanged -= MatchService_OnStatusChanged;
+                matchService.OnAnnotatorEvalUpdated -= MatchService_OnAnnotatorEvalUpdated;
                 matchService.Dispose();
                 matchService = null;
             }
@@ -2121,6 +2122,17 @@ namespace ChessDroid
             }
 
             lblStatus.Text = status;
+        }
+
+        private void MatchService_OnAnnotatorEvalUpdated(string eval)
+        {
+            if (InvokeRequired)
+            {
+                Invoke(() => MatchService_OnAnnotatorEvalUpdated(eval));
+                return;
+            }
+
+            UpdateEvalBar(eval);
         }
 
         private void ClockTimer_Tick(object? sender, EventArgs e)

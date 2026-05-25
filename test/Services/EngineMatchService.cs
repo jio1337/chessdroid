@@ -37,9 +37,10 @@ namespace ChessDroid.Services
         public int AnnotatorDepth { get; set; } = DefaultAnnotatorDepth;
         public const int DefaultAnnotatorDepth = 14;
 
-        // Time budget per position for match annotation (go movetime N).
-        // Bounded wall-clock time ensures the annotator always keeps up with fast games.
-        public const int AnnotatorMoveTimeMs = 500;
+        // Continuous annotation state
+        private CancellationTokenSource? _annotCts;
+        private Task<string?>? _annotTask;
+
         private TaskCompletionSource<bool>? _animTcs;
 
         private readonly AppConfig config;
@@ -50,6 +51,7 @@ namespace ChessDroid.Services
         public event Action<long, long, bool>? OnClockUpdated;    // (whiteMs, blackMs, whiteToMove)
         public event Action<EngineMatchResult>? OnMatchEnded;
         public event Action<string>? OnStatusChanged;
+        public event Action<string>? OnAnnotatorEvalUpdated;       // fired at each depth during continuous annotation
 
         public bool IsRunning => isRunning;
         public long WhiteRemainingMs => isRunning && timeControl.Type == TimeControlType.TotalPlusIncrement
@@ -304,26 +306,47 @@ namespace ChessDroid.Services
                 gameState.WhiteToMove = !gameState.WhiteToMove;
                 moveCount++;
 
-                // Re-evaluate the resulting position with the neutral annotator (Stockfish 18).
-                // The annotator always evaluates from White's perspective at a fixed time budget.
-                // If the annotator is busy (previous move still being annotated), we pass null —
-                // the eval bar holds its last correct value rather than showing a stale/wrong one.
+                // Stop the previous annotation (it was running while the engine thought).
+                // Drain completes in ~50ms (stop + bestmove). Fast enough to be imperceptible.
+                if (_annotCts != null && _annotTask != null)
+                {
+                    _annotCts.Cancel();
+                    try { await _annotTask; } catch { }
+                    _annotCts.Dispose();
+                    _annotCts = null;
+                    _annotTask = null;
+                }
+
                 string newFen = gameState.ToCompleteFEN();
                 string? moveEval = null;
 
                 if (AnnotatorEngine?.State == EngineState.Ready)
                 {
+                    // Start continuous annotation — fires OnAnnotatorEvalUpdated at each depth.
+                    // Wait briefly for the first result (depth ~6, arrives in ~20ms) so the
+                    // console output gets an eval. Then annotation keeps running in background
+                    // while the next engine thinks.
+                    var firstEvalTcs = new TaskCompletionSource<string?>(TaskCreationOptions.RunContinuationsAsynchronously);
+                    _annotCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+
+                    _annotTask = AnnotatorEngine.StreamPositionEvalAsync(
+                        newFen,
+                        config.ContinuousAnalysisMaxDepth,
+                        eval =>
+                        {
+                            firstEvalTcs.TrySetResult(eval);
+                            OnAnnotatorEvalUpdated?.Invoke(eval);
+                        },
+                        _annotCts.Token);
+
                     try
                     {
-                        string? annotatorEval = await AnnotatorEngine.GetPositionEvalTimedAsync(newFen, AnnotatorMoveTimeMs, ct);
-                        if (!string.IsNullOrEmpty(annotatorEval))
-                            moveEval = annotatorEval;
+                        using var quickCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                        quickCts.CancelAfter(300);
+                        moveEval = await firstEvalTcs.Task.WaitAsync(quickCts.Token);
                     }
-                    catch (OperationCanceledException) when (ct.IsCancellationRequested)
-                    {
-                        throw;
-                    }
-                    catch { }
+                    catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+                    catch { /* 300ms timeout — proceed with null eval */ }
                 }
 
                 OnMovePlayed?.Invoke(bestMove, newFen, moveTimeMs, moveEval);
@@ -422,6 +445,8 @@ namespace ChessDroid.Services
         private void EndMatch(MatchTermination termination, MatchOutcome outcome)
         {
             isRunning = false;
+            _annotCts?.Cancel();
+
             var result = new EngineMatchResult
             {
                 Outcome = outcome,
@@ -823,6 +848,8 @@ namespace ChessDroid.Services
         {
             matchCts?.Cancel();
             matchCts?.Dispose();
+            _annotCts?.Cancel();
+            _annotCts?.Dispose();
 
             if (whiteEngine != null)
             {

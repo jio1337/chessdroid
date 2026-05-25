@@ -1146,6 +1146,103 @@ namespace ChessDroid.Services
             }
         }
 
+        /// <summary>
+        /// Evaluates a position with continuous depth-based search, calling onEvalUpdate at each
+        /// depth. Runs until maxDepth is reached or the CancellationToken is cancelled.
+        /// On cancellation: sends stop, drains to bestmove, sets State=Ready, returns last eval.
+        /// </summary>
+        public async Task<string?> StreamPositionEvalAsync(string fen, int maxDepth, Action<string> onEvalUpdate, CancellationToken ct)
+        {
+            if (!IsEngineAlive() || State != EngineState.Ready)
+                return null;
+
+            bool whiteToMove = true;
+            var fenParts = fen.Split(_spaceSep, StringSplitOptions.RemoveEmptyEntries);
+            if (fenParts.Length >= 2)
+                whiteToMove = fenParts[1] == "w";
+
+            string? lastEval = null;
+
+            try
+            {
+                if (!await SyncWithEngineAsync())
+                    return null;
+
+                await SafeWriteLineAsync($"{UCI_CMD_SETOPTION} MultiPV value 1");
+                await SafeWriteLineAsync($"{UCI_CMD_POSITION} {ChessBoard.SanitizeFenForEngine(fen)}");
+
+                State = EngineState.Analyzing;
+                await SafeWriteLineAsync($"go depth {maxDepth}");
+
+                while (IsEngineAlive())
+                {
+                    string? line = await engineOutput!.ReadLineAsync(ct);
+                    if (line == null) continue;
+
+                    if (line.StartsWith(UCI_RESPONSE_INFO) && line.Contains(UCI_TOKEN_SCORE))
+                    {
+                        var tokens = line.Split(_spaceSep, StringSplitOptions.RemoveEmptyEntries);
+                        for (int i = 0; i < tokens.Length; i++)
+                        {
+                            if (tokens[i] == UCI_TOKEN_SCORE && i + 2 < tokens.Length)
+                            {
+                                if (tokens[i + 1] == UCI_TOKEN_CP && double.TryParse(tokens[i + 2], out double cp))
+                                {
+                                    double displayCp = whiteToMove ? cp : -cp;
+                                    lastEval = (displayCp / 100.0 >= 0 ? "+" : "") +
+                                               (displayCp / 100.0).ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
+                                    onEvalUpdate(lastEval);
+                                }
+                                else if (tokens[i + 1] == UCI_TOKEN_MATE && int.TryParse(tokens[i + 2], out int mateIn))
+                                {
+                                    int displayMate = whiteToMove ? mateIn : -mateIn;
+                                    lastEval = displayMate > 0 ? $"Mate in +{displayMate}" :
+                                               displayMate < 0 ? $"Mate in {displayMate}" : "Mate in 0";
+                                    onEvalUpdate(lastEval);
+                                }
+                                break;
+                            }
+                        }
+                    }
+                    else if (line.StartsWith(UCI_RESPONSE_BESTMOVE))
+                    {
+                        State = EngineState.Ready;
+                        return lastEval;
+                    }
+                }
+
+                State = EngineState.Error;
+                return lastEval;
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                // Stop the engine and drain to bestmove so it's clean for the next caller
+                if (IsEngineAlive() && State == EngineState.Analyzing)
+                {
+                    await SafeWriteLineAsync("stop");
+                    try
+                    {
+                        using var drainCts = new CancellationTokenSource(2000);
+                        while (IsEngineAlive())
+                        {
+                            string? line = await engineOutput!.ReadLineAsync(drainCts.Token);
+                            if (line != null && line.StartsWith(UCI_RESPONSE_BESTMOVE))
+                                break;
+                        }
+                    }
+                    catch { }
+                }
+                State = EngineState.Ready;
+                return lastEval;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"StreamPositionEvalAsync: Error - {ex.Message}");
+                State = EngineState.Error;
+                return null;
+            }
+        }
+
         public async Task SetSkillLevelAsync(int level)
         {
             if (!IsEngineAlive() || State != EngineState.Ready) return;
