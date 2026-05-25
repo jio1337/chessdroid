@@ -889,6 +889,15 @@ namespace ChessDroid
             boardControl.ClearEngineArrows();
             boardControl.ClearThreatArrows();
 
+            // Opening Training recreate phase — intercept before tree processing
+            if (_openingRecreatePhase)
+            {
+                string moveSan = ConvertUciToSan(e.UciMove, _openingFens[_openingRecreateIndex]);
+                PlayMoveSound(e.IsCapture, moveSan);
+                OpeningTrainingValidateMove(e.UciMove);
+                return;
+            }
+
             // Skip if we're navigating (not making a new move)
             if (isNavigating) return;
 
@@ -3682,7 +3691,11 @@ namespace ChessDroid
         {
             string booksFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Books");
             var entries = ChessDroid.Services.EcoBookService.LoadAll(booksFolder);
-            using var dialog = new OpeningExplorerDialog(entries, ImportPgn, ThemeService.IsDarkTheme(config?.Theme));
+            using var dialog = new OpeningExplorerDialog(entries, pgn =>
+            {
+                ImportPgn(pgn);
+                NavigateToEnd();
+            }, ThemeService.IsDarkTheme(config?.Theme));
             dialog.ShowDialog(this);
         }
 
@@ -4907,6 +4920,34 @@ namespace ChessDroid
         private Label?       _lblTrainingFinalScore;
         private Label?       _lblTrainingPB;
 
+        // Opening Training state
+        private bool _openingModeSelected;
+        private bool _openingRecreatePhase;
+        private bool _openingRecreateLocked; // true during flash + restore delay
+        private OpeningEntry? _selectedTrainingOpening;
+        private int _selectedWatches;
+        private readonly List<string> _openingUciMoves = new();
+        private readonly List<string> _openingFens = new();
+        private int _openingPlayIndex;
+        private int _openingWatchesLeft;
+        private int _openingRecreateIndex;
+        private readonly Dictionary<int, int> _openingPosMistakes = new(); // posIndex → attempt count
+        private System.Windows.Forms.Timer? _openingAutoplayTimer;
+
+        // Opening Training UI refs
+        private Button? _btnSqMode;
+        private Button? _btnOpMode;
+        private Panel? _pnlSquareSettings;
+        private Panel? _pnlOpeningSettings;
+        private RadioButton? _rbOpRandom;
+        private RadioButton? _rbOpSelected;
+        private Label? _lblSelectedOpening;
+        private RadioButton? _rbWatches1;
+        private RadioButton? _rbWatches2;
+        private RadioButton? _rbWatches3;
+        private Label? _lblOpGameStatus;
+        private Label? _lblOpMissedMoves;
+
         private void InitTrainingPanel()
         {
             _trainingClockTimer = new System.Windows.Forms.Timer { Interval = 100 };
@@ -4923,6 +4964,9 @@ namespace ChessDroid
             };
             _trainingFlashTimer = new System.Windows.Forms.Timer { Interval = 16 };
             _trainingFlashTimer.Tick += TrainingFlashTimer_Tick;
+
+            _openingAutoplayTimer = new System.Windows.Forms.Timer { Interval = 900 };
+            _openingAutoplayTimer.Tick += OpeningAutoplayTimer_Tick;
 
             boardControl.SquareClicked += TrainingSquareClicked;
 
@@ -5027,9 +5071,105 @@ namespace ChessDroid
                 Dock = DockStyle.Top, Height = 38, FlatStyle = FlatStyle.Flat
             };
             btnStart.Click += (_, _) => TrainingStartRound();
+
+            // ── Mode switcher ──────────────────────────────────────────
+            var pnlModeSwitcher = new Panel { Dock = DockStyle.Top, Height = 38 };
+            _btnSqMode = new Button
+            {
+                Text = "♟ Square", Font = new Font("Courier New", 9f, FontStyle.Bold),
+                Location = new Point(0, 5), Size = new Size(104, 26), FlatStyle = FlatStyle.Flat
+            };
+            _btnOpMode = new Button
+            {
+                Text = "📖 Opening", Font = new Font("Courier New", 9f, FontStyle.Bold),
+                Location = new Point(110, 5), Size = new Size(114, 26), FlatStyle = FlatStyle.Flat
+            };
+            _btnSqMode.Click += (_, _) => SetTrainingMode(false);
+            _btnOpMode.Click += (_, _) => SetTrainingMode(true);
+            pnlModeSwitcher.Controls.AddRange(new Control[] { _btnSqMode, _btnOpMode });
+
+            // ── Wrap square settings into collapsible panel ────────────
+            _pnlSquareSettings = new Panel { Dock = DockStyle.Top, Height = 240 };
+            // DockStyle.Top: last = topmost visually
+            _pnlSquareSettings.Controls.AddRange(new Control[]
+                { pnlTime, pnlCount, pnlPerspective, pnlMode, lblDesc });
+
+            // ── Opening settings ───────────────────────────────────────
+            _pnlOpeningSettings = new Panel { Dock = DockStyle.Top, Height = 134, Visible = false };
+
+            var pnlOpModeRow = new Panel { Dock = DockStyle.Top, Height = 30 };
+            var lblOpMode = new Label
+            {
+                Text = "Opening:", Font = new Font("Courier New", 10f, FontStyle.Bold),
+                AutoSize = true, Location = new Point(0, 6)
+            };
+            _rbOpRandom = new RadioButton
+            {
+                Text = "Random", Font = new Font("Courier New", 10f),
+                AutoSize = true, Location = new Point(82, 5), Checked = true
+            };
+            _rbOpSelected = new RadioButton
+            {
+                Text = "Selected", Font = new Font("Courier New", 10f),
+                AutoSize = true, Location = new Point(168, 5)
+            };
+            var btnChoose = new Button
+            {
+                Text = "Choose…", Font = new Font("Courier New", 9f),
+                Location = new Point(268, 3), Size = new Size(76, 22), FlatStyle = FlatStyle.Flat
+            };
+            btnChoose.Click += (_, _) => SelectOpeningForTraining();
+            pnlOpModeRow.Controls.AddRange(new Control[] { lblOpMode, _rbOpRandom, _rbOpSelected, btnChoose });
+
+            _lblSelectedOpening = new Label
+            {
+                Text = "(random opening each round)",
+                Font = new Font("Courier New", 8.5f),
+                Dock = DockStyle.Top, Height = 22, AutoEllipsis = true
+            };
+            _rbOpRandom.CheckedChanged += (_, _) =>
+            {
+                if (_rbOpRandom.Checked && _lblSelectedOpening != null)
+                    _lblSelectedOpening.Text = "(random opening each round)";
+            };
+
+            var pnlWatchesRow = new Panel { Dock = DockStyle.Top, Height = 30 };
+            var lblWatches = new Label
+            {
+                Text = "Watches:", Font = new Font("Courier New", 10f, FontStyle.Bold),
+                AutoSize = true, Location = new Point(0, 6)
+            };
+            _rbWatches1 = new RadioButton
+            {
+                Text = "1", Font = new Font("Courier New", 10f),
+                AutoSize = true, Location = new Point(82, 5)
+            };
+            _rbWatches2 = new RadioButton
+            {
+                Text = "2", Font = new Font("Courier New", 10f),
+                AutoSize = true, Location = new Point(120, 5), Checked = true
+            };
+            _rbWatches3 = new RadioButton
+            {
+                Text = "3", Font = new Font("Courier New", 10f),
+                AutoSize = true, Location = new Point(158, 5)
+            };
+            pnlWatchesRow.Controls.AddRange(new Control[]
+                { lblWatches, _rbWatches1, _rbWatches2, _rbWatches3 });
+
+            var lblOpDesc = new Label
+            {
+                Text = "Watch the opening autoplay, then recreate it from memory.",
+                Font = new Font("Courier New", 9.5f),
+                Dock = DockStyle.Top, Height = 22
+            };
+            // DockStyle.Top: last = topmost visually
+            _pnlOpeningSettings.Controls.AddRange(new Control[]
+                { pnlWatchesRow, _lblSelectedOpening, pnlOpModeRow, lblOpDesc });
+
             // DockStyle.Top stacks back-to-front: last item in Controls = topmost visually
             _pnlTrainingStart.Controls.AddRange(new Control[]
-                { btnStart, pnlStartGap, pnlTime, pnlCount, pnlPerspective, pnlMode, lblDesc, lblTitle });
+                { btnStart, pnlStartGap, _pnlOpeningSettings, _pnlSquareSettings, pnlModeSwitcher, lblTitle });
 
             // ── Game panel ────────────────────────────────────────────────────
             _pnlTrainingGame = new Panel { Dock = DockStyle.Fill, Visible = false };
@@ -5053,8 +5193,15 @@ namespace ChessDroid
                 Font = new Font("Courier New", 10f),
                 Dock = DockStyle.Top, Height = 22, TextAlign = ContentAlignment.MiddleCenter
             };
+            _lblOpGameStatus = new Label
+            {
+                Font = new Font("Courier New", 9.5f),
+                Dock = DockStyle.Top, Height = 22, TextAlign = ContentAlignment.MiddleCenter,
+                Visible = false, AutoEllipsis = true
+            };
+            // DockStyle.Top: last = topmost visually
             _pnlTrainingGame.Controls.AddRange(new Control[]
-                { _lblTrainingTimer, _lblTrainingScore, _lblTrainingTarget, _lblTrainingRound });
+                { _lblOpGameStatus, _lblTrainingTimer, _lblTrainingScore, _lblTrainingTarget, _lblTrainingRound });
 
             // ── Result panel ──────────────────────────────────────────────────
             _pnlTrainingResult = new Panel { Dock = DockStyle.Fill, Visible = false };
@@ -5086,13 +5233,21 @@ namespace ChessDroid
                 Dock = DockStyle.Top, Height = 34, FlatStyle = FlatStyle.Flat, Margin = new Padding(0, 6, 0, 0)
             };
             btnDone.Click += (_, _) => StopTraining();
+            _lblOpMissedMoves = new Label
+            {
+                Font = new Font("Courier New", 9f),
+                Dock = DockStyle.Top, Height = 48,
+                TextAlign = ContentAlignment.TopCenter,
+                Visible = false
+            };
             _pnlTrainingResult.Controls.AddRange(new Control[]
-                { btnDone, btnTryAgain, _lblTrainingPB, _lblTrainingFinalScore, lblComplete });
+                { btnDone, btnTryAgain, _lblOpMissedMoves, _lblTrainingPB, _lblTrainingFinalScore, lblComplete });
 
             _pnlTraining.Controls.AddRange(new Control[]
                 { _pnlTrainingStart, _pnlTrainingGame, _pnlTrainingResult });
             rightPanel.Controls.Add(_pnlTraining);
 
+            SetTrainingMode(false); // initialize Square mode as default
             ApplyTrainingTheme();
         }
 
@@ -5126,6 +5281,8 @@ namespace ChessDroid
         {
             _trainingClockTimer?.Stop();
             _trainingFlashTimer?.Stop();
+            _openingAutoplayTimer?.Stop();
+            _openingRecreatePhase = false;
 
             if (_trainingGameActive)
             {
@@ -5164,6 +5321,8 @@ namespace ChessDroid
         {
             _trainingClockTimer?.Stop();
             _trainingFlashTimer?.Stop();
+            _openingAutoplayTimer?.Stop();
+            _openingRecreatePhase = false;
 
             if (_trainingGameActive)
             {
@@ -5175,6 +5334,9 @@ namespace ChessDroid
                 _trainingPreFen = null;
                 _trainingGameActive = false;
             }
+
+            if (_lblOpGameStatus != null) _lblOpGameStatus.Visible = false;
+            if (_lblTrainingTimer != null) _lblTrainingTimer.Visible = true;
 
             _pnlTrainingStart!.Visible = true;
             _pnlTrainingGame!.Visible = false;
@@ -5191,6 +5353,12 @@ namespace ChessDroid
 
         private void TrainingStartRound()
         {
+            if (_openingModeSelected)
+            {
+                OpeningTrainingStart();
+                return;
+            }
+
             _trainingPreFen = boardControl.GetFEN();
             _trainingPreFlipped = boardControl.IsFlipped;
             _trainingQuestions   = (int)(_numQuestions?.Value ?? 10);
@@ -5367,8 +5535,335 @@ namespace ChessDroid
                 }
             }
 
+            if (_lblOpMissedMoves != null) _lblOpMissedMoves.Visible = false;
             _pnlTrainingGame!.Visible = false;
             _pnlTrainingResult!.Visible = true;
+
+            _ = TriggerAutoAnalysis();
+        }
+
+        // ── Opening Training ───────────────────────────────────────────────
+
+        private void SetTrainingMode(bool openingMode)
+        {
+            _openingModeSelected = openingMode;
+            if (_pnlSquareSettings != null) _pnlSquareSettings.Visible = !openingMode;
+            if (_pnlOpeningSettings != null) _pnlOpeningSettings.Visible = openingMode;
+            var scheme = ThemeService.GetColorScheme(config?.Theme ?? "Dark");
+            if (_btnSqMode != null)
+            {
+                _btnSqMode.BackColor = !openingMode ? scheme.TextColor : scheme.ButtonBackColor;
+                _btnSqMode.ForeColor = !openingMode ? scheme.FormBackColor : scheme.ButtonForeColor;
+            }
+            if (_btnOpMode != null)
+            {
+                _btnOpMode.BackColor = openingMode ? scheme.TextColor : scheme.ButtonBackColor;
+                _btnOpMode.ForeColor = openingMode ? scheme.FormBackColor : scheme.ButtonForeColor;
+            }
+        }
+
+        private void SelectOpeningForTraining()
+        {
+            string booksFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Books");
+            var entries = ChessDroid.Services.EcoBookService.LoadAll(booksFolder);
+            using var selDialog = new OpeningExplorerDialog(entries, pgn =>
+            {
+                // Parse ECO+name from PGN [Opening] tag: "[Opening "ECO — Name"]"
+                var match = System.Text.RegularExpressions.Regex.Match(pgn, @"\[Opening ""([^""]+)""\]");
+                if (match.Success)
+                {
+                    string openingTag = match.Groups[1].Value;
+                    int dash = openingTag.IndexOf(" — ", StringComparison.Ordinal); // em-dash
+                    if (dash >= 0)
+                    {
+                        string eco = openingTag.Substring(0, dash);
+                        string name = openingTag.Substring(dash + 3);
+                        _selectedTrainingOpening = entries.FirstOrDefault(e =>
+                            e.Eco == eco && e.Name == name) ?? entries.FirstOrDefault(e => e.Eco == eco);
+                    }
+                }
+                if (_selectedTrainingOpening != null && _lblSelectedOpening != null)
+                    _lblSelectedOpening.Text = $"{_selectedTrainingOpening.Eco}  {_selectedTrainingOpening.Name}";
+                if (_rbOpSelected != null) _rbOpSelected.Checked = true;
+            }, ThemeService.IsDarkTheme(config?.Theme));
+            selDialog.ShowDialog(this);
+        }
+
+        private void PrepareOpeningLine(string sanMoves)
+        {
+            _openingUciMoves.Clear();
+            _openingFens.Clear();
+
+            const string startFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+            _openingFens.Add(startFen);
+
+            string savedFen = boardControl.GetFEN();
+            bool savedNav = isNavigating;
+            isNavigating = true;
+
+            string currentFen = startFen;
+            var tokens = sanMoves.Split(new[] { ' ', '\t', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+                .Where(t => !System.Text.RegularExpressions.Regex.IsMatch(t, @"^\d+\.") &&
+                             t != "1-0" && t != "0-1" && t != "1/2-1/2" && t != "*")
+                .ToList();
+
+            foreach (var san in tokens)
+            {
+                string? uci = ConvertSanToUci(san, currentFen);
+                if (uci == null) break;
+
+                boardControl.LoadFEN(currentFen);
+                if (!boardControl.MakeMove(uci)) break;
+
+                currentFen = boardControl.GetFEN();
+                _openingUciMoves.Add(uci);
+                _openingFens.Add(currentFen);
+            }
+
+            boardControl.LoadFEN(savedFen);
+            isNavigating = savedNav;
+        }
+
+        private void OpeningTrainingStart()
+        {
+            OpeningEntry? entry;
+            if (_rbOpRandom?.Checked == true)
+            {
+                string booksFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Books");
+                var all = ChessDroid.Services.EcoBookService.LoadAll(booksFolder);
+                if (all.Count == 0) return;
+                entry = all[_trainingRng.Next(all.Count)];
+            }
+            else
+            {
+                if (_selectedTrainingOpening == null) { SelectOpeningForTraining(); if (_selectedTrainingOpening == null) return; }
+                entry = _selectedTrainingOpening;
+            }
+
+            PrepareOpeningLine(entry.Moves);
+            if (_openingUciMoves.Count == 0)
+            {
+                MessageBox.Show("Could not parse the opening line.", "Opening Training", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            _trainingPreFen = boardControl.GetFEN();
+            _trainingPreFlipped = boardControl.IsFlipped;
+            _selectedTrainingOpening = entry;
+            _selectedWatches = _rbWatches3?.Checked == true ? 3 : _rbWatches2?.Checked == true ? 2 : 1;
+            _openingWatchesLeft = _selectedWatches;
+
+            autoAnalysisCts?.Cancel();
+            _trainingGameActive = true;
+
+            _pnlTrainingStart!.Visible = false;
+            _pnlTrainingResult!.Visible = false;
+            _pnlTrainingGame!.Visible = true;
+
+            OpeningTrainingStartWatch();
+        }
+
+        private void OpeningTrainingStartWatch()
+        {
+            _openingPlayIndex = 0;
+            _openingRecreatePhase = false;
+            _openingAutoplayTimer?.Stop();
+
+            isNavigating = true;
+            boardControl.IsFlipped = false;
+            boardControl.LoadFEN(_openingFens[0]);
+            isNavigating = false;
+            boardControl.ClearTrainingHighlight();
+
+            if (_lblOpGameStatus != null) _lblOpGameStatus.Visible = true;
+            if (_lblTrainingTimer != null) _lblTrainingTimer.Visible = false;
+
+            UpdateOpeningWatchDisplay();
+            _openingAutoplayTimer?.Start();
+        }
+
+        private void OpeningAutoplayTimer_Tick(object? sender, EventArgs e)
+        {
+            if (_openingPlayIndex >= _openingUciMoves.Count)
+            {
+                _openingAutoplayTimer?.Stop();
+                _openingWatchesLeft--;
+
+                if (_openingWatchesLeft > 0)
+                    Task.Delay(800).ContinueWith(_ => { if (!IsDisposed) Invoke((Action)OpeningTrainingStartWatch); });
+                else
+                    Task.Delay(800).ContinueWith(_ => { if (!IsDisposed) Invoke((Action)OpeningTrainingStartRecreate); });
+                return;
+            }
+
+            string uci = _openingUciMoves[_openingPlayIndex];
+            string fen = _openingFens[_openingPlayIndex + 1];
+            string preFen = _openingFens[_openingPlayIndex];
+
+            string san = ConvertUciToSan(uci, preFen);
+
+            isNavigating = true;
+            boardControl.LoadFEN(fen);
+            isNavigating = false;
+
+            if (config?.ShowAnimations == true)
+                boardControl.StartAnimation(uci);
+            PlayMoveSound(san.Contains('x'), san);
+
+            // Highlight destination square
+            int toCol = uci[2] - 'a';
+            int toRow = 7 - (uci[3] - '1');
+            boardControl.SetTrainingHighlight(toRow, toCol, Color.FromArgb(180, 80, 180, 80));
+
+            if (_lblTrainingTarget != null) _lblTrainingTarget.Text = san;
+
+            _openingPlayIndex++;
+            UpdateOpeningWatchDisplay();
+        }
+
+        private void UpdateOpeningWatchDisplay()
+        {
+            int watchNum = _selectedWatches - _openingWatchesLeft + 1;
+            if (_lblTrainingRound != null)
+                _lblTrainingRound.Text = $"Watch  {watchNum} / {_selectedWatches}";
+            if (_lblTrainingScore != null)
+                _lblTrainingScore.Text = $"{_selectedTrainingOpening?.Eco}  {_selectedTrainingOpening?.Name}";
+            if (_lblOpGameStatus != null)
+                _lblOpGameStatus.Text = $"Move  {_openingPlayIndex} / {_openingUciMoves.Count}";
+            if (_openingPlayIndex == 0 && _lblTrainingTarget != null)
+                _lblTrainingTarget.Text = "…";
+        }
+
+        private void OpeningTrainingStartRecreate()
+        {
+            _openingRecreateIndex = 0;
+            _openingPosMistakes.Clear();
+            _openingRecreateLocked = false;
+            _openingRecreatePhase = true;
+            boardControl.ClearTrainingHighlight();
+
+            isNavigating = true;
+            boardControl.LoadFEN(_openingFens[0]);
+            isNavigating = false;
+
+            if (_lblTrainingRound != null) _lblTrainingRound.Text = "Recreate";
+            if (_lblTrainingTarget != null) _lblTrainingTarget.Text = "?";
+            if (_lblTrainingScore != null) _lblTrainingScore.Text = $"{_selectedTrainingOpening?.Eco}  {_selectedTrainingOpening?.Name}";
+            if (_lblOpGameStatus != null) _lblOpGameStatus.Text = $"Move  1 / {_openingUciMoves.Count}";
+        }
+
+        private void OpeningTrainingValidateMove(string uciMove)
+        {
+            if (_openingRecreateIndex >= _openingUciMoves.Count || _openingRecreateLocked) return;
+
+            string expected = _openingUciMoves[_openingRecreateIndex];
+            int toCol = uciMove[2] - 'a';
+            int toRow = 7 - (uciMove[3] - '1');
+
+            if (uciMove == expected)
+            {
+                _openingRecreateIndex++;
+                boardControl.SetTrainingHighlight(toRow, toCol, Color.FromArgb(175, 50, 205, 50));
+
+                if (_openingRecreateIndex >= _openingUciMoves.Count)
+                {
+                    // Last move — lock briefly then show result
+                    _openingRecreateLocked = true;
+                    Task.Delay(700).ContinueWith(_ => { if (!IsDisposed) Invoke((Action)OpeningTrainingEnd); });
+                }
+                else
+                {
+                    // Correct but not last — no lock, fast players continue immediately
+                    UpdateOpeningRecreateDisplay();
+                    Task.Delay(400).ContinueWith(_ =>
+                    {
+                        if (!IsDisposed) Invoke((Action)boardControl.ClearTrainingHighlight);
+                    });
+                }
+            }
+            else
+            {
+                _openingPosMistakes[_openingRecreateIndex] =
+                    _openingPosMistakes.GetValueOrDefault(_openingRecreateIndex) + 1;
+                _openingRecreateLocked = true;
+                boardControl.SetTrainingHighlight(toRow, toCol, Color.FromArgb(175, 215, 50, 50));
+
+                string correctFen = _openingFens[_openingRecreateIndex];
+                Task.Delay(600).ContinueWith(_ =>
+                {
+                    if (IsDisposed) return;
+                    Invoke(() =>
+                    {
+                        boardControl.ClearTrainingHighlight();
+                        isNavigating = true;
+                        boardControl.LoadFEN(correctFen);
+                        isNavigating = false;
+                        _openingRecreateLocked = false;
+                    });
+                });
+                UpdateOpeningRecreateDisplay();
+            }
+        }
+
+        private void UpdateOpeningRecreateDisplay()
+        {
+            int total = _openingUciMoves.Count;
+            int done = _openingRecreateIndex;
+            if (_lblOpGameStatus != null)
+                _lblOpGameStatus.Text = $"Move  {Math.Min(done + 1, total)} / {total}    ✗ {_openingPosMistakes.Count}";
+            if (_lblTrainingTarget != null)
+                _lblTrainingTarget.Text = "?";
+        }
+
+        private void OpeningTrainingEnd()
+        {
+            _openingAutoplayTimer?.Stop();
+            _openingRecreatePhase = false;
+            _openingRecreateLocked = false;
+            _trainingGameActive = false;
+
+            boardControl.ClearTrainingHighlight();
+            isNavigating = true;
+            boardControl.IsFlipped = _trainingPreFlipped;
+            if (_trainingPreFen != null) boardControl.LoadFEN(_trainingPreFen);
+            _trainingPreFen = null;
+            isNavigating = false;
+
+            int total = _openingUciMoves.Count;
+            int wrongPositions = _openingPosMistakes.Count;
+            int correct = total - wrongPositions;
+
+            if (_lblTrainingFinalScore != null)
+                _lblTrainingFinalScore.Text = $"{correct} / {total} correct"
+                    + (wrongPositions == 0 ? "  —  Perfect!" : "");
+            if (_lblTrainingPB != null)
+                _lblTrainingPB.Text = $"{_selectedTrainingOpening?.Eco}  {_selectedTrainingOpening?.Name}";
+
+            if (_lblOpMissedMoves != null)
+            {
+                if (wrongPositions == 0)
+                {
+                    _lblOpMissedMoves.Visible = false;
+                }
+                else
+                {
+                    var parts = _openingPosMistakes.OrderBy(kv => kv.Key).Select(kv =>
+                    {
+                        string san = ConvertUciToSan(_openingUciMoves[kv.Key], _openingFens[kv.Key]);
+                        int moveNum = kv.Key / 2 + 1;
+                        string prefix = kv.Key % 2 == 0 ? $"{moveNum}." : $"{moveNum}…";
+                        return $"{prefix}{san} ×{kv.Value}";
+                    });
+                    _lblOpMissedMoves.Text = "Missed:  " + string.Join("   ", parts);
+                    _lblOpMissedMoves.Visible = true;
+                }
+            }
+
+            _pnlTrainingGame!.Visible = false;
+            _pnlTrainingResult!.Visible = true;
+
+            if (_lblOpGameStatus != null) _lblOpGameStatus.Visible = false;
+            if (_lblTrainingTimer != null) _lblTrainingTimer.Visible = true;
 
             _ = TriggerAutoAnalysis();
         }
@@ -5380,6 +5875,7 @@ namespace ChessDroid
 
             _pnlTraining.BackColor = scheme.FormBackColor;
             ApplyThemeToChildren(_pnlTraining, scheme);
+            SetTrainingMode(_openingModeSelected); // re-apply mode button highlight with current theme
         }
 
         private void ApplyThemeToChildren(Control parent, ColorScheme scheme)
