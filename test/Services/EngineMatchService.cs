@@ -36,6 +36,10 @@ namespace ChessDroid.Services
         public ChessEngineService? AnnotatorEngine { get; set; }
         public int AnnotatorDepth { get; set; } = DefaultAnnotatorDepth;
         public const int DefaultAnnotatorDepth = 14;
+
+        // Time budget per position for match annotation (go movetime N).
+        // Bounded wall-clock time ensures the annotator always keeps up with fast games.
+        public const int AnnotatorMoveTimeMs = 500;
         private TaskCompletionSource<bool>? _animTcs;
 
         private readonly AppConfig config;
@@ -207,12 +211,12 @@ namespace ChessDroid.Services
                 // Measure thinking time
                 moveStopwatch.Restart();
 
-                // Get engine's move and evaluation
+                // Get engine's move — discard its self-reported eval (pre-move position,
+                // shallow depth). Annotator below provides the authoritative post-move eval.
                 string? bestMove;
-                string? moveEval;
                 try
                 {
-                    (bestMove, moveEval) = await activeEngine.GetMoveForMatchAsync(fen, goCommand, timeoutMs, ct);
+                    (bestMove, _) = await activeEngine.GetMoveForMatchAsync(fen, goCommand, timeoutMs, ct);
                 }
                 catch (OperationCanceledException)
                 {
@@ -301,15 +305,17 @@ namespace ChessDroid.Services
                 moveCount++;
 
                 // Re-evaluate the resulting position with the neutral annotator (Stockfish 18).
-                // Each playing engine reports its own score from its own perspective — those values
-                // differ between engines and zigzag on alternate moves. The annotator always
-                // evaluates from White's perspective at a fixed depth, giving a stable eval bar.
+                // The annotator always evaluates from White's perspective at a fixed time budget.
+                // If the annotator is busy (previous move still being annotated), we pass null —
+                // the eval bar holds its last correct value rather than showing a stale/wrong one.
                 string newFen = gameState.ToCompleteFEN();
+                string? moveEval = null;
+
                 if (AnnotatorEngine?.State == EngineState.Ready)
                 {
                     try
                     {
-                        string? annotatorEval = await AnnotatorEngine.GetPositionEvalAsync(newFen, AnnotatorDepth, ct);
+                        string? annotatorEval = await AnnotatorEngine.GetPositionEvalTimedAsync(newFen, AnnotatorMoveTimeMs, ct);
                         if (!string.IsNullOrEmpty(annotatorEval))
                             moveEval = annotatorEval;
                     }
@@ -317,10 +323,7 @@ namespace ChessDroid.Services
                     {
                         throw;
                     }
-                    catch
-                    {
-                        // Annotation failed — fall back to playing engine's eval
-                    }
+                    catch { }
                 }
 
                 OnMovePlayed?.Invoke(bestMove, newFen, moveTimeMs, moveEval);

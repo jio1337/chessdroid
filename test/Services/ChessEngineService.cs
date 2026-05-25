@@ -1057,6 +1057,95 @@ namespace ChessDroid.Services
             }
         }
 
+        /// <summary>
+        /// Evaluates a position using a fixed time budget (go movetime N).
+        /// Preferred over depth-based evaluation for match annotation — always finishes
+        /// within timeMsPerMove ms regardless of position complexity.
+        /// </summary>
+        public async Task<string?> GetPositionEvalTimedAsync(string fen, int timeMsPerMove, CancellationToken ct)
+        {
+            if (!IsEngineAlive() || State != EngineState.Ready)
+                return null;
+
+            bool whiteToMove = true;
+            var fenParts = fen.Split(_spaceSep, StringSplitOptions.RemoveEmptyEntries);
+            if (fenParts.Length >= 2)
+                whiteToMove = fenParts[1] == "w";
+
+            string? lastEval = null;
+
+            try
+            {
+                if (!await SyncWithEngineAsync())
+                    return null;
+
+                await SafeWriteLineAsync($"{UCI_CMD_SETOPTION} MultiPV value 1");
+                await SafeWriteLineAsync($"{UCI_CMD_POSITION} {ChessBoard.SanitizeFenForEngine(fen)}");
+
+                State = EngineState.Analyzing;
+                await SafeWriteLineAsync($"go movetime {timeMsPerMove}");
+
+                // Hard timeout = movetime + generous buffer for engine overhead
+                using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                cts.CancelAfter(timeMsPerMove + 2000);
+
+                while (IsEngineAlive())
+                {
+                    string? line = await engineOutput!.ReadLineAsync(cts.Token);
+                    if (line == null) continue;
+
+                    if (line.StartsWith(UCI_RESPONSE_INFO) && line.Contains(UCI_TOKEN_SCORE))
+                    {
+                        var tokens = line.Split(_spaceSep, StringSplitOptions.RemoveEmptyEntries);
+                        for (int i = 0; i < tokens.Length; i++)
+                        {
+                            if (tokens[i] == UCI_TOKEN_SCORE && i + 2 < tokens.Length)
+                            {
+                                if (tokens[i + 1] == UCI_TOKEN_CP && double.TryParse(tokens[i + 2], out double cp))
+                                {
+                                    double displayCp = whiteToMove ? cp : -cp;
+                                    lastEval = (displayCp / 100.0 >= 0 ? "+" : "") +
+                                               (displayCp / 100.0).ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
+                                }
+                                else if (tokens[i + 1] == UCI_TOKEN_MATE && int.TryParse(tokens[i + 2], out int mateIn))
+                                {
+                                    int displayMate = whiteToMove ? mateIn : -mateIn;
+                                    lastEval = displayMate > 0 ? $"Mate in +{displayMate}" :
+                                               displayMate < 0 ? $"Mate in {displayMate}" : "Mate in 0";
+                                }
+                                break;
+                            }
+                        }
+                    }
+                    else if (line.StartsWith(UCI_RESPONSE_BESTMOVE))
+                    {
+                        State = EngineState.Ready;
+                        return lastEval;
+                    }
+                }
+
+                State = EngineState.Error;
+                return null;
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                State = EngineState.Error;
+                throw;
+            }
+            catch (OperationCanceledException)
+            {
+                Debug.WriteLine("GetPositionEvalTimedAsync: Timed out");
+                State = EngineState.Error;
+                return lastEval;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"GetPositionEvalTimedAsync: Error - {ex.Message}");
+                State = EngineState.Error;
+                return null;
+            }
+        }
+
         public async Task SetSkillLevelAsync(int level)
         {
             if (!IsEngineAlive() || State != EngineState.Ready) return;

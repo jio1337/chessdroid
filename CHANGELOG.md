@@ -10,7 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [3.15.0] - 2026-05-25
 
 ### Added
-- **Sound Effects** — Move, capture, check, checkmate/game-over, and castle sounds. Double-tap move sound with 70ms gap for castling. Toggleable via Settings → Sound Effects.
+- **Board Visual Effects** — New Settings → Board Effects group: gradient square fill (soft 3D look), vignette overlay (adjustable alpha), piece glow, and a board frame with configurable width and color picker.
+- **9 New Piece Sets** — anarcandy, chess7, chessnut, companion, fresca, gioco, icpieces, leipzig, letter. Total now 22 sets.
+- **Custom Board Color Presets** — New presets: Pink Soldier, Space Traveler, Atlantis, Sungrass, Walnut, Arctic alongside the existing defaults.
+- **Square Training (Beta)** — Built-in square recognition trainer. Practice naming squares under time pressure, track personal bests per mode.
+- **Sound Effects** — Move, capture, check, checkmate/game-over, and castle sounds. Castle plays a satisfying double-tap with 70ms gap. Toggleable via Settings → Sound Effects.
 - **Live Hover Preview** — Hovering over the piece set or board color dropdowns instantly previews the change on the board. Selecting commits; pressing Escape or clicking away reverts.
 
 ### Fixed
