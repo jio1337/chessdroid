@@ -1,4 +1,4 @@
-## ChessDroid v3.14.0 — User Guide
+## ChessDroid v3.15.0 — User Guide
 
 ### Welcome to ChessDroid!
 
@@ -367,7 +367,12 @@ Create a folder in `Templates/` with 12 PNG files (wK, wQ, wR, wB, wN, wP, bK, b
 
 ## Version History
 
-**v3.14.0** — Theme Suite & Engine Ladder (Current)
+**v3.15.0** — Miami Nightclub (Current)
+- Sound effects — move, capture, check, game-over, castle
+- Live hover preview for piece set and board color dropdowns
+- Checkmate detection fix, combo selection revert fix
+
+**v3.14.0** — Theme Suite & Engine Ladder
 - 6 UI themes: Dark, Light, Cyberpunk, Dracula, Nord, Sepia
 - Chessdroid Rating — persistent K=32 engine ladder, seeds from CCRL
 - Resizable Board | Moves | Analysis panels with saved splitter positions
@@ -535,5 +540,5 @@ ChessDroid is released under the MIT License. Free and open-source forever!
 
 **Enjoy analyzing with ChessDroid!**
 
-*Last Updated: 2026-05-23*
-*Version: 3.14.0*
+*Last Updated: 2026-05-25*
+*Version: 3.15.0*

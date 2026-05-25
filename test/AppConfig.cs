@@ -62,6 +62,9 @@ namespace ChessDroid
         public int BoardFrameWidth { get; set; } = 26;
         public string BoardFrameColor { get; set; } = "#503219";
 
+        // Sound effects
+        public bool SoundEffectsEnabled { get; set; } = true;
+
         // Explanation settings
         public bool ShowTacticalAnalysis { get; set; } = true; // Show tactical patterns
         public bool ShowPositionalAnalysis { get; set; } = true; // Show positional evaluation
@@ -239,6 +242,7 @@ namespace ChessDroid
             BoardFrame = other.BoardFrame;
             BoardFrameWidth = other.BoardFrameWidth;
             BoardFrameColor = other.BoardFrameColor;
+            SoundEffectsEnabled = other.SoundEffectsEnabled;
 
             OpeningBooksFolder = other.OpeningBooksFolder;
             UseOpeningBook = other.UseOpeningBook;

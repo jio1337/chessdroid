@@ -530,7 +530,7 @@ namespace ChessDroid
             toolTip.SetToolTip(btnAutoPlay, "Auto-play");
             toolTip.SetToolTip(btnPlayBot,  "Play vs Bot");
             toolTip.SetToolTip(btnEditPosition, "Edit Position");
-            toolTip.SetToolTip(btnTraining, "Square Training");
+            toolTip.SetToolTip(btnTraining, "Square Training (Beta)");
             toolTip.SetToolTip(btnSettings, "Settings");
             toolTip.SetToolTip(btnSaveToLibrary, "Save current game to library");
             toolTip.SetToolTip(btnOpenLibrary, "Open game library");
@@ -819,7 +819,7 @@ namespace ChessDroid
             MinimumSize = new Size(1000, 600);
             Name = "AnalysisBoardForm";
             StartPosition = FormStartPosition.CenterScreen;
-            Text = "chessdroid v3.14.0";
+            Text = "chessdroid v3.15.0";
             KeyDown += AnalysisBoardForm_KeyDown;
             outerSplit.Panel1.ResumeLayout(false);
             outerSplit.Panel2.ResumeLayout(false);

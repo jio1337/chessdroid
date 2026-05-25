@@ -33,15 +33,7 @@ namespace ChessDroid
             this.onConfigChanged = onConfigChanged;
             InitializeComponent();
 
-            PopulateColorPresets();
             LoadSettings();
-        }
-
-        private void PopulateColorPresets()
-        {
-            cmbColorPreset.Items.Clear();
-            foreach (var (name, _, _) in ColorPresets)
-                cmbColorPreset.Items.Add(name);
         }
 
         private void PopulateEnginesComboBox()
@@ -107,10 +99,6 @@ namespace ChessDroid
             // Board colors
             try { btnLightColor.BackColor = ColorTranslator.FromHtml(config.LightSquareColor); } catch { btnLightColor.BackColor = Color.FromArgb(240, 217, 181); }
             try { btnDarkColor.BackColor = ColorTranslator.FromHtml(config.DarkSquareColor); } catch { btnDarkColor.BackColor = Color.FromArgb(181, 136, 99); }
-            int presetMatch = Array.FindIndex(ColorPresets, p =>
-                string.Equals(p.Light, config.LightSquareColor, StringComparison.OrdinalIgnoreCase) &&
-                string.Equals(p.Dark, config.DarkSquareColor, StringComparison.OrdinalIgnoreCase));
-            cmbColorPreset.SelectedIndex = presetMatch;
             chkSquareLabels.Checked = config.ShowSquareLabels;
             chkThreatArrows.Checked = config.ShowThreatArrows;
             chkLastMoveHighlight.Checked = config.ShowLastMoveHighlight;
@@ -130,6 +118,9 @@ namespace ChessDroid
             chkBoardFrame.Checked = config.BoardFrame;
             try { btnFrameColor.BackColor = ColorTranslator.FromHtml(config.BoardFrameColor); }
             catch { btnFrameColor.BackColor = Color.FromArgb(80, 50, 25); }
+
+            // Sound effects
+            chkSoundEffects.Checked = config.SoundEffectsEnabled;
 
             // Explanation settings
             chkTactical.Checked = config.ShowTacticalAnalysis;
@@ -200,6 +191,7 @@ namespace ChessDroid
             config.PieceGlow = chkPieceGlow.Checked;
             config.BoardFrame = chkBoardFrame.Checked;
             config.BoardFrameColor = ColorTranslator.ToHtml(btnFrameColor.BackColor);
+            config.SoundEffectsEnabled = chkSoundEffects.Checked;
 
             // Save explanation settings
             config.ShowTacticalAnalysis = chkTactical.Checked;
@@ -294,22 +286,6 @@ namespace ChessDroid
             using var dlg = new ColorDialog { Color = btnFrameColor.BackColor, FullOpen = true };
             if (dlg.ShowDialog(this) == DialogResult.OK)
                 btnFrameColor.BackColor = dlg.Color;
-        }
-
-        private void BtnResetColors_Click(object? sender, EventArgs e)
-        {
-            btnLightColor.BackColor = Color.FromArgb(240, 217, 181);
-            btnDarkColor.BackColor = Color.FromArgb(181, 136, 99);
-            cmbColorPreset.SelectedIndex = -1;
-        }
-
-        private void CmbColorPreset_SelectedIndexChanged(object? sender, EventArgs e)
-        {
-            int idx = cmbColorPreset.SelectedIndex;
-            if (idx < 0 || idx >= ColorPresets.Length) return;
-            var (_, light, dark) = ColorPresets[idx];
-            btnLightColor.BackColor = ColorTranslator.FromHtml(light);
-            btnDarkColor.BackColor = ColorTranslator.FromHtml(dark);
         }
 
         private void CmbTheme_SelectedIndexChanged(object? sender, EventArgs e)
@@ -414,12 +390,6 @@ namespace ChessDroid
                 lblLightSquares.BackColor = Color.FromArgb(45, 45, 48);
                 lblDarkSquares.ForeColor = Color.White;
                 lblDarkSquares.BackColor = Color.FromArgb(45, 45, 48);
-                lblColorPreset.ForeColor = Color.White;
-                lblColorPreset.BackColor = Color.FromArgb(45, 45, 48);
-                cmbColorPreset.BackColor = Color.FromArgb(60, 60, 65);
-                cmbColorPreset.ForeColor = Color.White;
-                btnResetColors.ForeColor = Color.White;
-                btnResetColors.BackColor = Color.FromArgb(60, 60, 65);
                 lblSquareLabels.ForeColor = Color.White;
                 lblSquareLabels.BackColor = Color.FromArgb(45, 45, 48);
                 chkSquareLabels.ForeColor = Color.White;
@@ -460,6 +430,10 @@ namespace ChessDroid
                     if (ctrl is CheckBox chk2) { chk2.ForeColor = Color.White; chk2.BackColor = Color.FromArgb(45, 45, 48); }
                     else if (ctrl is NumericUpDown num2) { num2.ForeColor = Color.White; num2.BackColor = Color.FromArgb(60, 60, 65); }
                 }
+                grpSounds.ForeColor = Color.White;
+                grpSounds.BackColor = Color.FromArgb(45, 45, 48);
+                chkSoundEffects.ForeColor = Color.White;
+                chkSoundEffects.BackColor = Color.FromArgb(45, 45, 48);
 
                 // Play Style GroupBox
                 grpLc0Features.ForeColor = Color.Cyan;
@@ -590,12 +564,6 @@ namespace ChessDroid
                 lblLightSquares.BackColor = Color.WhiteSmoke;
                 lblDarkSquares.ForeColor = Color.Black;
                 lblDarkSquares.BackColor = Color.WhiteSmoke;
-                lblColorPreset.ForeColor = Color.Black;
-                lblColorPreset.BackColor = Color.WhiteSmoke;
-                cmbColorPreset.BackColor = Color.White;
-                cmbColorPreset.ForeColor = Color.Black;
-                btnResetColors.ForeColor = Color.DarkSlateGray;
-                btnResetColors.BackColor = Color.Gainsboro;
                 lblSquareLabels.ForeColor = Color.Black;
                 lblSquareLabels.BackColor = Color.WhiteSmoke;
                 chkSquareLabels.ForeColor = Color.Black;
@@ -637,6 +605,10 @@ namespace ChessDroid
                     if (ctrl is CheckBox chk2) { chk2.ForeColor = Color.Black; chk2.BackColor = Color.WhiteSmoke; }
                     else if (ctrl is NumericUpDown num2) { num2.ForeColor = Color.Black; num2.BackColor = Color.White; }
                 }
+                grpSounds.ForeColor = Color.Black;
+                grpSounds.BackColor = Color.WhiteSmoke;
+                chkSoundEffects.ForeColor = Color.Black;
+                chkSoundEffects.BackColor = Color.WhiteSmoke;
 
                 // Play Style GroupBox
                 grpLc0Features.ForeColor = Color.DarkCyan;

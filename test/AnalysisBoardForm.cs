@@ -101,10 +101,24 @@ namespace ChessDroid
         [DllImport("user32.dll")] private static extern int SendMessage(IntPtr hWnd, int msg, int wParam, int lParam);
         private const int LB_GETCURSEL = 0x0188;
         private string _hoverPreviewSaved = "";
-        private bool _dropDownOpen = false;
-        private bool _dropDownCommitted = false;
-        private bool _restoringPreview = false;
+        private int    _pieceSavedIndex = -1;
         private System.Windows.Forms.Timer? _hoverPreviewTimer;
+
+        // Board color hover preview
+        private string _boardColorSavedLight = "";
+        private string _boardColorSavedDark = "";
+        private bool _boardColorSavedRainbow = false;
+        private bool _boardColorSavedWave = false;
+        private int  _boardColorSavedIndex = -1;
+        private bool _restoringBoardColor = false;
+        private System.Windows.Forms.Timer? _boardColorHoverTimer;
+
+        // Sound effects
+        private System.Media.SoundPlayer? _sndMove;
+        private System.Media.SoundPlayer? _sndCapture;
+        private System.Media.SoundPlayer? _sndCheck;
+        private System.Media.SoundPlayer? _sndGameOver;
+        private bool _gameOverSoundPlayed = false;
 
         // Console font (managed here to allow proper disposal on change)
         private Font _consoleFont = new Font("Consolas", 10f);
@@ -159,6 +173,7 @@ namespace ChessDroid
             boardControl.ShowLastMoveHighlight = config.ShowLastMoveHighlight;
             boardControl.AnimationDurationMs = config.AnimationDurationMs;
             ApplyBoardFxFromConfig();
+            InitializeSounds();
             InitializeServices();
             InitializeMatchControls();
             PopulatePiecesComboBox();
@@ -351,6 +366,85 @@ namespace ChessDroid
                 oldFont?.Dispose();
         }
 
+        private void InitializeSounds()
+        {
+            string audioDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Audio");
+            TryLoadSound(ref _sndMove,     Path.Combine(audioDir, "piece_move.wav"),  gainFactor: 1.5f);
+            TryLoadSound(ref _sndCapture,  Path.Combine(audioDir, "piece_take.wav"),  gainFactor: 1.0f);
+            TryLoadSound(ref _sndCheck,    Path.Combine(audioDir, "piece_check.wav"), gainFactor: 1.0f);
+            TryLoadSound(ref _sndGameOver, Path.Combine(audioDir, "game_over.wav"),   gainFactor: 1.0f);
+        }
+
+        private static void TryLoadSound(ref System.Media.SoundPlayer? player, string path, float gainFactor = 1.0f)
+        {
+            if (!File.Exists(path)) return;
+            try
+            {
+                byte[] data = File.ReadAllBytes(path);
+                if (gainFactor != 1.0f) AmplifyWav(data, gainFactor);
+                player = new System.Media.SoundPlayer(new MemoryStream(data));
+                player.Load();
+            }
+            catch { player = null; }
+        }
+
+        // Amplifies 16-bit PCM WAV samples in-place. Silently no-ops for non-16-bit files.
+        private static void AmplifyWav(byte[] wav, float gain)
+        {
+            if (wav.Length < 44) return;
+            short bitsPerSample = 16;
+            int dataStart = -1, dataSize = 0;
+            int i = 12;
+            while (i < wav.Length - 8)
+            {
+                string id = System.Text.Encoding.ASCII.GetString(wav, i, 4);
+                int size = BitConverter.ToInt32(wav, i + 4);
+                if (id == "fmt " && size >= 16)
+                    bitsPerSample = BitConverter.ToInt16(wav, i + 22);
+                else if (id == "data") { dataStart = i + 8; dataSize = size; break; }
+                i += 8 + size + (size % 2);
+            }
+            if (dataStart < 0 || bitsPerSample != 16) return;
+            int dataEnd = Math.Min(dataStart + dataSize, wav.Length);
+            for (int j = dataStart; j < dataEnd - 1; j += 2)
+            {
+                short sample = BitConverter.ToInt16(wav, j);
+                short boosted = (short)Math.Clamp(sample * gain, short.MinValue, short.MaxValue);
+                wav[j]     = (byte)(boosted & 0xFF);
+                wav[j + 1] = (byte)((boosted >> 8) & 0xFF);
+            }
+        }
+
+        private void PlayMoveSound(bool isCapture, string san)
+        {
+            if (!config.SoundEffectsEnabled) return;
+            try
+            {
+                if (san.EndsWith('#'))
+                {
+                    _gameOverSoundPlayed = true;
+                    _sndGameOver?.Play();
+                }
+                else if (san.EndsWith('+'))    _sndCheck?.Play();
+                else if (san.StartsWith("O-O"))
+                {
+                    _sndMove?.Play();
+                    Task.Delay(70).ContinueWith(_ => _sndMove?.Play());
+                }
+                else if (isCapture)            _sndCapture?.Play();
+                else                           _sndMove?.Play();
+            }
+            catch { }
+        }
+
+        private void PlayGameEndSound()
+        {
+            if (!config.SoundEffectsEnabled) return;
+            if (_gameOverSoundPlayed) { _gameOverSoundPlayed = false; return; }
+            try { _sndGameOver?.Play(); }
+            catch { }
+        }
+
         private void InitializeServices()
         {
             // Initialize console formatter for analysis output
@@ -442,9 +536,6 @@ namespace ChessDroid
 
         private void CmbPieces_SelectedIndexChanged(object? sender, EventArgs e)
         {
-            if (_restoringPreview) return;
-            if (_dropDownOpen) _dropDownCommitted = true;
-
             string? selectedTemplate = cmbPieces.SelectedItem?.ToString();
             if (!string.IsNullOrEmpty(selectedTemplate))
             {
@@ -463,8 +554,7 @@ namespace ChessDroid
         private void CmbPieces_DropDown(object? sender, EventArgs e)
         {
             _hoverPreviewSaved = cmbPieces.SelectedItem?.ToString() ?? "";
-            _dropDownOpen = true;
-            _dropDownCommitted = false;
+            _pieceSavedIndex   = cmbPieces.SelectedIndex;
             _hoverPreviewTimer?.Start();
         }
 
@@ -484,17 +574,16 @@ namespace ChessDroid
         private void CmbPieces_DropDownClosed(object? sender, EventArgs e)
         {
             _hoverPreviewTimer?.Stop();
-            _dropDownOpen = false;
 
-            if (!_dropDownCommitted && !string.IsNullOrEmpty(_hoverPreviewSaved))
+            // If index changed, user committed — SelectedIndexChanged will apply and save
+            if (cmbPieces.SelectedIndex != _pieceSavedIndex) return;
+
+            // User cancelled — revert board visuals (combo is already at saved index)
+            if (!string.IsNullOrEmpty(_hoverPreviewSaved))
             {
-                // User closed without clicking — restore original set
                 boardControl.SetTemplateSet(_hoverPreviewSaved);
                 _materialTop?.SetTemplateSet(_hoverPreviewSaved);
                 _materialBottom?.SetTemplateSet(_hoverPreviewSaved);
-                _restoringPreview = true;
-                cmbPieces.SelectedItem = _hoverPreviewSaved;
-                _restoringPreview = false;
             }
         }
 
@@ -512,6 +601,17 @@ namespace ChessDroid
 
         private void PopulateBoardColorComboBox()
         {
+            cmbBoardColor.DropDown     -= CmbBoardColor_DropDown;
+            cmbBoardColor.DropDownClosed -= CmbBoardColor_DropDownClosed;
+            cmbBoardColor.DropDown     += CmbBoardColor_DropDown;
+            cmbBoardColor.DropDownClosed += CmbBoardColor_DropDownClosed;
+
+            if (_boardColorHoverTimer == null)
+            {
+                _boardColorHoverTimer = new System.Windows.Forms.Timer { Interval = 50 };
+                _boardColorHoverTimer.Tick += BoardColorHoverTimer_Tick;
+            }
+
             cmbBoardColor.Items.Clear();
             foreach (var (name, _, _) in SettingsForm.ColorPresets)
                 cmbBoardColor.Items.Add(name);
@@ -533,31 +633,77 @@ namespace ChessDroid
 
         private void CmbBoardColor_SelectedIndexChanged(object? sender, EventArgs e)
         {
+            if (_restoringBoardColor) return;
+
             int idx = cmbBoardColor.SelectedIndex;
             if (idx < 0) return;
 
+            ApplyBoardColorPreview(idx);
+
+            // Always save on real selection — hover never fires SelectedIndexChanged
+            if (config != null)
+            {
+                if (idx < SettingsForm.ColorPresets.Length)
+                {
+                    var (_, light, dark) = SettingsForm.ColorPresets[idx];
+                    config.LightSquareColor = light;
+                    config.DarkSquareColor  = dark;
+                }
+                config.Save();
+            }
+        }
+
+        private void ApplyBoardColorPreview(int idx)
+        {
             if (idx == SettingsForm.ColorPresets.Length)
             {
                 boardControl.RainbowMode = true;
                 return;
             }
-
             if (idx == SettingsForm.ColorPresets.Length + 1)
             {
                 boardControl.WaveMode = true;
                 return;
             }
-
             boardControl.RainbowMode = false;
-            boardControl.WaveMode = false;
+            boardControl.WaveMode    = false;
             var (_, light, dark) = SettingsForm.ColorPresets[idx];
             boardControl.SetSquareColors(ColorTranslator.FromHtml(light), ColorTranslator.FromHtml(dark));
-            if (config != null)
-            {
-                config.LightSquareColor = light;
-                config.DarkSquareColor  = dark;
-                config.Save();
-            }
+        }
+
+        private void CmbBoardColor_DropDown(object? sender, EventArgs e)
+        {
+            _boardColorSavedLight   = config.LightSquareColor;
+            _boardColorSavedDark    = config.DarkSquareColor;
+            _boardColorSavedRainbow = boardControl.RainbowMode;
+            _boardColorSavedWave    = boardControl.WaveMode;
+            _boardColorSavedIndex = cmbBoardColor.SelectedIndex;
+            _boardColorHoverTimer?.Start();
+        }
+
+        private void BoardColorHoverTimer_Tick(object? sender, EventArgs e)
+        {
+            var info = new COMBOBOXINFO { cbSize = Marshal.SizeOf<COMBOBOXINFO>() };
+            if (!GetComboBoxInfo(cmbBoardColor.Handle, ref info) || info.hwndList == IntPtr.Zero) return;
+            int idx = SendMessage(info.hwndList, LB_GETCURSEL, 0, 0);
+            if (idx < 0 || idx >= cmbBoardColor.Items.Count) return;
+            ApplyBoardColorPreview(idx);
+        }
+
+        private void CmbBoardColor_DropDownClosed(object? sender, EventArgs e)
+        {
+            _boardColorHoverTimer?.Stop();
+
+            // If the selected index changed, user committed — SelectedIndexChanged will save it
+            if (cmbBoardColor.SelectedIndex != _boardColorSavedIndex) return;
+
+            // User closed without committing — revert board visuals only (combo is already at saved index)
+            boardControl.RainbowMode = _boardColorSavedRainbow;
+            boardControl.WaveMode    = _boardColorSavedWave;
+            if (!_boardColorSavedRainbow && !_boardColorSavedWave)
+                boardControl.SetSquareColors(
+                    ColorTranslator.FromHtml(_boardColorSavedLight),
+                    ColorTranslator.FromHtml(_boardColorSavedDark));
         }
 
         private void InitializeMatchControls()
@@ -748,6 +894,9 @@ namespace ChessDroid
 
             // Convert UCI to SAN for display
             string san = ConvertUciToSan(e.UciMove, moveTree.CurrentNode.FEN);
+
+            // Sound: checkmate (#) → game over, check (+) → check, capture → take, else → move
+            PlayMoveSound(e.IsCapture, san);
 
             // Add move to tree (handles variations automatically)
             moveTree.AddMove(e.UciMove, san, e.FEN);
@@ -977,6 +1126,8 @@ namespace ChessDroid
                     SetLastMoveHighlight();
                     if (config?.ShowAnimations == true && !string.IsNullOrEmpty(moveTree.CurrentNode.UciMove))
                         boardControl.StartAnimation(moveTree.CurrentNode.UciMove);
+                    string navSan = moveTree.CurrentNode.SanMove;
+                    PlayMoveSound(navSan.Contains('x'), navSan);
                     UpdateMoveAnnotation(moveTree.CurrentNode);
                     UpdateFenDisplay();
                     UpdateTurnLabel();
@@ -1785,6 +1936,8 @@ namespace ChessDroid
                 string san = ConvertUciToSan(uciMove, fenBeforeMove);
                 string newFen = boardControl.GetFEN();
 
+                PlayMoveSound(san.Contains('x'), san);
+
                 // Check for brilliant move
                 string brilliantSymbol = "";
                 string? brilliantExplanation = null;
@@ -1929,11 +2082,17 @@ namespace ChessDroid
             {
                 evalBar?.SetTerminalMate(true);
                 boardControl.TriggerParticles();
+                PlayGameEndSound();
             }
             else if (result.Outcome == MatchOutcome.BlackWins)
             {
                 evalBar?.SetTerminalMate(false);
                 boardControl.TriggerParticles();
+                PlayGameEndSound();
+            }
+            else
+            {
+                PlayGameEndSound();
             }
 
             // Re-enable controls
@@ -2269,6 +2428,7 @@ namespace ChessDroid
 
             analysisOutput.AppendText($"\n{result}\n");
             if (inCheck) boardControl.TriggerParticles();
+            PlayGameEndSound();
             boardControl.InteractionEnabled = false;
             btnPlayBot.Text = "♞";
             toolTip.SetToolTip(btnPlayBot, "Play vs Bot");
@@ -2612,6 +2772,7 @@ namespace ChessDroid
                             evalBar?.Reset();
                             lblStatus.Text = "Stalemate — Draw";
                         }
+                        PlayGameEndSound();
                         return;
                     }
                     if (!ct.IsCancellationRequested && !string.IsNullOrEmpty(lastBestMove))
@@ -2690,6 +2851,7 @@ namespace ChessDroid
                         evalBar?.Reset();
                         lblStatus.Text = "Stalemate — Draw";
                     }
+                    PlayGameEndSound();
                     return;
                 }
 
@@ -4750,7 +4912,7 @@ namespace ChessDroid
             _pnlTrainingStart = new Panel { Dock = DockStyle.Fill };
             var lblTitle = new Label
             {
-                Text = "Square Training",
+                Text = "Square Training (Beta)",
                 Font = new Font("Courier New", 17f, FontStyle.Bold),
                 Dock = DockStyle.Top, Height = 38, TextAlign = ContentAlignment.MiddleLeft
             };
@@ -4965,7 +5127,7 @@ namespace ChessDroid
             if (_evalGraph != null) _evalGraph.Visible = config?.ShowEvalGraph ?? true;
 
             btnTraining.Text = "♟";
-            toolTip.SetToolTip(btnTraining, "Square Training");
+            toolTip.SetToolTip(btnTraining, "Square Training (Beta)");
             SetTrainingButtonsEnabled(true);
 
             _ = TriggerAutoAnalysis();

@@ -152,9 +152,8 @@ namespace ChessDroid.Services
         }
 
         /// <summary>
-        /// Simplified checkmate detection: king is in check with no escape square.
-        /// Does not check blocking or capturing the attacker — accurate enough for notation (#/+)
-        /// and for detected-game-over situations where the engine already confirmed (none).
+        /// Full checkmate detection: king is in check with no legal move for any piece
+        /// (king escapes, captures of attacker, and blocking interpositions).
         /// </summary>
         public static bool IsKingMated(ChessBoard board, bool kingIsWhite)
         {
@@ -162,21 +161,66 @@ namespace ChessDroid.Services
             if (kingRow < 0) return false;
             if (!IsSquareAttackedBy(board, kingRow, kingCol, !kingIsWhite)) return false;
 
-            char king = kingIsWhite ? 'K' : 'k';
-            for (int dr = -1; dr <= 1; dr++)
-            for (int dc = -1; dc <= 1; dc++)
+            // Try every piece of the side in check — if any move removes the check, not mated
+            for (int fr = 0; fr < 8; fr++)
+            for (int fc = 0; fc < 8; fc++)
             {
-                if (dr == 0 && dc == 0) continue;
-                int nr = kingRow + dr, nc = kingCol + dc;
-                if (nr < 0 || nr > 7 || nc < 0 || nc > 7) continue;
-                char target = board.GetPiece(nr, nc);
-                if (target != '.' && char.IsUpper(target) == kingIsWhite) continue; // own piece blocks
-                var test = new ChessBoard(board.GetArray());
-                test.SetPiece(kingRow, kingCol, '.');
-                test.SetPiece(nr, nc, king);
-                if (!IsSquareAttackedBy(test, nr, nc, !kingIsWhite)) return false; // escape exists
+                char piece = board.GetPiece(fr, fc);
+                if (piece == '.') continue;
+                if (char.IsUpper(piece) != kingIsWhite) continue;
+
+                for (int tr = 0; tr < 8; tr++)
+                for (int tc = 0; tc < 8; tc++)
+                {
+                    if (!CanPseudoMove(board, fr, fc, piece, tr, tc, kingIsWhite)) continue;
+
+                    // Apply move on a scratch board and test if king is still in check
+                    var test = new ChessBoard(board.GetArray());
+                    test.SetPiece(fr, fc, '.');
+                    test.SetPiece(tr, tc, piece);
+
+                    int kr = (piece == 'K' || piece == 'k') ? tr : kingRow;
+                    int kc = (piece == 'K' || piece == 'k') ? tc : kingCol;
+                    if (!IsSquareAttackedBy(test, kr, kc, !kingIsWhite)) return false;
+                }
             }
             return true;
+        }
+
+        // Returns true if piece at (fr,fc) can pseudo-legally move to (tr,tc)
+        // (piece movement rules only — does not check for leaving king in check).
+        private static bool CanPseudoMove(ChessBoard board, int fr, int fc, char piece, int tr, int tc, bool isWhite)
+        {
+            if (tr == fr && tc == fc) return false;
+            char target = board.GetPiece(tr, tc);
+            if (target != '.' && char.IsUpper(target) == isWhite) return false; // own piece
+
+            char p = char.ToLower(piece);
+            switch (p)
+            {
+                case 'p':
+                    int dir = isWhite ? -1 : 1;
+                    if (tc == fc && target == '.')
+                    {
+                        if (tr == fr + dir) return true;
+                        int startRank = isWhite ? 6 : 1;
+                        if (fr == startRank && tr == fr + 2 * dir && board.GetPiece(fr + dir, fc) == '.') return true;
+                    }
+                    return tr == fr + dir && Math.Abs(tc - fc) == 1 && target != '.';
+                case 'n':
+                    int dr = Math.Abs(tr - fr), dc = Math.Abs(tc - fc);
+                    return (dr == 2 && dc == 1) || (dr == 1 && dc == 2);
+                case 'b':
+                    return IsDiagonalClear(board, fr, fc, tr, tc);
+                case 'r':
+                    return IsLineClear(board, fr, fc, tr, tc);
+                case 'q':
+                    return IsDiagonalClear(board, fr, fc, tr, tc) || IsLineClear(board, fr, fc, tr, tc);
+                case 'k':
+                    return Math.Abs(tr - fr) <= 1 && Math.Abs(tc - fc) <= 1;
+                default:
+                    return false;
+            }
         }
 
         // =============================

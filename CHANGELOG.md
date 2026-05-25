@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [3.15.0] - 2026-05-25
+
+### Added
+- **Sound Effects** — Move, capture, check, checkmate/game-over, and castle sounds. Double-tap move sound with 70ms gap for castling. Toggleable via Settings → Sound Effects.
+- **Live Hover Preview** — Hovering over the piece set or board color dropdowns instantly previews the change on the board. Selecting commits; pressing Escape or clicking away reverts.
+
+### Fixed
+- **Checkmate detection** — `IsKingMated` now correctly checks all pseudo-legal moves (not just king escapes), eliminating false `#` annotations on positions that are merely check.
+- **Board color & piece set selection** — Selecting from either dropdown no longer reverts to the previous value. Fixed event-ordering issue where `DropDownClosed` (CBN_CLOSEUP) fired before `SelectedIndexChanged` (CBN_SELCHANGE) for `DropDownList` style combos.
+
+---
+
 ## [3.14.0] - 2026-05-23
 
 ### Added

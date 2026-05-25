@@ -64,6 +64,13 @@
     </None>
   </ItemGroup>
 
+  <!-- Copy sound effects to output -->
+  <ItemGroup>
+    <None Include="Audio\**\*.*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
   <ItemGroup>
     <None Include="Engines\**\*.*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
