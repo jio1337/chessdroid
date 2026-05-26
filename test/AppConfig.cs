@@ -65,6 +65,9 @@ namespace ChessDroid
         // Sound effects
         public bool SoundEffectsEnabled { get; set; } = true;
 
+        // Training records
+        public int PuzzleRushBest { get; set; } = 0;
+
         // Explanation settings
         public bool ShowTacticalAnalysis { get; set; } = true; // Show tactical patterns
         public bool ShowPositionalAnalysis { get; set; } = true; // Show positional evaluation
@@ -243,6 +246,7 @@ namespace ChessDroid
             BoardFrameWidth = other.BoardFrameWidth;
             BoardFrameColor = other.BoardFrameColor;
             SoundEffectsEnabled = other.SoundEffectsEnabled;
+            PuzzleRushBest      = other.PuzzleRushBest;
 
             OpeningBooksFolder = other.OpeningBooksFolder;
             UseOpeningBook = other.UseOpeningBook;

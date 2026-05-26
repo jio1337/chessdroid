@@ -4986,6 +4986,22 @@ namespace ChessDroid
         private string?  _puzzlesFolder;
         private string?  _puzzleThemeFilter;
 
+        // Puzzle sub-mode: "training" | "rush" | "gauntlet"
+        private string _puzzleSubMode = "training";
+        private Button? _btnPuzzleSubTraining;
+        private Button? _btnPuzzleSubRush;
+        private Button? _btnPuzzleSubGauntlet;
+        private Panel?  _pnlRushTimeRow;
+        private Panel?  _pnlThemeFilterRow;
+        private Label?  _lblGauntletDesc;
+        private int     _rushDurationSeconds = 180;
+        private Button? _rushTimeBtn1, _rushTimeBtn2, _rushTimeBtn3, _rushTimeBtn4, _rushTimeBtn5;
+        private System.Windows.Forms.Timer? _puzzleRushTimer;
+        private int     _rushSecondsRemaining;
+        private Label?  _lblRushTimer;
+        private int     _gauntletStreak;
+        private int     _gauntletBestStreak;
+
         // Puzzle Training UI refs
         private Button?   _btnPuzzleMode;
         private Panel?    _pnlPuzzleGame;
@@ -4998,6 +5014,23 @@ namespace ChessDroid
         private Button? _btnPuzzleHint;
         private Button? _btnPuzzleSkip;
         private int     _puzzleHintsUsed;
+
+        // Board Vision state
+        private bool    _visionModeSelected;
+        private int     _visionCorrect;
+        private int     _visionWrong;
+        private int     _visionStreak;
+        private int     _visionBestStreak;
+        private string  _visionCurrentSquare = "a1";
+
+        // Board Vision UI refs
+        private Button? _btnVisionMode;
+        private Panel?  _pnlVisionGame;
+        private Panel?  _pnlVisionSettings;
+        private Label?  _lblVisionQuestion;
+        private Label?  _lblVisionScore;
+        private Button? _btnVisionLight;
+        private Button? _btnVisionDark;
 
         private void InitTrainingPanel()
         {
@@ -5021,6 +5054,10 @@ namespace ChessDroid
 
             boardControl.SquareClicked += TrainingSquareClicked;
 
+            // Local font factory — every call returns a new instance (safe for WinForms disposal)
+            Font F(float size, bool bold = false) =>
+                new Font("Courier New", size, bold ? FontStyle.Bold : FontStyle.Regular);
+
             _pnlTraining = new Panel { Dock = DockStyle.Fill, Visible = false, Padding = new Padding(16, 12, 14, 10) };
 
             // ── Start panel ───────────────────────────────────────────────────
@@ -5028,32 +5065,32 @@ namespace ChessDroid
             _lblTrainingTitle = new Label
             {
                 Text = "Square Training",
-                Font = new Font("Courier New", 17f, FontStyle.Bold),
+                Font = F(17f, true),
                 Dock = DockStyle.Top, Height = 38, TextAlign = ContentAlignment.MiddleLeft
             };
             var lblTitle = _lblTrainingTitle;
             var lblDesc = new Label
             {
                 Text = "An empty board appears.\nClick the named square as fast as you can.\n10 questions per round.",
-                Font = new Font("Courier New", 10f),
+                Font = F(10f),
                 Dock = DockStyle.Top, Height = 58, TextAlign = ContentAlignment.TopLeft
             };
             var pnlMode = new Panel { Dock = DockStyle.Top, Height = 84 };
             var lblMode = new Label
             {
-                Text = "Difficulty:", Font = new Font("Courier New", 10f, FontStyle.Bold),
+                Text = "Difficulty:", Font = F(10f, true),
                 AutoSize = true, Location = new Point(0, 2)
             };
             _rbTrainingEasy = new RadioButton
             {
                 Text = "Easy  (hover shows the square name)",
-                Font = new Font("Courier New", 10f),
+                Font = F(10f),
                 AutoSize = true, Location = new Point(0, 24), Checked = true
             };
             var rbTrainingChallenge = new RadioButton
             {
                 Text = "Challenge  (no hints)",
-                Font = new Font("Courier New", 10f),
+                Font = F(10f),
                 AutoSize = true, Location = new Point(0, 50)
             };
             pnlMode.Controls.AddRange(new Control[] { lblMode, _rbTrainingEasy, rbTrainingChallenge });
@@ -5061,25 +5098,25 @@ namespace ChessDroid
             var pnlPerspective = new Panel { Dock = DockStyle.Top, Height = 50 };
             var lblPerspective = new Label
             {
-                Text = "Perspective:", Font = new Font("Courier New", 10f, FontStyle.Bold),
+                Text = "Perspective:", Font = F(10f, true),
                 AutoSize = true, Location = new Point(0, 2)
             };
             var rbTrainingWhite = new RadioButton
             {
                 Text = "White",
-                Font = new Font("Courier New", 10f),
+                Font = F(10f),
                 AutoSize = true, Location = new Point(0, 24), Checked = true
             };
             _rbTrainingBlack = new RadioButton
             {
                 Text = "Black",
-                Font = new Font("Courier New", 10f),
+                Font = F(10f),
                 AutoSize = true, Location = new Point(80, 24)
             };
             _rbTrainingRandom = new RadioButton
             {
                 Text = "Random",
-                Font = new Font("Courier New", 10f),
+                Font = F(10f),
                 AutoSize = true, Location = new Point(160, 24)
             };
             pnlPerspective.Controls.AddRange(new Control[]
@@ -5088,30 +5125,30 @@ namespace ChessDroid
             var pnlCount = new Panel { Dock = DockStyle.Top, Height = 28 };
             var lblQuestions = new Label
             {
-                Text = "Questions:", Font = new Font("Courier New", 10f, FontStyle.Bold),
+                Text = "Questions:", Font = F(10f, true),
                 AutoSize = true, Location = new Point(0, 4)
             };
             _numQuestions = new NumericUpDown
             {
                 Minimum = 5, Maximum = 100, Value = 10, Width = 54,
-                Font = new Font("Courier New", 10f), Location = new Point(112, 2)
+                Font = F(10f), Location = new Point(112, 2)
             };
             pnlCount.Controls.AddRange(new Control[] { lblQuestions, _numQuestions });
 
             var pnlTime = new Panel { Dock = DockStyle.Top, Height = 28 };
             var lblTimeLimit = new Label
             {
-                Text = "Time limit:", Font = new Font("Courier New", 10f, FontStyle.Bold),
+                Text = "Time limit:", Font = F(10f, true),
                 AutoSize = true, Location = new Point(0, 4)
             };
             _numTimeLimit = new NumericUpDown
             {
                 Minimum = 0, Maximum = 600, Value = 0, Width = 54,
-                Font = new Font("Courier New", 10f), Location = new Point(112, 2)
+                Font = F(10f), Location = new Point(112, 2)
             };
             var lblTimeSuffix = new Label
             {
-                Text = "s  (0 = no limit)", Font = new Font("Courier New", 9f),
+                Text = "s  (0 = no limit)", Font = F(9f),
                 AutoSize = true, Location = new Point(170, 5)
             };
             pnlTime.Controls.AddRange(new Control[] { lblTimeLimit, _numTimeLimit, lblTimeSuffix });
@@ -5119,7 +5156,7 @@ namespace ChessDroid
             var pnlStartGap = new Panel { Dock = DockStyle.Top, Height = 10 };
             var btnStart = new Button
             {
-                Text = "Start", Font = new Font("Courier New", 11f, FontStyle.Bold),
+                Text = "Start", Font = F(11f, true),
                 Dock = DockStyle.Top, Height = 38, FlatStyle = FlatStyle.Flat
             };
             btnStart.Click += (_, _) => TrainingStartRound();
@@ -5128,24 +5165,30 @@ namespace ChessDroid
             var pnlModeSwitcher = new Panel { Dock = DockStyle.Top, Height = 38 };
             _btnSqMode = new Button
             {
-                Text = "♟ Square", Font = new Font("Courier New", 9f, FontStyle.Bold),
-                Location = new Point(0, 5), Size = new Size(120, 26), FlatStyle = FlatStyle.Flat
+                Text = "♟ Square", Font = F(9f, true),
+                Location = new Point(0, 5), Size = new Size(86, 26), FlatStyle = FlatStyle.Flat
             };
             _btnOpMode = new Button
             {
-                Text = "📖 Opening", Font = new Font("Courier New", 9f, FontStyle.Bold),
-                Location = new Point(126, 5), Size = new Size(120, 26), FlatStyle = FlatStyle.Flat
+                Text = "📖 Opening", Font = F(9f, true),
+                Location = new Point(92, 5), Size = new Size(86, 26), FlatStyle = FlatStyle.Flat
             };
             _btnPuzzleMode = new Button
             {
-                Text = "🧩 Puzzles", Font = new Font("Courier New", 9f, FontStyle.Bold),
-                Location = new Point(252, 5), Size = new Size(120, 26), FlatStyle = FlatStyle.Flat,
+                Text = "🧩 Puzzles", Font = F(9f, true),
+                Location = new Point(184, 5), Size = new Size(86, 26), FlatStyle = FlatStyle.Flat,
                 Visible = false
+            };
+            _btnVisionMode = new Button
+            {
+                Text = "👁 Vision", Font = F(9f, true),
+                Location = new Point(276, 5), Size = new Size(86, 26), FlatStyle = FlatStyle.Flat
             };
             _btnSqMode.Click     += (_, _) => SetTrainingMode("square");
             _btnOpMode.Click     += (_, _) => SetTrainingMode("opening");
             _btnPuzzleMode.Click += (_, _) => SetTrainingMode("puzzle");
-            pnlModeSwitcher.Controls.AddRange(new Control[] { _btnSqMode, _btnOpMode, _btnPuzzleMode });
+            _btnVisionMode.Click += (_, _) => SetTrainingMode("vision");
+            pnlModeSwitcher.Controls.AddRange(new Control[] { _btnSqMode, _btnOpMode, _btnPuzzleMode, _btnVisionMode });
 
             // ── Wrap square settings into collapsible panel ────────────
             _pnlSquareSettings = new Panel { Dock = DockStyle.Top, Height = 252 };
@@ -5159,22 +5202,22 @@ namespace ChessDroid
             var pnlOpModeRow = new Panel { Dock = DockStyle.Top, Height = 30 };
             var lblOpMode = new Label
             {
-                Text = "Opening:", Font = new Font("Courier New", 10f, FontStyle.Bold),
+                Text = "Opening:", Font = F(10f, true),
                 AutoSize = true, Location = new Point(0, 6)
             };
             _rbOpRandom = new RadioButton
             {
-                Text = "Random", Font = new Font("Courier New", 10f),
+                Text = "Random", Font = F(10f),
                 AutoSize = true, Location = new Point(82, 5), Checked = true
             };
             _rbOpSelected = new RadioButton
             {
-                Text = "Selected", Font = new Font("Courier New", 10f),
+                Text = "Selected", Font = F(10f),
                 AutoSize = true, Location = new Point(168, 5)
             };
             var btnChoose = new Button
             {
-                Text = "Choose…", Font = new Font("Courier New", 9f),
+                Text = "Choose…", Font = F(9f),
                 Location = new Point(268, 3), Size = new Size(76, 22), FlatStyle = FlatStyle.Flat
             };
             btnChoose.Click += (_, _) => SelectOpeningForTraining();
@@ -5183,7 +5226,7 @@ namespace ChessDroid
             _lblSelectedOpening = new Label
             {
                 Text = "(random opening each round)",
-                Font = new Font("Courier New", 8.5f),
+                Font = F(8.5f),
                 Dock = DockStyle.Top, Height = 22, AutoEllipsis = true
             };
             _rbOpRandom.CheckedChanged += (_, _) =>
@@ -5195,27 +5238,27 @@ namespace ChessDroid
             var pnlWatchesRow = new Panel { Dock = DockStyle.Top, Height = 30 };
             var lblWatches = new Label
             {
-                Text = "Watches:", Font = new Font("Courier New", 10f, FontStyle.Bold),
+                Text = "Watches:", Font = F(10f, true),
                 AutoSize = true, Location = new Point(0, 6)
             };
             _rbWatchesNone = new RadioButton
             {
-                Text = "None", Font = new Font("Courier New", 10f),
+                Text = "None", Font = F(10f),
                 AutoSize = true, Location = new Point(82, 5)
             };
             _rbWatches1 = new RadioButton
             {
-                Text = "1", Font = new Font("Courier New", 10f),
+                Text = "1", Font = F(10f),
                 AutoSize = true, Location = new Point(150, 5)
             };
             _rbWatches2 = new RadioButton
             {
-                Text = "2", Font = new Font("Courier New", 10f),
+                Text = "2", Font = F(10f),
                 AutoSize = true, Location = new Point(188, 5), Checked = true
             };
             _rbWatches3 = new RadioButton
             {
-                Text = "3", Font = new Font("Courier New", 10f),
+                Text = "3", Font = F(10f),
                 AutoSize = true, Location = new Point(226, 5)
             };
             pnlWatchesRow.Controls.AddRange(new Control[]
@@ -5224,70 +5267,136 @@ namespace ChessDroid
             var lblOpDesc = new Label
             {
                 Text = "Watch the opening autoplay, then recreate it from memory.",
-                Font = new Font("Courier New", 9.5f),
+                Font = F(9.5f),
                 Dock = DockStyle.Top, Height = 22
             };
             // DockStyle.Top: last = topmost visually
             _pnlOpeningSettings.Controls.AddRange(new Control[]
                 { pnlWatchesRow, _lblSelectedOpening, pnlOpModeRow, lblOpDesc });
 
-            // ── Puzzle settings (theme filter) ─────────────────────────────
-            _pnlPuzzleSettings = new Panel { Dock = DockStyle.Top, Height = 52, Visible = false };
+            // ── Puzzle settings (sub-mode + theme + rush time) ─────────────
+            _pnlPuzzleSettings = new Panel { Dock = DockStyle.Top, Height = 130, Visible = false };
+
+            // Sub-mode switcher: Training · Rush · Gauntlet
+            var pnlPuzzleSub = new Panel { Dock = DockStyle.Top, Height = 32 };
+            _btnPuzzleSubTraining = new Button
+            {
+                Text = "Training", Font = F(9f, true),
+                Location = new Point(0, 4), Size = new Size(82, 24), FlatStyle = FlatStyle.Flat
+            };
+            _btnPuzzleSubRush = new Button
+            {
+                Text = "Rush", Font = F(9f, true),
+                Location = new Point(88, 4), Size = new Size(82, 24), FlatStyle = FlatStyle.Flat
+            };
+            _btnPuzzleSubGauntlet = new Button
+            {
+                Text = "Gauntlet", Font = F(9f, true),
+                Location = new Point(176, 4), Size = new Size(82, 24), FlatStyle = FlatStyle.Flat
+            };
+            _btnPuzzleSubTraining.Click += (_, _) => SetPuzzleSubMode("training");
+            _btnPuzzleSubRush.Click     += (_, _) => SetPuzzleSubMode("rush");
+            _btnPuzzleSubGauntlet.Click += (_, _) => SetPuzzleSubMode("gauntlet");
+            pnlPuzzleSub.Controls.AddRange(new Control[] { _btnPuzzleSubTraining, _btnPuzzleSubRush, _btnPuzzleSubGauntlet });
+
+            // Rush time row: 1 2 3 4 5 min
+            _pnlRushTimeRow = new Panel { Dock = DockStyle.Top, Height = 30, Visible = false };
+            var lblRushTimeLabel = new Label
+            {
+                Text = "Duration:", Font = F(9f, true),
+                AutoSize = true, Location = new Point(0, 7)
+            };
+            _rushTimeBtn1 = new Button { Text = "1", Font = F(9f), Location = new Point(74, 3), Size = new Size(28, 22), FlatStyle = FlatStyle.Flat };
+            _rushTimeBtn2 = new Button { Text = "2", Font = F(9f), Location = new Point(106, 3), Size = new Size(28, 22), FlatStyle = FlatStyle.Flat };
+            _rushTimeBtn3 = new Button { Text = "3", Font = F(9f), Location = new Point(138, 3), Size = new Size(28, 22), FlatStyle = FlatStyle.Flat };
+            _rushTimeBtn4 = new Button { Text = "4", Font = F(9f), Location = new Point(170, 3), Size = new Size(28, 22), FlatStyle = FlatStyle.Flat };
+            _rushTimeBtn5 = new Button { Text = "5", Font = F(9f), Location = new Point(202, 3), Size = new Size(28, 22), FlatStyle = FlatStyle.Flat };
+            var lblMinSuffix = new Label { Text = "min", Font = F(9f), AutoSize = true, Location = new Point(234, 7) };
+            _rushTimeBtn1.Click += (_, _) => SelectRushTime(1);
+            _rushTimeBtn2.Click += (_, _) => SelectRushTime(2);
+            _rushTimeBtn3.Click += (_, _) => SelectRushTime(3);
+            _rushTimeBtn4.Click += (_, _) => SelectRushTime(4);
+            _rushTimeBtn5.Click += (_, _) => SelectRushTime(5);
+            _pnlRushTimeRow.Controls.AddRange(new Control[] { lblRushTimeLabel, _rushTimeBtn1, _rushTimeBtn2, _rushTimeBtn3, _rushTimeBtn4, _rushTimeBtn5, lblMinSuffix });
+
+            // Theme filter row (Training only)
+            _pnlThemeFilterRow = new Panel { Dock = DockStyle.Top, Height = 52 };
             var lblThemeFilter = new Label
             {
-                Text = "Theme Filter", Font = new Font("Courier New", 9f, FontStyle.Bold),
+                Text = "Theme Filter", Font = F(9f, true),
                 Dock = DockStyle.Top, Height = 20
             };
             _cmbPuzzleTheme = new ComboBox
             {
                 Dock = DockStyle.Top, Height = 26, DropDownStyle = ComboBoxStyle.DropDownList,
-                Font = new Font("Courier New", 9f)
+                Font = F(9f)
             };
             foreach (var (label, _) in _puzzleThemeOptions)
                 _cmbPuzzleTheme.Items.Add(label);
-            _cmbPuzzleTheme.SelectedIndex = 0; // "Any" pre-selected
+            _cmbPuzzleTheme.SelectedIndex = 0;
             _cmbPuzzleTheme.SelectedIndexChanged += (_, _) =>
             {
                 int i = _cmbPuzzleTheme.SelectedIndex;
                 _puzzleThemeFilter = i >= 0 ? _puzzleThemeOptions[i].Theme : null;
             };
-            _pnlPuzzleSettings.Controls.AddRange(new Control[] { _cmbPuzzleTheme, lblThemeFilter });
+            _pnlThemeFilterRow.Controls.AddRange(new Control[] { _cmbPuzzleTheme, lblThemeFilter });
+
+            // Gauntlet description
+            _lblGauntletDesc = new Label
+            {
+                Text = "One wrong move ends the run.", Font = F(8.5f),
+                Dock = DockStyle.Top, Height = 20, Visible = false
+            };
+
+            // DockStyle.Top: last = topmost visually — pnlPuzzleSub must be last
+            _pnlPuzzleSettings.Controls.AddRange(new Control[]
+                { _lblGauntletDesc, _pnlRushTimeRow, _pnlThemeFilterRow, pnlPuzzleSub });
+
+            // ── Vision settings (just a description) ──────────────────────
+            _pnlVisionSettings = new Panel { Dock = DockStyle.Top, Height = 38, Visible = false };
+            var lblVisionDesc = new Label
+            {
+                Text = "Is the square light or dark?\nAll 64 squares — no visual clues.",
+                Font = F(8.5f),
+                Dock = DockStyle.Top, Height = 38
+            };
+            _pnlVisionSettings.Controls.Add(lblVisionDesc);
 
             // DockStyle.Top stacks back-to-front: last item in Controls = topmost visually
             _pnlTrainingStart.Controls.AddRange(new Control[]
-                { btnStart, pnlStartGap, _pnlPuzzleSettings, _pnlOpeningSettings, _pnlSquareSettings, pnlModeSwitcher, lblTitle });
+                { btnStart, pnlStartGap, _pnlPuzzleSettings, _pnlVisionSettings, _pnlOpeningSettings, _pnlSquareSettings, pnlModeSwitcher, lblTitle });
 
             // ── Game panel ────────────────────────────────────────────────────
             _pnlTrainingGame = new Panel { Dock = DockStyle.Fill, Visible = false };
             _lblTrainingRound = new Label
             {
-                Font = new Font("Courier New", 10f),
+                Font = F(10f),
                 Dock = DockStyle.Top, Height = 22, TextAlign = ContentAlignment.MiddleCenter
             };
             _lblTrainingTarget = new Label
             {
-                Font = new Font("Courier New", 44f, FontStyle.Bold),
+                Font = F(44f, true),
                 Dock = DockStyle.Top, Height = 80, TextAlign = ContentAlignment.MiddleCenter
             };
             _lblTrainingScore = new Label
             {
-                Font = new Font("Courier New", 15f, FontStyle.Bold),
+                Font = F(15f, true),
                 Dock = DockStyle.Top, Height = 32, TextAlign = ContentAlignment.MiddleCenter
             };
             _lblTrainingTimer = new Label
             {
-                Font = new Font("Courier New", 10f),
+                Font = F(10f),
                 Dock = DockStyle.Top, Height = 22, TextAlign = ContentAlignment.MiddleCenter
             };
             _lblOpGameStatus = new Label
             {
-                Font = new Font("Courier New", 9.5f),
+                Font = F(9.5f),
                 Dock = DockStyle.Top, Height = 22, TextAlign = ContentAlignment.MiddleCenter,
                 Visible = false, AutoEllipsis = true
             };
             _btnOpHint = new Button
             {
-                Text = "💡 Hint", Font = new Font("Courier New", 9f, FontStyle.Bold),
+                Text = "💡 Hint", Font = F(9f, true),
                 Dock = DockStyle.Top, Height = 30, FlatStyle = FlatStyle.Flat,
                 Enabled = false, Visible = true
             };
@@ -5298,78 +5407,114 @@ namespace ChessDroid
 
             // ── Puzzle Game panel ─────────────────────────────────────────────
             _pnlPuzzleGame = new Panel { Dock = DockStyle.Fill, Visible = false };
+            _lblRushTimer = new Label
+            {
+                Font = F(22f, true),
+                Dock = DockStyle.Top, Height = 48, TextAlign = ContentAlignment.MiddleCenter,
+                Visible = false
+            };
             _lblPuzzleFeedback = new Label
             {
-                Font = new Font("Courier New", 20f, FontStyle.Bold),
+                Font = F(20f, true),
                 Dock = DockStyle.Top, Height = 46, TextAlign = ContentAlignment.MiddleCenter
             };
             _lblPuzzleRating = new Label
             {
-                Font = new Font("Courier New", 10f, FontStyle.Bold),
+                Font = F(10f, true),
                 Dock = DockStyle.Top, Height = 24, TextAlign = ContentAlignment.MiddleCenter
             };
             _lblPuzzleThemes = new Label
             {
-                Font = new Font("Courier New", 8.5f),
+                Font = F(8.5f),
                 Dock = DockStyle.Top, Height = 34,
                 TextAlign = ContentAlignment.TopCenter,
                 AutoEllipsis = true
             };
             _lblPuzzleStats = new Label
             {
-                Font = new Font("Courier New", 9.5f),
+                Font = F(9.5f),
                 Dock = DockStyle.Top, Height = 22, TextAlign = ContentAlignment.MiddleCenter
             };
             _btnPuzzleHint = new Button
             {
-                Text = "💡 Hint", Font = new Font("Courier New", 9f, FontStyle.Bold),
+                Text = "💡 Hint", Font = F(9f, true),
                 Dock = DockStyle.Top, Height = 28, FlatStyle = FlatStyle.Flat,
                 Enabled = false
             };
             _btnPuzzleHint.Click += BtnPuzzleHint_Click;
             _btnPuzzleSkip = new Button
             {
-                Text = "Skip →", Font = new Font("Courier New", 9f),
+                Text = "Skip →", Font = F(9f),
                 Dock = DockStyle.Top, Height = 28, FlatStyle = FlatStyle.Flat
             };
             _btnPuzzleSkip.Click += (_, _) => PuzzleSkip();
             // DockStyle.Top: last = topmost visually
             _pnlPuzzleGame.Controls.AddRange(new Control[]
-                { _btnPuzzleSkip, _btnPuzzleHint, _lblPuzzleStats, _lblPuzzleFeedback, _lblPuzzleThemes, _lblPuzzleRating });
+                { _btnPuzzleSkip, _btnPuzzleHint, _lblPuzzleStats, _lblPuzzleFeedback, _lblPuzzleThemes, _lblPuzzleRating, _lblRushTimer });
+
+            // ── Vision Game panel ─────────────────────────────────────────────
+            _pnlVisionGame = new Panel { Dock = DockStyle.Fill, Visible = false };
+            _lblVisionQuestion = new Label
+            {
+                Font = F(18f, true),
+                Dock = DockStyle.Top, Height = 52, TextAlign = ContentAlignment.MiddleCenter
+            };
+            var pnlVisionButtons = new Panel { Dock = DockStyle.Top, Height = 44 };
+            _btnVisionLight = new Button
+            {
+                Text = "Light", Font = F(13f, true),
+                Location = new Point(0, 2), Size = new Size(120, 38), FlatStyle = FlatStyle.Flat
+            };
+            _btnVisionDark = new Button
+            {
+                Text = "Dark", Font = F(13f, true),
+                Location = new Point(130, 2), Size = new Size(120, 38), FlatStyle = FlatStyle.Flat
+            };
+            _btnVisionLight.Click += (_, _) => VisionAnswer(true);
+            _btnVisionDark.Click  += (_, _) => VisionAnswer(false);
+            pnlVisionButtons.Controls.AddRange(new Control[] { _btnVisionLight, _btnVisionDark });
+            _lblVisionScore = new Label
+            {
+                Font = F(10f),
+                Dock = DockStyle.Top, Height = 24, TextAlign = ContentAlignment.MiddleCenter
+            };
+            // DockStyle.Top: last = topmost visually
+            _pnlVisionGame.Controls.AddRange(new Control[]
+                { _lblVisionScore, pnlVisionButtons, _lblVisionQuestion });
 
             // ── Result panel ──────────────────────────────────────────────────
             _pnlTrainingResult = new Panel { Dock = DockStyle.Fill, Visible = false };
             var lblComplete = new Label
             {
                 Text = "Round Complete!",
-                Font = new Font("Courier New", 16f, FontStyle.Bold),
+                Font = F(16f, true),
                 Dock = DockStyle.Top, Height = 40, TextAlign = ContentAlignment.MiddleCenter
             };
             _lblTrainingFinalScore = new Label
             {
-                Font = new Font("Courier New", 12f),
+                Font = F(12f),
                 Dock = DockStyle.Top, Height = 32, TextAlign = ContentAlignment.MiddleCenter
             };
             _lblTrainingPB = new Label
             {
-                Font = new Font("Courier New", 10f),
+                Font = F(10f),
                 Dock = DockStyle.Top, Height = 22, TextAlign = ContentAlignment.MiddleCenter
             };
             var btnTryAgain = new Button
             {
-                Text = "Try Again", Font = new Font("Courier New", 11f, FontStyle.Bold),
+                Text = "Try Again", Font = F(11f, true),
                 Dock = DockStyle.Top, Height = 38, FlatStyle = FlatStyle.Flat, Margin = new Padding(0, 8, 0, 0)
             };
             btnTryAgain.Click += (_, _) => TrainingShowStartPanel();
             var btnDone = new Button
             {
-                Text = "Done", Font = new Font("Courier New", 10f),
+                Text = "Done", Font = F(10f),
                 Dock = DockStyle.Top, Height = 34, FlatStyle = FlatStyle.Flat, Margin = new Padding(0, 6, 0, 0)
             };
             btnDone.Click += (_, _) => StopTraining();
             _lblOpMissedMoves = new Label
             {
-                Font = new Font("Courier New", 9f),
+                Font = F(9f),
                 Dock = DockStyle.Top, Height = 48,
                 TextAlign = ContentAlignment.TopCenter,
                 Visible = false
@@ -5378,10 +5523,12 @@ namespace ChessDroid
                 { btnDone, btnTryAgain, _lblOpMissedMoves, _lblTrainingPB, _lblTrainingFinalScore, lblComplete });
 
             _pnlTraining.Controls.AddRange(new Control[]
-                { _pnlTrainingStart, _pnlTrainingGame, _pnlPuzzleGame, _pnlTrainingResult });
+                { _pnlTrainingStart, _pnlTrainingGame, _pnlPuzzleGame, _pnlVisionGame, _pnlTrainingResult });
             rightPanel.Controls.Add(_pnlTraining);
 
             SetTrainingMode("square"); // initialize Square mode as default
+            SetPuzzleSubMode("training"); // initialize puzzle sub-mode
+            SelectRushTime(3);            // default 3 min
             ApplyTrainingTheme();
         }
 
@@ -5401,10 +5548,14 @@ namespace ChessDroid
             if (_btnPuzzleMode != null)
                 _btnPuzzleMode.Visible = LichessPuzzleService.HasPuzzles(_puzzlesFolder);
 
+            autoAnalysisCts?.Cancel();
+            lblStatus.Text = "";
+
             _trainingUiVisible = true;
             analysisOutput.Visible = false;
             grpEngineMatch.Visible = false;
             lblAnalysis.Visible = false;
+            evalBar.Visible = false;
             if (_evalGraph != null) _evalGraph.Visible = false;
             _pnlTraining!.Visible = true;
             _pnlTraining.BringToFront();
@@ -5420,12 +5571,15 @@ namespace ChessDroid
             _trainingClockTimer?.Stop();
             _trainingFlashTimer?.Stop();
             _openingAutoplayTimer?.Stop();
+            _puzzleRushTimer?.Stop();
             _openingRecreatePhase = false;
             _puzzleActive = false;
             _puzzleLocked = false;
-            if (_btnOpHint    != null) _btnOpHint.Enabled    = false;
+            if (_btnOpHint     != null) _btnOpHint.Enabled     = false;
             if (_btnPuzzleHint != null) _btnPuzzleHint.Enabled = false;
             if (_pnlPuzzleGame != null) _pnlPuzzleGame.Visible = false;
+            if (_pnlVisionGame != null) _pnlVisionGame.Visible = false;
+            boardControl.MonochromeMode = false;
 
             if (_trainingGameActive)
             {
@@ -5444,6 +5598,7 @@ namespace ChessDroid
             analysisOutput.Visible = true;
             grpEngineMatch.Visible = true;
             lblAnalysis.Visible = true;
+            evalBar.Visible = config?.ShowEvalBar != false;
             if (_evalGraph != null) _evalGraph.Visible = config?.ShowEvalGraph ?? true;
 
             btnTraining.Text = "♟";
@@ -5465,17 +5620,20 @@ namespace ChessDroid
             _trainingClockTimer?.Stop();
             _trainingFlashTimer?.Stop();
             _openingAutoplayTimer?.Stop();
+            _puzzleRushTimer?.Stop();
             _openingRecreatePhase = false;
             _puzzleActive = false;
             _puzzleLocked = false;
             if (_btnOpHint     != null) _btnOpHint.Enabled     = false;
             if (_btnPuzzleHint != null) _btnPuzzleHint.Enabled = false;
             if (_pnlPuzzleGame != null) _pnlPuzzleGame.Visible = false;
+            if (_pnlVisionGame != null) _pnlVisionGame.Visible = false;
 
             if (_trainingGameActive)
             {
                 boardControl.ClearTrainingHighlight();
                 boardControl.TrainingMode = false;
+                boardControl.MonochromeMode = false;
                 boardControl.IsFlipped = _trainingPreFlipped;
                 if (_trainingPreFen != null)
                     boardControl.LoadFEN(_trainingPreFen);
@@ -5489,6 +5647,7 @@ namespace ChessDroid
             _pnlTrainingStart!.Visible = true;
             _pnlTrainingGame!.Visible = false;
             _pnlPuzzleGame!.Visible = false;
+            _pnlVisionGame!.Visible = false;
             _pnlTrainingResult!.Visible = false;
         }
 
@@ -5502,8 +5661,14 @@ namespace ChessDroid
 
         private void TrainingStartRound()
         {
-            if (_openingModeSelected) { OpeningTrainingStart(); return; }
-            if (_puzzleModeSelected)  { PuzzleTrainingStart();  return; }
+            if (_openingModeSelected) { OpeningTrainingStart();  return; }
+            if (_visionModeSelected)  { VisionTrainingStart();   return; }
+            if (_puzzleModeSelected)
+            {
+                if (_puzzleSubMode == "rush")     { PuzzleRushStart();     return; }
+                if (_puzzleSubMode == "gauntlet") { PuzzleGauntletStart(); return; }
+                PuzzleTrainingStart(); return;
+            }
 
             _trainingPreFen = boardControl.GetFEN();
             _trainingPreFlipped = boardControl.IsFlipped;
@@ -5690,17 +5855,20 @@ namespace ChessDroid
 
         // ── Opening Training ───────────────────────────────────────────────
 
-        private void SetTrainingMode(string mode) // "square" | "opening" | "puzzle"
+        private void SetTrainingMode(string mode) // "square" | "opening" | "puzzle" | "vision"
         {
             _openingModeSelected = mode == "opening";
             _puzzleModeSelected  = mode == "puzzle";
+            _visionModeSelected  = mode == "vision";
             if (_lblTrainingTitle != null)
                 _lblTrainingTitle.Text = mode == "opening" ? "Opening Training"
                                        : mode == "puzzle"  ? "Puzzle Training"
+                                       : mode == "vision"  ? "Board Vision"
                                        : "Square Training";
             if (_pnlSquareSettings  != null) _pnlSquareSettings.Visible  = mode == "square";
             if (_pnlOpeningSettings != null) _pnlOpeningSettings.Visible = mode == "opening";
             if (_pnlPuzzleSettings  != null) _pnlPuzzleSettings.Visible  = mode == "puzzle";
+            if (_pnlVisionSettings  != null) _pnlVisionSettings.Visible  = mode == "vision";
             var scheme = ThemeService.GetColorScheme(config?.Theme ?? "Dark");
             void Hi(Button? btn, bool active)
             {
@@ -5711,6 +5879,45 @@ namespace ChessDroid
             Hi(_btnSqMode,     mode == "square");
             Hi(_btnOpMode,     mode == "opening");
             Hi(_btnPuzzleMode, mode == "puzzle");
+            Hi(_btnVisionMode, mode == "vision");
+        }
+
+        private void SetPuzzleSubMode(string subMode) // "training" | "rush" | "gauntlet"
+        {
+            _puzzleSubMode = subMode;
+            if (_pnlThemeFilterRow  != null) _pnlThemeFilterRow.Visible  = subMode == "training";
+            if (_pnlRushTimeRow     != null) _pnlRushTimeRow.Visible     = subMode == "rush";
+            if (_lblGauntletDesc    != null) _lblGauntletDesc.Visible    = subMode == "gauntlet";
+            var scheme = ThemeService.GetColorScheme(config?.Theme ?? "Dark");
+            void Hi(Button? btn, bool active)
+            {
+                if (btn == null) return;
+                btn.BackColor = active ? scheme.TextColor : scheme.ButtonBackColor;
+                btn.ForeColor = active ? scheme.FormBackColor : scheme.ButtonForeColor;
+            }
+            Hi(_btnPuzzleSubTraining, subMode == "training");
+            Hi(_btnPuzzleSubRush,     subMode == "rush");
+            Hi(_btnPuzzleSubGauntlet, subMode == "gauntlet");
+            // Adjust settings panel height for current sub-mode
+            if (_pnlPuzzleSettings != null)
+                _pnlPuzzleSettings.Height = subMode == "rush" ? 130 : subMode == "gauntlet" ? 90 : 120;
+        }
+
+        private void SelectRushTime(int minutes)
+        {
+            _rushDurationSeconds = minutes * 60;
+            var scheme = ThemeService.GetColorScheme(config?.Theme ?? "Dark");
+            void Hi(Button? btn, bool active)
+            {
+                if (btn == null) return;
+                btn.BackColor = active ? scheme.TextColor : scheme.ButtonBackColor;
+                btn.ForeColor = active ? scheme.FormBackColor : scheme.ButtonForeColor;
+            }
+            Hi(_rushTimeBtn1, minutes == 1);
+            Hi(_rushTimeBtn2, minutes == 2);
+            Hi(_rushTimeBtn3, minutes == 3);
+            Hi(_rushTimeBtn4, minutes == 4);
+            Hi(_rushTimeBtn5, minutes == 5);
         }
 
         private void SelectOpeningForTraining()
@@ -6175,20 +6382,22 @@ namespace ChessDroid
                 _puzzleMoveIndex++;
                 if (_puzzleMoveIndex >= _currentPuzzle.Moves.Length)
                 {
-                    // Puzzle solved — determine clean vs struggled
+                    // Puzzle solved
                     if (_wrongThisPuzzle) _puzzlesStruggled++;
                     else                  _puzzlesClean++;
+                    if (_puzzleSubMode == "gauntlet") _gauntletStreak++;
                     _puzzleLocked = true;
                     if (_btnPuzzleHint != null) _btnPuzzleHint.Enabled = false;
                     double elapsed = (DateTime.Now - _puzzleStartTime).TotalSeconds;
-                    string timeStr = elapsed < 60
+                    string timeStr = _puzzleSubMode == "gauntlet" ? "" : elapsed < 60
                         ? $"  {elapsed:F1}s"
                         : $"  {(int)(elapsed/60)}m {(int)(elapsed%60)}s";
                     if (_lblPuzzleFeedback != null)
                         _lblPuzzleFeedback.Text = $"✓ Correct!{timeStr}";
                     PuzzleRevealThemes();
                     UpdatePuzzleStats();
-                    Task.Delay(1400).ContinueWith(_ => { if (!IsDisposed) Invoke((Action)PuzzleLoadNext); });
+                    int solveDelay = _puzzleSubMode == "gauntlet" ? 700 : 1400;
+                    Task.Delay(solveDelay).ContinueWith(_ => { if (!IsDisposed) Invoke((Action)PuzzleLoadNext); });
                 }
                 else
                 {
@@ -6200,7 +6409,6 @@ namespace ChessDroid
             }
             else
             {
-                // Wrong — show red flash on destination, then restore and re-enable
                 _wrongThisPuzzle = true;
                 _puzzleLocked    = true;
                 int toRow = 7 - (uciMove[3] - '1');
@@ -6208,11 +6416,16 @@ namespace ChessDroid
                 boardControl.SetTrainingHighlight(toRow, toCol, Color.FromArgb(175, 215, 50, 50));
                 if (_lblPuzzleFeedback != null) _lblPuzzleFeedback.Text = "✗ Wrong";
 
-                string restoreFen = boardControl.GetFEN();
-                // Undo: reload the FEN from before the wrong move by replaying from puzzle start
+                if (_puzzleSubMode == "gauntlet")
+                {
+                    // Gauntlet: end run after brief flash
+                    Task.Delay(900).ContinueWith(_ => { if (!IsDisposed) Invoke((Action)GauntletEnd); });
+                    return;
+                }
+
+                // Training / Rush: restore position and let player retry
                 isNavigating = true;
                 boardControl.LoadFEN(_currentPuzzle.Fen);
-                // Re-apply all confirmed moves up to current index
                 for (int i = 0; i < _puzzleMoveIndex; i++)
                     boardControl.MakeMove(_currentPuzzle.Moves[i]);
                 isNavigating = false;
@@ -6281,9 +6494,242 @@ namespace ChessDroid
         private void UpdatePuzzleStats()
         {
             if (_lblPuzzleStats == null) return;
-            string s = $"✓ Clean: {_puzzlesClean}   ~ Helped: {_puzzlesStruggled}";
-            if (_puzzleHintsUsed > 0) s += $"   💡 {_puzzleHintsUsed}";
+            string s = _puzzleSubMode == "gauntlet"
+                ? $"Streak: {_gauntletStreak}   Best: {_gauntletBestStreak}"
+                : _puzzleSubMode == "rush"
+                    ? $"Solved: {_puzzlesClean + _puzzlesStruggled}   ~ Helped: {_puzzlesStruggled}"
+                    : $"✓ Clean: {_puzzlesClean}   ~ Helped: {_puzzlesStruggled}";
+            if (_puzzleSubMode == "training" && _puzzleHintsUsed > 0) s += $"   💡 {_puzzleHintsUsed}";
             _lblPuzzleStats.Text = s;
+        }
+
+        // ── Puzzle Rush ────────────────────────────────────────────────────────
+
+        private void PuzzleRushStart()
+        {
+            if (string.IsNullOrEmpty(_puzzlesFolder)) return;
+            _puzzlesClean     = 0;
+            _puzzlesStruggled = 0;
+            _puzzlesAttempted = 0;
+            _puzzleHintsUsed  = 0;
+            _puzzleQueue.Clear();
+            _puzzleQueue.AddRange(LichessPuzzleService.GetRandomBatch(_puzzlesFolder, 300, _puzzleThemeFilter));
+
+            _trainingPreFen     = boardControl.GetFEN();
+            _trainingPreFlipped = boardControl.IsFlipped;
+            _trainingGameActive = true;
+
+            _pnlTrainingStart!.Visible  = false;
+            _pnlTrainingResult!.Visible = false;
+            _pnlPuzzleGame!.Visible     = true;
+
+            // Show rush timer, hide skip (rushing = no time to skip)
+            if (_lblRushTimer    != null) _lblRushTimer.Visible    = true;
+            if (_btnPuzzleSkip   != null) _btnPuzzleSkip.Visible   = false;
+            if (_btnPuzzleHint   != null) _btnPuzzleHint.Visible   = true;
+
+            _rushSecondsRemaining = _rushDurationSeconds;
+            UpdateRushDisplay();
+
+            _puzzleRushTimer = new System.Windows.Forms.Timer { Interval = 1000 };
+            _puzzleRushTimer.Tick += PuzzleRushTick;
+            _puzzleRushTimer.Start();
+
+            PuzzleLoadNext();
+        }
+
+        private void PuzzleRushTick(object? sender, EventArgs e)
+        {
+            _rushSecondsRemaining--;
+            UpdateRushDisplay();
+            if (_rushSecondsRemaining <= 0)
+            {
+                _puzzleRushTimer?.Stop();
+                _puzzleLocked = true;
+                if (_btnPuzzleHint != null) _btnPuzzleHint.Enabled = false;
+                Task.Delay(300).ContinueWith(_ => { if (!IsDisposed) Invoke((Action)PuzzleRushEnd); });
+            }
+        }
+
+        private void UpdateRushDisplay()
+        {
+            if (_lblRushTimer == null) return;
+            int m = _rushSecondsRemaining / 60;
+            int s = _rushSecondsRemaining % 60;
+            _lblRushTimer.Text = $"{m}:{s:D2}";
+            _lblRushTimer.ForeColor = _rushSecondsRemaining <= 10
+                ? Color.FromArgb(220, 80, 80)
+                : ThemeService.GetColorScheme(config?.Theme ?? "Dark").TextColor;
+        }
+
+        private void PuzzleRushEnd()
+        {
+            _puzzleActive = false;
+            _puzzleRushTimer?.Stop();
+            boardControl.ClearTrainingHighlight();
+            if (_lblRushTimer  != null) _lblRushTimer.Visible  = false;
+            if (_btnPuzzleSkip != null) _btnPuzzleSkip.Visible = true;
+
+            int solved = _puzzlesClean + _puzzlesStruggled;
+            if (_lblTrainingFinalScore != null)
+                _lblTrainingFinalScore.Text = $"Puzzles solved: {solved}  ({_puzzlesClean} clean)";
+            if (_lblTrainingPB != null)
+            {
+                int pb = config?.PuzzleRushBest ?? 0;
+                bool newPb = solved > pb;
+                if (newPb && config != null) { config.PuzzleRushBest = solved; config.Save(); }
+                _lblTrainingPB.Text = newPb ? $"New best!  {solved}" : pb > 0 ? $"Best: {pb}" : "";
+            }
+            if (_lblOpMissedMoves != null) _lblOpMissedMoves.Visible = false;
+
+            boardControl.IsFlipped = _trainingPreFlipped;
+            if (_trainingPreFen != null) boardControl.LoadFEN(_trainingPreFen);
+            _trainingPreFen    = null;
+            _trainingGameActive = false;
+
+            _pnlPuzzleGame!.Visible    = false;
+            _pnlTrainingResult!.Visible = true;
+        }
+
+        // ── Puzzle Gauntlet ────────────────────────────────────────────────────
+
+        private void PuzzleGauntletStart()
+        {
+            if (string.IsNullOrEmpty(_puzzlesFolder)) return;
+            _puzzlesClean     = 0;
+            _puzzlesStruggled = 0;
+            _puzzlesAttempted = 0;
+            _puzzleHintsUsed  = 0;
+            _gauntletStreak   = 0;
+            _puzzleQueue.Clear();
+            _puzzleQueue.AddRange(LichessPuzzleService.GetRandomBatch(_puzzlesFolder, 300, _puzzleThemeFilter));
+
+            _trainingPreFen     = boardControl.GetFEN();
+            _trainingPreFlipped = boardControl.IsFlipped;
+            _trainingGameActive = true;
+
+            _pnlTrainingStart!.Visible  = false;
+            _pnlTrainingResult!.Visible = false;
+            _pnlPuzzleGame!.Visible     = true;
+
+            if (_lblRushTimer  != null) _lblRushTimer.Visible  = false;
+            if (_btnPuzzleHint != null) _btnPuzzleHint.Visible = false; // no hints in gauntlet
+            if (_btnPuzzleSkip != null) _btnPuzzleSkip.Visible = false; // no skips in gauntlet
+
+            PuzzleLoadNext();
+        }
+
+        private void GauntletEnd()
+        {
+            _puzzleActive = false;
+            boardControl.ClearTrainingHighlight();
+
+            if (_gauntletStreak > _gauntletBestStreak)
+                _gauntletBestStreak = _gauntletStreak;
+
+            if (_btnPuzzleHint != null) _btnPuzzleHint.Visible = true;
+            if (_btnPuzzleSkip != null) _btnPuzzleSkip.Visible = true;
+
+            if (_lblTrainingFinalScore != null)
+                _lblTrainingFinalScore.Text = $"Streak: {_gauntletStreak}";
+            if (_lblTrainingPB != null)
+                _lblTrainingPB.Text = _gauntletBestStreak > _gauntletStreak
+                    ? $"Best streak: {_gauntletBestStreak}"
+                    : _gauntletStreak > 0 ? "New personal best!" : "";
+            if (_lblOpMissedMoves != null) _lblOpMissedMoves.Visible = false;
+
+            boardControl.IsFlipped = _trainingPreFlipped;
+            if (_trainingPreFen != null) boardControl.LoadFEN(_trainingPreFen);
+            _trainingPreFen    = null;
+            _trainingGameActive = false;
+
+            _pnlPuzzleGame!.Visible    = false;
+            _pnlTrainingResult!.Visible = true;
+        }
+
+        // ── Board Vision ───────────────────────────────────────────────────────
+
+        private static readonly string[] _allSquares = Enumerable.Range(0, 64)
+            .Select(i => $"{(char)('a' + i % 8)}{i / 8 + 1}").ToArray();
+
+        private static bool IsLightSquareName(string sq)
+        {
+            int col  = sq[0] - 'a'; // 0-7
+            int rank = sq[1] - '0'; // 1-8
+            return (col + rank) % 2 == 0;
+        }
+
+        private void VisionTrainingStart()
+        {
+            _visionCorrect  = 0;
+            _visionWrong    = 0;
+            _visionStreak   = 0;
+
+            _trainingPreFen     = boardControl.GetFEN();
+            _trainingPreFlipped = boardControl.IsFlipped;
+            _trainingGameActive = true;
+
+            boardControl.TrainingMode   = false;
+            boardControl.MonochromeMode = true;
+            boardControl.IsFlipped      = false;
+            isNavigating = true;
+            boardControl.LoadFEN(TRAINING_EMPTY_FEN);
+            isNavigating = false;
+
+            _pnlTrainingStart!.Visible = false;
+            _pnlTrainingResult!.Visible = false;
+            _pnlVisionGame!.Visible    = true;
+
+            VisionLoadNext();
+        }
+
+        private void VisionLoadNext()
+        {
+            _visionCurrentSquare = _allSquares[_trainingRng.Next(_allSquares.Length)];
+            if (_lblVisionQuestion != null)
+                _lblVisionQuestion.Text = $"Is  {_visionCurrentSquare}  light or dark?";
+            if (_lblVisionScore != null)
+                _lblVisionScore.Text = $"✓ {_visionCorrect}   ✗ {_visionWrong}   Streak: {_visionStreak}";
+            if (_btnVisionLight != null) _btnVisionLight.Enabled = true;
+            if (_btnVisionDark  != null) _btnVisionDark.Enabled  = true;
+        }
+
+        private void VisionAnswer(bool guessedLight)
+        {
+            if (_btnVisionLight != null) _btnVisionLight.Enabled = false;
+            if (_btnVisionDark  != null) _btnVisionDark.Enabled  = false;
+
+            bool correct = IsLightSquareName(_visionCurrentSquare) == guessedLight;
+            if (correct)
+            {
+                _visionCorrect++;
+                _visionStreak++;
+                if (_lblVisionQuestion != null)
+                {
+                    string answer = IsLightSquareName(_visionCurrentSquare) ? "Light ✓" : "Dark ✓";
+                    _lblVisionQuestion.Text = $"{_visionCurrentSquare} — {answer}";
+                }
+            }
+            else
+            {
+                _visionWrong++;
+                _visionStreak = 0;
+                if (_lblVisionQuestion != null)
+                {
+                    string correct_answer = IsLightSquareName(_visionCurrentSquare) ? "Light" : "Dark";
+                    _lblVisionQuestion.Text = $"{_visionCurrentSquare} — {correct_answer}  ✗";
+                }
+            }
+
+            if (_lblVisionScore != null)
+                _lblVisionScore.Text = $"✓ {_visionCorrect}   ✗ {_visionWrong}   Streak: {_visionStreak}";
+
+            if (_visionStreak > _visionBestStreak) _visionBestStreak = _visionStreak;
+
+            Task.Delay(correct ? 350 : 700).ContinueWith(_ =>
+            {
+                if (!IsDisposed) Invoke((Action)VisionLoadNext);
+            });
         }
 
         private void ApplyTrainingTheme()
@@ -6293,9 +6739,12 @@ namespace ChessDroid
 
             _pnlTraining.BackColor = scheme.FormBackColor;
             ApplyThemeToChildren(_pnlTraining, scheme);
-            // Re-apply mode button highlight with current theme
-            string mode = _puzzleModeSelected ? "puzzle" : _openingModeSelected ? "opening" : "square";
+            // Re-apply mode + sub-mode + rush time button highlights with current theme
+            string mode = _visionModeSelected ? "vision" : _puzzleModeSelected ? "puzzle" : _openingModeSelected ? "opening" : "square";
             SetTrainingMode(mode);
+            SetPuzzleSubMode(_puzzleSubMode);
+            int rushMins = _rushDurationSeconds / 60;
+            SelectRushTime(rushMins > 0 ? rushMins : 3);
         }
 
         private void ApplyThemeToChildren(Control parent, ColorScheme scheme)

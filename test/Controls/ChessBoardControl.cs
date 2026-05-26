@@ -102,6 +102,7 @@ namespace ChessDroid.Controls
         private Color lightSquareColor = Color.FromArgb(240, 217, 181);
         private Color darkSquareColor = Color.FromArgb(181, 136, 99);
         private bool showSquareLabels = false;
+        private bool _monochromeMode = false;
         private Color selectedSquareColor = Color.FromArgb(130, 186, 221, 97);
         private Color legalMoveColor = Color.FromArgb(100, 130, 151, 105);
         private Color lastMoveFromColor = Color.FromArgb(100, 255, 255, 100);
@@ -374,6 +375,12 @@ namespace ChessDroid.Controls
         {
             get => showSquareLabels;
             set { if (showSquareLabels != value) { showSquareLabels = value; Invalidate(); } }
+        }
+
+        public bool MonochromeMode
+        {
+            get => _monochromeMode;
+            set { if (_monochromeMode != value) { _monochromeMode = value; Invalidate(); } }
         }
 
         public ChessBoard GetBoardState() => board;
@@ -821,7 +828,11 @@ namespace ChessDroid.Controls
                     // Determine square color
                     bool isLightSquare = (row + col) % 2 == 0;
                     Color squareColor;
-                    if (_rainbowMode || _waveMode)
+                    if (_monochromeMode)
+                    {
+                        squareColor = Color.FromArgb(108, 108, 108);
+                    }
+                    else if (_rainbowMode || _waveMode)
                     {
                         float baseHue = _waveMode
                             ? (_rainbowHue + (row + col) * 20f) % 360f
@@ -958,13 +969,26 @@ namespace ChessDroid.Controls
                 coordFont = new Font("Segoe UI", coordFontSize, FontStyle.Bold);
             }
 
+            // Monochrome grid lines
+            if (_monochromeMode)
+            {
+                using var gridPen = new Pen(Color.FromArgb(160, 160, 160), 1f);
+                for (int i = 1; i < 8; i++)
+                {
+                    int px = frameOff + i * squareSize;
+                    g.DrawLine(gridPen, px, frameOff, px, frameOff + 8 * squareSize);
+                    g.DrawLine(gridPen, frameOff, px, frameOff + 8 * squareSize, px);
+                }
+            }
+
             for (int i = 0; i < 8; i++)
             {
                 // File letters (a-h)
                 int fileIndex = isFlipped ? 7 - i : i;
                 string file = ((char)('a' + fileIndex)).ToString();
                 bool isLight = isFlipped ? fileIndex % 2 == 0 : (7 + fileIndex) % 2 == 0;
-                _paintBrush.Color = (_rainbowMode || _waveMode)
+                _paintBrush.Color = _monochromeMode ? Color.White
+                    : (_rainbowMode || _waveMode)
                     ? HsvToRgb(isLight ? (_rainbowHue + 40f) % 360f : _rainbowHue,
                                isLight ? 0.70f : 0.50f,
                                isLight ? 0.58f : 0.88f)
@@ -978,7 +1002,8 @@ namespace ChessDroid.Controls
                 int rankIndex = isFlipped ? i : 7 - i;
                 string rank = (rankIndex + 1).ToString();
                 isLight = i % 2 == 0;
-                _paintBrush.Color = (_rainbowMode || _waveMode)
+                _paintBrush.Color = _monochromeMode ? Color.White
+                    : (_rainbowMode || _waveMode)
                     ? HsvToRgb(isLight ? (_rainbowHue + 40f) % 360f : _rainbowHue,
                                isLight ? 0.70f : 0.50f,
                                isLight ? 0.58f : 0.88f)
