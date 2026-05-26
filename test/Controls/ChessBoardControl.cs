@@ -912,7 +912,7 @@ namespace ChessDroid.Controls
             }
 
             // Draw training highlight (colored flash over a square)
-            if (_trainingMode && _trainingHighlightRow >= 0)
+            if (_trainingHighlightRow >= 0)
             {
                 int displayRow = isFlipped ? 7 - _trainingHighlightRow : _trainingHighlightRow;
                 int displayCol = isFlipped ? 7 - _trainingHighlightCol : _trainingHighlightCol;

@@ -900,6 +900,15 @@ namespace ChessDroid
                 return;
             }
 
+            // Puzzle Training — intercept player moves
+            if (_puzzleActive && !_puzzleLocked)
+            {
+                PlayMoveSound(e.IsCapture, ConvertUciToSan(e.UciMove, boardControl.GetFEN()));
+                PuzzleValidateMove(e.UciMove);
+                return;
+            }
+            if (_puzzleActive && _puzzleLocked) return;
+
             // Skip if we're navigating (not making a new move)
             if (isNavigating) return;
 
@@ -4957,8 +4966,30 @@ namespace ChessDroid
         private RadioButton? _rbWatches1;
         private RadioButton? _rbWatches2;
         private RadioButton? _rbWatches3;
-        private Label? _lblOpGameStatus;
-        private Label? _lblOpMissedMoves;
+        private Label?  _lblOpGameStatus;
+        private Label?  _lblOpMissedMoves;
+        private Button? _btnOpHint;
+        private int     _openingHintsUsed;
+
+        // Puzzle Training state
+        private bool   _puzzleModeSelected;
+        private bool   _puzzleActive;
+        private bool   _puzzleLocked;
+        private LichessPuzzle? _currentPuzzle;
+        private int    _puzzleMoveIndex;   // index into Moves[] the player must play next
+        private readonly List<LichessPuzzle> _puzzleQueue = new();
+        private int    _puzzlesSolved;
+        private int    _puzzlesAttempted;
+        private string? _puzzlesFolder;
+
+        // Puzzle Training UI refs
+        private Button? _btnPuzzleMode;
+        private Panel?  _pnlPuzzleGame;
+        private Label?  _lblPuzzleRating;
+        private Label?  _lblPuzzleThemes;
+        private Label?  _lblPuzzleFeedback;
+        private Label?  _lblPuzzleStats;
+        private Button? _btnPuzzleSkip;
 
         private void InitTrainingPanel()
         {
@@ -5097,9 +5128,16 @@ namespace ChessDroid
                 Text = "📖 Opening", Font = new Font("Courier New", 9f, FontStyle.Bold),
                 Location = new Point(126, 5), Size = new Size(120, 26), FlatStyle = FlatStyle.Flat
             };
-            _btnSqMode.Click += (_, _) => SetTrainingMode("square");
-            _btnOpMode.Click += (_, _) => SetTrainingMode("opening");
-            pnlModeSwitcher.Controls.AddRange(new Control[] { _btnSqMode, _btnOpMode });
+            _btnPuzzleMode = new Button
+            {
+                Text = "🧩 Puzzles", Font = new Font("Courier New", 9f, FontStyle.Bold),
+                Location = new Point(252, 5), Size = new Size(120, 26), FlatStyle = FlatStyle.Flat,
+                Visible = false
+            };
+            _btnSqMode.Click     += (_, _) => SetTrainingMode("square");
+            _btnOpMode.Click     += (_, _) => SetTrainingMode("opening");
+            _btnPuzzleMode.Click += (_, _) => SetTrainingMode("puzzle");
+            pnlModeSwitcher.Controls.AddRange(new Control[] { _btnSqMode, _btnOpMode, _btnPuzzleMode });
 
             // ── Wrap square settings into collapsible panel ────────────
             _pnlSquareSettings = new Panel { Dock = DockStyle.Top, Height = 252 };
@@ -5217,9 +5255,48 @@ namespace ChessDroid
                 Dock = DockStyle.Top, Height = 22, TextAlign = ContentAlignment.MiddleCenter,
                 Visible = false, AutoEllipsis = true
             };
-            // DockStyle.Top: last = topmost visually
+            _btnOpHint = new Button
+            {
+                Text = "💡 Hint", Font = new Font("Courier New", 9f, FontStyle.Bold),
+                Dock = DockStyle.Top, Height = 30, FlatStyle = FlatStyle.Flat,
+                Enabled = false, Visible = true
+            };
+            _btnOpHint.Click += BtnOpHint_Click;
+            // DockStyle.Top: last = topmost visually; _btnOpHint first = bottommost
             _pnlTrainingGame.Controls.AddRange(new Control[]
-                { _lblOpGameStatus, _lblTrainingTimer, _lblTrainingScore, _lblTrainingTarget, _lblTrainingRound });
+                { _btnOpHint, _lblOpGameStatus, _lblTrainingTimer, _lblTrainingScore, _lblTrainingTarget, _lblTrainingRound });
+
+            // ── Puzzle Game panel ─────────────────────────────────────────────
+            _pnlPuzzleGame = new Panel { Dock = DockStyle.Fill, Visible = false };
+            _lblPuzzleFeedback = new Label
+            {
+                Font = new Font("Courier New", 20f, FontStyle.Bold),
+                Dock = DockStyle.Top, Height = 46, TextAlign = ContentAlignment.MiddleCenter
+            };
+            _lblPuzzleRating = new Label
+            {
+                Font = new Font("Courier New", 10f, FontStyle.Bold),
+                Dock = DockStyle.Top, Height = 24, TextAlign = ContentAlignment.MiddleCenter
+            };
+            _lblPuzzleThemes = new Label
+            {
+                Font = new Font("Courier New", 8.5f),
+                Dock = DockStyle.Top, Height = 20, TextAlign = ContentAlignment.MiddleCenter
+            };
+            _lblPuzzleStats = new Label
+            {
+                Font = new Font("Courier New", 9.5f),
+                Dock = DockStyle.Top, Height = 22, TextAlign = ContentAlignment.MiddleCenter
+            };
+            _btnPuzzleSkip = new Button
+            {
+                Text = "Skip →", Font = new Font("Courier New", 9f),
+                Dock = DockStyle.Top, Height = 28, FlatStyle = FlatStyle.Flat
+            };
+            _btnPuzzleSkip.Click += (_, _) => PuzzleSkip();
+            // DockStyle.Top: last = topmost visually
+            _pnlPuzzleGame.Controls.AddRange(new Control[]
+                { _btnPuzzleSkip, _lblPuzzleStats, _lblPuzzleFeedback, _lblPuzzleThemes, _lblPuzzleRating });
 
             // ── Result panel ──────────────────────────────────────────────────
             _pnlTrainingResult = new Panel { Dock = DockStyle.Fill, Visible = false };
@@ -5262,7 +5339,7 @@ namespace ChessDroid
                 { btnDone, btnTryAgain, _lblOpMissedMoves, _lblTrainingPB, _lblTrainingFinalScore, lblComplete });
 
             _pnlTraining.Controls.AddRange(new Control[]
-                { _pnlTrainingStart, _pnlTrainingGame, _pnlTrainingResult });
+                { _pnlTrainingStart, _pnlTrainingGame, _pnlPuzzleGame, _pnlTrainingResult });
             rightPanel.Controls.Add(_pnlTraining);
 
             SetTrainingMode("square"); // initialize Square mode as default
@@ -5281,6 +5358,10 @@ namespace ChessDroid
 
         private void StartTrainingUI()
         {
+            _puzzlesFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Puzzles");
+            if (_btnPuzzleMode != null)
+                _btnPuzzleMode.Visible = LichessPuzzleService.HasPuzzles(_puzzlesFolder);
+
             _trainingUiVisible = true;
             analysisOutput.Visible = false;
             grpEngineMatch.Visible = false;
@@ -5301,6 +5382,10 @@ namespace ChessDroid
             _trainingFlashTimer?.Stop();
             _openingAutoplayTimer?.Stop();
             _openingRecreatePhase = false;
+            _puzzleActive = false;
+            _puzzleLocked = false;
+            if (_btnOpHint != null) _btnOpHint.Enabled = false;
+            if (_pnlPuzzleGame != null) _pnlPuzzleGame.Visible = false;
 
             if (_trainingGameActive)
             {
@@ -5341,6 +5426,10 @@ namespace ChessDroid
             _trainingFlashTimer?.Stop();
             _openingAutoplayTimer?.Stop();
             _openingRecreatePhase = false;
+            _puzzleActive = false;
+            _puzzleLocked = false;
+            if (_btnOpHint != null) _btnOpHint.Enabled = false;
+            if (_pnlPuzzleGame != null) _pnlPuzzleGame.Visible = false;
 
             if (_trainingGameActive)
             {
@@ -5358,6 +5447,7 @@ namespace ChessDroid
 
             _pnlTrainingStart!.Visible = true;
             _pnlTrainingGame!.Visible = false;
+            _pnlPuzzleGame!.Visible = false;
             _pnlTrainingResult!.Visible = false;
         }
 
@@ -5372,6 +5462,7 @@ namespace ChessDroid
         private void TrainingStartRound()
         {
             if (_openingModeSelected) { OpeningTrainingStart(); return; }
+            if (_puzzleModeSelected)  { PuzzleTrainingStart();  return; }
 
             _trainingPreFen = boardControl.GetFEN();
             _trainingPreFlipped = boardControl.IsFlipped;
@@ -5561,6 +5652,7 @@ namespace ChessDroid
         private void SetTrainingMode(string mode) // "square" | "opening" | "puzzle"
         {
             _openingModeSelected = mode == "opening";
+            _puzzleModeSelected  = mode == "puzzle";
             if (_lblTrainingTitle != null)
                 _lblTrainingTitle.Text = mode == "opening" ? "Opening Training"
                                        : mode == "puzzle"  ? "Puzzle Training"
@@ -5574,8 +5666,9 @@ namespace ChessDroid
                 btn.BackColor = active ? scheme.TextColor : scheme.ButtonBackColor;
                 btn.ForeColor = active ? scheme.FormBackColor : scheme.ButtonForeColor;
             }
-            Hi(_btnSqMode, mode == "square");
-            Hi(_btnOpMode, mode == "opening");
+            Hi(_btnSqMode,     mode == "square");
+            Hi(_btnOpMode,     mode == "opening");
+            Hi(_btnPuzzleMode, mode == "puzzle");
         }
 
         private void SelectOpeningForTraining()
@@ -5731,11 +5824,6 @@ namespace ChessDroid
                 boardControl.StartAnimation(uci);
             PlayMoveSound(san.Contains('x'), san);
 
-            // Highlight destination square
-            int toCol = uci[2] - 'a';
-            int toRow = 7 - (uci[3] - '1');
-            boardControl.SetTrainingHighlight(toRow, toCol, Color.FromArgb(180, 80, 180, 80));
-
             if (_lblTrainingTarget != null) _lblTrainingTarget.Text = san;
 
             _openingPlayIndex++;
@@ -5758,9 +5846,11 @@ namespace ChessDroid
         private void OpeningTrainingStartRecreate()
         {
             _openingRecreateIndex = 0;
+            _openingHintsUsed     = 0;
             _openingPosMistakes.Clear();
             _openingRecreateLocked = false;
-            _openingRecreatePhase = true;
+            _openingRecreatePhase  = true;
+            if (_btnOpHint != null) _btnOpHint.Enabled = true;
             boardControl.ClearTrainingHighlight();
 
             isNavigating = true;
@@ -5771,6 +5861,27 @@ namespace ChessDroid
             if (_lblTrainingTarget != null) _lblTrainingTarget.Text = "?";
             if (_lblTrainingScore != null) _lblTrainingScore.Text = $"{_selectedTrainingOpening?.Eco}  {StripMovesFromOpeningName(_selectedTrainingOpening?.Name ?? "")}";
             if (_lblOpGameStatus != null) _lblOpGameStatus.Text = $"Move  1 / {_openingUciMoves.Count}";
+        }
+
+        private void BtnOpHint_Click(object? sender, EventArgs e)
+        {
+            if (!_openingRecreatePhase || _openingRecreateLocked) return;
+            if (_openingRecreateIndex >= _openingUciMoves.Count) return;
+            _openingHintsUsed++;
+            if (_btnOpHint != null) _btnOpHint.Enabled = false;
+            string uci = _openingUciMoves[_openingRecreateIndex];
+            int fromRow = 7 - (uci[1] - '1');
+            int fromCol = uci[0] - 'a';
+            boardControl.SetTrainingHighlight(fromRow, fromCol, Color.FromArgb(120, 255, 235, 80));
+            Task.Delay(1500).ContinueWith(_ =>
+            {
+                if (!IsDisposed) Invoke(() =>
+                {
+                    boardControl.ClearTrainingHighlight();
+                    if (_openingRecreatePhase && !_openingRecreateLocked && _btnOpHint != null)
+                        _btnOpHint.Enabled = true;
+                });
+            });
         }
 
         private void OpeningTrainingValidateMove(string uciMove)
@@ -5784,7 +5895,7 @@ namespace ChessDroid
             if (uciMove == expected)
             {
                 _openingRecreateIndex++;
-                boardControl.SetTrainingHighlight(toRow, toCol, Color.FromArgb(175, 50, 205, 50));
+                if (_btnOpHint != null) _btnOpHint.Enabled = true;
 
                 if (_openingRecreateIndex >= _openingUciMoves.Count)
                 {
@@ -5794,12 +5905,8 @@ namespace ChessDroid
                 }
                 else
                 {
-                    // Correct but not last — no lock, fast players continue immediately
+                    // Correct but not last
                     UpdateOpeningRecreateDisplay();
-                    Task.Delay(400).ContinueWith(_ =>
-                    {
-                        if (!IsDisposed) Invoke((Action)boardControl.ClearTrainingHighlight);
-                    });
                 }
             }
             else
@@ -5820,6 +5927,7 @@ namespace ChessDroid
                         boardControl.LoadFEN(correctFen);
                         isNavigating = false;
                         _openingRecreateLocked = false;
+                        if (_btnOpHint != null) _btnOpHint.Enabled = true;
                     });
                 });
                 UpdateOpeningRecreateDisplay();
@@ -5842,6 +5950,7 @@ namespace ChessDroid
             _openingRecreatePhase = false;
             _openingRecreateLocked = false;
             _trainingGameActive = false;
+            if (_btnOpHint != null) _btnOpHint.Enabled = false;
 
             boardControl.ClearTrainingHighlight();
             isNavigating = true;
@@ -5856,7 +5965,8 @@ namespace ChessDroid
 
             if (_lblTrainingFinalScore != null)
                 _lblTrainingFinalScore.Text = $"{correct} / {total} correct"
-                    + (wrongPositions == 0 ? "  —  Perfect!" : "");
+                    + (wrongPositions == 0 ? "  —  Perfect!" : "")
+                    + (_openingHintsUsed > 0 ? $"  ({_openingHintsUsed} hint{(_openingHintsUsed == 1 ? "" : "s")})" : "");
             if (_lblTrainingPB != null)
                 _lblTrainingPB.Text = $"{_selectedTrainingOpening?.Eco}  {_selectedTrainingOpening?.Name}";
 
@@ -5889,6 +5999,168 @@ namespace ChessDroid
             _ = TriggerAutoAnalysis();
         }
 
+        // ── Puzzle Training ────────────────────────────────────────────────────
+
+        private void PuzzleTrainingStart()
+        {
+            if (string.IsNullOrEmpty(_puzzlesFolder)) return;
+            _puzzlesSolved    = 0;
+            _puzzlesAttempted = 0;
+            _puzzleQueue.Clear();
+            _puzzleQueue.AddRange(LichessPuzzleService.GetRandomBatch(_puzzlesFolder, 200));
+
+            _trainingPreFen     = boardControl.GetFEN();
+            _trainingPreFlipped = boardControl.IsFlipped;
+            _trainingGameActive = true;
+
+            _pnlTrainingStart!.Visible  = false;
+            _pnlTrainingResult!.Visible = false;
+            _pnlPuzzleGame!.Visible     = true;
+
+            PuzzleLoadNext();
+        }
+
+        private void PuzzleLoadNext()
+        {
+            boardControl.ClearTrainingHighlight();
+            _puzzleLocked = false;
+            _currentPuzzle = null;
+
+            if (_puzzleQueue.Count == 0)
+                _puzzleQueue.AddRange(LichessPuzzleService.GetRandomBatch(_puzzlesFolder!, 200));
+
+            _currentPuzzle = _puzzleQueue[0];
+            _puzzleQueue.RemoveAt(0);
+            _puzzleMoveIndex  = 1;
+            _puzzlesAttempted++;
+            _puzzleActive     = true;
+
+            if (_lblPuzzleFeedback != null) _lblPuzzleFeedback.Text = "";
+            if (_lblPuzzleRating  != null) _lblPuzzleRating.Text =
+                $"Puzzle #{_puzzlesAttempted}  ·  Rating {_currentPuzzle.Rating}";
+            if (_lblPuzzleThemes  != null) _lblPuzzleThemes.Text =
+                string.Join(" · ", _currentPuzzle.Themes.Take(4));
+            UpdatePuzzleStats();
+
+            // Determine player side from FEN side-to-move (player is opposite of trigger mover)
+            bool fenWhiteToMove = _currentPuzzle.Fen.Contains(" w ");
+            isNavigating = true;
+            boardControl.LoadFEN(_currentPuzzle.Fen);
+            boardControl.IsFlipped = fenWhiteToMove; // fenWhiteToMove=true → opponent is white → player is black → flip
+            isNavigating = false;
+
+            // Short pause then play trigger move
+            _puzzleLocked = true;
+            Task.Delay(500).ContinueWith(_ => { if (!IsDisposed) Invoke((Action)PuzzlePlayTrigger); });
+        }
+
+        private void PuzzlePlayTrigger()
+        {
+            if (_currentPuzzle == null) return;
+            string trigger = _currentPuzzle.Moves[0];
+            string preFen  = boardControl.GetFEN();
+
+            isNavigating = true;
+            boardControl.MakeMove(trigger);
+            isNavigating = false;
+
+            string san = ConvertUciToSan(trigger, preFen);
+            PlayMoveSound(san.Contains('x'), san);
+            if (config?.ShowAnimations == true)
+                boardControl.StartAnimation(trigger);
+
+            int delay = config?.ShowAnimations == true ? (config.AnimationDurationMs + 100) : 150;
+            Task.Delay(delay).ContinueWith(_ => { if (!IsDisposed) Invoke(() => _puzzleLocked = false); });
+        }
+
+        private void PuzzleValidateMove(string uciMove)
+        {
+            if (_currentPuzzle == null || _puzzleMoveIndex >= _currentPuzzle.Moves.Length) return;
+            string expected = _currentPuzzle.Moves[_puzzleMoveIndex];
+
+            if (uciMove == expected)
+            {
+                _puzzleMoveIndex++;
+                if (_puzzleMoveIndex >= _currentPuzzle.Moves.Length)
+                {
+                    // Puzzle solved
+                    _puzzlesSolved++;
+                    _puzzleLocked = true;
+                    if (_lblPuzzleFeedback != null) _lblPuzzleFeedback.Text = "✓ Correct!";
+                    UpdatePuzzleStats();
+                    Task.Delay(1200).ContinueWith(_ => { if (!IsDisposed) Invoke((Action)PuzzleLoadNext); });
+                }
+                else
+                {
+                    // Correct move, opponent responds
+                    _puzzleLocked = true;
+                    if (_lblPuzzleFeedback != null) _lblPuzzleFeedback.Text = "";
+                    Task.Delay(400).ContinueWith(_ => { if (!IsDisposed) Invoke((Action)PuzzlePlayOpponentResponse); });
+                }
+            }
+            else
+            {
+                // Wrong — show red flash on destination, then restore and re-enable
+                _puzzleLocked = true;
+                int toRow = 7 - (uciMove[3] - '1');
+                int toCol = uciMove[2] - 'a';
+                boardControl.SetTrainingHighlight(toRow, toCol, Color.FromArgb(175, 215, 50, 50));
+                if (_lblPuzzleFeedback != null) _lblPuzzleFeedback.Text = "✗ Wrong";
+
+                string restoreFen = boardControl.GetFEN();
+                // Undo: reload the FEN from before the wrong move by replaying from puzzle start
+                isNavigating = true;
+                boardControl.LoadFEN(_currentPuzzle.Fen);
+                // Re-apply all confirmed moves up to current index
+                for (int i = 0; i < _puzzleMoveIndex; i++)
+                    boardControl.MakeMove(_currentPuzzle.Moves[i]);
+                isNavigating = false;
+
+                Task.Delay(800).ContinueWith(_ =>
+                {
+                    if (!IsDisposed) Invoke(() =>
+                    {
+                        boardControl.ClearTrainingHighlight();
+                        if (_lblPuzzleFeedback != null) _lblPuzzleFeedback.Text = "";
+                        _puzzleLocked = false;
+                    });
+                });
+            }
+        }
+
+        private void PuzzlePlayOpponentResponse()
+        {
+            if (_currentPuzzle == null || _puzzleMoveIndex >= _currentPuzzle.Moves.Length) return;
+            string response = _currentPuzzle.Moves[_puzzleMoveIndex];
+            string preFen   = boardControl.GetFEN();
+
+            isNavigating = true;
+            boardControl.MakeMove(response);
+            isNavigating = false;
+
+            string san = ConvertUciToSan(response, preFen);
+            PlayMoveSound(san.Contains('x'), san);
+            if (config?.ShowAnimations == true)
+                boardControl.StartAnimation(response);
+
+            _puzzleMoveIndex++;
+            int delay = config?.ShowAnimations == true ? (config.AnimationDurationMs + 100) : 150;
+            Task.Delay(delay).ContinueWith(_ => { if (!IsDisposed) Invoke(() => _puzzleLocked = false); });
+        }
+
+        private void PuzzleSkip()
+        {
+            if (!_puzzleActive) return;
+            _puzzlesAttempted = Math.Max(0, _puzzlesAttempted - 1); // don't count skips
+            PuzzleLoadNext();
+        }
+
+        private void UpdatePuzzleStats()
+        {
+            if (_lblPuzzleStats != null)
+                _lblPuzzleStats.Text = $"Solved: {_puzzlesSolved} / {_puzzlesAttempted}";
+        }
+
         private void ApplyTrainingTheme()
         {
             if (_pnlTraining == null) return;
@@ -5897,7 +6169,7 @@ namespace ChessDroid
             _pnlTraining.BackColor = scheme.FormBackColor;
             ApplyThemeToChildren(_pnlTraining, scheme);
             // Re-apply mode button highlight with current theme
-            string mode = _openingModeSelected ? "opening" : "square";
+            string mode = _puzzleModeSelected ? "puzzle" : _openingModeSelected ? "opening" : "square";
             SetTrainingMode(mode);
         }
 
