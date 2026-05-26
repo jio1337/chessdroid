@@ -4989,7 +4989,9 @@ namespace ChessDroid
         private Label?  _lblPuzzleThemes;
         private Label?  _lblPuzzleFeedback;
         private Label?  _lblPuzzleStats;
+        private Button? _btnPuzzleHint;
         private Button? _btnPuzzleSkip;
+        private int     _puzzleHintsUsed;
 
         private void InitTrainingPanel()
         {
@@ -5281,13 +5283,22 @@ namespace ChessDroid
             _lblPuzzleThemes = new Label
             {
                 Font = new Font("Courier New", 8.5f),
-                Dock = DockStyle.Top, Height = 20, TextAlign = ContentAlignment.MiddleCenter
+                Dock = DockStyle.Top, Height = 34,
+                TextAlign = ContentAlignment.TopCenter,
+                AutoEllipsis = true
             };
             _lblPuzzleStats = new Label
             {
                 Font = new Font("Courier New", 9.5f),
                 Dock = DockStyle.Top, Height = 22, TextAlign = ContentAlignment.MiddleCenter
             };
+            _btnPuzzleHint = new Button
+            {
+                Text = "💡 Hint", Font = new Font("Courier New", 9f, FontStyle.Bold),
+                Dock = DockStyle.Top, Height = 28, FlatStyle = FlatStyle.Flat,
+                Enabled = false
+            };
+            _btnPuzzleHint.Click += BtnPuzzleHint_Click;
             _btnPuzzleSkip = new Button
             {
                 Text = "Skip →", Font = new Font("Courier New", 9f),
@@ -5296,7 +5307,7 @@ namespace ChessDroid
             _btnPuzzleSkip.Click += (_, _) => PuzzleSkip();
             // DockStyle.Top: last = topmost visually
             _pnlPuzzleGame.Controls.AddRange(new Control[]
-                { _btnPuzzleSkip, _lblPuzzleStats, _lblPuzzleFeedback, _lblPuzzleThemes, _lblPuzzleRating });
+                { _btnPuzzleSkip, _btnPuzzleHint, _lblPuzzleStats, _lblPuzzleFeedback, _lblPuzzleThemes, _lblPuzzleRating });
 
             // ── Result panel ──────────────────────────────────────────────────
             _pnlTrainingResult = new Panel { Dock = DockStyle.Fill, Visible = false };
@@ -5384,7 +5395,8 @@ namespace ChessDroid
             _openingRecreatePhase = false;
             _puzzleActive = false;
             _puzzleLocked = false;
-            if (_btnOpHint != null) _btnOpHint.Enabled = false;
+            if (_btnOpHint    != null) _btnOpHint.Enabled    = false;
+            if (_btnPuzzleHint != null) _btnPuzzleHint.Enabled = false;
             if (_pnlPuzzleGame != null) _pnlPuzzleGame.Visible = false;
 
             if (_trainingGameActive)
@@ -5428,7 +5440,8 @@ namespace ChessDroid
             _openingRecreatePhase = false;
             _puzzleActive = false;
             _puzzleLocked = false;
-            if (_btnOpHint != null) _btnOpHint.Enabled = false;
+            if (_btnOpHint     != null) _btnOpHint.Enabled     = false;
+            if (_btnPuzzleHint != null) _btnPuzzleHint.Enabled = false;
             if (_pnlPuzzleGame != null) _pnlPuzzleGame.Visible = false;
 
             if (_trainingGameActive)
@@ -6036,10 +6049,10 @@ namespace ChessDroid
             _puzzleActive     = true;
 
             if (_lblPuzzleFeedback != null) _lblPuzzleFeedback.Text = "";
+            if (_lblPuzzleThemes  != null) _lblPuzzleThemes.Text = "";   // revealed only on finish
             if (_lblPuzzleRating  != null) _lblPuzzleRating.Text =
                 $"Puzzle #{_puzzlesAttempted}  ·  Rating {_currentPuzzle.Rating}";
-            if (_lblPuzzleThemes  != null) _lblPuzzleThemes.Text =
-                string.Join(" · ", _currentPuzzle.Themes.Take(4));
+            if (_btnPuzzleHint != null) _btnPuzzleHint.Enabled = false;  // enabled after trigger plays
             UpdatePuzzleStats();
 
             // Determine player side from FEN side-to-move (player is opposite of trigger mover)
@@ -6070,7 +6083,36 @@ namespace ChessDroid
                 boardControl.StartAnimation(trigger);
 
             int delay = config?.ShowAnimations == true ? (config.AnimationDurationMs + 100) : 150;
-            Task.Delay(delay).ContinueWith(_ => { if (!IsDisposed) Invoke(() => _puzzleLocked = false); });
+            Task.Delay(delay).ContinueWith(_ =>
+            {
+                if (!IsDisposed) Invoke(() =>
+                {
+                    _puzzleLocked = false;
+                    if (_btnPuzzleHint != null) _btnPuzzleHint.Enabled = true;
+                });
+            });
+        }
+
+        private void BtnPuzzleHint_Click(object? sender, EventArgs e)
+        {
+            if (!_puzzleActive || _puzzleLocked || _currentPuzzle == null) return;
+            if (_puzzleMoveIndex >= _currentPuzzle.Moves.Length) return;
+            _puzzleHintsUsed++;
+            if (_btnPuzzleHint != null) _btnPuzzleHint.Enabled = false;
+            UpdatePuzzleStats();
+            string uci    = _currentPuzzle.Moves[_puzzleMoveIndex];
+            int fromRow   = 7 - (uci[1] - '1');
+            int fromCol   = uci[0] - 'a';
+            boardControl.SetTrainingHighlight(fromRow, fromCol, Color.FromArgb(120, 255, 235, 80));
+            Task.Delay(1500).ContinueWith(_ =>
+            {
+                if (!IsDisposed) Invoke(() =>
+                {
+                    boardControl.ClearTrainingHighlight();
+                    if (_puzzleActive && !_puzzleLocked && _btnPuzzleHint != null)
+                        _btnPuzzleHint.Enabled = true;
+                });
+            });
         }
 
         private void PuzzleValidateMove(string uciMove)
@@ -6086,9 +6128,11 @@ namespace ChessDroid
                     // Puzzle solved
                     _puzzlesSolved++;
                     _puzzleLocked = true;
+                    if (_btnPuzzleHint != null) _btnPuzzleHint.Enabled = false;
                     if (_lblPuzzleFeedback != null) _lblPuzzleFeedback.Text = "✓ Correct!";
+                    PuzzleRevealThemes();
                     UpdatePuzzleStats();
-                    Task.Delay(1200).ContinueWith(_ => { if (!IsDisposed) Invoke((Action)PuzzleLoadNext); });
+                    Task.Delay(1400).ContinueWith(_ => { if (!IsDisposed) Invoke((Action)PuzzleLoadNext); });
                 }
                 else
                 {
@@ -6123,6 +6167,7 @@ namespace ChessDroid
                         boardControl.ClearTrainingHighlight();
                         if (_lblPuzzleFeedback != null) _lblPuzzleFeedback.Text = "";
                         _puzzleLocked = false;
+                        if (_btnPuzzleHint != null) _btnPuzzleHint.Enabled = true;
                     });
                 });
             }
@@ -6145,20 +6190,43 @@ namespace ChessDroid
 
             _puzzleMoveIndex++;
             int delay = config?.ShowAnimations == true ? (config.AnimationDurationMs + 100) : 150;
-            Task.Delay(delay).ContinueWith(_ => { if (!IsDisposed) Invoke(() => _puzzleLocked = false); });
+            Task.Delay(delay).ContinueWith(_ =>
+            {
+                if (!IsDisposed) Invoke(() =>
+                {
+                    _puzzleLocked = false;
+                    if (_btnPuzzleHint != null) _btnPuzzleHint.Enabled = true;
+                });
+            });
         }
 
         private void PuzzleSkip()
         {
             if (!_puzzleActive) return;
             _puzzlesAttempted = Math.Max(0, _puzzlesAttempted - 1); // don't count skips
-            PuzzleLoadNext();
+            _puzzleLocked = true;
+            if (_btnPuzzleHint != null) _btnPuzzleHint.Enabled = false;
+            PuzzleRevealThemes();
+            if (_lblPuzzleFeedback != null) _lblPuzzleFeedback.Text = "";
+            Task.Delay(900).ContinueWith(_ => { if (!IsDisposed) Invoke((Action)PuzzleLoadNext); });
+        }
+
+        private void PuzzleRevealThemes()
+        {
+            if (_lblPuzzleThemes == null || _currentPuzzle == null) return;
+            string themes  = string.Join(" · ", _currentPuzzle.Themes.Take(5));
+            string opening = _currentPuzzle.OpeningTags.Replace('_', ' ').Trim();
+            _lblPuzzleThemes.Text = string.IsNullOrEmpty(opening)
+                ? themes
+                : $"{themes}\n{opening}";
         }
 
         private void UpdatePuzzleStats()
         {
-            if (_lblPuzzleStats != null)
-                _lblPuzzleStats.Text = $"Solved: {_puzzlesSolved} / {_puzzlesAttempted}";
+            if (_lblPuzzleStats == null) return;
+            string s = $"Solved: {_puzzlesSolved} / {_puzzlesAttempted}";
+            if (_puzzleHintsUsed > 0) s += $"  ·  Hints: {_puzzleHintsUsed}";
+            _lblPuzzleStats.Text = s;
         }
 
         private void ApplyTrainingTheme()
