@@ -61,13 +61,14 @@ namespace ChessDroid.Services
         }
 
         public static GeneratedPuzzle? TryGenerateRandom(int max = 500) =>
-            _rng.Next(5) switch
+            _rng.Next(4) switch
             {
                 0 => TryGenerateKnightFork(max),
                 1 => TryGenerateQueenFork(max),
                 2 => TryGenerateBackRankMate(max),
-                3 => TryGenerateSmotheredMate(max),
-                _ => TryGenerateSkewer(max),
+                _ => TryGenerateSmotheredMate(max),
+                // Skewer excluded: king can flee adjacent to target, making the
+                // capture unsound. Needs full king-escape simulation to verify.
             };
 
         // ── Knight Fork ──────────────────────────────────────────────────
