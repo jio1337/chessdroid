@@ -213,6 +213,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [Ethereal](https://github.com/AndyGrant/Ethereal) — High-performance chess engine, inspiration for positional evaluation
 - [Lc0](https://lczero.org/) — Leela Chess Zero, inspiration for WDL display and aggressiveness features
 - [Chess.com](https://www.chess.com/) — Inspiration for move classification system and quality symbols
+- [Lichess](https://lichess.org/) — Open-source chess platform; puzzle database (5.94M puzzles, CC0 license) powering Puzzle Training, Puzzle Rush, and Puzzle Gauntlet; piece set assets; win-probability formula used for game accuracy scoring
 - [Claude](https://claude.ai/) — AI assistant by Anthropic, instrumental in developing chessdroid's architecture, analysis features, and codebase
 
 ## Disclaimer

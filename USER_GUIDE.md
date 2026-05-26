@@ -522,6 +522,7 @@ Create a folder in `Templates/` with 12 PNG files (wK, wQ, wR, wB, wN, wP, bK, b
 - Ethereal by Andy Grant — Positional evaluation, pawn structure, SEE
 - Leela Chess Zero (Lc0) — WDL display, position sharpness
 - Chess.com — Move classification system
+- Lichess (lichess.org) — Puzzle database (5.94M puzzles, CC0), piece set assets, win-probability accuracy formula
 
 ---
 
