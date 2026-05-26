@@ -4923,6 +4923,10 @@ namespace ChessDroid
         private const string TRAINING_EMPTY_FEN = "8/8/8/8/8/8/8/8 w - - 0 1";
         private static readonly Random _trainingRng = new();
 
+        private static readonly Color TrainingHintColor  = Color.FromArgb(120, 255, 235, 80);
+        private static readonly Color TrainingErrorColor = Color.FromArgb(175, 215, 50, 50);
+        private static readonly Color TrainingOkColor    = Color.FromArgb(175, 50, 205, 50);
+
         private bool _trainingUiVisible = false;
         private bool _trainingGameActive = false;
         private string? _trainingPreFen;
@@ -5465,9 +5469,9 @@ namespace ChessDroid
                 Text = "Total:", Font = F(9f, true),
                 AutoSize = true, Location = new Point(0, 7)
             };
-            _visionGlobalBtn1 = new Button { Text = "1 min", Font = F(9f), Location = new Point(50,  3), Size = new Size(46, 22), FlatStyle = FlatStyle.Flat };
-            _visionGlobalBtn3 = new Button { Text = "3 min", Font = F(9f), Location = new Point(100, 3), Size = new Size(46, 22), FlatStyle = FlatStyle.Flat };
-            _visionGlobalBtn5 = new Button { Text = "5 min", Font = F(9f), Location = new Point(150, 3), Size = new Size(46, 22), FlatStyle = FlatStyle.Flat };
+            _visionGlobalBtn1 = new Button { Text = "1m", Font = F(9f), Location = new Point(50,  3), Size = new Size(34, 22), FlatStyle = FlatStyle.Flat };
+            _visionGlobalBtn3 = new Button { Text = "3m", Font = F(9f), Location = new Point(88,  3), Size = new Size(34, 22), FlatStyle = FlatStyle.Flat };
+            _visionGlobalBtn5 = new Button { Text = "5m", Font = F(9f), Location = new Point(126, 3), Size = new Size(34, 22), FlatStyle = FlatStyle.Flat };
             _visionGlobalBtn1.Click += (_, _) => SelectVisionGlobalTime(60);
             _visionGlobalBtn3.Click += (_, _) => SelectVisionGlobalTime(180);
             _visionGlobalBtn5.Click += (_, _) => SelectVisionGlobalTime(300);
@@ -5982,7 +5986,7 @@ namespace ChessDroid
                 _trainingCorrect++;
                 _trainingInWrongFlash = false;
                 _trainingInCorrectFlash = true;
-                boardControl.SetTrainingHighlight(row, col, Color.FromArgb(175, 50, 205, 50));
+                boardControl.SetTrainingHighlight(row, col, TrainingOkColor);
             }
             else
             {
@@ -5991,7 +5995,7 @@ namespace ChessDroid
                 _trainingInCorrectFlash = false;
                 _trainingCorrectRow = _trainingTargetRow;
                 _trainingCorrectCol = _trainingTargetCol;
-                boardControl.SetTrainingHighlight(row, col, Color.FromArgb(175, 215, 50, 50));
+                boardControl.SetTrainingHighlight(row, col, TrainingErrorColor);
             }
 
             TrainingUpdateStats();
@@ -6008,7 +6012,7 @@ namespace ChessDroid
                 _trainingInCorrectFlash = true;
                 _trainingFlashMs = 0;
                 boardControl.SetTrainingHighlight(_trainingCorrectRow, _trainingCorrectCol,
-                    Color.FromArgb(175, 50, 205, 50));
+                    TrainingOkColor);
                 return;
             }
 
@@ -6121,17 +6125,10 @@ namespace ChessDroid
             if (_pnlOpeningSettings != null) _pnlOpeningSettings.Visible = mode == "opening";
             if (_pnlPuzzleSettings  != null) _pnlPuzzleSettings.Visible  = mode == "puzzle";
             if (_pnlVisionSettings  != null) _pnlVisionSettings.Visible  = mode == "vision";
-            var scheme = ThemeService.GetColorScheme(config?.Theme ?? "Dark");
-            void Hi(Button? btn, bool active)
-            {
-                if (btn == null) return;
-                btn.BackColor = active ? scheme.TextColor : scheme.ButtonBackColor;
-                btn.ForeColor = active ? scheme.FormBackColor : scheme.ButtonForeColor;
-            }
-            Hi(_btnSqMode,     mode == "square");
-            Hi(_btnOpMode,     mode == "opening");
-            Hi(_btnPuzzleMode, mode == "puzzle");
-            Hi(_btnVisionMode, mode == "vision");
+            HighlightButton(_btnSqMode,     mode == "square");
+            HighlightButton(_btnOpMode,     mode == "opening");
+            HighlightButton(_btnPuzzleMode, mode == "puzzle");
+            HighlightButton(_btnVisionMode, mode == "vision");
         }
 
         private void SetPuzzleSubMode(string subMode) // "training" | "rush" | "gauntlet"
@@ -6141,16 +6138,9 @@ namespace ChessDroid
             if (_pnlPuzzleAutoNextRow != null) _pnlPuzzleAutoNextRow.Visible = subMode == "training";
             if (_pnlRushTimeRow       != null) _pnlRushTimeRow.Visible       = subMode == "rush";
             if (_lblGauntletDesc      != null) _lblGauntletDesc.Visible      = subMode == "gauntlet";
-            var scheme = ThemeService.GetColorScheme(config?.Theme ?? "Dark");
-            void Hi(Button? btn, bool active)
-            {
-                if (btn == null) return;
-                btn.BackColor = active ? scheme.TextColor : scheme.ButtonBackColor;
-                btn.ForeColor = active ? scheme.FormBackColor : scheme.ButtonForeColor;
-            }
-            Hi(_btnPuzzleSubTraining, subMode == "training");
-            Hi(_btnPuzzleSubRush,     subMode == "rush");
-            Hi(_btnPuzzleSubGauntlet, subMode == "gauntlet");
+            HighlightButton(_btnPuzzleSubTraining, subMode == "training");
+            HighlightButton(_btnPuzzleSubRush,     subMode == "rush");
+            HighlightButton(_btnPuzzleSubGauntlet, subMode == "gauntlet");
             // Adjust settings panel height for current sub-mode (gaps: 8px top + 6px sub = 14px fixed)
             if (_pnlPuzzleSettings != null)
                 _pnlPuzzleSettings.Height = subMode == "rush" ? 76 : subMode == "gauntlet" ? 66 : 124;
@@ -6159,18 +6149,11 @@ namespace ChessDroid
         private void SelectRushTime(int minutes)
         {
             _rushDurationSeconds = minutes * 60;
-            var scheme = ThemeService.GetColorScheme(config?.Theme ?? "Dark");
-            void Hi(Button? btn, bool active)
-            {
-                if (btn == null) return;
-                btn.BackColor = active ? scheme.TextColor : scheme.ButtonBackColor;
-                btn.ForeColor = active ? scheme.FormBackColor : scheme.ButtonForeColor;
-            }
-            Hi(_rushTimeBtn1, minutes == 1);
-            Hi(_rushTimeBtn2, minutes == 2);
-            Hi(_rushTimeBtn3, minutes == 3);
-            Hi(_rushTimeBtn4, minutes == 4);
-            Hi(_rushTimeBtn5, minutes == 5);
+            HighlightButton(_rushTimeBtn1, minutes == 1);
+            HighlightButton(_rushTimeBtn2, minutes == 2);
+            HighlightButton(_rushTimeBtn3, minutes == 3);
+            HighlightButton(_rushTimeBtn4, minutes == 4);
+            HighlightButton(_rushTimeBtn5, minutes == 5);
         }
 
         private void SelectOpeningForTraining()
@@ -6306,9 +6289,9 @@ namespace ChessDroid
                 _openingWatchesLeft--;
 
                 if (_openingWatchesLeft > 0)
-                    Task.Delay(800).ContinueWith(_ => { if (!IsDisposed) Invoke((Action)OpeningTrainingStartWatch); });
+                    ScheduleInvoke(800, OpeningTrainingStartWatch);
                 else
-                    Task.Delay(800).ContinueWith(_ => { if (!IsDisposed) Invoke((Action)OpeningTrainingStartRecreate); });
+                    ScheduleInvoke(800, OpeningTrainingStartRecreate);
                 return;
             }
 
@@ -6326,7 +6309,7 @@ namespace ChessDroid
                 boardControl.StartAnimation(uci);
             PlayMoveSound(san.Contains('x'), san);
 
-            if (_lblTrainingTarget != null) _lblTrainingTarget.Text = san;
+            SetText(_lblTrainingTarget, san);
 
             _openingPlayIndex++;
             UpdateOpeningWatchDisplay();
@@ -6335,14 +6318,10 @@ namespace ChessDroid
         private void UpdateOpeningWatchDisplay()
         {
             int watchNum = _selectedWatches - _openingWatchesLeft + 1;
-            if (_lblTrainingRound != null)
-                _lblTrainingRound.Text = $"Watch  {watchNum} / {_selectedWatches}";
-            if (_lblTrainingScore != null)
-                _lblTrainingScore.Text = $"{_selectedTrainingOpening?.Eco}  {StripMovesFromOpeningName(_selectedTrainingOpening?.Name ?? "")}";
-            if (_lblOpGameStatus != null)
-                _lblOpGameStatus.Text = $"Move  {_openingPlayIndex} / {_openingUciMoves.Count}";
-            if (_openingPlayIndex == 0 && _lblTrainingTarget != null)
-                _lblTrainingTarget.Text = "…";
+            SetText(_lblTrainingRound, $"Watch  {watchNum} / {_selectedWatches}");
+            SetText(_lblTrainingScore, $"{_selectedTrainingOpening?.Eco}  {StripMovesFromOpeningName(_selectedTrainingOpening?.Name ?? "")}");
+            SetText(_lblOpGameStatus,  $"Move  {_openingPlayIndex} / {_openingUciMoves.Count}");
+            if (_openingPlayIndex == 0) SetText(_lblTrainingTarget, "…");
         }
 
         private void OpeningTrainingStartRecreate()
@@ -6359,10 +6338,10 @@ namespace ChessDroid
             boardControl.LoadFEN(_openingFens[0]);
             isNavigating = false;
 
-            if (_lblTrainingRound != null) _lblTrainingRound.Text = "Recreate";
-            if (_lblTrainingTarget != null) _lblTrainingTarget.Text = "?";
-            if (_lblTrainingScore != null) _lblTrainingScore.Text = $"{_selectedTrainingOpening?.Eco}  {StripMovesFromOpeningName(_selectedTrainingOpening?.Name ?? "")}";
-            if (_lblOpGameStatus != null) _lblOpGameStatus.Text = $"Move  1 / {_openingUciMoves.Count}";
+            SetText(_lblTrainingRound,  "Recreate");
+            SetText(_lblTrainingTarget, "?");
+            SetText(_lblTrainingScore,  $"{_selectedTrainingOpening?.Eco}  {StripMovesFromOpeningName(_selectedTrainingOpening?.Name ?? "")}");
+            SetText(_lblOpGameStatus,   $"Move  1 / {_openingUciMoves.Count}");
         }
 
         private void BtnOpHint_Click(object? sender, EventArgs e)
@@ -6370,19 +6349,11 @@ namespace ChessDroid
             if (!_openingRecreatePhase || _openingRecreateLocked) return;
             if (_openingRecreateIndex >= _openingUciMoves.Count) return;
             _openingHintsUsed++;
-            if (_btnOpHint != null) _btnOpHint.Enabled = false;
             string uci = _openingUciMoves[_openingRecreateIndex];
-            int fromRow = 7 - (uci[1] - '1');
-            int fromCol = uci[0] - 'a';
-            boardControl.SetTrainingHighlight(fromRow, fromCol, Color.FromArgb(120, 255, 235, 80));
-            Task.Delay(1500).ContinueWith(_ =>
+            ShowTrainingHint(uci, _btnOpHint, () =>
             {
-                if (!IsDisposed) Invoke(() =>
-                {
-                    boardControl.ClearTrainingHighlight();
-                    if (_openingRecreatePhase && !_openingRecreateLocked && _btnOpHint != null)
-                        _btnOpHint.Enabled = true;
-                });
+                if (_openingRecreatePhase && !_openingRecreateLocked && _btnOpHint != null)
+                    _btnOpHint.Enabled = true;
             });
         }
 
@@ -6403,7 +6374,7 @@ namespace ChessDroid
                 {
                     // Last move — lock briefly then show result
                     _openingRecreateLocked = true;
-                    Task.Delay(700).ContinueWith(_ => { if (!IsDisposed) Invoke((Action)OpeningTrainingEnd); });
+                    ScheduleInvoke(700, OpeningTrainingEnd);
                 }
                 else
                 {
@@ -6416,7 +6387,7 @@ namespace ChessDroid
                 _openingPosMistakes[_openingRecreateIndex] =
                     _openingPosMistakes.GetValueOrDefault(_openingRecreateIndex) + 1;
                 _openingRecreateLocked = true;
-                boardControl.SetTrainingHighlight(toRow, toCol, Color.FromArgb(175, 215, 50, 50));
+                boardControl.SetTrainingHighlight(toRow, toCol, TrainingErrorColor);
 
                 string correctFen = _openingFens[_openingRecreateIndex];
                 Task.Delay(600).ContinueWith(_ =>
@@ -6440,10 +6411,8 @@ namespace ChessDroid
         {
             int total = _openingUciMoves.Count;
             int done = _openingRecreateIndex;
-            if (_lblOpGameStatus != null)
-                _lblOpGameStatus.Text = $"Move  {Math.Min(done + 1, total)} / {total}    ✗ {_openingPosMistakes.Count}";
-            if (_lblTrainingTarget != null)
-                _lblTrainingTarget.Text = "?";
+            SetText(_lblOpGameStatus,   $"Move  {Math.Min(done + 1, total)} / {total}    ✗ {_openingPosMistakes.Count}");
+            SetText(_lblTrainingTarget, "?");
         }
 
         private void OpeningTrainingEnd()
@@ -6558,7 +6527,7 @@ namespace ChessDroid
             _puzzlesAttempted++;
             _puzzleActive     = true;
 
-            if (_lblPuzzleFeedback != null) _lblPuzzleFeedback.Text = "";
+            SetText(_lblPuzzleFeedback, "");
             if (_lblPuzzleThemes  != null) _lblPuzzleThemes.Text =
                 _puzzleThemeFilter != null ? $"▸ {_cmbPuzzleTheme?.Text}" : "";
             if (_lblPuzzleRating  != null) _lblPuzzleRating.Text =
@@ -6575,7 +6544,7 @@ namespace ChessDroid
 
             // Short pause then play trigger move
             _puzzleLocked = true;
-            Task.Delay(500).ContinueWith(_ => { if (!IsDisposed) Invoke((Action)PuzzlePlayTrigger); });
+            ScheduleInvoke(500, PuzzlePlayTrigger);
         }
 
         private void PuzzlePlayTrigger()
@@ -6611,20 +6580,12 @@ namespace ChessDroid
             if (_puzzleMoveIndex >= _currentPuzzle.Moves.Length) return;
             _puzzleHintsUsed++;
             _wrongThisPuzzle = true;
-            if (_btnPuzzleHint != null) _btnPuzzleHint.Enabled = false;
             UpdatePuzzleStats();
-            string uci    = _currentPuzzle.Moves[_puzzleMoveIndex];
-            int fromRow   = 7 - (uci[1] - '1');
-            int fromCol   = uci[0] - 'a';
-            boardControl.SetTrainingHighlight(fromRow, fromCol, Color.FromArgb(120, 255, 235, 80));
-            Task.Delay(1500).ContinueWith(_ =>
+            string uci = _currentPuzzle.Moves[_puzzleMoveIndex];
+            ShowTrainingHint(uci, _btnPuzzleHint, () =>
             {
-                if (!IsDisposed) Invoke(() =>
-                {
-                    boardControl.ClearTrainingHighlight();
-                    if (_puzzleActive && !_puzzleLocked && _btnPuzzleHint != null)
-                        _btnPuzzleHint.Enabled = true;
-                });
+                if (_puzzleActive && !_puzzleLocked && _btnPuzzleHint != null)
+                    _btnPuzzleHint.Enabled = true;
             });
         }
 
@@ -6648,8 +6609,7 @@ namespace ChessDroid
                     string timeStr = _puzzleSubMode == "gauntlet" ? "" : elapsed < 60
                         ? $"  {elapsed:F1}s"
                         : $"  {(int)(elapsed/60)}m {(int)(elapsed%60)}s";
-                    if (_lblPuzzleFeedback != null)
-                        _lblPuzzleFeedback.Text = $"✓ Correct!{timeStr}";
+                    SetText(_lblPuzzleFeedback, $"✓ Correct!{timeStr}");
                     PuzzleRevealThemes();
                     UpdatePuzzleStats();
                     int solveDelay = _puzzleSubMode == "gauntlet" ? 700 : 1400;
@@ -6662,14 +6622,14 @@ namespace ChessDroid
                             if (_btnPuzzleSkip    != null) _btnPuzzleSkip.Visible    = false;
                         });
                     else
-                        Task.Delay(solveDelay).ContinueWith(_ => { if (!IsDisposed) Invoke((Action)PuzzleLoadNext); });
+                        ScheduleInvoke(solveDelay, PuzzleLoadNext);
                 }
                 else
                 {
                     // Correct move, opponent responds
                     _puzzleLocked = true;
-                    if (_lblPuzzleFeedback != null) _lblPuzzleFeedback.Text = "";
-                    Task.Delay(400).ContinueWith(_ => { if (!IsDisposed) Invoke((Action)PuzzlePlayOpponentResponse); });
+                    SetText(_lblPuzzleFeedback, "");
+                    ScheduleInvoke(400, PuzzlePlayOpponentResponse);
                 }
             }
             else
@@ -6678,13 +6638,13 @@ namespace ChessDroid
                 _puzzleLocked    = true;
                 int toRow = 7 - (uciMove[3] - '1');
                 int toCol = uciMove[2] - 'a';
-                boardControl.SetTrainingHighlight(toRow, toCol, Color.FromArgb(175, 215, 50, 50));
-                if (_lblPuzzleFeedback != null) _lblPuzzleFeedback.Text = "✗ Wrong";
+                boardControl.SetTrainingHighlight(toRow, toCol, TrainingErrorColor);
+                SetText(_lblPuzzleFeedback, "✗ Wrong");
 
                 if (_puzzleSubMode == "gauntlet")
                 {
                     // Gauntlet: end run after brief flash
-                    Task.Delay(900).ContinueWith(_ => { if (!IsDisposed) Invoke((Action)GauntletEnd); });
+                    ScheduleInvoke(900, GauntletEnd);
                     return;
                 }
 
@@ -6700,7 +6660,7 @@ namespace ChessDroid
                     if (!IsDisposed) Invoke(() =>
                     {
                         boardControl.ClearTrainingHighlight();
-                        if (_lblPuzzleFeedback != null) _lblPuzzleFeedback.Text = "";
+                        SetText(_lblPuzzleFeedback, "");
                         _puzzleLocked = false;
                         if (_btnPuzzleHint != null) _btnPuzzleHint.Enabled = true;
                     });
@@ -6742,7 +6702,7 @@ namespace ChessDroid
             _puzzleLocked = true;
             if (_btnPuzzleHint != null) _btnPuzzleHint.Enabled = false;
             PuzzleRevealThemes();
-            if (_lblPuzzleFeedback != null) _lblPuzzleFeedback.Text = "";
+            SetText(_lblPuzzleFeedback, "");
             bool manualNext = _puzzleSubMode == "training" && _chkPuzzleAutoNext?.Checked == false;
             if (manualNext)
             {
@@ -6751,7 +6711,7 @@ namespace ChessDroid
                 if (_btnPuzzleSkip    != null) _btnPuzzleSkip.Visible    = false;
             }
             else
-                Task.Delay(900).ContinueWith(_ => { if (!IsDisposed) Invoke((Action)PuzzleLoadNext); });
+                ScheduleInvoke(900, PuzzleLoadNext);
         }
 
         private void PuzzleRevealThemes()
@@ -6820,7 +6780,7 @@ namespace ChessDroid
                 _puzzleRushTimer?.Stop();
                 _puzzleLocked = true;
                 if (_btnPuzzleHint != null) _btnPuzzleHint.Enabled = false;
-                Task.Delay(300).ContinueWith(_ => { if (!IsDisposed) Invoke((Action)PuzzleRushEnd); });
+                ScheduleInvoke(300, PuzzleRushEnd);
             }
         }
 
@@ -7026,7 +6986,7 @@ namespace ChessDroid
 
             if (_visionSubMode == "survival" && _visionLives <= 0)
             {
-                Task.Delay(900).ContinueWith(_ => { if (!IsDisposed) Invoke((Action)VisionSurvivalEnd); });
+                ScheduleInvoke(900, VisionSurvivalEnd);
                 return;
             }
 
@@ -7034,7 +6994,7 @@ namespace ChessDroid
             if (manualNext)
                 { if (_btnVisionNext != null) _btnVisionNext.Visible = true; }
             else
-                Task.Delay(correct ? 350 : 700).ContinueWith(_ => { if (!IsDisposed) Invoke((Action)VisionLoadNext); });
+                ScheduleInvoke(correct ? 350 : 700, VisionLoadNext);
         }
 
         private void SetVisionSubMode(string subMode) // "training" | "timed" | "survival"
@@ -7052,46 +7012,25 @@ namespace ChessDroid
                     : subMode == "timed"
                     ? "Answer before time runs out.\nTimeout counts as wrong."
                     : "Is the square light or dark?\nAll 64 squares — no visual clues.";
-            var scheme = ThemeService.GetColorScheme(config?.Theme ?? "Dark");
-            void Hi(Button? btn, bool active)
-            {
-                if (btn == null) return;
-                btn.BackColor = active ? scheme.TextColor : scheme.ButtonBackColor;
-                btn.ForeColor = active ? scheme.FormBackColor : scheme.ButtonForeColor;
-            }
-            Hi(_btnVisionSubTraining, subMode == "training");
-            Hi(_btnVisionSubTimed,    subMode == "timed");
-            Hi(_btnVisionSubSurvival, subMode == "survival");
+            HighlightButton(_btnVisionSubTraining, subMode == "training");
+            HighlightButton(_btnVisionSubTimed,    subMode == "timed");
+            HighlightButton(_btnVisionSubSurvival, subMode == "survival");
         }
 
         private void SelectVisionTime(int seconds)
         {
             _visionTimedSeconds = seconds;
-            var scheme = ThemeService.GetColorScheme(config?.Theme ?? "Dark");
-            void Hi(Button? btn, bool active)
-            {
-                if (btn == null) return;
-                btn.BackColor = active ? scheme.TextColor : scheme.ButtonBackColor;
-                btn.ForeColor = active ? scheme.FormBackColor : scheme.ButtonForeColor;
-            }
-            Hi(_visionTimeBtn3,  seconds == 3);
-            Hi(_visionTimeBtn5,  seconds == 5);
-            Hi(_visionTimeBtn10, seconds == 10);
+            HighlightButton(_visionTimeBtn3,  seconds == 3);
+            HighlightButton(_visionTimeBtn5,  seconds == 5);
+            HighlightButton(_visionTimeBtn10, seconds == 10);
         }
 
         private void SelectVisionGlobalTime(int seconds)
         {
             _visionGlobalDurationSeconds = seconds;
-            var scheme = ThemeService.GetColorScheme(config?.Theme ?? "Dark");
-            void Hi(Button? btn, bool active)
-            {
-                if (btn == null) return;
-                btn.BackColor = active ? scheme.TextColor : scheme.ButtonBackColor;
-                btn.ForeColor = active ? scheme.FormBackColor : scheme.ButtonForeColor;
-            }
-            Hi(_visionGlobalBtn1, seconds == 60);
-            Hi(_visionGlobalBtn3, seconds == 180);
-            Hi(_visionGlobalBtn5, seconds == 300);
+            HighlightButton(_visionGlobalBtn1, seconds == 60);
+            HighlightButton(_visionGlobalBtn3, seconds == 180);
+            HighlightButton(_visionGlobalBtn5, seconds == 300);
         }
 
         private void VisionGlobalTimer_Tick(object? sender, EventArgs e)
@@ -7121,12 +7060,7 @@ namespace ChessDroid
 
         private void VisionTimedEnd()
         {
-            _pnlVisionGame!.Visible     = false;
-            _pnlTrainingResult!.Visible = true;
-            if (_lblTrainingFinalScore != null)
-                _lblTrainingFinalScore.Text = $"✓ {_visionCorrect} correct   ✗ {_visionWrong} wrong";
-            if (_lblTrainingPB != null) _lblTrainingPB.Text = $"Best streak: {_visionBestStreak}";
-            if (_lblOpMissedMoves != null) _lblOpMissedMoves.Visible = false;
+            VisionEnd($"✓ {_visionCorrect} correct   ✗ {_visionWrong} wrong", $"Best streak: {_visionBestStreak}");
         }
 
         private void VisionQuestionTimer_Tick(object? sender, EventArgs e)
@@ -7160,12 +7094,49 @@ namespace ChessDroid
 
         private void VisionSurvivalEnd()
         {
+            VisionEnd($"✓ {_visionCorrect} correct   Best streak: {_visionBestStreak}", "");
+        }
+
+        // ── Training helpers ───────────────────────────────────────────────────
+
+        private void VisionEnd(string scoreText, string pbText)
+        {
             _pnlVisionGame!.Visible     = false;
             _pnlTrainingResult!.Visible = true;
-            if (_lblTrainingFinalScore != null)
-                _lblTrainingFinalScore.Text = $"✓ {_visionCorrect} correct   Best streak: {_visionBestStreak}";
-            if (_lblTrainingPB != null) _lblTrainingPB.Text = "";
-            if (_lblOpMissedMoves != null) _lblOpMissedMoves.Visible = false;
+            if (_lblTrainingFinalScore != null) _lblTrainingFinalScore.Text = scoreText;
+            if (_lblTrainingPB        != null) _lblTrainingPB.Text = pbText;
+            if (_lblOpMissedMoves     != null) _lblOpMissedMoves.Visible = false;
+        }
+
+        private void ScheduleInvoke(int delayMs, Action action)
+        {
+            Task.Delay(delayMs).ContinueWith(_ => { if (!IsDisposed) Invoke(action); });
+        }
+
+        private void HighlightButton(Button? btn, bool active)
+        {
+            if (btn == null) return;
+            var scheme = ThemeService.GetColorScheme(config?.Theme ?? "Dark");
+            btn.BackColor = active ? scheme.TextColor : scheme.ButtonBackColor;
+            btn.ForeColor = active ? scheme.FormBackColor : scheme.ButtonForeColor;
+        }
+
+        private static void SetText(Label? lbl, string text)  { if (lbl != null) lbl.Text = text; }
+        private static void SetText(Button? btn, string text) { if (btn != null) btn.Text = text; }
+
+        private void ShowTrainingHint(string uci, Button? hintButton, Action? onExpire = null)
+        {
+            if (hintButton != null) hintButton.Enabled = false;
+            var (fromRow, fromCol, _, _) = UciToSquares(uci);
+            boardControl.SetTrainingHighlight(fromRow, fromCol, TrainingHintColor);
+            Task.Delay(1500).ContinueWith(_ =>
+            {
+                if (!IsDisposed) Invoke(() =>
+                {
+                    boardControl.ClearTrainingHighlight();
+                    onExpire?.Invoke();
+                });
+            });
         }
 
         private void ApplyTrainingTheme()
