@@ -68,6 +68,8 @@ namespace ChessDroid
 
         // Training records
         public int PuzzleRushBest { get; set; } = 0;
+        public bool PuzzleAutoNext { get; set; } = true;
+        public bool VisionAutoNext { get; set; } = true;
 
         // Explanation settings
         public bool ShowTacticalAnalysis { get; set; } = true; // Show tactical patterns
@@ -249,6 +251,8 @@ namespace ChessDroid
             BoardFrameColor = other.BoardFrameColor;
             SoundEffectsEnabled = other.SoundEffectsEnabled;
             PuzzleRushBest      = other.PuzzleRushBest;
+            PuzzleAutoNext      = other.PuzzleAutoNext;
+            VisionAutoNext      = other.VisionAutoNext;
 
             OpeningBooksFolder = other.OpeningBooksFolder;
             UseOpeningBook = other.UseOpeningBook;
