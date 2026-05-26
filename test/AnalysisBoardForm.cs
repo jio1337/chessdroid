@@ -5050,6 +5050,25 @@ namespace ChessDroid
         private Label?  _lblVisionScore;
         private Button? _btnVisionLight;
         private Button? _btnVisionDark;
+        private Label?  _lblVisionTimer;
+        private Label?  _lblVisionLives;
+
+        // Board Vision sub-mode
+        private string  _visionSubMode = "training";
+        private Button? _btnVisionSubTraining, _btnVisionSubTimed, _btnVisionSubSurvival;
+        private Panel?  _pnlVisionTimeRow;
+        private Panel?  _pnlVisionGlobalTimeRow;
+        private Label?  _lblVisionDesc;
+        private int     _visionTimedSeconds = 5;
+        private Button? _visionTimeBtn3, _visionTimeBtn5, _visionTimeBtn10;
+        private System.Windows.Forms.Timer? _visionQuestionTimer;
+        private int     _visionSecondsRemaining;
+        private int     _visionLives;
+        private int     _visionGlobalDurationSeconds = 180;
+        private int     _visionGlobalSecondsRemaining;
+        private Button? _visionGlobalBtn1, _visionGlobalBtn3, _visionGlobalBtn5;
+        private System.Windows.Forms.Timer? _visionGlobalTimer;
+        private Label?  _lblVisionGlobalTimer;
 
         private void InitTrainingPanel()
         {
@@ -5379,17 +5398,71 @@ namespace ChessDroid
             _pnlPuzzleSettings.Controls.AddRange(new Control[]
                 { _lblGauntletDesc, _pnlRushTimeRow, _pnlThemeFilterRow, pnlPuzzleSubGap, pnlPuzzleSub, pnlPuzzleTopGap });
 
-            // ── Vision settings (just a description) ──────────────────────
-            _pnlVisionSettings = new Panel { Dock = DockStyle.Top, Height = 46, Visible = false };
-            var lblVisionDesc = new Label
+            // ── Vision settings ────────────────────────────────────────────
+            _pnlVisionSettings = new Panel { Dock = DockStyle.Top, Height = 84, Visible = false };
+
+            // Sub-mode switcher: Training · Timed · Survival
+            var pnlVisionSub = new Panel { Dock = DockStyle.Top, Height = 32 };
+            _btnVisionSubTraining = new Button
+            {
+                Text = "Training", Font = F(9f, true),
+                Location = new Point(0, 4), Size = new Size(82, 24), FlatStyle = FlatStyle.Flat
+            };
+            _btnVisionSubTimed = new Button
+            {
+                Text = "Timed", Font = F(9f, true),
+                Location = new Point(88, 4), Size = new Size(82, 24), FlatStyle = FlatStyle.Flat
+            };
+            _btnVisionSubSurvival = new Button
+            {
+                Text = "Survival", Font = F(9f, true),
+                Location = new Point(176, 4), Size = new Size(82, 24), FlatStyle = FlatStyle.Flat
+            };
+            _btnVisionSubTraining.Click += (_, _) => SetVisionSubMode("training");
+            _btnVisionSubTimed.Click    += (_, _) => SetVisionSubMode("timed");
+            _btnVisionSubSurvival.Click += (_, _) => SetVisionSubMode("survival");
+            pnlVisionSub.Controls.AddRange(new Control[] { _btnVisionSubTraining, _btnVisionSubTimed, _btnVisionSubSurvival });
+
+            // Time picker row (Timed / Survival)
+            _pnlVisionTimeRow = new Panel { Dock = DockStyle.Top, Height = 30, Visible = false };
+            var lblVisionTimeLabel = new Label
+            {
+                Text = "Per Q:", Font = F(9f, true),
+                AutoSize = true, Location = new Point(0, 7)
+            };
+            _visionTimeBtn3  = new Button { Text = "3s",  Font = F(9f), Location = new Point(50,  3), Size = new Size(34, 22), FlatStyle = FlatStyle.Flat };
+            _visionTimeBtn5  = new Button { Text = "5s",  Font = F(9f), Location = new Point(88,  3), Size = new Size(34, 22), FlatStyle = FlatStyle.Flat };
+            _visionTimeBtn10 = new Button { Text = "10s", Font = F(9f), Location = new Point(126, 3), Size = new Size(38, 22), FlatStyle = FlatStyle.Flat };
+            _visionTimeBtn3.Click  += (_, _) => SelectVisionTime(3);
+            _visionTimeBtn5.Click  += (_, _) => SelectVisionTime(5);
+            _visionTimeBtn10.Click += (_, _) => SelectVisionTime(10);
+            _pnlVisionTimeRow.Controls.AddRange(new Control[] { lblVisionTimeLabel, _visionTimeBtn3, _visionTimeBtn5, _visionTimeBtn10 });
+
+            // Global timer row (Timed only)
+            _pnlVisionGlobalTimeRow = new Panel { Dock = DockStyle.Top, Height = 30, Visible = false };
+            var lblVisionGlobalLabel = new Label
+            {
+                Text = "Total:", Font = F(9f, true),
+                AutoSize = true, Location = new Point(0, 7)
+            };
+            _visionGlobalBtn1 = new Button { Text = "1 min", Font = F(9f), Location = new Point(50,  3), Size = new Size(46, 22), FlatStyle = FlatStyle.Flat };
+            _visionGlobalBtn3 = new Button { Text = "3 min", Font = F(9f), Location = new Point(100, 3), Size = new Size(46, 22), FlatStyle = FlatStyle.Flat };
+            _visionGlobalBtn5 = new Button { Text = "5 min", Font = F(9f), Location = new Point(150, 3), Size = new Size(46, 22), FlatStyle = FlatStyle.Flat };
+            _visionGlobalBtn1.Click += (_, _) => SelectVisionGlobalTime(60);
+            _visionGlobalBtn3.Click += (_, _) => SelectVisionGlobalTime(180);
+            _visionGlobalBtn5.Click += (_, _) => SelectVisionGlobalTime(300);
+            _pnlVisionGlobalTimeRow.Controls.AddRange(new Control[] { lblVisionGlobalLabel, _visionGlobalBtn1, _visionGlobalBtn3, _visionGlobalBtn5 });
+
+            _lblVisionDesc = new Label
             {
                 Text = "Is the square light or dark?\nAll 64 squares — no visual clues.",
-                Font = F(8.5f),
-                Dock = DockStyle.Top, Height = 38
+                Font = F(8.5f), Dock = DockStyle.Top, Height = 38
             };
-            var pnlVisionGap = new Panel { Dock = DockStyle.Top, Height = 8 };
-            // last = topmost visually: gap appears between mode switcher and description text
-            _pnlVisionSettings.Controls.AddRange(new Control[] { lblVisionDesc, pnlVisionGap });
+            var pnlVisionTopGap = new Panel { Dock = DockStyle.Top, Height = 8 };
+            var pnlVisionSubGap = new Panel { Dock = DockStyle.Top, Height = 6 };
+            // DockStyle.Top: last = topmost visually
+            _pnlVisionSettings.Controls.AddRange(new Control[]
+                { _lblVisionDesc, _pnlVisionGlobalTimeRow, _pnlVisionTimeRow, pnlVisionSubGap, pnlVisionSub, pnlVisionTopGap });
 
             // DockStyle.Top stacks back-to-front: last item in Controls = topmost visually
             _pnlTrainingStart.Controls.AddRange(new Control[]
@@ -5512,14 +5585,32 @@ namespace ChessDroid
                 _btnVisionLight!.Location = new Point(startX, 2);
                 _btnVisionDark!.Location  = new Point(startX + btnW + gap, 2);
             };
+            _lblVisionTimer = new Label
+            {
+                Font = F(26f, true),
+                Dock = DockStyle.Top, Height = 44, TextAlign = ContentAlignment.MiddleCenter,
+                Visible = false
+            };
+            _lblVisionLives = new Label
+            {
+                Font = F(16f),
+                Dock = DockStyle.Top, Height = 28, TextAlign = ContentAlignment.MiddleCenter,
+                Visible = false
+            };
             _lblVisionScore = new Label
             {
                 Font = F(10f),
                 Dock = DockStyle.Top, Height = 24, TextAlign = ContentAlignment.MiddleCenter
             };
-            // DockStyle.Top: last = topmost visually
+            _lblVisionGlobalTimer = new Label
+            {
+                Font = F(14f, true),
+                Dock = DockStyle.Top, Height = 30, TextAlign = ContentAlignment.MiddleCenter,
+                Visible = false
+            };
+            // DockStyle.Top: last = topmost visually — global timer at top, score at bottom
             _pnlVisionGame.Controls.AddRange(new Control[]
-                { _lblVisionScore, pnlVisionButtons, _lblVisionQuestion });
+                { _lblVisionScore, _lblVisionLives, pnlVisionButtons, _lblVisionTimer, _lblVisionQuestion, _lblVisionGlobalTimer });
 
             // ── Result panel ──────────────────────────────────────────────────
             _pnlTrainingResult = new Panel { Dock = DockStyle.Fill, Visible = false };
@@ -5565,9 +5656,17 @@ namespace ChessDroid
                 { _pnlTrainingStart, _pnlTrainingGame, _pnlPuzzleGame, _pnlVisionGame, _pnlTrainingResult });
             rightPanel.Controls.Add(_pnlTraining);
 
+            _visionQuestionTimer = new System.Windows.Forms.Timer { Interval = 1000 };
+            _visionQuestionTimer.Tick += VisionQuestionTimer_Tick;
+            _visionGlobalTimer = new System.Windows.Forms.Timer { Interval = 1000 };
+            _visionGlobalTimer.Tick += VisionGlobalTimer_Tick;
+
             SetTrainingMode("square"); // initialize Square mode as default
             SetPuzzleSubMode("training"); // initialize puzzle sub-mode
             SelectRushTime(3);            // default 3 min
+            SetVisionSubMode("training");
+            SelectVisionTime(5);
+            SelectVisionGlobalTime(180);
             ApplyTrainingTheme();
         }
 
@@ -5611,6 +5710,8 @@ namespace ChessDroid
             _trainingFlashTimer?.Stop();
             _openingAutoplayTimer?.Stop();
             _puzzleRushTimer?.Stop();
+            _visionQuestionTimer?.Stop();
+            _visionGlobalTimer?.Stop();
             _openingRecreatePhase = false;
             _puzzleActive = false;
             _puzzleLocked = false;
@@ -6707,6 +6808,7 @@ namespace ChessDroid
             _visionCorrect  = 0;
             _visionWrong    = 0;
             _visionStreak   = 0;
+            _visionLives    = 3;
 
             _trainingPreFen     = boardControl.GetFEN();
             _trainingPreFlipped = boardControl.IsFlipped;
@@ -6723,9 +6825,21 @@ namespace ChessDroid
             _materialTop.Visible    = false;
             _materialBottom.Visible = false;
 
-            _pnlTrainingStart!.Visible = false;
+            bool hasTimed = _visionSubMode != "training";
+            if (_lblVisionTimer       != null) { _lblVisionTimer.Visible       = hasTimed;                        _lblVisionTimer.Text = ""; }
+            if (_lblVisionLives       != null) { _lblVisionLives.Visible       = _visionSubMode == "survival";    UpdateVisionLivesLabel(); }
+            if (_lblVisionGlobalTimer != null) { _lblVisionGlobalTimer.Visible = _visionSubMode == "timed";       _lblVisionGlobalTimer.Text = ""; }
+
+            if (_visionSubMode == "timed")
+            {
+                _visionGlobalSecondsRemaining = _visionGlobalDurationSeconds;
+                UpdateVisionGlobalTimerLabel();
+                _visionGlobalTimer?.Start();
+            }
+
+            _pnlTrainingStart!.Visible  = false;
             _pnlTrainingResult!.Visible = false;
-            _pnlVisionGame!.Visible    = true;
+            _pnlVisionGame!.Visible     = true;
 
             VisionLoadNext();
         }
@@ -6739,44 +6853,187 @@ namespace ChessDroid
                 _lblVisionScore.Text = $"✓ {_visionCorrect}   ✗ {_visionWrong}   Streak: {_visionStreak}";
             if (_btnVisionLight != null) _btnVisionLight.Enabled = true;
             if (_btnVisionDark  != null) _btnVisionDark.Enabled  = true;
+
+            if (_visionSubMode != "training")
+            {
+                _visionSecondsRemaining = _visionTimedSeconds;
+                UpdateVisionTimerLabel();
+                _visionQuestionTimer?.Start();
+            }
         }
 
         private void VisionAnswer(bool guessedLight)
         {
+            _visionQuestionTimer?.Stop();
             if (_btnVisionLight != null) _btnVisionLight.Enabled = false;
             if (_btnVisionDark  != null) _btnVisionDark.Enabled  = false;
+            VisionHandleResult(IsLightSquareName(_visionCurrentSquare) == guessedLight, timeout: false);
+        }
 
-            bool correct = IsLightSquareName(_visionCurrentSquare) == guessedLight;
+        private void VisionHandleResult(bool correct, bool timeout)
+        {
+            string squareAnswer = IsLightSquareName(_visionCurrentSquare) ? "Light" : "Dark";
             if (correct)
             {
                 _visionCorrect++;
                 _visionStreak++;
                 if (_lblVisionQuestion != null)
-                {
-                    string answer = IsLightSquareName(_visionCurrentSquare) ? "Light ✓" : "Dark ✓";
-                    _lblVisionQuestion.Text = $"{_visionCurrentSquare} — {answer}";
-                }
+                    _lblVisionQuestion.Text = $"{_visionCurrentSquare} — {squareAnswer} ✓";
             }
             else
             {
                 _visionWrong++;
                 _visionStreak = 0;
+                if (_visionSubMode == "survival") { _visionLives--; UpdateVisionLivesLabel(); }
                 if (_lblVisionQuestion != null)
-                {
-                    string correct_answer = IsLightSquareName(_visionCurrentSquare) ? "Light" : "Dark";
-                    _lblVisionQuestion.Text = $"{_visionCurrentSquare} — {correct_answer}  ✗";
-                }
+                    _lblVisionQuestion.Text = $"{_visionCurrentSquare} — {squareAnswer}  {(timeout ? "⏱" : "✗")}";
             }
 
             if (_lblVisionScore != null)
                 _lblVisionScore.Text = $"✓ {_visionCorrect}   ✗ {_visionWrong}   Streak: {_visionStreak}";
-
+            if (_lblVisionTimer != null) _lblVisionTimer.Text = "";
             if (_visionStreak > _visionBestStreak) _visionBestStreak = _visionStreak;
+
+            if (_visionSubMode == "survival" && _visionLives <= 0)
+            {
+                Task.Delay(900).ContinueWith(_ => { if (!IsDisposed) Invoke((Action)VisionSurvivalEnd); });
+                return;
+            }
 
             Task.Delay(correct ? 350 : 700).ContinueWith(_ =>
             {
                 if (!IsDisposed) Invoke((Action)VisionLoadNext);
             });
+        }
+
+        private void SetVisionSubMode(string subMode) // "training" | "timed" | "survival"
+        {
+            _visionSubMode = subMode;
+            bool hasTimed = subMode != "training";
+            if (_pnlVisionTimeRow     != null) _pnlVisionTimeRow.Visible     = hasTimed;
+            if (_pnlVisionGlobalTimeRow != null) _pnlVisionGlobalTimeRow.Visible = subMode == "timed";
+            if (_pnlVisionSettings != null)
+                _pnlVisionSettings.Height = subMode == "timed" ? 144 : hasTimed ? 114 : 84;
+            if (_lblVisionDesc != null)
+                _lblVisionDesc.Text = subMode == "survival"
+                    ? "3 lives — wrong or timeout costs a life.\nRun ends when lives reach zero."
+                    : subMode == "timed"
+                    ? "Answer before time runs out.\nTimeout counts as wrong."
+                    : "Is the square light or dark?\nAll 64 squares — no visual clues.";
+            var scheme = ThemeService.GetColorScheme(config?.Theme ?? "Dark");
+            void Hi(Button? btn, bool active)
+            {
+                if (btn == null) return;
+                btn.BackColor = active ? scheme.TextColor : scheme.ButtonBackColor;
+                btn.ForeColor = active ? scheme.FormBackColor : scheme.ButtonForeColor;
+            }
+            Hi(_btnVisionSubTraining, subMode == "training");
+            Hi(_btnVisionSubTimed,    subMode == "timed");
+            Hi(_btnVisionSubSurvival, subMode == "survival");
+        }
+
+        private void SelectVisionTime(int seconds)
+        {
+            _visionTimedSeconds = seconds;
+            var scheme = ThemeService.GetColorScheme(config?.Theme ?? "Dark");
+            void Hi(Button? btn, bool active)
+            {
+                if (btn == null) return;
+                btn.BackColor = active ? scheme.TextColor : scheme.ButtonBackColor;
+                btn.ForeColor = active ? scheme.FormBackColor : scheme.ButtonForeColor;
+            }
+            Hi(_visionTimeBtn3,  seconds == 3);
+            Hi(_visionTimeBtn5,  seconds == 5);
+            Hi(_visionTimeBtn10, seconds == 10);
+        }
+
+        private void SelectVisionGlobalTime(int seconds)
+        {
+            _visionGlobalDurationSeconds = seconds;
+            var scheme = ThemeService.GetColorScheme(config?.Theme ?? "Dark");
+            void Hi(Button? btn, bool active)
+            {
+                if (btn == null) return;
+                btn.BackColor = active ? scheme.TextColor : scheme.ButtonBackColor;
+                btn.ForeColor = active ? scheme.FormBackColor : scheme.ButtonForeColor;
+            }
+            Hi(_visionGlobalBtn1, seconds == 60);
+            Hi(_visionGlobalBtn3, seconds == 180);
+            Hi(_visionGlobalBtn5, seconds == 300);
+        }
+
+        private void VisionGlobalTimer_Tick(object? sender, EventArgs e)
+        {
+            _visionGlobalSecondsRemaining--;
+            UpdateVisionGlobalTimerLabel();
+            if (_visionGlobalSecondsRemaining <= 0)
+            {
+                _visionGlobalTimer!.Stop();
+                _visionQuestionTimer?.Stop();
+                if (_btnVisionLight != null) _btnVisionLight.Enabled = false;
+                if (_btnVisionDark  != null) _btnVisionDark.Enabled  = false;
+                if (!IsDisposed) Invoke((Action)VisionTimedEnd);
+            }
+        }
+
+        private void UpdateVisionGlobalTimerLabel()
+        {
+            if (_lblVisionGlobalTimer == null) return;
+            int m = _visionGlobalSecondsRemaining / 60;
+            int s = _visionGlobalSecondsRemaining % 60;
+            _lblVisionGlobalTimer.Text = $"⏱ {m}:{s:D2}";
+            _lblVisionGlobalTimer.ForeColor = _visionGlobalSecondsRemaining <= 10
+                ? Color.FromArgb(220, 80, 80)
+                : (Parent?.ForeColor ?? Color.White);
+        }
+
+        private void VisionTimedEnd()
+        {
+            _pnlVisionGame!.Visible     = false;
+            _pnlTrainingResult!.Visible = true;
+            if (_lblTrainingFinalScore != null)
+                _lblTrainingFinalScore.Text = $"✓ {_visionCorrect} correct   ✗ {_visionWrong} wrong";
+            if (_lblTrainingPB != null) _lblTrainingPB.Text = $"Best streak: {_visionBestStreak}";
+            if (_lblOpMissedMoves != null) _lblOpMissedMoves.Visible = false;
+        }
+
+        private void VisionQuestionTimer_Tick(object? sender, EventArgs e)
+        {
+            _visionSecondsRemaining--;
+            UpdateVisionTimerLabel();
+            if (_visionSecondsRemaining <= 0)
+            {
+                _visionQuestionTimer!.Stop();
+                if (_btnVisionLight != null) _btnVisionLight.Enabled = false;
+                if (_btnVisionDark  != null) _btnVisionDark.Enabled  = false;
+                VisionHandleResult(false, timeout: true);
+            }
+        }
+
+        private void UpdateVisionTimerLabel()
+        {
+            if (_lblVisionTimer == null) return;
+            _lblVisionTimer.Text = _visionSecondsRemaining > 0 ? $"⏱ {_visionSecondsRemaining}" : "";
+            _lblVisionTimer.ForeColor = _visionSecondsRemaining <= 2
+                ? Color.FromArgb(220, 80, 80)
+                : (Parent?.ForeColor ?? Color.White);
+        }
+
+        private void UpdateVisionLivesLabel()
+        {
+            if (_lblVisionLives == null) return;
+            _lblVisionLives.Text = _visionLives switch { >= 3 => "♥ ♥ ♥", 2 => "♥ ♥", 1 => "♥", _ => "✗" };
+            _lblVisionLives.ForeColor = _visionLives <= 1 ? Color.FromArgb(220, 80, 80) : Color.FromArgb(200, 80, 80);
+        }
+
+        private void VisionSurvivalEnd()
+        {
+            _pnlVisionGame!.Visible     = false;
+            _pnlTrainingResult!.Visible = true;
+            if (_lblTrainingFinalScore != null)
+                _lblTrainingFinalScore.Text = $"✓ {_visionCorrect} correct   Best streak: {_visionBestStreak}";
+            if (_lblTrainingPB != null) _lblTrainingPB.Text = "";
+            if (_lblOpMissedMoves != null) _lblOpMissedMoves.Visible = false;
         }
 
         private void ApplyTrainingTheme()
@@ -6790,8 +7047,11 @@ namespace ChessDroid
             string mode = _visionModeSelected ? "vision" : _puzzleModeSelected ? "puzzle" : _openingModeSelected ? "opening" : "square";
             SetTrainingMode(mode);
             SetPuzzleSubMode(_puzzleSubMode);
+            SetVisionSubMode(_visionSubMode);
             int rushMins = _rushDurationSeconds / 60;
             SelectRushTime(rushMins > 0 ? rushMins : 3);
+            SelectVisionTime(_visionTimedSeconds);
+            SelectVisionGlobalTime(_visionGlobalDurationSeconds);
         }
 
         private void ApplyThemeToChildren(Control parent, ColorScheme scheme)
