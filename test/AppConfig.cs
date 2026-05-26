@@ -68,6 +68,8 @@ namespace ChessDroid
 
         // Training records
         public int PuzzleRushBest { get; set; } = 0;
+        public int PuzzleTrainingBestStreak { get; set; } = 0;
+        public int GauntletBestStreak { get; set; } = 0;
         public bool PuzzleAutoNext { get; set; } = true;
         public bool VisionAutoNext { get; set; } = true;
 
@@ -250,9 +252,11 @@ namespace ChessDroid
             BoardFrameWidth = other.BoardFrameWidth;
             BoardFrameColor = other.BoardFrameColor;
             SoundEffectsEnabled = other.SoundEffectsEnabled;
-            PuzzleRushBest      = other.PuzzleRushBest;
-            PuzzleAutoNext      = other.PuzzleAutoNext;
-            VisionAutoNext      = other.VisionAutoNext;
+            PuzzleRushBest             = other.PuzzleRushBest;
+            PuzzleTrainingBestStreak   = other.PuzzleTrainingBestStreak;
+            GauntletBestStreak         = other.GauntletBestStreak;
+            PuzzleAutoNext             = other.PuzzleAutoNext;
+            VisionAutoNext             = other.VisionAutoNext;
 
             OpeningBooksFolder = other.OpeningBooksFolder;
             UseOpeningBook = other.UseOpeningBook;

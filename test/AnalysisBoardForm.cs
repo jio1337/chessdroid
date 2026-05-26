@@ -4993,6 +4993,8 @@ namespace ChessDroid
         private Label?  _lblOpMissedMoves;
         private Button? _btnOpHint;
         private int     _openingHintsUsed;
+        private int     _openingSessionRuns;
+        private int     _openingSessionPerfect;
 
         // Puzzle Training state
         private bool   _puzzleModeSelected;
@@ -5024,6 +5026,8 @@ namespace ChessDroid
         private Label?  _lblRushTimer;
         private int     _gauntletStreak;
         private int     _gauntletBestStreak;
+        private int     _puzzleStreak;
+        private int     _puzzleStreakBest;
 
         // Puzzle Training UI refs
         private Button?   _btnPuzzleMode;
@@ -6434,12 +6438,19 @@ namespace ChessDroid
             int wrongPositions = _openingPosMistakes.Count;
             int correct = total - wrongPositions;
 
+            _openingSessionRuns++;
+            if (wrongPositions == 0 && _openingHintsUsed == 0) _openingSessionPerfect++;
+
             if (_lblTrainingFinalScore != null)
                 _lblTrainingFinalScore.Text = $"{correct} / {total} correct"
                     + (wrongPositions == 0 ? "  —  Perfect!" : "")
                     + (_openingHintsUsed > 0 ? $"  ({_openingHintsUsed} hint{(_openingHintsUsed == 1 ? "" : "s")})" : "");
             if (_lblTrainingPB != null)
-                _lblTrainingPB.Text = $"{_selectedTrainingOpening?.Eco}  {_selectedTrainingOpening?.Name}";
+            {
+                string openingName = $"{_selectedTrainingOpening?.Eco}  {_selectedTrainingOpening?.Name}";
+                string sessionStr  = $"  ·  {_openingSessionRuns} run{(_openingSessionRuns == 1 ? "" : "s")}  ·  {_openingSessionPerfect} perfect";
+                _lblTrainingPB.Text = openingName + sessionStr;
+            }
 
             if (_lblOpMissedMoves != null)
             {
@@ -6494,6 +6505,8 @@ namespace ChessDroid
             _puzzlesStruggled = 0;
             _puzzlesAttempted = 0;
             _puzzleHintsUsed  = 0;
+            _puzzleStreak     = 0;
+            _puzzleStreakBest  = config?.PuzzleTrainingBestStreak ?? 0;
             _puzzleQueue.Clear();
             _puzzleQueue.AddRange(LichessPuzzleService.GetRandomBatch(_puzzlesFolder, 200, _puzzleThemeFilter));
 
@@ -6580,6 +6593,7 @@ namespace ChessDroid
             if (_puzzleMoveIndex >= _currentPuzzle.Moves.Length) return;
             _puzzleHintsUsed++;
             _wrongThisPuzzle = true;
+            _puzzleStreak    = 0;
             UpdatePuzzleStats();
             string uci = _currentPuzzle.Moves[_puzzleMoveIndex];
             ShowTrainingHint(uci, _btnPuzzleHint, () =>
@@ -6600,8 +6614,20 @@ namespace ChessDroid
                 if (_puzzleMoveIndex >= _currentPuzzle.Moves.Length)
                 {
                     // Puzzle solved
-                    if (_wrongThisPuzzle) _puzzlesStruggled++;
-                    else                  _puzzlesClean++;
+                    if (_wrongThisPuzzle) { _puzzlesStruggled++; _puzzleStreak = 0; }
+                    else
+                    {
+                        _puzzlesClean++;
+                        if (_puzzleSubMode == "training")
+                        {
+                            _puzzleStreak++;
+                            if (_puzzleStreak > _puzzleStreakBest)
+                            {
+                                _puzzleStreakBest = _puzzleStreak;
+                                if (config != null) { config.PuzzleTrainingBestStreak = _puzzleStreakBest; config.Save(); }
+                            }
+                        }
+                    }
                     if (_puzzleSubMode == "gauntlet") _gauntletStreak++;
                     _puzzleLocked = true;
                     if (_btnPuzzleHint != null) _btnPuzzleHint.Enabled = false;
@@ -6727,12 +6753,23 @@ namespace ChessDroid
         private void UpdatePuzzleStats()
         {
             if (_lblPuzzleStats == null) return;
-            string s = _puzzleSubMode == "gauntlet"
-                ? $"Streak: {_gauntletStreak}   Best: {_gauntletBestStreak}"
-                : _puzzleSubMode == "rush"
-                    ? $"Solved: {_puzzlesClean + _puzzlesStruggled}   ~ Helped: {_puzzlesStruggled}"
-                    : $"✓ Clean: {_puzzlesClean}   ~ Helped: {_puzzlesStruggled}";
-            if (_puzzleSubMode == "training" && _puzzleHintsUsed > 0) s += $"   💡 {_puzzleHintsUsed}";
+            string s;
+            if (_puzzleSubMode == "gauntlet")
+            {
+                s = $"Streak: {_gauntletStreak}   Best: {_gauntletBestStreak}";
+            }
+            else if (_puzzleSubMode == "rush")
+            {
+                s = $"Solved: {_puzzlesClean + _puzzlesStruggled}   ~ Helped: {_puzzlesStruggled}";
+            }
+            else
+            {
+                int total = _puzzlesClean + _puzzlesStruggled;
+                string accStr = total > 0 ? $"   ·   {_puzzlesClean * 100 / total}% clean" : "";
+                string streakStr = _puzzleStreak > 0 ? $"   ·   Streak {_puzzleStreak}" : "";
+                string pbStr = _puzzleStreakBest > 1 ? $" (best {_puzzleStreakBest})" : "";
+                s = $"✓ {_puzzlesClean}   ~ {_puzzlesStruggled}{accStr}{streakStr}{pbStr}";
+            }
             _lblPuzzleStats.Text = s;
         }
 
@@ -6833,7 +6870,8 @@ namespace ChessDroid
             _puzzlesStruggled = 0;
             _puzzlesAttempted = 0;
             _puzzleHintsUsed  = 0;
-            _gauntletStreak   = 0;
+            _gauntletStreak     = 0;
+            _gauntletBestStreak = config?.GauntletBestStreak ?? 0;
             _puzzleQueue.Clear();
             _puzzleQueue.AddRange(LichessPuzzleService.GetRandomBatch(_puzzlesFolder, 300, _puzzleThemeFilter));
 
@@ -6858,7 +6896,10 @@ namespace ChessDroid
             boardControl.ClearTrainingHighlight();
 
             if (_gauntletStreak > _gauntletBestStreak)
+            {
                 _gauntletBestStreak = _gauntletStreak;
+                if (config != null) { config.GauntletBestStreak = _gauntletBestStreak; config.Save(); }
+            }
 
             if (_btnPuzzleHint != null) _btnPuzzleHint.Visible = true;
             if (_btnPuzzleSkip != null) _btnPuzzleSkip.Visible = true;
