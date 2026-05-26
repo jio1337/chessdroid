@@ -5798,6 +5798,7 @@ namespace ChessDroid
             if (_evalGraph != null) _evalGraph.Visible = false;
             _pnlTraining!.Visible = true;
             _pnlTraining.BringToFront();
+            boardControl.InteractionEnabled = false;
             TrainingShowStartPanel();
 
             btnTraining.Text = "⏹";
@@ -5849,6 +5850,7 @@ namespace ChessDroid
             evalBar.Visible = config?.ShowEvalBar != false;
             if (_evalGraph != null) _evalGraph.Visible = config?.ShowEvalGraph ?? true;
 
+            boardControl.InteractionEnabled = true;
             btnTraining.Text = "♟";
             toolTip.SetToolTip(btnTraining, "Training");
             SetTrainingButtonsEnabled(true);
@@ -5897,6 +5899,7 @@ namespace ChessDroid
             _pnlPuzzleGame!.Visible = false;
             _pnlVisionGame!.Visible = false;
             _pnlTrainingResult!.Visible = false;
+            boardControl.InteractionEnabled = false;
         }
 
         private string TrainingModeKey()
@@ -5909,6 +5912,7 @@ namespace ChessDroid
 
         private void TrainingStartRound()
         {
+            boardControl.InteractionEnabled = true;
             if (_openingModeSelected) { OpeningTrainingStart();  return; }
             if (_visionModeSelected)  { VisionTrainingStart();   return; }
             if (_puzzleModeSelected)
@@ -7195,6 +7199,11 @@ namespace ChessDroid
                 {
                     rb.BackColor = Color.Transparent;
                     rb.ForeColor = scheme.TextColor;
+                }
+                else if (c is CheckBox chk)
+                {
+                    chk.BackColor = Color.Transparent;
+                    chk.ForeColor = scheme.TextColor;
                 }
                 else if (c is Button btn)
                 {
