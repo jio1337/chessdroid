@@ -4978,6 +4978,9 @@ namespace ChessDroid
         // Opening Training UI refs
         private Label?  _lblTrainingTitle;
         private Label?  _lblSquareDesc;
+        private Label?  _lblSquareSettingsPB;
+        private Label?  _lblPuzzleSettingsPB;
+        private Label?  _lblVisionSettingsPB;
         private Button? _btnSqMode;
         private Button? _btnOpMode;
         private Panel? _pnlSquareSettings;
@@ -5147,6 +5150,8 @@ namespace ChessDroid
                 Font = F(10f),
                 AutoSize = true, Location = new Point(0, 50)
             };
+            _rbTrainingEasy.CheckedChanged    += (_, _) => UpdateSquarePBLabel();
+            rbTrainingChallenge.CheckedChanged += (_, _) => UpdateSquarePBLabel();
             pnlMode.Controls.AddRange(new Control[] { lblMode, _rbTrainingEasy, rbTrainingChallenge });
 
             var pnlPerspective = new Panel { Dock = DockStyle.Top, Height = 50 };
@@ -5173,6 +5178,9 @@ namespace ChessDroid
                 Font = F(10f),
                 AutoSize = true, Location = new Point(160, 24)
             };
+            rbTrainingWhite.CheckedChanged   += (_, _) => UpdateSquarePBLabel();
+            _rbTrainingBlack.CheckedChanged  += (_, _) => UpdateSquarePBLabel();
+            _rbTrainingRandom.CheckedChanged += (_, _) => UpdateSquarePBLabel();
             pnlPerspective.Controls.AddRange(new Control[]
                 { lblPerspective, rbTrainingWhite, _rbTrainingBlack, _rbTrainingRandom });
 
@@ -5249,11 +5257,17 @@ namespace ChessDroid
             _btnVisionMode.Click += (_, _) => SetTrainingMode("vision");
             pnlModeSwitcher.Controls.AddRange(new Control[] { _btnSqMode, _btnOpMode, _btnPuzzleMode, _btnVisionMode });
 
+            _lblSquareSettingsPB = new Label
+            {
+                Dock = DockStyle.Top, Height = 18, Font = F(8.5f),
+                TextAlign = ContentAlignment.MiddleLeft, ForeColor = Color.FromArgb(130, 130, 130)
+            };
+
             // ── Wrap square settings into collapsible panel ────────────
-            _pnlSquareSettings = new Panel { Dock = DockStyle.Top, Height = 252 };
+            _pnlSquareSettings = new Panel { Dock = DockStyle.Top, Height = 270 };
             // DockStyle.Top: last = topmost visually
             _pnlSquareSettings.Controls.AddRange(new Control[]
-                { pnlTime, pnlCount, pnlPerspective, pnlMode, lblDesc });
+                { pnlTime, pnlCount, pnlPerspective, pnlMode, _lblSquareSettingsPB, lblDesc });
 
             // ── Opening settings ───────────────────────────────────────
             _pnlOpeningSettings = new Panel { Dock = DockStyle.Top, Height = 110, Visible = false };
@@ -5435,13 +5449,20 @@ namespace ChessDroid
                 _puzzleStreakBest    = 0;
                 _gauntletBestStreak = 0;
                 UpdatePuzzleStats();
+                SetPuzzleSubMode(_puzzleSubMode);
             };
 
             var pnlPuzzleTopGap = new Panel { Dock = DockStyle.Top, Height = 8 };  // gap: mode switcher → sub-buttons
             var pnlPuzzleSubGap = new Panel { Dock = DockStyle.Top, Height = 6 };  // gap: sub-buttons → content row
+            _lblPuzzleSettingsPB = new Label
+            {
+                Dock = DockStyle.Top, Height = 18, Font = F(8.5f),
+                TextAlign = ContentAlignment.MiddleLeft, ForeColor = Color.FromArgb(130, 130, 130)
+            };
+
             // DockStyle.Top: last = topmost visually — pnlPuzzleTopGap must be last
             _pnlPuzzleSettings.Controls.AddRange(new Control[]
-                { lnkResetPBs, _pnlPuzzleAutoNextRow, _lblGauntletDesc, _pnlRushTimeRow, _pnlThemeFilterRow, pnlPuzzleSubGap, pnlPuzzleSub, pnlPuzzleTopGap });
+                { lnkResetPBs, _lblPuzzleSettingsPB, _pnlPuzzleAutoNextRow, _lblGauntletDesc, _pnlRushTimeRow, _pnlThemeFilterRow, pnlPuzzleSubGap, pnlPuzzleSub, pnlPuzzleTopGap });
 
             // ── Vision settings ────────────────────────────────────────────
             _pnlVisionSettings = new Panel { Dock = DockStyle.Top, Height = 84, Visible = false };
@@ -5516,11 +5537,17 @@ namespace ChessDroid
             };
             _pnlVisionAutoNextRow.Controls.Add(_chkVisionAutoNext);
 
+            _lblVisionSettingsPB = new Label
+            {
+                Dock = DockStyle.Top, Height = 18, Font = F(8.5f),
+                TextAlign = ContentAlignment.MiddleLeft, ForeColor = Color.FromArgb(130, 130, 130)
+            };
+
             var pnlVisionTopGap = new Panel { Dock = DockStyle.Top, Height = 8 };
             var pnlVisionSubGap = new Panel { Dock = DockStyle.Top, Height = 6 };
             // DockStyle.Top: last = topmost visually
             _pnlVisionSettings.Controls.AddRange(new Control[]
-                { _pnlVisionAutoNextRow, _lblVisionDesc, _pnlVisionGlobalTimeRow, _pnlVisionTimeRow, pnlVisionSubGap, pnlVisionSub, pnlVisionTopGap });
+                { _pnlVisionAutoNextRow, _lblVisionSettingsPB, _lblVisionDesc, _pnlVisionGlobalTimeRow, _pnlVisionTimeRow, pnlVisionSubGap, pnlVisionSub, pnlVisionTopGap });
 
             // DockStyle.Top stacks back-to-front: last item in Controls = topmost visually
             _pnlTrainingStart.Controls.AddRange(new Control[]
@@ -6184,6 +6211,9 @@ namespace ChessDroid
             HighlightButton(_btnOpMode,     mode == "opening");
             HighlightButton(_btnPuzzleMode, mode == "puzzle");
             HighlightButton(_btnVisionMode, mode == "vision");
+            if (mode == "square")  UpdateSquarePBLabel();
+            if (mode == "puzzle")  SetPuzzleSubMode(_puzzleSubMode);
+            if (mode == "vision")  UpdateVisionPBLabel();
         }
 
         private void SetPuzzleSubMode(string subMode) // "training" | "rush" | "gauntlet"
@@ -6196,9 +6226,17 @@ namespace ChessDroid
             HighlightButton(_btnPuzzleSubTraining, subMode == "training");
             HighlightButton(_btnPuzzleSubRush,     subMode == "rush");
             HighlightButton(_btnPuzzleSubGauntlet, subMode == "gauntlet");
-            // Adjust settings panel height for current sub-mode (gaps: 8px top + 6px sub = 14px fixed)
             if (_pnlPuzzleSettings != null)
-                _pnlPuzzleSettings.Height = subMode == "rush" ? 94 : subMode == "gauntlet" ? 84 : 142;
+                _pnlPuzzleSettings.Height = subMode == "rush" ? 112 : subMode == "gauntlet" ? 102 : 160;
+            if (_lblPuzzleSettingsPB != null)
+            {
+                _lblPuzzleSettingsPB.Text = subMode switch
+                {
+                    "rush"     => config?.PuzzleRushBest > 0           ? $"Best: {config.PuzzleRushBest} puzzles" : "",
+                    "gauntlet" => config?.GauntletBestStreak > 0       ? $"Best streak: {config.GauntletBestStreak}" : "",
+                    _          => config?.PuzzleTrainingBestStreak > 0 ? $"Best streak: {config.PuzzleTrainingBestStreak}" : "",
+                };
+            }
         }
 
         private void SelectRushTime(int minutes)
@@ -7099,7 +7137,7 @@ namespace ChessDroid
             if (_pnlVisionGlobalTimeRow != null) _pnlVisionGlobalTimeRow.Visible = subMode == "timed";
             if (_pnlVisionAutoNextRow   != null) _pnlVisionAutoNextRow.Visible   = subMode == "training";
             if (_pnlVisionSettings != null)
-                _pnlVisionSettings.Height = subMode == "timed" ? 144 : hasTimed ? 114 : 110;
+                _pnlVisionSettings.Height = subMode == "timed" ? 162 : hasTimed ? 132 : 128;
             if (_lblVisionDesc != null)
                 _lblVisionDesc.Text = subMode == "survival"
                     ? "3 lives — wrong or timeout costs a life.\nRun ends when lives reach zero."
@@ -7109,6 +7147,28 @@ namespace ChessDroid
             HighlightButton(_btnVisionSubTraining, subMode == "training");
             HighlightButton(_btnVisionSubTimed,    subMode == "timed");
             HighlightButton(_btnVisionSubSurvival, subMode == "survival");
+            UpdateVisionPBLabel();
+        }
+
+        private void UpdateSquarePBLabel()
+        {
+            if (_lblSquareSettingsPB == null || config == null) return;
+            string key = TrainingModeKey();
+            _lblSquareSettingsPB.Text = config.TrainingPersonalBests.TryGetValue(key, out var pb) && pb.BestTime != double.MaxValue
+                ? $"Best: {pb.BestCorrect}/{pb.BestQuestions} correct  ·  {pb.BestTime:F1}s"
+                : "";
+        }
+
+        private void UpdateVisionPBLabel()
+        {
+            if (_lblVisionSettingsPB == null || config == null) return;
+            string key = _visionSubMode == "survival" ? "Vision-Survival"
+                : $"Vision-Timed-{_visionGlobalDurationSeconds}";
+            if (_visionSubMode == "training")
+                { _lblVisionSettingsPB.Text = ""; return; }
+            _lblVisionSettingsPB.Text = config.TrainingPersonalBests.TryGetValue(key, out var pb) && pb.BestCorrect > 0
+                ? $"Best: {pb.BestCorrect} correct"
+                : "";
         }
 
         private void SelectVisionTime(int seconds)
@@ -7125,6 +7185,7 @@ namespace ChessDroid
             HighlightButton(_visionGlobalBtn1, seconds == 60);
             HighlightButton(_visionGlobalBtn3, seconds == 180);
             HighlightButton(_visionGlobalBtn5, seconds == 300);
+            UpdateVisionPBLabel();
         }
 
         private void VisionGlobalTimer_Tick(object? sender, EventArgs e)
@@ -7154,6 +7215,18 @@ namespace ChessDroid
 
         private void VisionTimedEnd()
         {
+            if (config != null)
+            {
+                string key = $"Vision-Timed-{_visionGlobalDurationSeconds}";
+                if (!config.TrainingPersonalBests.TryGetValue(key, out var pb))
+                    pb = new TrainingPersonalBest();
+                if (_visionCorrect > pb.BestCorrect)
+                {
+                    pb.BestCorrect = _visionCorrect;
+                    config.TrainingPersonalBests[key] = pb;
+                    config.Save();
+                }
+            }
             VisionEnd($"✓ {_visionCorrect} correct   ✗ {_visionWrong} wrong", $"Best streak: {_visionBestStreak}");
         }
 
@@ -7188,6 +7261,18 @@ namespace ChessDroid
 
         private void VisionSurvivalEnd()
         {
+            if (config != null)
+            {
+                string key = "Vision-Survival";
+                if (!config.TrainingPersonalBests.TryGetValue(key, out var pb))
+                    pb = new TrainingPersonalBest();
+                if (_visionCorrect > pb.BestCorrect)
+                {
+                    pb.BestCorrect = _visionCorrect;
+                    config.TrainingPersonalBests[key] = pb;
+                    config.Save();
+                }
+            }
             VisionEnd($"✓ {_visionCorrect} correct   Best streak: {_visionBestStreak}", "");
         }
 
