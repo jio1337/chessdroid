@@ -184,6 +184,8 @@ namespace ChessDroid.Services
             if ( ChessUtilities.IsKingInCheck(tmp, kingIsWhite: true))  return null;
             // Queen must still see the target after the fork move
             if (!ChessUtilities.CanAttackSquare(tmp, dstR, dstC, 'Q', tR, tC)) return null;
+            // Target must not be able to recapture the queen — that would make the fork unsound
+            if (ChessUtilities.CanAttackSquare(tmp, tR, tC, 'q', dstR, dstC)) return null;
 
             string fen = $"{board.ToFEN()} w - - 0 1";
             string uci = $"{(char)('a' + srcC)}{8 - srcR}{(char)('a' + dstC)}{8 - dstR}";
