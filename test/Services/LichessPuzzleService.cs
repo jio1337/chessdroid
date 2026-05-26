@@ -22,54 +22,57 @@ namespace ChessDroid.Services
             Directory.Exists(folder) ? Directory.GetFiles(folder, "*.csv").Length : 0;
 
         /// <summary>
-        /// Picks a random CSV file, seeks to a random offset, and reads `count` consecutive puzzles.
-        /// Falls back to the start of the file if it hits EOF before filling the batch.
-        /// Returns a shuffled list.
+        /// Picks a random CSV file, seeks to a random offset, and reads puzzles.
+        /// When a themeFilter is supplied, over-samples to compensate for sparsity.
+        /// Returns a shuffled list of up to `count` puzzles.
         /// </summary>
-        public static List<LichessPuzzle> GetRandomBatch(string folder, int count = 300)
+        public static List<LichessPuzzle> GetRandomBatch(string folder, int count = 300, string? themeFilter = null)
         {
             var files = Directory.GetFiles(folder, "*.csv");
             if (files.Length == 0) return new();
 
-            string file  = files[_rng.Next(files.Length)];
-            long fileSize = new FileInfo(file).Length;
+            string file    = files[_rng.Next(files.Length)];
+            long fileSize  = new FileInfo(file).Length;
+            int  readCount = themeFilter != null ? count * 10 : count;
 
-            // Seek to a random position leaving enough room to read ~count puzzles
-            long margin   = count * 300L;
+            long margin   = readCount * 300L;
             long safeEnd  = Math.Max(0, fileSize - margin);
             long startPos = safeEnd > 0 ? (long)(_rng.NextDouble() * safeEnd) : 0;
 
-            var results = new List<LichessPuzzle>(count);
+            var candidates = new List<LichessPuzzle>(readCount);
 
             using (var fs = File.OpenRead(file))
             {
                 fs.Seek(startPos, SeekOrigin.Begin);
                 using var reader = new StreamReader(fs, Encoding.UTF8);
-
                 if (startPos > 0) reader.ReadLine(); // discard partial line
-
                 string? line;
-                while (results.Count < count && (line = reader.ReadLine()) != null)
+                while (candidates.Count < readCount && (line = reader.ReadLine()) != null)
                 {
                     if (line.StartsWith("PuzzleId")) continue;
                     var p = ParseLine(line);
-                    if (p != null) results.Add(p);
+                    if (p != null) candidates.Add(p);
                 }
             }
 
-            // Wrap around from top of file if we hit EOF before filling
-            if (results.Count < count)
+            // Wrap around from top of file if still under target
+            if (candidates.Count < readCount)
             {
                 using var fs2     = File.OpenRead(file);
                 using var reader2 = new StreamReader(fs2, Encoding.UTF8);
-                reader2.ReadLine(); // skip header
+                reader2.ReadLine();
                 string? line;
-                while (results.Count < count && (line = reader2.ReadLine()) != null)
+                while (candidates.Count < readCount && (line = reader2.ReadLine()) != null)
                 {
                     var p = ParseLine(line);
-                    if (p != null) results.Add(p);
+                    if (p != null) candidates.Add(p);
                 }
             }
+
+            // Apply theme filter
+            var results = themeFilter != null
+                ? candidates.Where(p => p.Themes.Contains(themeFilter)).Take(count).ToList()
+                : candidates;
 
             // Fisher-Yates shuffle
             for (int i = results.Count - 1; i > 0; i--)
@@ -89,7 +92,7 @@ namespace ChessDroid.Services
             if (p.Length < 9) return null;
             if (!int.TryParse(p[3], out int rating)) return null;
             var moves = p[2].Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            if (moves.Length < 2) return null; // need at least trigger + one player move
+            if (moves.Length < 2) return null;
             return new LichessPuzzle(
                 p[0],
                 p[1],

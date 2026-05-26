@@ -4978,14 +4978,20 @@ namespace ChessDroid
         private LichessPuzzle? _currentPuzzle;
         private int    _puzzleMoveIndex;   // index into Moves[] the player must play next
         private readonly List<LichessPuzzle> _puzzleQueue = new();
-        private int    _puzzlesSolved;
+        private int    _puzzlesClean;      // solved with zero wrong moves and zero hints
+        private int    _puzzlesStruggled;  // solved but used hints or wrong moves
         private int    _puzzlesAttempted;
-        private string? _puzzlesFolder;
+        private bool   _wrongThisPuzzle;   // any wrong move or hint used this puzzle
+        private DateTime _puzzleStartTime; // when player first got control (after trigger)
+        private string?  _puzzlesFolder;
+        private string?  _puzzleThemeFilter;
 
         // Puzzle Training UI refs
-        private Button? _btnPuzzleMode;
-        private Panel?  _pnlPuzzleGame;
-        private Label?  _lblPuzzleRating;
+        private Button?   _btnPuzzleMode;
+        private Panel?    _pnlPuzzleGame;
+        private Panel?    _pnlPuzzleSettings;
+        private ComboBox? _cmbPuzzleTheme;
+        private Label?    _lblPuzzleRating;
         private Label?  _lblPuzzleThemes;
         private Label?  _lblPuzzleFeedback;
         private Label?  _lblPuzzleStats;
@@ -5225,9 +5231,31 @@ namespace ChessDroid
             _pnlOpeningSettings.Controls.AddRange(new Control[]
                 { pnlWatchesRow, _lblSelectedOpening, pnlOpModeRow, lblOpDesc });
 
+            // ── Puzzle settings (theme filter) ─────────────────────────────
+            _pnlPuzzleSettings = new Panel { Dock = DockStyle.Top, Height = 52, Visible = false };
+            var lblThemeFilter = new Label
+            {
+                Text = "Theme Filter", Font = new Font("Courier New", 9f, FontStyle.Bold),
+                Dock = DockStyle.Top, Height = 20
+            };
+            _cmbPuzzleTheme = new ComboBox
+            {
+                Dock = DockStyle.Top, Height = 26, DropDownStyle = ComboBoxStyle.DropDownList,
+                Font = new Font("Courier New", 9f)
+            };
+            foreach (var (label, _) in _puzzleThemeOptions)
+                _cmbPuzzleTheme.Items.Add(label);
+            _cmbPuzzleTheme.SelectedIndex = 0; // "Any" pre-selected
+            _cmbPuzzleTheme.SelectedIndexChanged += (_, _) =>
+            {
+                int i = _cmbPuzzleTheme.SelectedIndex;
+                _puzzleThemeFilter = i >= 0 ? _puzzleThemeOptions[i].Theme : null;
+            };
+            _pnlPuzzleSettings.Controls.AddRange(new Control[] { _cmbPuzzleTheme, lblThemeFilter });
+
             // DockStyle.Top stacks back-to-front: last item in Controls = topmost visually
             _pnlTrainingStart.Controls.AddRange(new Control[]
-                { btnStart, pnlStartGap, _pnlOpeningSettings, _pnlSquareSettings, pnlModeSwitcher, lblTitle });
+                { btnStart, pnlStartGap, _pnlPuzzleSettings, _pnlOpeningSettings, _pnlSquareSettings, pnlModeSwitcher, lblTitle });
 
             // ── Game panel ────────────────────────────────────────────────────
             _pnlTrainingGame = new Panel { Dock = DockStyle.Fill, Visible = false };
@@ -5672,6 +5700,7 @@ namespace ChessDroid
                                        : "Square Training";
             if (_pnlSquareSettings  != null) _pnlSquareSettings.Visible  = mode == "square";
             if (_pnlOpeningSettings != null) _pnlOpeningSettings.Visible = mode == "opening";
+            if (_pnlPuzzleSettings  != null) _pnlPuzzleSettings.Visible  = mode == "puzzle";
             var scheme = ThemeService.GetColorScheme(config?.Theme ?? "Dark");
             void Hi(Button? btn, bool active)
             {
@@ -6014,13 +6043,30 @@ namespace ChessDroid
 
         // ── Puzzle Training ────────────────────────────────────────────────────
 
+        private static readonly (string Label, string? Theme)[] _puzzleThemeOptions =
+        {
+            ("Any",                  null),
+            ("Mate in 1",            "mateIn1"),
+            ("Mate in 2",            "mateIn2"),
+            ("Mate in 3",            "mateIn3"),
+            ("Fork",                 "fork"),
+            ("Pin",                  "pin"),
+            ("Skewer",               "skewer"),
+            ("Sacrifice",            "sacrifice"),
+            ("Discovered Attack",    "discoveredAttack"),
+            ("Back Rank Mate",       "backRankMate"),
+            ("Endgame",              "endgame"),
+        };
+
         private void PuzzleTrainingStart()
         {
             if (string.IsNullOrEmpty(_puzzlesFolder)) return;
-            _puzzlesSolved    = 0;
+            _puzzlesClean     = 0;
+            _puzzlesStruggled = 0;
             _puzzlesAttempted = 0;
+            _puzzleHintsUsed  = 0;
             _puzzleQueue.Clear();
-            _puzzleQueue.AddRange(LichessPuzzleService.GetRandomBatch(_puzzlesFolder, 200));
+            _puzzleQueue.AddRange(LichessPuzzleService.GetRandomBatch(_puzzlesFolder, 200, _puzzleThemeFilter));
 
             _trainingPreFen     = boardControl.GetFEN();
             _trainingPreFlipped = boardControl.IsFlipped;
@@ -6036,11 +6082,12 @@ namespace ChessDroid
         private void PuzzleLoadNext()
         {
             boardControl.ClearTrainingHighlight();
-            _puzzleLocked = false;
-            _currentPuzzle = null;
+            _puzzleLocked      = false;
+            _wrongThisPuzzle   = false;
+            _currentPuzzle     = null;
 
             if (_puzzleQueue.Count == 0)
-                _puzzleQueue.AddRange(LichessPuzzleService.GetRandomBatch(_puzzlesFolder!, 200));
+                _puzzleQueue.AddRange(LichessPuzzleService.GetRandomBatch(_puzzlesFolder!, 200, _puzzleThemeFilter));
 
             _currentPuzzle = _puzzleQueue[0];
             _puzzleQueue.RemoveAt(0);
@@ -6049,7 +6096,8 @@ namespace ChessDroid
             _puzzleActive     = true;
 
             if (_lblPuzzleFeedback != null) _lblPuzzleFeedback.Text = "";
-            if (_lblPuzzleThemes  != null) _lblPuzzleThemes.Text = "";   // revealed only on finish
+            if (_lblPuzzleThemes  != null) _lblPuzzleThemes.Text =
+                _puzzleThemeFilter != null ? $"▸ {_cmbPuzzleTheme?.Text}" : "";
             if (_lblPuzzleRating  != null) _lblPuzzleRating.Text =
                 $"Puzzle #{_puzzlesAttempted}  ·  Rating {_currentPuzzle.Rating}";
             if (_btnPuzzleHint != null) _btnPuzzleHint.Enabled = false;  // enabled after trigger plays
@@ -6087,7 +6135,8 @@ namespace ChessDroid
             {
                 if (!IsDisposed) Invoke(() =>
                 {
-                    _puzzleLocked = false;
+                    _puzzleStartTime = DateTime.Now;
+                    _puzzleLocked    = false;
                     if (_btnPuzzleHint != null) _btnPuzzleHint.Enabled = true;
                 });
             });
@@ -6098,6 +6147,7 @@ namespace ChessDroid
             if (!_puzzleActive || _puzzleLocked || _currentPuzzle == null) return;
             if (_puzzleMoveIndex >= _currentPuzzle.Moves.Length) return;
             _puzzleHintsUsed++;
+            _wrongThisPuzzle = true;
             if (_btnPuzzleHint != null) _btnPuzzleHint.Enabled = false;
             UpdatePuzzleStats();
             string uci    = _currentPuzzle.Moves[_puzzleMoveIndex];
@@ -6125,11 +6175,17 @@ namespace ChessDroid
                 _puzzleMoveIndex++;
                 if (_puzzleMoveIndex >= _currentPuzzle.Moves.Length)
                 {
-                    // Puzzle solved
-                    _puzzlesSolved++;
+                    // Puzzle solved — determine clean vs struggled
+                    if (_wrongThisPuzzle) _puzzlesStruggled++;
+                    else                  _puzzlesClean++;
                     _puzzleLocked = true;
                     if (_btnPuzzleHint != null) _btnPuzzleHint.Enabled = false;
-                    if (_lblPuzzleFeedback != null) _lblPuzzleFeedback.Text = "✓ Correct!";
+                    double elapsed = (DateTime.Now - _puzzleStartTime).TotalSeconds;
+                    string timeStr = elapsed < 60
+                        ? $"  {elapsed:F1}s"
+                        : $"  {(int)(elapsed/60)}m {(int)(elapsed%60)}s";
+                    if (_lblPuzzleFeedback != null)
+                        _lblPuzzleFeedback.Text = $"✓ Correct!{timeStr}";
                     PuzzleRevealThemes();
                     UpdatePuzzleStats();
                     Task.Delay(1400).ContinueWith(_ => { if (!IsDisposed) Invoke((Action)PuzzleLoadNext); });
@@ -6145,7 +6201,8 @@ namespace ChessDroid
             else
             {
                 // Wrong — show red flash on destination, then restore and re-enable
-                _puzzleLocked = true;
+                _wrongThisPuzzle = true;
+                _puzzleLocked    = true;
                 int toRow = 7 - (uciMove[3] - '1');
                 int toCol = uciMove[2] - 'a';
                 boardControl.SetTrainingHighlight(toRow, toCol, Color.FromArgb(175, 215, 50, 50));
@@ -6224,8 +6281,8 @@ namespace ChessDroid
         private void UpdatePuzzleStats()
         {
             if (_lblPuzzleStats == null) return;
-            string s = $"Solved: {_puzzlesSolved} / {_puzzlesAttempted}";
-            if (_puzzleHintsUsed > 0) s += $"  ·  Hints: {_puzzleHintsUsed}";
+            string s = $"✓ Clean: {_puzzlesClean}   ~ Helped: {_puzzlesStruggled}";
+            if (_puzzleHintsUsed > 0) s += $"   💡 {_puzzleHintsUsed}";
             _lblPuzzleStats.Text = s;
         }
 
@@ -6259,6 +6316,11 @@ namespace ChessDroid
                 {
                     btn.BackColor = scheme.ButtonBackColor;
                     btn.ForeColor = scheme.ButtonForeColor;
+                }
+                else if (c is ComboBox cmb)
+                {
+                    cmb.BackColor = scheme.ButtonBackColor;
+                    cmb.ForeColor = scheme.TextColor;
                 }
                 else if (c is NumericUpDown nud)
                 {
