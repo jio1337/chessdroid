@@ -5420,11 +5420,28 @@ namespace ChessDroid
             };
             _pnlPuzzleAutoNextRow.Controls.Add(_chkPuzzleAutoNext);
 
+            var lnkResetPBs = new LinkLabel
+            {
+                Text = "Reset personal bests", Dock = DockStyle.Top, Height = 18,
+                Font = F(8f), TextAlign = ContentAlignment.MiddleLeft, LinkColor = Color.FromArgb(140, 140, 140)
+            };
+            lnkResetPBs.LinkClicked += (_, _) =>
+            {
+                if (config == null) return;
+                config.PuzzleRushBest           = 0;
+                config.PuzzleTrainingBestStreak = 0;
+                config.GauntletBestStreak       = 0;
+                config.Save();
+                _puzzleStreakBest    = 0;
+                _gauntletBestStreak = 0;
+                UpdatePuzzleStats();
+            };
+
             var pnlPuzzleTopGap = new Panel { Dock = DockStyle.Top, Height = 8 };  // gap: mode switcher → sub-buttons
             var pnlPuzzleSubGap = new Panel { Dock = DockStyle.Top, Height = 6 };  // gap: sub-buttons → content row
             // DockStyle.Top: last = topmost visually — pnlPuzzleTopGap must be last
             _pnlPuzzleSettings.Controls.AddRange(new Control[]
-                { _pnlPuzzleAutoNextRow, _lblGauntletDesc, _pnlRushTimeRow, _pnlThemeFilterRow, pnlPuzzleSubGap, pnlPuzzleSub, pnlPuzzleTopGap });
+                { lnkResetPBs, _pnlPuzzleAutoNextRow, _lblGauntletDesc, _pnlRushTimeRow, _pnlThemeFilterRow, pnlPuzzleSubGap, pnlPuzzleSub, pnlPuzzleTopGap });
 
             // ── Vision settings ────────────────────────────────────────────
             _pnlVisionSettings = new Panel { Dock = DockStyle.Top, Height = 84, Visible = false };
@@ -5784,9 +5801,43 @@ namespace ChessDroid
         private void BtnTraining_Click(object? sender, EventArgs e)
         {
             if (_trainingUiVisible)
-                StopTraining();
+            {
+                bool puzzleTrainingActive = _pnlPuzzleGame?.Visible == true
+                    && _puzzleSubMode == "training"
+                    && (_puzzlesClean + _puzzlesStruggled) > 0;
+                if (puzzleTrainingActive)
+                    PuzzleTrainingShowResults();
+                else
+                    StopTraining();
+            }
             else
                 StartTrainingUI();
+        }
+
+        private void PuzzleTrainingShowResults()
+        {
+            _puzzleActive = false;
+            _puzzleLocked = false;
+            boardControl.ClearTrainingHighlight();
+            if (_btnPuzzleNext    != null) _btnPuzzleNext.Visible    = false;
+            if (_btnPuzzleAnalyze != null) _btnPuzzleAnalyze.Visible = false;
+
+            int total = _puzzlesClean + _puzzlesStruggled;
+            int acc   = total > 0 ? _puzzlesClean * 100 / total : 0;
+
+            if (_lblTrainingFinalScore != null)
+                _lblTrainingFinalScore.Text = $"Solved: {total}   ·   {acc}% clean   ·   {_puzzlesClean} perfect";
+            if (_lblTrainingPB != null)
+                _lblTrainingPB.Text = _puzzleStreakBest > 0 ? $"Best streak: {_puzzleStreakBest}" : "";
+            if (_lblOpMissedMoves != null) _lblOpMissedMoves.Visible = false;
+
+            boardControl.IsFlipped = _trainingPreFlipped;
+            if (_trainingPreFen != null) boardControl.LoadFEN(_trainingPreFen);
+            _trainingPreFen     = null;
+            _trainingGameActive = false;
+
+            _pnlPuzzleGame!.Visible     = false;
+            _pnlTrainingResult!.Visible = true;
         }
 
         private void StartTrainingUI()
@@ -6147,7 +6198,7 @@ namespace ChessDroid
             HighlightButton(_btnPuzzleSubGauntlet, subMode == "gauntlet");
             // Adjust settings panel height for current sub-mode (gaps: 8px top + 6px sub = 14px fixed)
             if (_pnlPuzzleSettings != null)
-                _pnlPuzzleSettings.Height = subMode == "rush" ? 76 : subMode == "gauntlet" ? 66 : 124;
+                _pnlPuzzleSettings.Height = subMode == "rush" ? 94 : subMode == "gauntlet" ? 84 : 142;
         }
 
         private void SelectRushTime(int minutes)
@@ -6760,7 +6811,9 @@ namespace ChessDroid
             }
             else if (_puzzleSubMode == "rush")
             {
-                s = $"Solved: {_puzzlesClean + _puzzlesStruggled}   ~ Helped: {_puzzlesStruggled}";
+                int pb = config?.PuzzleRushBest ?? 0;
+                string pbStr = pb > 0 ? $"   ·   PB: {pb}" : "";
+                s = $"Solved: {_puzzlesClean + _puzzlesStruggled}   ~ Helped: {_puzzlesStruggled}{pbStr}";
             }
             else
             {
