@@ -383,6 +383,13 @@ namespace ChessDroid.Controls
             set { if (_monochromeMode != value) { _monochromeMode = value; Invalidate(); } }
         }
 
+        private bool _hideCoordinates = false;
+        public bool HideCoordinates
+        {
+            get => _hideCoordinates;
+            set { if (_hideCoordinates != value) { _hideCoordinates = value; Invalidate(); } }
+        }
+
         public ChessBoard GetBoardState() => board;
 
         /// <summary>
@@ -981,35 +988,38 @@ namespace ChessDroid.Controls
                 }
             }
 
-            for (int i = 0; i < 8; i++)
+            if (!_hideCoordinates)
             {
-                // File letters (a-h)
-                int fileIndex = isFlipped ? 7 - i : i;
-                string file = ((char)('a' + fileIndex)).ToString();
-                bool isLight = isFlipped ? fileIndex % 2 == 0 : (7 + fileIndex) % 2 == 0;
-                _paintBrush.Color = _monochromeMode ? Color.White
-                    : (_rainbowMode || _waveMode)
-                    ? HsvToRgb(isLight ? (_rainbowHue + 40f) % 360f : _rainbowHue,
-                               isLight ? 0.70f : 0.50f,
-                               isLight ? 0.58f : 0.88f)
-                    : (_boardFrameEnabled ? LightenColor(_boardFrameColor, 0.45f)
-                                         : (isLight ? darkSquareColor : lightSquareColor));
-                g.DrawString(file, coordFont, _paintBrush,
-                    frameOff + i * squareSize + 2,
-                    frameOff + 8 * squareSize - coordFont.Height - 2);
+                for (int i = 0; i < 8; i++)
+                {
+                    // File letters (a-h)
+                    int fileIndex = isFlipped ? 7 - i : i;
+                    string file = ((char)('a' + fileIndex)).ToString();
+                    bool isLight = isFlipped ? fileIndex % 2 == 0 : (7 + fileIndex) % 2 == 0;
+                    _paintBrush.Color = _monochromeMode ? Color.White
+                        : (_rainbowMode || _waveMode)
+                        ? HsvToRgb(isLight ? (_rainbowHue + 40f) % 360f : _rainbowHue,
+                                   isLight ? 0.70f : 0.50f,
+                                   isLight ? 0.58f : 0.88f)
+                        : (_boardFrameEnabled ? LightenColor(_boardFrameColor, 0.45f)
+                                             : (isLight ? darkSquareColor : lightSquareColor));
+                    g.DrawString(file, coordFont, _paintBrush,
+                        frameOff + i * squareSize + 2,
+                        frameOff + 8 * squareSize - coordFont.Height - 2);
 
-                // Rank numbers (1-8)
-                int rankIndex = isFlipped ? i : 7 - i;
-                string rank = (rankIndex + 1).ToString();
-                isLight = i % 2 == 0;
-                _paintBrush.Color = _monochromeMode ? Color.White
-                    : (_rainbowMode || _waveMode)
-                    ? HsvToRgb(isLight ? (_rainbowHue + 40f) % 360f : _rainbowHue,
-                               isLight ? 0.70f : 0.50f,
-                               isLight ? 0.58f : 0.88f)
-                    : (_boardFrameEnabled ? LightenColor(_boardFrameColor, 0.45f)
-                                         : (isLight ? darkSquareColor : lightSquareColor));
-                g.DrawString(rank, coordFont, _paintBrush, frameOff + 2, frameOff + i * squareSize + 2);
+                    // Rank numbers (1-8)
+                    int rankIndex = isFlipped ? i : 7 - i;
+                    string rank = (rankIndex + 1).ToString();
+                    isLight = i % 2 == 0;
+                    _paintBrush.Color = _monochromeMode ? Color.White
+                        : (_rainbowMode || _waveMode)
+                        ? HsvToRgb(isLight ? (_rainbowHue + 40f) % 360f : _rainbowHue,
+                                   isLight ? 0.70f : 0.50f,
+                                   isLight ? 0.58f : 0.88f)
+                        : (_boardFrameEnabled ? LightenColor(_boardFrameColor, 0.45f)
+                                             : (isLight ? darkSquareColor : lightSquareColor));
+                    g.DrawString(rank, coordFont, _paintBrush, frameOff + 2, frameOff + i * squareSize + 2);
+                }
             }
 
             // Draw square name labels if enabled (e.g. "e4", "d5")

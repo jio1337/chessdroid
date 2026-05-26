@@ -109,6 +109,7 @@ namespace ChessDroid
         private string _boardColorSavedDark = "";
         private bool _boardColorSavedRainbow = false;
         private bool _boardColorSavedWave = false;
+        private bool _boardColorSavedMonochrome = false;
         private int  _boardColorSavedIndex = -1;
         private bool _restoringBoardColor = false;
         private System.Windows.Forms.Timer? _boardColorHoverTimer;
@@ -169,6 +170,7 @@ namespace ChessDroid
             boardControl.SetSquareColors(
                 ColorTranslator.FromHtml(config.LightSquareColor),
                 ColorTranslator.FromHtml(config.DarkSquareColor));
+            boardControl.MonochromeMode  = config.MonochromeBoard;
             boardControl.ShowSquareLabels = config.ShowSquareLabels;
             boardControl.ShowLastMoveHighlight = config.ShowLastMoveHighlight;
             boardControl.AnimationDurationMs = config.AnimationDurationMs;
@@ -617,11 +619,14 @@ namespace ChessDroid
                 cmbBoardColor.Items.Add(name);
             cmbBoardColor.Items.Add("🌈 Rainbow");
             cmbBoardColor.Items.Add("🌊 Wave");
+            cmbBoardColor.Items.Add("◻ Monochromatic");
 
             if (boardControl.RainbowMode)
                 cmbBoardColor.SelectedIndex = SettingsForm.ColorPresets.Length;
             else if (boardControl.WaveMode)
                 cmbBoardColor.SelectedIndex = SettingsForm.ColorPresets.Length + 1;
+            else if (boardControl.MonochromeMode)
+                cmbBoardColor.SelectedIndex = SettingsForm.ColorPresets.Length + 2;
             else
             {
                 int match = Array.FindIndex(SettingsForm.ColorPresets, p =>
@@ -643,6 +648,7 @@ namespace ChessDroid
             // Always save on real selection — hover never fires SelectedIndexChanged
             if (config != null)
             {
+                config.MonochromeBoard = idx == SettingsForm.ColorPresets.Length + 2;
                 if (idx < SettingsForm.ColorPresets.Length)
                 {
                     var (_, light, dark) = SettingsForm.ColorPresets[idx];
@@ -657,26 +663,37 @@ namespace ChessDroid
         {
             if (idx == SettingsForm.ColorPresets.Length)
             {
-                boardControl.RainbowMode = true;
+                boardControl.RainbowMode    = true;
+                boardControl.MonochromeMode = false;
                 return;
             }
             if (idx == SettingsForm.ColorPresets.Length + 1)
             {
-                boardControl.WaveMode = true;
+                boardControl.WaveMode       = true;
+                boardControl.MonochromeMode = false;
                 return;
             }
-            boardControl.RainbowMode = false;
-            boardControl.WaveMode    = false;
+            if (idx == SettingsForm.ColorPresets.Length + 2)
+            {
+                boardControl.RainbowMode    = false;
+                boardControl.WaveMode       = false;
+                boardControl.MonochromeMode = true;
+                return;
+            }
+            boardControl.RainbowMode    = false;
+            boardControl.WaveMode       = false;
+            boardControl.MonochromeMode = false;
             var (_, light, dark) = SettingsForm.ColorPresets[idx];
             boardControl.SetSquareColors(ColorTranslator.FromHtml(light), ColorTranslator.FromHtml(dark));
         }
 
         private void CmbBoardColor_DropDown(object? sender, EventArgs e)
         {
-            _boardColorSavedLight   = config.LightSquareColor;
-            _boardColorSavedDark    = config.DarkSquareColor;
-            _boardColorSavedRainbow = boardControl.RainbowMode;
-            _boardColorSavedWave    = boardControl.WaveMode;
+            _boardColorSavedLight      = config.LightSquareColor;
+            _boardColorSavedDark       = config.DarkSquareColor;
+            _boardColorSavedRainbow    = boardControl.RainbowMode;
+            _boardColorSavedWave       = boardControl.WaveMode;
+            _boardColorSavedMonochrome = boardControl.MonochromeMode;
             _boardColorSavedIndex = cmbBoardColor.SelectedIndex;
             _boardColorHoverTimer?.Start();
         }
@@ -698,9 +715,10 @@ namespace ChessDroid
             if (cmbBoardColor.SelectedIndex != _boardColorSavedIndex) return;
 
             // User closed without committing — revert board visuals only (combo is already at saved index)
-            boardControl.RainbowMode = _boardColorSavedRainbow;
-            boardControl.WaveMode    = _boardColorSavedWave;
-            if (!_boardColorSavedRainbow && !_boardColorSavedWave)
+            boardControl.RainbowMode    = _boardColorSavedRainbow;
+            boardControl.WaveMode       = _boardColorSavedWave;
+            boardControl.MonochromeMode = _boardColorSavedMonochrome;
+            if (!_boardColorSavedRainbow && !_boardColorSavedWave && !_boardColorSavedMonochrome)
                 boardControl.SetSquareColors(
                     ColorTranslator.FromHtml(_boardColorSavedLight),
                     ColorTranslator.FromHtml(_boardColorSavedDark));
@@ -4955,6 +4973,7 @@ namespace ChessDroid
 
         // Opening Training UI refs
         private Label?  _lblTrainingTitle;
+        private Label?  _lblSquareDesc;
         private Button? _btnSqMode;
         private Button? _btnOpMode;
         private Panel? _pnlSquareSettings;
@@ -5069,12 +5088,13 @@ namespace ChessDroid
                 Dock = DockStyle.Top, Height = 38, TextAlign = ContentAlignment.MiddleLeft
             };
             var lblTitle = _lblTrainingTitle;
-            var lblDesc = new Label
+            _lblSquareDesc = new Label
             {
                 Text = "An empty board appears.\nClick the named square as fast as you can.\n10 questions per round.",
                 Font = F(10f),
                 Dock = DockStyle.Top, Height = 58, TextAlign = ContentAlignment.TopLeft
             };
+            var lblDesc = _lblSquareDesc;
             var pnlMode = new Panel { Dock = DockStyle.Top, Height = 84 };
             var lblMode = new Label
             {
@@ -5133,6 +5153,11 @@ namespace ChessDroid
                 Minimum = 5, Maximum = 100, Value = 10, Width = 54,
                 Font = F(10f), Location = new Point(112, 2)
             };
+            _numQuestions.ValueChanged += (_, _) =>
+            {
+                if (_lblSquareDesc != null)
+                    _lblSquareDesc.Text = $"An empty board appears.\nClick the named square as fast as you can.\n{(int)_numQuestions.Value} questions per round.";
+            };
             pnlCount.Controls.AddRange(new Control[] { lblQuestions, _numQuestions });
 
             var pnlTime = new Panel { Dock = DockStyle.Top, Height = 28 };
@@ -5170,12 +5195,12 @@ namespace ChessDroid
             };
             _btnOpMode = new Button
             {
-                Text = "📖 Opening", Font = F(9f, true),
+                Text = "Opening", Font = F(9f, true),
                 Location = new Point(92, 5), Size = new Size(86, 26), FlatStyle = FlatStyle.Flat
             };
             _btnPuzzleMode = new Button
             {
-                Text = "🧩 Puzzles", Font = F(9f, true),
+                Text = "Puzzles", Font = F(9f, true),
                 Location = new Point(184, 5), Size = new Size(86, 26), FlatStyle = FlatStyle.Flat,
                 Visible = false
             };
@@ -5275,7 +5300,7 @@ namespace ChessDroid
                 { pnlWatchesRow, _lblSelectedOpening, pnlOpModeRow, lblOpDesc });
 
             // ── Puzzle settings (sub-mode + theme + rush time) ─────────────
-            _pnlPuzzleSettings = new Panel { Dock = DockStyle.Top, Height = 130, Visible = false };
+            _pnlPuzzleSettings = new Panel { Dock = DockStyle.Top, Height = 98, Visible = false };
 
             // Sub-mode switcher: Training · Rush · Gauntlet
             var pnlPuzzleSub = new Panel { Dock = DockStyle.Top, Height = 32 };
@@ -5348,19 +5373,23 @@ namespace ChessDroid
                 Dock = DockStyle.Top, Height = 20, Visible = false
             };
 
-            // DockStyle.Top: last = topmost visually — pnlPuzzleSub must be last
+            var pnlPuzzleTopGap = new Panel { Dock = DockStyle.Top, Height = 8 };  // gap: mode switcher → sub-buttons
+            var pnlPuzzleSubGap = new Panel { Dock = DockStyle.Top, Height = 6 };  // gap: sub-buttons → content row
+            // DockStyle.Top: last = topmost visually — pnlPuzzleTopGap must be last
             _pnlPuzzleSettings.Controls.AddRange(new Control[]
-                { _lblGauntletDesc, _pnlRushTimeRow, _pnlThemeFilterRow, pnlPuzzleSub });
+                { _lblGauntletDesc, _pnlRushTimeRow, _pnlThemeFilterRow, pnlPuzzleSubGap, pnlPuzzleSub, pnlPuzzleTopGap });
 
             // ── Vision settings (just a description) ──────────────────────
-            _pnlVisionSettings = new Panel { Dock = DockStyle.Top, Height = 38, Visible = false };
+            _pnlVisionSettings = new Panel { Dock = DockStyle.Top, Height = 46, Visible = false };
             var lblVisionDesc = new Label
             {
                 Text = "Is the square light or dark?\nAll 64 squares — no visual clues.",
                 Font = F(8.5f),
                 Dock = DockStyle.Top, Height = 38
             };
-            _pnlVisionSettings.Controls.Add(lblVisionDesc);
+            var pnlVisionGap = new Panel { Dock = DockStyle.Top, Height = 8 };
+            // last = topmost visually: gap appears between mode switcher and description text
+            _pnlVisionSettings.Controls.AddRange(new Control[] { lblVisionDesc, pnlVisionGap });
 
             // DockStyle.Top stacks back-to-front: last item in Controls = topmost visually
             _pnlTrainingStart.Controls.AddRange(new Control[]
@@ -5463,16 +5492,26 @@ namespace ChessDroid
             _btnVisionLight = new Button
             {
                 Text = "Light", Font = F(13f, true),
-                Location = new Point(0, 2), Size = new Size(120, 38), FlatStyle = FlatStyle.Flat
+                Location = new Point(0, 2), Size = new Size(120, 38), FlatStyle = FlatStyle.Flat,
+                Anchor = AnchorStyles.None
             };
             _btnVisionDark = new Button
             {
                 Text = "Dark", Font = F(13f, true),
-                Location = new Point(130, 2), Size = new Size(120, 38), FlatStyle = FlatStyle.Flat
+                Location = new Point(130, 2), Size = new Size(120, 38), FlatStyle = FlatStyle.Flat,
+                Anchor = AnchorStyles.None
             };
             _btnVisionLight.Click += (_, _) => VisionAnswer(true);
             _btnVisionDark.Click  += (_, _) => VisionAnswer(false);
             pnlVisionButtons.Controls.AddRange(new Control[] { _btnVisionLight, _btnVisionDark });
+            pnlVisionButtons.Resize += (_, _) =>
+            {
+                const int btnW = 120, gap = 10;
+                int total = btnW * 2 + gap;
+                int startX = (pnlVisionButtons.Width - total) / 2;
+                _btnVisionLight!.Location = new Point(startX, 2);
+                _btnVisionDark!.Location  = new Point(startX + btnW + gap, 2);
+            };
             _lblVisionScore = new Label
             {
                 Font = F(10f),
@@ -5579,7 +5618,11 @@ namespace ChessDroid
             if (_btnPuzzleHint != null) _btnPuzzleHint.Enabled = false;
             if (_pnlPuzzleGame != null) _pnlPuzzleGame.Visible = false;
             if (_pnlVisionGame != null) _pnlVisionGame.Visible = false;
-            boardControl.MonochromeMode = false;
+            boardControl.MonochromeMode  = config?.MonochromeBoard == true;
+            boardControl.HideCoordinates = false;
+            bool showStrips = config?.ShowMaterialStrips != false;
+            _materialTop.Visible    = showStrips;
+            _materialBottom.Visible = showStrips;
 
             if (_trainingGameActive)
             {
@@ -5898,9 +5941,9 @@ namespace ChessDroid
             Hi(_btnPuzzleSubTraining, subMode == "training");
             Hi(_btnPuzzleSubRush,     subMode == "rush");
             Hi(_btnPuzzleSubGauntlet, subMode == "gauntlet");
-            // Adjust settings panel height for current sub-mode
+            // Adjust settings panel height for current sub-mode (gaps: 8px top + 6px sub = 14px fixed)
             if (_pnlPuzzleSettings != null)
-                _pnlPuzzleSettings.Height = subMode == "rush" ? 130 : subMode == "gauntlet" ? 90 : 120;
+                _pnlPuzzleSettings.Height = subMode == "rush" ? 76 : subMode == "gauntlet" ? 66 : 98;
         }
 
         private void SelectRushTime(int minutes)
@@ -6669,12 +6712,16 @@ namespace ChessDroid
             _trainingPreFlipped = boardControl.IsFlipped;
             _trainingGameActive = true;
 
-            boardControl.TrainingMode   = false;
-            boardControl.MonochromeMode = true;
-            boardControl.IsFlipped      = false;
+            boardControl.TrainingMode      = false;
+            boardControl.MonochromeMode    = true;
+            boardControl.HideCoordinates   = true;
+            boardControl.IsFlipped         = false;
             isNavigating = true;
             boardControl.LoadFEN(TRAINING_EMPTY_FEN);
             isNavigating = false;
+
+            _materialTop.Visible    = false;
+            _materialBottom.Visible = false;
 
             _pnlTrainingStart!.Visible = false;
             _pnlTrainingResult!.Visible = false;

@@ -42,6 +42,7 @@ namespace ChessDroid
         // Board square colors (hex strings e.g. "#F0D9B5")
         public string LightSquareColor { get; set; } = "#F0D9B5";
         public string DarkSquareColor { get; set; } = "#B58863";
+        public bool MonochromeBoard { get; set; } = false;
         public bool ShowSquareLabels { get; set; } = false;
 
         // Visual aids
@@ -213,6 +214,7 @@ namespace ChessDroid
             ShowEvalBar = other.ShowEvalBar;
             LightSquareColor = other.LightSquareColor;
             DarkSquareColor = other.DarkSquareColor;
+            MonochromeBoard = other.MonochromeBoard;
             ShowSquareLabels = other.ShowSquareLabels;
             ShowThreatArrows = other.ShowThreatArrows;
             ShowBookArrows = other.ShowBookArrows;
