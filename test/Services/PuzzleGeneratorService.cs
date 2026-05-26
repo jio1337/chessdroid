@@ -170,6 +170,11 @@ namespace ChessDroid.Services
             // Queen must have a clear path to the fork square
             if (!ChessUtilities.CanAttackSquare(board, srcR, srcC, 'Q', dstR, dstC)) return null;
 
+            // Source queen must NOT already directly see the king or target —
+            // otherwise the position is a free capture or already-checking, not a fork.
+            if (ChessUtilities.CanAttackSquare(board, srcR, srcC, 'Q', kR, kC)) return null;
+            if (ChessUtilities.CanAttackSquare(board, srcR, srcC, 'Q', tR, tC)) return null;
+
             using var pooled = BoardPool.Rent(board);
             var tmp = pooled.Board;
             tmp.SetPiece(dstR, dstC, 'Q');
