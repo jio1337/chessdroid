@@ -1,8 +1,8 @@
-# ChessDroid Architecture Documentation
+# chessdroid Architecture Documentation
 
 ## Overview
 
-ChessDroid is a pure offline chess analysis application that combines tactical pattern recognition with deep positional understanding inspired by world-class chess engines (Ethereal and Stockfish). As of v3.15.0, the application is centered around the Analysis Board — an interactive workspace for deep chess analysis with visual engine arrows, threat arrows, eval graph, PV line exploration, piece animations, free-draw annotation, bot mode, continuous analysis, annotated PGN round-trips, square highlighting, auto-play, game accuracy scoring, interactive game review, game library, material strips, SVG piece sets, smooth eval bar animation, neutral engine match arbiter, full board customization, 6 UI themes, resizable panels, a persistent Chessdroid engine rating ladder, and sound effects.
+chessdroid is a pure offline chess analysis application that combines tactical pattern recognition with deep positional understanding inspired by world-class chess engines (Ethereal and Stockfish). As of v3.15.0, the application is centered around the Analysis Board — an interactive workspace for deep chess analysis with visual engine arrows, threat arrows, eval graph, PV line exploration, piece animations, free-draw annotation, bot mode, continuous analysis, annotated PGN round-trips, square highlighting, auto-play, game accuracy scoring, interactive game review, game library, material strips, SVG piece sets, smooth eval bar animation, neutral engine match arbiter, full board customization, 6 UI themes, resizable panels, a persistent chessdroid engine rating ladder, and sound effects.
 
 ---
 
@@ -10,7 +10,7 @@ ChessDroid is a pure offline chess analysis application that combines tactical p
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│              ChessDroid Core (AnalysisBoardForm.cs)              │
+│              chessdroid Core (AnalysisBoardForm.cs)              │
 │          Pure analysis board — main and only entry point         │
 └────────────────────┬────────────────────────────────────────────┘
                      │
@@ -717,7 +717,7 @@ Create a folder in `Templates/` with 12 PNG files named: wK, wQ, wR, wB, wN, wP,
 
 ## Contact & Contribution
 
-**Project:** ChessDroid
+**Project:** chessdroid
 **License:** MIT
 **Repository:** https://github.com/jio1337/chessdroid
 

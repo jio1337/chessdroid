@@ -1,8 +1,8 @@
-## ChessDroid v3.15.0 — User Guide
+## chessdroid v3.15.0 — User Guide
 
-### Welcome to ChessDroid!
+### Welcome to chessdroid!
 
-ChessDroid is an offline chess analysis application built for focused study. Analyze positions, explore ideas, and learn with your favorite UCI engines — with automatic analysis on every move, no buttons to press.
+chessdroid is an offline chess analysis application built for focused study. Analyze positions, explore ideas, and learn with your favorite UCI engines — with automatic analysis on every move, no buttons to press.
 
 ---
 
@@ -60,7 +60,7 @@ Challenge a Stockfish engine directly on the Analysis Board.
 - Click **Take Back** to undo your last move and the bot's response (goes back 2 moves)
 - Click **Stop Bot** to exit bot mode at any time
 
-**Game end:** ChessDroid correctly identifies checkmate vs stalemate and shows the result.
+**Game end:** chessdroid correctly identifies checkmate vs stalemate and shows the result.
 
 **Note:** Bot mode and engine match mode are mutually exclusive — starting one stops the other.
 
@@ -83,7 +83,7 @@ The match runs automatically until checkmate, stalemate, or you click Stop. All 
 
 ### **4. Move Classification**
 
-ChessDroid uses Chess.com-inspired move classification based on win probability calculations:
+chessdroid uses Chess.com-inspired move classification based on win probability calculations:
 
 **For the Best Move:**
 - **Brilliant (!!)** — Piece sacrifice that maintains good position
@@ -97,10 +97,10 @@ ChessDroid uses Chess.com-inspired move classification based on win probability 
 - **Inaccuracy (?!)** — Loses 5-10% win probability (Orange)
 
 **Blunder Explanations:**
-ChessDroid explains WHY moves are bad — not just that they are blunders, but what tactical or positional consequences they create.
+chessdroid explains WHY moves are bad — not just that they are blunders, but what tactical or positional consequences they create.
 
 **"Only Winning Move" Detection:**
-When the best move maintains a winning position but alternatives throw away the advantage, ChessDroid highlights this:
+When the best move maintains a winning position but alternatives throw away the advantage, chessdroid highlights this:
 ```
 Best line: Nf6+ Kh8 Qg8 +5.20
   → only winning move, fork on king and queen
@@ -136,13 +136,13 @@ Choose your preferred playing style from **Very Solid** to **Very Aggressive**.
 - **61-80 (Aggressive)** — Prefers sharp, tactical moves
 - **81-100 (Very Aggressive)** — Prefers the sharpest, most tactical moves
 
-When your play style differs from the engine's top choice, ChessDroid shows a "Recommended" section with the move that best fits your style while staying within an acceptable evaluation range.
+When your play style differs from the engine's top choice, chessdroid shows a "Recommended" section with the move that best fits your style while staying within an acceptable evaluation range.
 
 ---
 
 ### **7. Tactical Pattern Detection**
 
-ChessDroid detects 30+ tactical patterns automatically:
+chessdroid detects 30+ tactical patterns automatically:
 
 - **Fork** — One piece attacks multiple targets
 - **Pin** — Piece can't move without exposing more valuable piece
@@ -273,7 +273,7 @@ Even strong players benefit from simple explanations. Start simple, increase com
 Enable 2nd and 3rd best lines to understand why one move is better than another.
 
 ### **Tip 4: Study Endgames with Specialized Analysis**
-In endgame positions, ChessDroid provides insights on opposition, rule of the square, and king activity.
+In endgame positions, chessdroid provides insights on opposition, rule of the square, and king activity.
 
 ### **Tip 5: Use Play Style to Match Your Games**
 Playing a must-win game? Set to 80-100. Need a safe draw? Set to 0-20.
@@ -289,7 +289,7 @@ Create a folder in `Templates/` with 12 PNG files (wK, wQ, wR, wB, wN, wP, bK, b
 
 ---
 
-## Learning with ChessDroid
+## Learning with chessdroid
 
 ### **Tactical Training**
 1. Load a tactical puzzle position via FEN
@@ -374,7 +374,7 @@ Create a folder in `Templates/` with 12 PNG files (wK, wQ, wR, wB, wN, wP, bK, b
 
 **v3.14.0** — Theme Suite & Engine Ladder
 - 6 UI themes: Dark, Light, Cyberpunk, Dracula, Nord, Sepia
-- Chessdroid Rating — persistent K=32 engine ladder, seeds from CCRL
+- chessdroid Rating — persistent K=32 engine ladder, seeds from CCRL
 - Resizable Board | Moves | Analysis panels with saved splitter positions
 - Bot engine picker, position editor piece images, engine info labels on strips
 
@@ -515,7 +515,7 @@ Create a folder in `Templates/` with 12 PNG files (wK, wQ, wR, wB, wN, wP, bK, b
 
 ## Credits
 
-**ChessDroid** — Created by jio1337
+**chessdroid** — Created by jio1337
 
 **Inspired by:**
 - Stockfish — Threat detection, win rate model, WDL
@@ -535,11 +535,11 @@ Create a folder in `Templates/` with 12 PNG files (wK, wQ, wR, wB, wN, wP, bK, b
 
 ## License
 
-ChessDroid is released under the MIT License. Free and open-source forever!
+chessdroid is released under the MIT License. Free and open-source forever!
 
 ---
 
-**Enjoy analyzing with ChessDroid!**
+**Enjoy analyzing with chessdroid!**
 
 *Last Updated: 2026-05-25*
 *Version: 3.15.0*

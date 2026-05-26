@@ -97,7 +97,7 @@ dotnet run --configuration Release
 
 ## Quick Start
 
-1. **Launch ChessDroid** — Run `chessdroid.exe`
+1. **Launch chessdroid** — Run `chessdroid.exe`
 2. **Configure Engine** — Click ⚙ Settings and select your UCI engine
 3. **Make Moves** — Click on pieces to make moves on the board
 4. **Read Analysis** — Analysis runs automatically after every move with explanations
@@ -186,20 +186,20 @@ dotnet test
 A: Stockfish is recommended. Download the latest version from [stockfishchess.org](https://stockfishchess.org/download/) and place it in the Engines folder.
 
 **Q: Can I use this on Mac or Linux?**
-A: Currently ChessDroid is Windows-only. Cross-platform support may be added in the future.
+A: Currently chessdroid is Windows-only. Cross-platform support may be added in the future.
 
 **Q: Is this tool allowed on chess platforms?**
 A: No. Using analysis tools during live games violates most chess platform terms of service and is considered cheating. Please read our terms on chessdroid.net before downloading/installing.
 
 **Q: How does the Play Style slider work?**
-A: The slider (0-100) affects which moves are recommended. At 0 (solid), ChessDroid prefers safe, quiet moves. At 100 (aggressive), it prefers sharp, tactical moves. The engine still calculates all moves, but the selection is filtered based on "sharpness" metrics within acceptable evaluation tolerance.
+A: The slider (0-100) affects which moves are recommended. At 0 (solid), chessdroid prefers safe, quiet moves. At 100 (aggressive), it prefers sharp, tactical moves. The engine still calculates all moves, but the selection is filtered based on "sharpness" metrics within acceptable evaluation tolerance.
 
 **Q: How do I add custom piece sets?**
 A: Create a folder in `Templates/` with 12 PNG files (wK, wQ, wR, wB, wN, wP, bK, bQ, bR, bB, bN, bP). The folder name will appear in the piece set dropdown.
 
 ## Support
 
-Chessdroid is free and always will be. If it's helped you improve your chess, consider supporting the project:
+chessdroid is free and always will be. If it's helped you improve your chess, consider supporting the project:
 
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/chessdroid)
 

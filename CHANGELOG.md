@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to ChessDroid will be documented in this file.
+All notable changes to chessdroid will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -27,8 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **6 UI Themes** — Dark, Light, Cyberpunk, Dracula, Nord, Sepia. Replaces the Dark/Light checkbox with a theme selector in Settings. All UI surfaces (board, console, panels, buttons, material strips) react to the selected theme.
-- **Chessdroid Rating** — Persistent internal engine ladder. Each engine earns a Chessdroid Rating that seeds from its CCRL reference on first game and updates via K=32 ELO after every match. Shown in match output as `Chessdroid: Berserk 13 3618 → 3624 (+6) | Ethereal 13 3417 → 3411 (-6)`. Survives restarts.
-- **Engine Profiles Dialog** — Set display name and CCRL reference rating per engine. Shows Chessdroid Rating + game count (read-only). Reset button to wipe an engine's ladder history.
+- **chessdroid Rating** — Persistent internal engine ladder. Each engine earns a chessdroid Rating that seeds from its CCRL reference on first game and updates via K=32 ELO after every match. Shown in match output as `chessdroid: Berserk 13 3618 → 3624 (+6) | Ethereal 13 3417 → 3411 (-6)`. Survives restarts.
+- **Engine Profiles Dialog** — Set display name and CCRL reference rating per engine. Shows chessdroid Rating + game count (read-only). Reset button to wipe an engine's ladder history.
 - **Resizable Panels** — Nested SplitContainer layout replaces TableLayoutPanel. Board | Moves | Analysis are three independently draggable panels. Splitter positions persist to config.json across sessions.
 - **Bot Engine Picker** — Bot Settings dialog now includes an engine selector. Choose any engine from the Engines folder to play as the bot, separate from the analysis engine.
 - **Position Editor Piece Images** — Custom Position Editor renders pieces using the currently selected piece template (SVG or PNG), matching the main board appearance.
