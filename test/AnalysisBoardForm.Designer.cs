@@ -95,6 +95,9 @@ namespace ChessDroid
             btnStartMatch = new Button();
             btnStopMatch = new Button();
             chkFromPosition = new CheckBox();
+            rbBookRandom = new RadioButton();
+            rbBookChoose = new RadioButton();
+            lblMatchOpening = new Label();
             lblGames = new Label();
             numGames = new NumericUpDown();
             lblSeriesScore = new Label();
@@ -604,11 +607,14 @@ namespace ChessDroid
             grpEngineMatch.Controls.Add(chkAdjudicate);
             grpEngineMatch.Controls.Add(chkAutoSavePgn);
             grpEngineMatch.Controls.Add(chkUseBook);
+            grpEngineMatch.Controls.Add(rbBookRandom);
+            grpEngineMatch.Controls.Add(rbBookChoose);
+            grpEngineMatch.Controls.Add(lblMatchOpening);
             grpEngineMatch.Dock = DockStyle.Top;
             grpEngineMatch.Font = new Font("Courier New", 9F, FontStyle.Bold, GraphicsUnit.Point, 0);
             grpEngineMatch.Location = new Point(5, 25);
             grpEngineMatch.Name = "grpEngineMatch";
-            grpEngineMatch.Size = new Size(337, 330);
+            grpEngineMatch.Size = new Size(337, 375);
             grpEngineMatch.TabIndex = 2;
             grpEngineMatch.TabStop = false;
             grpEngineMatch.Text = "Engine Match";
@@ -896,6 +902,41 @@ namespace ChessDroid
             chkUseBook.Name = "chkUseBook";
             chkUseBook.TabIndex = 18;
             chkUseBook.Text = "Use opening book";
+            chkUseBook.CheckedChanged += ChkUseBook_CheckedChanged;
+            //
+            // rbBookRandom
+            //
+            rbBookRandom.AutoSize = true;
+            rbBookRandom.Checked = true;
+            rbBookRandom.Enabled = false;
+            rbBookRandom.Font = new Font("Courier New", 9F);
+            rbBookRandom.Location = new Point(22, 329);
+            rbBookRandom.Name = "rbBookRandom";
+            rbBookRandom.TabIndex = 19;
+            rbBookRandom.Text = "Random";
+            //
+            // rbBookChoose
+            //
+            rbBookChoose.AutoSize = true;
+            rbBookChoose.Enabled = false;
+            rbBookChoose.Font = new Font("Courier New", 9F);
+            rbBookChoose.Location = new Point(105, 329);
+            rbBookChoose.Name = "rbBookChoose";
+            rbBookChoose.TabIndex = 20;
+            rbBookChoose.Text = "Choose...";
+            rbBookChoose.CheckedChanged += RbBookChoose_CheckedChanged;
+            //
+            // lblMatchOpening
+            //
+            lblMatchOpening.AutoSize = false;
+            lblMatchOpening.Font = new Font("Courier New", 8F);
+            lblMatchOpening.ForeColor = SystemColors.GrayText;
+            lblMatchOpening.Location = new Point(22, 350);
+            lblMatchOpening.Name = "lblMatchOpening";
+            lblMatchOpening.Size = new Size(300, 18);
+            lblMatchOpening.TabIndex = 21;
+            lblMatchOpening.Text = "";
+            lblMatchOpening.Visible = false;
             //
             // lblAnalysis
             // 
@@ -1022,6 +1063,9 @@ namespace ChessDroid
         private CheckBox chkAdjudicate;
         private CheckBox chkAutoSavePgn;
         private CheckBox chkUseBook;
+        private RadioButton rbBookRandom;
+        private RadioButton rbBookChoose;
+        private Label lblMatchOpening;
 
         // Right panel - Analysis
         private Label lblAnalysis;

@@ -82,6 +82,7 @@ namespace ChessDroid
         private string _seriesEng1File = "";
         private string _seriesEng2File = "";
         private string _seriesCurrentWhiteFile = "";
+        private OpeningEntry? _matchBookOpening;
         // Overlay labels on top/bottom material strips showing engine name + ELO during a match
         private Label _lblBlackEngineInfo = null!;
         private Label _lblWhiteEngineInfo = null!;
@@ -1891,8 +1892,9 @@ namespace ChessDroid
                 startFen = boardControl.GetFEN();
             }
             // Opening book injection (only from standard start, not custom position)
-            if (!chkFromPosition.Checked && chkUseBook.Checked && openingBookService?.IsLoaded == true)
-                startFen = GetBookStartFen(startFen);
+            bool bookReady = chkUseBook.Checked && !chkFromPosition.Checked &&
+                             (rbBookChoose.Checked ? _matchBookOpening != null : openingBookService?.IsLoaded == true);
+            if (bookReady) startFen = GetBookStartFen(startFen);
 
             CancelClassification();
             moveTree.Clear(startFen);
@@ -1913,8 +1915,13 @@ namespace ChessDroid
             analysisOutput.AppendText($"Arbiter: {GetEngineLabel(arbiterFile, false)} (depth {config.ContinuousAnalysisMaxDepth})\n");
             if (chkFromPosition.Checked)
                 analysisOutput.AppendText("Starting from custom position\n");
-            if (chkUseBook.Checked && openingBookService?.IsLoaded == true && !chkFromPosition.Checked)
-                analysisOutput.AppendText($"Book: {startFen}\n");
+            if (bookReady)
+            {
+                if (rbBookChoose.Checked && _matchBookOpening != null)
+                    analysisOutput.AppendText($"Opening: {_matchBookOpening.Eco}  {_matchBookOpening.Name}\n");
+                else
+                    analysisOutput.AppendText($"Book: {startFen}\n");
+            }
             analysisOutput.AppendText("\n");
 
             // Disable conflicting controls
@@ -1959,6 +1966,54 @@ namespace ChessDroid
         private void BtnStopMatch_Click(object? sender, EventArgs e)
         {
             matchService?.StopMatch();
+        }
+
+        private void ChkUseBook_CheckedChanged(object? sender, EventArgs e)
+        {
+            bool on = chkUseBook.Checked;
+            rbBookRandom.Enabled = on;
+            rbBookChoose.Enabled = on;
+            if (!on) lblMatchOpening.Visible = false;
+        }
+
+        private void RbBookChoose_CheckedChanged(object? sender, EventArgs e)
+        {
+            if (!rbBookChoose.Checked) { lblMatchOpening.Visible = false; return; }
+            SelectMatchOpening();
+        }
+
+        private void SelectMatchOpening()
+        {
+            string booksFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Books");
+            var entries = ChessDroid.Services.EcoBookService.LoadAll(booksFolder);
+            if (entries.Count == 0)
+            {
+                lblStatus.Text = "No openings found in Books folder";
+                rbBookRandom.Checked = true;
+                return;
+            }
+
+            using var dlg = new OpeningExplorerDialog(entries, pgn =>
+            {
+                var m = System.Text.RegularExpressions.Regex.Match(pgn, @"\[Opening ""([^""]+)""\]");
+                if (!m.Success) return;
+                string tag = m.Groups[1].Value;
+                int dash = tag.IndexOf(" — ", StringComparison.Ordinal);
+                if (dash < 0) return;
+                string eco = tag[..dash];
+                string name = tag[(dash + 3)..];
+                _matchBookOpening = entries.FirstOrDefault(e => e.Eco == eco && e.Name == name)
+                                 ?? entries.FirstOrDefault(e => e.Eco == eco);
+                if (_matchBookOpening != null)
+                {
+                    lblMatchOpening.Text = $"{_matchBookOpening.Eco}  {_matchBookOpening.Name}";
+                    lblMatchOpening.Visible = true;
+                }
+            }, ThemeService.IsDarkTheme(config?.Theme));
+            dlg.ShowDialog(this);
+
+            if (_matchBookOpening == null)
+                rbBookRandom.Checked = true;
         }
 
         private void BtnEngineProfiles_Click(object? sender, EventArgs e)
@@ -2294,8 +2349,9 @@ namespace ChessDroid
 
             boardControl.ResetBoard();
             string startFen = boardControl.GetFEN();
-            if (chkUseBook.Checked && openingBookService?.IsLoaded == true)
-                startFen = GetBookStartFen(startFen);
+            bool bookReady = chkUseBook.Checked &&
+                             (rbBookChoose.Checked ? _matchBookOpening != null : openingBookService?.IsLoaded == true);
+            if (bookReady) startFen = GetBookStartFen(startFen);
 
             CancelClassification();
             moveTree.Clear(startFen);
@@ -2334,24 +2390,58 @@ namespace ChessDroid
 
         private string GetBookStartFen(string startFen)
         {
+            // Choose mode: replay ECO opening moves to get end FEN
+            if (rbBookChoose.Checked && _matchBookOpening != null)
+            {
+                string fen = GetOpeningEndFen(_matchBookOpening.Moves);
+                boardControl.LoadFEN(fen);
+                return fen;
+            }
+
+            // Random mode: 2 Polyglot plies
             const int BookPlies = 2;
             var board = ChessBoard.FromFEN(startFen);
             string castling = "KQkq";
             string ep = "-";
             bool whiteToMove = true;
-            string fen = startFen;
-
+            string fenRnd = startFen;
             for (int i = 0; i < BookPlies; i++)
             {
-                var move = openingBookService!.GetBestBookMove(fen);
+                var move = openingBookService!.GetBestBookMove(fenRnd);
                 if (move == null) break;
                 ChessRulesService.ApplyUciMove(board, move.UciMove, ref castling, ref ep);
                 whiteToMove = !whiteToMove;
-                fen = $"{board.ToFEN()} {(whiteToMove ? "w" : "b")} {castling} {ep} 0 1";
+                fenRnd = $"{board.ToFEN()} {(whiteToMove ? "w" : "b")} {castling} {ep} 0 1";
+            }
+            boardControl.LoadFEN(fenRnd);
+            return fenRnd;
+        }
+
+        private string GetOpeningEndFen(string sanMoves)
+        {
+            const string start = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+            string currentFen = start;
+            string savedFen = boardControl.GetFEN();
+            bool savedNav = isNavigating;
+            isNavigating = true;
+
+            var tokens = sanMoves.Split(new[] { ' ', '\t', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+                .Where(t => !System.Text.RegularExpressions.Regex.IsMatch(t, @"^\d+\.") &&
+                             t != "1-0" && t != "0-1" && t != "1/2-1/2" && t != "*")
+                .ToList();
+
+            foreach (var san in tokens)
+            {
+                string? uci = ConvertSanToUci(san, currentFen);
+                if (uci == null) break;
+                boardControl.LoadFEN(currentFen);
+                if (!boardControl.MakeMove(uci)) break;
+                currentFen = boardControl.GetFEN();
             }
 
-            boardControl.LoadFEN(fen);
-            return fen;
+            boardControl.LoadFEN(savedFen);
+            isNavigating = savedNav;
+            return currentFen;
         }
 
         private void MatchService_OnStatusChanged(string status)
@@ -2433,6 +2523,8 @@ namespace ChessDroid
             chkAdjudicate.Enabled    = !running;
             chkAutoSavePgn.Enabled   = !running;
             chkUseBook.Enabled       = !running;
+            rbBookRandom.Enabled     = !running && chkUseBook.Checked;
+            rbBookChoose.Enabled     = !running && chkUseBook.Checked;
 
             // Toggle start/stop buttons
             btnStartMatch.Visible = !running;
