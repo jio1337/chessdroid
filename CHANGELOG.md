@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [3.16.0] - 2026-05-26
+
+### Added
+- **Puzzle Training** — Full training suite powered by the Lichess puzzle database (5.94M puzzles, CC0). Includes hint button (amber FROM-square highlight), skip button, theme filter ComboBox, per-puzzle timer, Auto-next toggle, and an Analyze button that loads the full solution into the move tree, flips the board to your perspective, and triggers engine analysis.
+- **Puzzle Rush** — Solve as many puzzles as possible in a time limit (1/3/5 min). Wrong move ends the run. Persistent high score shown live during the run and in the settings panel before starting.
+- **Puzzle Gauntlet** — No-mistake run mode. One wrong move ends the streak. Persistent best streak survives restarts.
+- **Board Vision** — Three modes: Training (infinite), Timed (1/3/5 min global clock + per-question countdown), Survival (3 lives + per-question countdown). Tests square color recognition across all 64 squares. Persistent PBs for Timed and Survival modes.
+- **Monochromatic board theme** — Grey squares with white grid lines and coordinates. Available in the board color picker alongside all existing presets.
+- **Training streaks** — Puzzle Training tracks current consecutive clean solves and all-time best streak (persisted to config.json). Streak resets on wrong move or hint use.
+- **Live accuracy %** — Puzzle Training stats label shows clean-solve percentage in real time alongside the streak counter.
+- **Personal bests in settings panels** — Every training mode (Puzzle Training/Rush/Gauntlet, Vision Timed/Survival, Square Training) shows the relevant PB in the settings panel before you start a run.
+- **Per-section "Reset personal bests"** — Each mode panel has its own scoped reset link. Puzzle resets Rush/Training/Gauntlet records; Vision resets Timed and Survival records; Square Training resets all six Easy/Challenge × White/Black/Random combinations independently.
+- **Puzzle Training result screen** — Stopping mid-session now shows a summary (puzzles solved, accuracy %, best streak) instead of silently exiting.
+- **Opening Training session tracking** — Result screen shows run count and perfect-run count for the current session.
+- **Lichess attribution** — README Acknowledgments and USER_GUIDE Credits now credit Lichess for the puzzle database, piece set assets, and win-probability formula.
+
+### Changed
+- **chessdroid branding** — All documentation (README, CHANGELOG, ARCHITECTURE, USER_GUIDE) standardized to lowercase `chessdroid`.
+- **Training mode icons** — Mode switcher buttons now show ♟ Square, ♜ Openings, ★ Puzzles, ◉ Vision (widened to 96px).
+- **Board locked on training settings screen** — Board no longer accepts moves while the training settings panel is visible.
+- **Rush PB shown live** — Personal best appears in the stats label while the Rush timer is running, so you always know what you're chasing.
+
+---
+
 ## [3.15.0] - 2026-05-25
 
 ### Added

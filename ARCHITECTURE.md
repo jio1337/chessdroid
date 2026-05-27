@@ -2,11 +2,11 @@
 
 ## Overview
 
-chessdroid is a pure offline chess analysis application that combines tactical pattern recognition with deep positional understanding inspired by world-class chess engines (Ethereal and Stockfish). As of v3.15.0, the application is centered around the Analysis Board — an interactive workspace for deep chess analysis with visual engine arrows, threat arrows, eval graph, PV line exploration, piece animations, free-draw annotation, bot mode, continuous analysis, annotated PGN round-trips, square highlighting, auto-play, game accuracy scoring, interactive game review, game library, material strips, SVG piece sets, smooth eval bar animation, neutral engine match arbiter, full board customization, 6 UI themes, resizable panels, a persistent chessdroid engine rating ladder, and sound effects.
+chessdroid is a pure offline chess analysis application that combines tactical pattern recognition with deep positional understanding inspired by world-class chess engines (Ethereal and Stockfish). As of v3.16.0, the application is centered around the Analysis Board — an interactive workspace for deep chess analysis with visual engine arrows, threat arrows, eval graph, PV line exploration, piece animations, free-draw annotation, bot mode, continuous analysis, annotated PGN round-trips, square highlighting, auto-play, game accuracy scoring, interactive game review, game library, material strips, SVG piece sets, smooth eval bar animation, neutral engine match arbiter, full board customization, 6 UI themes, resizable panels, a persistent chessdroid engine rating ladder, sound effects, and a full Training suite (Puzzle Training with 5.94M Lichess puzzles, Puzzle Rush, Puzzle Gauntlet, Board Vision, Opening Training, and Square Training).
 
 ---
 
-## System Architecture (v3.15.0)
+## System Architecture (v3.16.0)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -579,7 +579,12 @@ Create a folder in `Templates/` with 12 PNG files named: wK, wQ, wR, wB, wN, wP,
 
 ## Version History
 
-**v3.9.0** — Eval Graph, Animations & QoL (Current)
+**v3.16.0** — Training Grounds (Current)
+- Full Training suite: Puzzle Training (5.94M Lichess puzzles), Puzzle Rush, Puzzle Gauntlet, Board Vision (Training/Timed/Survival), Opening Training, Square Training
+- Persistent streaks, accuracy %, and personal bests across all training modes; PBs shown in settings panels before starting; per-section reset links
+- Monochromatic board theme; training mode icons; board locked on settings screen
+
+**v3.9.0** — Eval Graph, Animations & QoL
 - Eval graph: `EvalGraphControl` (65px right panel), shows score history across all moves; click-to-navigate; `ShowEvalGraph` toggle
 - Piece animations: 150ms GDI+ lerp timer in `ChessBoardControl`; castling animates rook; speed configurable 50–500ms; `ShowAnimations` toggle
 - Bot difficulty: `BotDifficulty` enum removed; `BotSettings.SkillLevel` (int 1–20) is now primary; `BotSettingsDialog` uses TrackBar 1–20
@@ -726,5 +731,5 @@ https://github.com/jio1337/chessdroid/issues
 
 ---
 
-**Last Updated:** 2026-05-25
-**Document Version:** 3.15.0
+**Last Updated:** 2026-05-26
+**Document Version:** 3.16.0

@@ -1,4 +1,4 @@
-## chessdroid v3.15.0 — User Guide
+## chessdroid v3.16.0 — User Guide
 
 ### Welcome to chessdroid!
 
@@ -367,7 +367,12 @@ Create a folder in `Templates/` with 12 PNG files (wK, wQ, wR, wB, wN, wP, bK, b
 
 ## Version History
 
-**v3.15.0** — Miami Nightclub (Current)
+**v3.16.0** — Training Grounds (Current)
+- Puzzle Training (5.94M Lichess puzzles), Puzzle Rush, Puzzle Gauntlet, Board Vision (Timed + Survival)
+- Persistent streaks, accuracy %, personal bests shown before each run, per-section reset links
+- Monochromatic board theme, training mode icons, lowercase chessdroid branding
+
+**v3.15.0** — Miami Nightclub
 - Sound effects — move, capture, check, game-over, castle
 - Live hover preview for piece set and board color dropdowns
 - Checkmate detection fix, combo selection revert fix
@@ -541,5 +546,5 @@ chessdroid is released under the MIT License. Free and open-source forever!
 
 **Enjoy analyzing with chessdroid!**
 
-*Last Updated: 2026-05-25*
-*Version: 3.15.0*
+*Last Updated: 2026-05-26*
+*Version: 3.16.0*
