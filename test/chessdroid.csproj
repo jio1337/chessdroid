@@ -77,5 +77,11 @@
     </None>
   </ItemGroup>
 
+  <!-- Copy endgame drill PGN files to output -->
+  <ItemGroup>
+    <None Include="Endgames\**\*.*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 
 </Project>

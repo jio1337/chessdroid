@@ -1,0 +1,529 @@
+[Event "Endgames' Database: Rook Endgames-1"]
+[Date "2021.07.06"]
+[Result "*"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgames' Database"]
+[ChapterName "Rook Endgames-1"]
+[ChapterURL "https://lichess.org/study/R3Qq55Ux/z9BhGzAQ"]
+[Annotator "https://lichess.org/@/pietro2009"]
+[FEN "8/4K1k1/4P3/8/8/8/r7/3R4 b - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.07.06"]
+[UTCTime "08:26:34"]
+
+1... Ra7+ 2. Rd7 Ra8 { The simplest defensive methods: Black prevents the positions with the pawn on seventh Rank. } (2... Ra1 3. Ke8+ (3. Rd6 Ra8!) 3... Kf6 4. e7 Ke6 5. Kf8 Rf1+ 6. Ke8 Ra1 $10) 3. Rd8 (3. Kd6+ Kf6 4. Rf7+ Kg6) (3. Rb7 Kg6 4. Kd6 Kf6 5. e7 Kf7) (3. Rd6 { [%cal Ga8a7] } 3... Kg6) 3... Ra7+ 4. Kd6 Ra6+ 5. Ke5 Ra5+ 6. Rd5 Ra8 7. Rd7+ Kg6 { The reason of draw is the position is rook: it was placed on long side } *
+
+
+[Event "Endgames' Database: Rook Endgames-2"]
+[Date "2021.07.06"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgames' Database"]
+[ChapterName "Rook Endgames-2"]
+[ChapterURL "https://lichess.org/study/R3Qq55Ux/981ahX03"]
+[Annotator "https://lichess.org/@/pietro2009"]
+[FEN "1r6/R3K1k1/4P3/8/8/8/8/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.07.06"]
+[UTCTime "08:40:49"]
+
+1. Kd6+ (1. Kd7 Kf6 2. e7 Kf7 $10) (1. Ra1 Rb7+ 2. Kd8 Rb8+ 3. Kc7 Rb2 4. Rf1 Ra2 5. e7 Ra7+ $10) 1... Kf6 2. Kd7 Kg7 3. Ke7 Kg6 (3... Rb1 4. Ra8 Rb7+ 5. Kd6 Rb6+ 6. Kd7 Rb7+ 7. Kc6 Re7 8. Kd6 Rb7 9. e7) 4. Ra1 Rb7+ 5. Kd8 Rb8+ (5... Kf6 6. e7 Rb8+ 7. Kd7 Re8 8. Kd6 Rb8 9. Rf1+ Kg7 10. Kc7 Ra8 11. Ra1) 6. Kc7 Rb2 7. Re1 Rc2+ 8. Kd7 Rd2+ 9. Ke8 Ra2 10. e7 *
+
+
+[Event "Endgames' Database: Alburt-Dlugy Usa ch Los Angeles 1991"]
+[Date "2021.07.06"]
+[Result "*"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgames' Database"]
+[ChapterName "Alburt-Dlugy Usa ch Los Angeles 1991"]
+[ChapterURL "https://lichess.org/study/R3Qq55Ux/Q9lxtwtC"]
+[Annotator "https://lichess.org/@/pietro2009"]
+[FEN "8/8/4R3/3KP3/5rk1/8/8/8 b - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.07.06"]
+[UTCTime "08:58:01"]
+
+1... Kg5? (1... Ra4!) 2. Ra6 Rb4 3. Ke6 Kg6?? 4. Ke7+ Kg7 5. Ra7 Rb8 6. e6 Kg6 7. Ra1 Rb7+ 8. Kd6 Rb6+ 9. Kd7 Rb7+ 10. Kc6 Rb8 11. Kc7 Rh8 (11... Rb2 12. Re1) 12. e7 Kf7 13. Kd7 Rb8 14. Rf1+ *
+
+
+[Event "Endgames' Database: Lucena Position"]
+[Date "2021.07.07"]
+[Result "*"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgames' Database"]
+[ChapterName "Lucena Position"]
+[ChapterURL "https://lichess.org/study/R3Qq55Ux/WMvIEQRk"]
+[Annotator "https://lichess.org/@/pietro2009"]
+[FEN "4K3/4P1k1/8/8/8/8/1r6/5R2 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.07.07"]
+[UTCTime "07:13:02"]
+
+{ [%cal Bf1g1,Bg1g4,Bg4e4] }
+1. Rg1+ Kh7 2. Rg4! { The Bridging } 2... Re2 3. Kf7 Rf2+ 4. Ke6 Re2+ 5. Kf6 Rf2+ 6. Ke5 Re2+ 7. Re4 *
+
+
+[Event "Endgames' Database: Philodor position"]
+[Date "2021.07.06"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgames' Database"]
+[ChapterName "Philodor position"]
+[ChapterURL "https://lichess.org/study/R3Qq55Ux/4PFFE1E2"]
+[Annotator "https://lichess.org/@/pietro2009"]
+[FEN "4k3/R7/8/4PK2/8/8/8/1r6 b - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.07.06"]
+[UTCTime "09:08:38"]
+
+{ [%cal Bb1b6,Bb6h6] }
+1... Rb6 2. e6 Rb1 *
+
+
+[Event "Endgames' Database: Kastedt's draw: the second defensive method"]
+[Date "2021.07.06"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgames' Database"]
+[ChapterName "Kastedt's draw: the second defensive method"]
+[ChapterURL "https://lichess.org/study/R3Qq55Ux/5D540mfG"]
+[Annotator "https://lichess.org/@/pietro2009"]
+[FEN "4k3/R7/8/4PK2/8/8/8/1r6 b - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.07.06"]
+[UTCTime "09:10:55"]
+
+{ [%cal Bb1e1,Be1e8] }
+1... Re1! 2. Ke6 Kf8! (2... Kd8?! 3. Ra8+ Kc7 4. Re8 (4. Kf6 Kd7) 4... Rh1! (4... Re2? 5. Kf7 Rh2 6. Rg8 Rh7+ 7. Rg7 Rh8 8. Ke7 Kc6 9. e6 Kc7 10. Rg1) 5. Rg8 Re1 6. Rg2 Kd8 $10) 3. Ra8+ Kg7 4. Kd6 Kf7 5. Ra7+ Ke8 6. Ke6 Kf8 7. Ra8+ Kg7 8. Re8 Ra1! *
+
+
+[Event "Endgames' Database: Rook Endgames-3"]
+[Date "2021.07.07"]
+[Result "*"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgames' Database"]
+[ChapterName "Rook Endgames-3"]
+[ChapterURL "https://lichess.org/study/R3Qq55Ux/Uu90iwgk"]
+[Annotator "https://lichess.org/@/pietro2009"]
+[FEN "6k1/8/5RK1/6P1/8/8/8/7r b - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.07.07"]
+[UTCTime "06:35:39"]
+
+1... Rg1? (1... Ra1! 2. Rb6 Ra8 $10) 2. Ra6 Kf8 3. Ra8+ Ke7 4. Rg8! Rg2 5. Kh7! Kf7 6. g6+ Ke7 7. Ra8 Rh2+ 8. Kg8 Rg2 9. g7 *
+
+
+[Event "Endgames' Database: Labron-Knaak Baden Baden 1922"]
+[Date "2021.07.07"]
+[Result "*"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgames' Database"]
+[ChapterName "Labron-Knaak Baden Baden 1922"]
+[ChapterURL "https://lichess.org/study/R3Qq55Ux/2zT7LbxD"]
+[Annotator "https://lichess.org/@/pietro2009"]
+[FEN "6r1/8/8/4R3/4p3/4P1P1/1K2k3/8 b - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.07.07"]
+[UTCTime "06:41:22"]
+
+1... Kxe3? (1... Kd3! 2. Rd5+ Kxe3 3. Kc2 Ke2!? (3... Rxg3 4. Re5 Kf4 5. Re8 (5. Rd5 Kf3 6. Re5 e3 7. Kd3 Kf2) 5... Rd3 $19) 4. Rd2+ Kf3 5. Rd7 Rf8!? (5... Rxg3 6. Re7 e3 7. Kd3 Kf2) 6. Kd1 Kf2 7. Rd2+ Kf1 $19) 2. Kc2 Rxg3 3. Re8 Rg2+ $10 *
+
+
+[Event "Endgames' Database: Dreev-Beliavsky USSR ch, Odessa 1989"]
+[Date "2021.07.07"]
+[Result "*"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgames' Database"]
+[ChapterName "Dreev-Beliavsky USSR ch, Odessa 1989"]
+[ChapterURL "https://lichess.org/study/R3Qq55Ux/mmf85t93"]
+[Annotator "https://lichess.org/@/pietro2009"]
+[FEN "6R1/8/8/6p1/2kp2r1/8/7P/3K4 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.07.07"]
+[UTCTime "06:52:25"]
+
+1. h4! Rxh4?? (1... Rg1+! 2. Ke2 (2. Kd2 Rg2+ 3. Ke1 g4 4. Kf1 (4. h5 Kc3 5. h6 Rh2 6. Rh8 d3 7. Rc8+ Kd4 8. Rd8+ Ke3 9. Re8+ Kf3 $19) 4... Rh2 5. Rxg4 Kc3 6. Kg1 Rc2 7. Rg8 (7. h5 d3) 7... d3 8. Rc8+ Kb2 $19) 2... d3+ 3. Kd2 Rg2+ 4. Kd1 g4 5. h5 Rh2 6. Rc8+ Kd4 $19) 2. Rxg5 Kc3 3. Rd5 Rh1+ 4. Ke2 $10 *
+
+
+[Event "Endgames' Database: Larsen-Tal Bled cmsf (9) 1965"]
+[Date "2021.07.07"]
+[Result "*"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgames' Database"]
+[ChapterName "Larsen-Tal Bled cmsf (9) 1965"]
+[ChapterURL "https://lichess.org/study/R3Qq55Ux/JbrtlYBX"]
+[Annotator "https://lichess.org/@/pietro2009"]
+[FEN "8/3k4/8/3Kp3/Rp2P3/8/Pr6/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.07.07"]
+[UTCTime "06:59:37"]
+
+1. Ra7+ Kc8? (1... Ke8!) 2. Kxe5 b3? (2... Rh2) 3. axb3 Rxb3 4. Kd6 Rd3+ 5. Ke6? (5. Ke7 Rh3 6. Ra4 Rh7+ 7. Ke8 Rh8+ 8. Kf7 $18) 5... Rh3 6. Ra8+ (6. Ra4 Kd8) 6... Kc7 7. Rf8 Re3! 8. e5 Re1 9. Re8 (9. Kf6 Kd7) 9... Rh1! 10. Ra8 Re1! *
+
+
+[Event "Endgames' Database: The Umbrella: Velicka-Polak Czech ch tt 1995"]
+[Date "2021.07.07"]
+[Result "*"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgames' Database"]
+[ChapterName "The Umbrella: Velicka-Polak Czech ch tt 1995"]
+[ChapterURL "https://lichess.org/study/R3Qq55Ux/0wRhZLam"]
+[Annotator "https://lichess.org/@/pietro2009"]
+[FEN "8/8/8/R4p2/1r2k3/4p1P1/4K3/8 b - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.07.07"]
+[UTCTime "07:08:05"]
+
+1... f4! 2. gxf4 Rb2+ 3. Kf1 Kf3 $19 { Black use the pawn f4 like an Umbrella for protecs the black king from checks } 4. Ra1 Rh2 5. Kg1 Rg2+ 6. Kh1 Rg8 7. Kh2 e2 8. f5 Kf2 9. Kh3 Rg5! (9... e1=Q?? 10. Rxe1! Kxe1 11. Kh4! $10) *
+
+
+[Event "Endgames' Database: A.Zaitsev-Hubner Busum 1969"]
+[Date "2021.07.07"]
+[Result "*"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgames' Database"]
+[ChapterName "A.Zaitsev-Hubner Busum 1969"]
+[ChapterURL "https://lichess.org/study/R3Qq55Ux/qUgBgjyo"]
+[Annotator "https://lichess.org/@/pietro2009"]
+[FEN "6k1/3R4/5p2/1r6/5PPK/8/8/8 b - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.07.07"]
+[UTCTime "07:21:33"]
+
+1... Rb1?? (1... Rb4 2. f5 Rb1! 3. Kh5 Rg1!) (1... Ra5 2. g5 (2. f5 Ra1!) 2... fxg5+ 3. fxg5 Ra6 $10 (3... Ra8 $10)) 2. Kh5 Rg1 3. g5 fxg5 4. f5! Kf8 5. f6 $18 *
+
+
+[Event "Endgames' Database: The pawn has not crossed the Mid-Line: the frontal attack"]
+[Date "2021.07.07"]
+[Result "*"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgames' Database"]
+[ChapterName "The pawn has not crossed the Mid-Line: the frontal attack"]
+[ChapterURL "https://lichess.org/study/R3Qq55Ux/LApYGFcs"]
+[Annotator "https://lichess.org/@/pietro2009"]
+[FEN "2r5/8/4k3/8/2P5/2K5/8/3R4 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.07.07"]
+[UTCTime "07:32:43"]
+
+{ Horizontally cutting the king off is a useful defensive method. In this sort of position, black king should stay on fifth or sixth rank } { [%cal Rc8b8,Rb8b3,Rb8a8,Ra8a3,Rc8c3,Rc8d8,Rd8d3] }
+1. Kb4 Rb8+ 2. Ka5 Rc8 (2... Ra8+ 3. Kb6) 3. Kb5 Rb8+ 4. Ka6 Rc8 5. Rd4 Ke5 6. Rh4 Kd6 *
+
+
+[Event "Endgames' Database: Kochiev-Smyslov L'vov zt 1978"]
+[Date "2021.07.07"]
+[Result "*"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgames' Database"]
+[ChapterName "Kochiev-Smyslov L'vov zt 1978"]
+[ChapterURL "https://lichess.org/study/R3Qq55Ux/WPr9pP8o"]
+[Annotator "https://lichess.org/@/pietro2009"]
+[FEN "8/3r4/2k5/2p5/8/4K3/8/2R5 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.07.07"]
+[UTCTime "07:38:30"]
+
+1. Ke2?? { Both 1.Ke4 and 1. Rh1 might lead to draw } 1... Kb5 2. Rb1+ Ka4 3. Rc1 Kb4 4. Rb1+ Ka3! 5. Rc1 Rd5! 6. Ke3 Kb2 7. Rc4 Kb3 *
+
+
+[Event "Endgames' Database: Rook Endgames-4"]
+[Date "2021.07.07"]
+[Result "*"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgames' Database"]
+[ChapterName "Rook Endgames-4"]
+[ChapterURL "https://lichess.org/study/R3Qq55Ux/houeZf7o"]
+[Annotator "https://lichess.org/@/pietro2009"]
+[FEN "1r6/8/8/8/1P1k4/1K6/8/2R5 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.07.07"]
+[UTCTime "07:49:35"]
+
+{ With black on move, this is draw: 1...Kd5! 2.Rc4!? Kd6! 3.Ka4 Kd5! }
+1. Rc6 (1. Rc5 Rb7 2. Rh5 Rb8 3. b5) 1... Kd5 2. Ra6 Rb7 3. Ka4 Kc4 4. Rc6+ Kd5 5. b5 $18 { Cutting off the king of weaker side along a rank can often be more effective than the same procedure a along } *
+
+
+[Event "Endgames' Database: A.Chèron 1923"]
+[Date "2021.07.07"]
+[Result "*"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgames' Database"]
+[ChapterName "A.Chèron 1923"]
+[ChapterURL "https://lichess.org/study/R3Qq55Ux/DkbUjyIu"]
+[Annotator "https://lichess.org/@/pietro2009"]
+[FEN "3r4/8/8/6k1/3P4/3K4/8/5R2 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.07.07"]
+[UTCTime "07:59:42"]
+
+1. Kc4 Rc8+ 2. Kb5 Rd8 3. Kc5 Rc8+ 4. Kb6! Rd8 5. Rd1! Kf6 6. Kc7 Rd5 7. Kc6 Ra5 (7... Rd8 8. d5 $18) 8. Re1! Ra6+ 9. Kb5 Rd6 10. Kc5 Rd8 11. d5 $18 *
+
+
+[Event "Endgames' Database: A.Chèron 1926"]
+[Date "2021.07.07"]
+[Result "*"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgames' Database"]
+[ChapterName "A.Chèron 1926"]
+[ChapterURL "https://lichess.org/study/R3Qq55Ux/fxLJia7x"]
+[Annotator "https://lichess.org/@/pietro2009"]
+[FEN "4r3/8/8/7k/4P3/4K3/8/6R1 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.07.07"]
+[UTCTime "08:12:32"]
+
+1. Rg2! (1. Kd4 Rd8+ 2. Kc5 Re8 3. Kd5 Rd8+ 4. Kc6 Re8 5. Re1 Kg6 6. Kd7 Ra8 (6... Re5 7. Kd6 Ra5)) 1... Kh4! 2. Rg7 (2. e5 Rxe5+ 3. Kf4 Kh3) 2... Kh5 3. Rg1! Kh6 (3... Kh4 4. e5) (3... Ra8 4. e5 Ra4 5. e6 Kh6 (5... Ra6 6. Kf4 Rxe6 7. Kf5) 6. e7 Ra8 7. Kf4 Re8 8. Kf5 Rxe7 9. Kf6) 4. Kd4 Rd8+ 5. Kc5 Re8 6. Kd5 Rd8+ 7. Ke6! Re8+ 8. Kf6! { It is important to remember that in case of a knight pawn, cuttinf off the king by two files is not sufficient to win } *
+
+
+[Event "Endgames' Database: A.Chèron 1923"]
+[Date "2021.07.07"]
+[Result "*"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgames' Database"]
+[ChapterName "A.Chèron 1923"]
+[ChapterURL "https://lichess.org/study/R3Qq55Ux/wcVRD9dW"]
+[Annotator "https://lichess.org/@/pietro2009"]
+[FEN "1r6/8/4k3/8/1P6/1K6/8/3R4 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.07.07"]
+[UTCTime "08:24:04"]
+
+1. Rd4 (1. Ka4 Ra8+ 2. Kb5 Rb8+ 3. Ka5 Ra8+ 4. Kb6 Rb8+ 5. Kc5) 1... Ke5! 2. Kc3 (2. Rd7 Ke6! 3. Ra7 Kd6 4. Ka4 Kc6 $10) 2... Rh8 (2... Rc8+ 3. Rc4 (3. Kd3 Rb8) 3... Rb8 4. Rc6 Kd5 5. Ra6 Rc8+ 6. Kb3 Rc6!) 3. Rd7 (3. b5 Rb8 4. Rh4 Kd6 5. Kb4 Kc7 $10) 3... Ke6! (3... Rb8? 4. Kc4 Ke6 5. Ra7 Kd6 6. b5 Rc8+ 7. Kb4 Rc7 8. b6) (3... Rc8+? 4. Kb3 Ke6 5. Rd4 Ke5 6. Rc4 Rb8 7. Rc6 Kd5 8. Ra6) *
+
+
+[Event "Endgames' Database: Tal-I.Zaitsev USSR ch tt, Riga 1968"]
+[Date "2021.07.08"]
+[Result "*"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgames' Database"]
+[ChapterName "Tal-I.Zaitsev USSR ch tt, Riga 1968"]
+[ChapterURL "https://lichess.org/study/R3Qq55Ux/oQkqNS5E"]
+[Annotator "https://lichess.org/@/pietro2009"]
+[FEN "8/8/6pk/1R6/4r3/2K5/8/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.07.08"]
+[UTCTime "10:23:31"]
+
+1. Kd3?? (1. Rb1! g5 2. Kd3 Re5 3. Kd4 Re8 4. Rg1 Kg6 5. Kd3 $10) 1... Re1 2. Kd2 Re6 3. Rb1 g5 4. Rg1 Kh5! 5. Rh1+ Kg6 6. Rg1 Re5! 7. Kd3 Kf5! 8. Kd4 (8. Rf1+ Kg4 9. Kd4 Ra5 10. Ke3 Ra3+ 11. Ke2 Ra2+ 12. Ke3 Kh3) 8... Re4+ 9. Kd3 g4 10. Rf1+ Rf4 11. Ke2 g3! 12. Rxf4+ Kxf4 13. Ke1 Ke3 14. Kf1 Kf3 *
+
+
+[Event "Endgames' Database: Rook Endgames-5: The King is in front of its own pawn"]
+[Date "2021.07.08"]
+[Result "*"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgames' Database"]
+[ChapterName "Rook Endgames-5: The King is in front of its own pawn"]
+[ChapterURL "https://lichess.org/study/R3Qq55Ux/H5pBehdF"]
+[Annotator "https://lichess.org/@/pietro2009"]
+[FEN "K7/P3k3/8/8/8/8/3R4/1r6 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.07.08"]
+[UTCTime "10:30:40"]
+
+1. Rh2 { The draw is inevitable } 1... Kd7 2. Rh8 Kc7 3. Rb8 Rc1 (3... Rh1 4. Rb7+ Kc8 5. Rb2 Rc1) 4. Rb2 Rc3 *
+
+
+[Event "Endgames' Database: Rook Endgames-6"]
+[Date "2021.07.08"]
+[Result "*"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgames' Database"]
+[ChapterName "Rook Endgames-6"]
+[ChapterURL "https://lichess.org/study/R3Qq55Ux/Xcfvi7oS"]
+[Annotator "https://lichess.org/@/pietro2009"]
+[FEN "K7/P4k2/8/8/8/8/4R3/1r6 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.07.08"]
+[UTCTime "10:38:31"]
+
+{ White wins, because the black king fails to reach c7 in time }
+1. Rh2 Ke7 2. Rh8 Kd6 3. Rb8 Ra1 4. Kb7 Rb1+ 5. Kc8 Rc1+ 6. Kd8 Rh1 7. Rb6+ Kc5 8. Rc6+! (8. Ra6 Rh8+ 9. Kd7 Rh7+ 10. Ke8 Rh8+ 11. Kf7 Ra8) (8. Re6 Ra1) 8... Kb5 9. Rc8 Rh8+ 10. Kc7 Rh7+ *
+
+
+[Event "Endgames' Database: Vladimirov-Rashkovskhy USSR chsf, Chelyabinsk 1975"]
+[Date "2021.07.08"]
+[Result "*"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgames' Database"]
+[ChapterName "Vladimirov-Rashkovskhy USSR chsf, Chelyabinsk 1975"]
+[ChapterURL "https://lichess.org/study/R3Qq55Ux/F8Fl0xFM"]
+[Annotator "https://lichess.org/@/pietro2009"]
+[FEN "2R5/4r3/6k1/7p/8/8/3K4/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.07.08"]
+[UTCTime "10:56:27"]
+
+1. Rc3? (1. Rg8+ Kf5 2. Rf8+ Kg4 3. Rg8+ Kh3 4. Rg5 h4 5. Rg8) 1... h4 2. Re3? (2. Rc6+ Kg5 3. Rc8 h3 4. Rh8 Kg4 5. Rg8+ Kf3 6. Rf8+ Kg2 7. Rg8+ Kh1 8. Rg6 h2 9. Rg8) 2... Rh7! 3. Re1 h3 4. Rh1 Kg5 5. Ke3 Kh4 6. Kf2 Rf7+ 7. Kg1 Ra7 8. Rh2 Ra1+ 9. Kf2 Kg4 *
+
+
+[Event "Endgames' Database: Rook Endgames-7: The rook is in front of the pawn and the pawn is on seventh"]
+[Date "2021.07.08"]
+[Result "*"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgames' Database"]
+[ChapterName "Rook Endgames-7: The rook is in front of the pawn and the pawn is on seventh"]
+[ChapterURL "https://lichess.org/study/R3Qq55Ux/BuiDyCK8"]
+[Annotator "https://lichess.org/@/pietro2009"]
+[FEN "R7/P5k1/8/2K5/8/8/8/r7 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.07.08"]
+[UTCTime "15:26:02"]
+
+{ If i add a pawn on h5 or g5 there will no change: Black simply ignores his existence but with a pawn on f5, white wins( next chapter) } { [%cal Ra1a8,Gc5b6,Ba1b1,Bb1b8] }
+ *
+
+
+[Event "Endgames' Database: Rook Endgames-7.5: Add pawn on f5"]
+[Date "2021.07.08"]
+[Result "*"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgames' Database"]
+[ChapterName "Rook Endgames-7.5: Add pawn on f5"]
+[ChapterURL "https://lichess.org/study/R3Qq55Ux/CfKy1EKi"]
+[Annotator "https://lichess.org/@/pietro2009"]
+[FEN "R7/P5k1/8/2K2P2/8/8/8/r7 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.07.08"]
+[UTCTime "15:31:36"]
+
+1. f6+ Kf7 2. Rh8 Rxa7 3. Rh7+ *
+
+
+[Event "Endgames' Database: Khaunin-Fridman Leningrad 1962"]
+[Date "2021.07.08"]
+[Result "*"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgames' Database"]
+[ChapterName "Khaunin-Fridman Leningrad 1962"]
+[ChapterURL "https://lichess.org/study/R3Qq55Ux/uWpqvL72"]
+[Annotator "https://lichess.org/@/pietro2009"]
+[FEN "2R5/2P3k1/8/6p1/2r4p/5PPK/7P/8 b - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.07.08"]
+[UTCTime "15:35:28"]
+
+1... hxg3 2. hxg3? (2. Kxg3! Kh7 3. h4! gxh4+ 4. Kh3 Kg7 5. f4! { [%cal Rf4f5,Rf5f6] }) 2... g4+! 3. fxg4 Rc1 $10 *
+
+
+[Event "Endgames' Database: Rook Endgames-8: The Vancura Position"]
+[Date "2021.07.08"]
+[Result "*"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgames' Database"]
+[ChapterName "Rook Endgames-8: The Vancura Position"]
+[ChapterURL "https://lichess.org/study/R3Qq55Ux/ZpkQ3mFB"]
+[Annotator "https://lichess.org/@/pietro2009"]
+[FEN "R7/6k1/P7/8/8/5K2/8/r7 b - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.07.08"]
+[UTCTime "15:50:39"]
+
+1... Rf1+! (1... Kf7? 2. Ke4 Ke7 (2... Ra5? 3. Kd4 Kg7 4. Kc4 Kf7 5. Kb4 Ra1 6. Kb5 Rb1+ 7. Kc6 Ra1 8. Kb7 Rb1+ 9. Ka7 Ke7 10. Rb8 Rc1 11. Kb7 Rb1+ 12. Ka8 Ra1 13. a7 Kd7 14. Kb7 Rb1+ 15. Ka6 Ra1+ 16. Kb6 Rb1+ 17. Kc5 Rc1+ 18. Kd4 Rd1+ 19. Kc3 Rc1+ 20. Kd2) 3. a7 Kf7 4. Rh8) 2. Ke4 Rf6! 3. Kd5 Rb6! 4. Kc5 Rf6! 5. Kb5 Rf5+ *
+
+
+[Event "Endgames' Database: P.Romanovsky 1950"]
+[Date "2021.07.11"]
+[Result "*"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgames' Database"]
+[ChapterName "P.Romanovsky 1950"]
+[ChapterURL "https://lichess.org/study/R3Qq55Ux/nnTmaQMt"]
+[Annotator "https://lichess.org/@/pietro2009"]
+[FEN "R7/6k1/P7/8/5K2/8/8/r7 b - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.07.11"]
+[UTCTime "13:45:12"]
+
+1... Rc1! (1... Rf1+? 2. Ke5 Rf6 3. Rg8+!! Kf7 4. Rf8+) (1... Rb1? 2. Ra7+ Kf6 3. Ke4 Rb6 4. Rh7 Kg6 5. a7 Ra6 6. Rb7) 2. Rb8 (2. Ke5 Rc6) 2... Ra1 3. Rb6 (3. Rb7+ Kf6 4. a7 Ke6) 3... Ra5! (3... Kf7 4. Ke5 Ke7 5. Rb7+ Kd8 6. a7) 4. Ke4 Kf7! 5. Kd4 (5. Rh6 Kg7 (5... Ke7 6. a7 Kd7 7. Rh8)) 5... Ke7 6. Kc4 Kd7 7. Kb4 Ra1 *
+
+
+[Event "Endgames' Database: Ivanchuk-Lautier Horgen 1995"]
+[Date "2021.07.11"]
+[Result "*"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgames' Database"]
+[ChapterName "Ivanchuk-Lautier Horgen 1995"]
+[ChapterURL "https://lichess.org/study/R3Qq55Ux/bVyrQhQT"]
+[Annotator "https://lichess.org/@/pietro2009"]
+[FEN "7k/R6P/Pr6/8/8/8/1p6/1K6 b - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.07.11"]
+[UTCTime "14:02:09"]
+
+1... Rb4?? (1... Rf6! 2. Ra8+ (2. Kxb2 Rb6+ 3. Kc3 Rc6+ 4. Kb4 Rb6+ 5. Kc5 Rc6+ 6. Kd5 Rd6+) 2... Kxh7 3. Kxb2 Kg7) 2. Rc7 Ra4 3. Rc8+?? (3. a7?? Rxa7) (3. Rc6! Kxh7 4. Kxb2 Kg7 5. Kb3 Ra1 6. Kb4 Kf7 7. Kc5 Ke7 8. Kb6 Kd7 9. Kb7) 3... Kxh7 4. Rc6 Rb4?? (4... Kg7! 5. Kxb2 Kf7 6. Kb3 Ra1 7. Kb4 Ke7 8. Kb5 Kd7) 5. a7 Ra4 6. Rc7+ Kg6 7. Kxb2 Kf6 8. Kb3 Ra1 9. Kb4 Ke6 10. Kb5 Kd6 11. Rc6+ Kd5 12. Ra6 Rb1+ 13. Ka5 Kc5 14. Rc6+! Kxc6 15. a8=Q+ *
+
+
+[Event "Endgames' Database: Brodsky-Khmelnitsky Kherson 1989"]
+[Date "2021.07.11"]
+[Result "*"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgames' Database"]
+[ChapterName "Brodsky-Khmelnitsky Kherson 1989"]
+[ChapterURL "https://lichess.org/study/R3Qq55Ux/Xlk3oQS4"]
+[Annotator "https://lichess.org/@/pietro2009"]
+[FEN "8/8/R7/8/6k1/p7/6K1/r7 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.07.11"]
+[UTCTime "14:22:46"]
+
+1. Rg6+? (1. Ra4+ Kf5 2. Rc4 Ra2+ 3. Kh3 Rb2 4. Ra4) 1... Kf4 (1... Kf5 2. Rg3) 2. Ra6 (2. Rg3 Rg1+) (2. Rf6+ Ke4 3. Rc6 Ra2+ 4. Kg3 Rb2) 2... Ke4 3. Ra4+ Ke3? 4. Rg4? (4. Rh4!! Kd2 5. Rh3! Kc2 6. Rf3! a2 7. Rf2+ Kc3 8. Rf3+! Kc4 9. Ra3) 4... Ra2+! 5. Kh3 Rf2! 6. Ra4 a2 7. Ra3+ Kd4 8. Kg3 Rb2 9. Kf4 Kc4 $19 *
+
+

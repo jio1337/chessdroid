@@ -4983,6 +4983,13 @@ namespace ChessDroid
         private Label?  _lblVisionSettingsPB;
         private Button? _btnSqMode;
         private Button? _btnOpMode;
+        private Button? _btnDrillMode;
+        private Panel?  _pnlDrillSettings;
+        private ComboBox? _cmbDrillStudy;
+        private ComboBox? _cmbDrillChapter;
+        private Label?    _lblDrillDesc;
+        private List<EndgameChapter> _drillChapters = new();
+        private string?  _drillsFolder;
         private Panel? _pnlSquareSettings;
         private Panel? _pnlOpeningSettings;
         private RadioButton? _rbOpRandom;
@@ -5060,6 +5067,8 @@ namespace ChessDroid
 
         // Board Vision state
         private bool    _visionModeSelected;
+        // Endgame Drills state
+        private bool    _drillModeSelected;
         private int     _visionCorrect;
         private int     _visionWrong;
         private int     _visionStreak;
@@ -5237,34 +5246,41 @@ namespace ChessDroid
             };
             btnStart.Click += (_, _) => TrainingStartRound();
 
-            // ── Mode switcher ──────────────────────────────────────────
-            var pnlModeSwitcher = new Panel { Dock = DockStyle.Top, Height = 38 };
+            // ── Mode switcher (2 rows) ─────────────────────────────────
+            var pnlModeSwitcher = new Panel { Dock = DockStyle.Top, Height = 66 };
             _btnSqMode = new Button
             {
                 Text = "♟ Square", Font = F(9f, true),
-                Location = new Point(0, 5), Size = new Size(96, 26), FlatStyle = FlatStyle.Flat
+                Location = new Point(0, 4), Size = new Size(96, 26), FlatStyle = FlatStyle.Flat
             };
             _btnOpMode = new Button
             {
                 Text = "♜ Openings", Font = F(9f, true),
-                Location = new Point(100, 5), Size = new Size(96, 26), FlatStyle = FlatStyle.Flat
+                Location = new Point(100, 4), Size = new Size(96, 26), FlatStyle = FlatStyle.Flat
             };
             _btnPuzzleMode = new Button
             {
                 Text = "★ Puzzles", Font = F(9f, true),
-                Location = new Point(200, 5), Size = new Size(96, 26), FlatStyle = FlatStyle.Flat,
+                Location = new Point(200, 4), Size = new Size(96, 26), FlatStyle = FlatStyle.Flat,
                 Visible = false
             };
             _btnVisionMode = new Button
             {
                 Text = "◉ Vision", Font = F(9f, true),
-                Location = new Point(300, 5), Size = new Size(96, 26), FlatStyle = FlatStyle.Flat
+                Location = new Point(0, 36), Size = new Size(96, 26), FlatStyle = FlatStyle.Flat
+            };
+            _btnDrillMode = new Button
+            {
+                Text = "⚑ Drills", Font = F(9f, true),
+                Location = new Point(100, 36), Size = new Size(96, 26), FlatStyle = FlatStyle.Flat,
+                Visible = false
             };
             _btnSqMode.Click     += (_, _) => SetTrainingMode("square");
             _btnOpMode.Click     += (_, _) => SetTrainingMode("opening");
             _btnPuzzleMode.Click += (_, _) => SetTrainingMode("puzzle");
             _btnVisionMode.Click += (_, _) => SetTrainingMode("vision");
-            pnlModeSwitcher.Controls.AddRange(new Control[] { _btnSqMode, _btnOpMode, _btnPuzzleMode, _btnVisionMode });
+            _btnDrillMode.Click  += (_, _) => SetTrainingMode("drill");
+            pnlModeSwitcher.Controls.AddRange(new Control[] { _btnSqMode, _btnOpMode, _btnPuzzleMode, _btnVisionMode, _btnDrillMode });
 
             _lblSquareSettingsPB = new Label
             {
@@ -5622,9 +5638,32 @@ namespace ChessDroid
             _pnlVisionSettings.Controls.AddRange(new Control[]
                 { lnkResetVisionPBs, _pnlVisionAutoNextRow, _lblVisionSettingsPB, _lblVisionDesc, _pnlVisionGlobalTimeRow, _pnlVisionTimeRow, pnlVisionSubGap, pnlVisionSub, pnlVisionTopGap });
 
+            // ── Drill settings ─────────────────────────────────────────
+            _pnlDrillSettings = new Panel { Dock = DockStyle.Top, Height = 120, Visible = false };
+            var lblStudy = new Label { Text = "Study", Font = F(9f, true), Dock = DockStyle.Top, Height = 20 };
+            _cmbDrillStudy = new ComboBox { Dock = DockStyle.Top, DropDownStyle = ComboBoxStyle.DropDownList, Font = F(9f) };
+            var lblChapter = new Label { Text = "Position", Font = F(9f, true), Dock = DockStyle.Top, Height = 20 };
+            _cmbDrillChapter = new ComboBox { Dock = DockStyle.Top, DropDownStyle = ComboBoxStyle.DropDownList, Font = F(9f) };
+            _lblDrillDesc = new Label
+            {
+                Dock = DockStyle.Top, Height = 32, Font = F(8f),
+                ForeColor = Color.FromArgb(150, 150, 150),
+                AutoEllipsis = true
+            };
+            _cmbDrillStudy.SelectedIndexChanged += (_, _) => PopulateDrillChapters();
+            _cmbDrillChapter.SelectedIndexChanged += (_, _) =>
+            {
+                var ch = SelectedDrillChapter();
+                if (_lblDrillDesc != null)
+                    _lblDrillDesc.Text = ch?.Description ?? "";
+            };
+            // DockStyle.Top: last = topmost
+            _pnlDrillSettings.Controls.AddRange(new Control[]
+                { _lblDrillDesc, _cmbDrillChapter, lblChapter, _cmbDrillStudy, lblStudy });
+
             // DockStyle.Top stacks back-to-front: last item in Controls = topmost visually
             _pnlTrainingStart.Controls.AddRange(new Control[]
-                { btnStart, pnlStartGap, _pnlPuzzleSettings, _pnlVisionSettings, _pnlOpeningSettings, _pnlSquareSettings, pnlModeSwitcher, lblTitle });
+                { btnStart, pnlStartGap, _pnlPuzzleSettings, _pnlVisionSettings, _pnlOpeningSettings, _pnlSquareSettings, _pnlDrillSettings, pnlModeSwitcher, lblTitle });
 
             // ── Game panel ────────────────────────────────────────────────────
             _pnlTrainingGame = new Panel { Dock = DockStyle.Fill, Visible = false };
@@ -5948,6 +5987,14 @@ namespace ChessDroid
             if (_btnPuzzleMode != null)
                 _btnPuzzleMode.Visible = LichessPuzzleService.HasPuzzles(_puzzlesFolder);
 
+            _drillsFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Endgames");
+            if (EndgameDrillService.HasDrills(_drillsFolder))
+            {
+                _drillChapters = EndgameDrillService.LoadFromFolder(_drillsFolder);
+                if (_btnDrillMode != null) _btnDrillMode.Visible = true;
+                PopulateDrillStudies();
+            }
+
             autoAnalysisCts?.Cancel();
             lblStatus.Text = "";
 
@@ -6083,6 +6130,7 @@ namespace ChessDroid
                 if (_puzzleSubMode == "daily")    { PuzzleDailyStart();    return; }
                 PuzzleTrainingStart(); return;
             }
+            if (_drillModeSelected) { DrillStart(); return; }
 
             _trainingPreFen = boardControl.GetFEN();
             _trainingPreFlipped = boardControl.IsFlipped;
@@ -6269,24 +6317,28 @@ namespace ChessDroid
 
         // ── Opening Training ───────────────────────────────────────────────
 
-        private void SetTrainingMode(string mode) // "square" | "opening" | "puzzle" | "vision"
+        private void SetTrainingMode(string mode) // "square" | "opening" | "puzzle" | "vision" | "drill"
         {
             _openingModeSelected = mode == "opening";
             _puzzleModeSelected  = mode == "puzzle";
             _visionModeSelected  = mode == "vision";
+            _drillModeSelected   = mode == "drill";
             if (_lblTrainingTitle != null)
                 _lblTrainingTitle.Text = mode == "opening" ? "Opening Training"
                                        : mode == "puzzle"  ? "Puzzle Training"
                                        : mode == "vision"  ? "Board Vision"
+                                       : mode == "drill"   ? "Endgame Drills"
                                        : "Square Training";
             if (_pnlSquareSettings  != null) _pnlSquareSettings.Visible  = mode == "square";
             if (_pnlOpeningSettings != null) _pnlOpeningSettings.Visible = mode == "opening";
             if (_pnlPuzzleSettings  != null) _pnlPuzzleSettings.Visible  = mode == "puzzle";
             if (_pnlVisionSettings  != null) _pnlVisionSettings.Visible  = mode == "vision";
+            if (_pnlDrillSettings   != null) _pnlDrillSettings.Visible   = mode == "drill";
             HighlightButton(_btnSqMode,     mode == "square");
             HighlightButton(_btnOpMode,     mode == "opening");
             HighlightButton(_btnPuzzleMode, mode == "puzzle");
             HighlightButton(_btnVisionMode, mode == "vision");
+            HighlightButton(_btnDrillMode,  mode == "drill");
             if (mode == "square")  UpdateSquarePBLabel();
             if (mode == "puzzle")  SetPuzzleSubMode(_puzzleSubMode);
             if (mode == "vision")  UpdateVisionPBLabel();
@@ -6679,6 +6731,56 @@ namespace ChessDroid
         }
 
         // ── Puzzle Training ────────────────────────────────────────────────────
+
+        // ── Endgame Drills ─────────────────────────────────────────────────────
+
+        private void PopulateDrillStudies()
+        {
+            if (_cmbDrillStudy == null) return;
+            _cmbDrillStudy.Items.Clear();
+            foreach (var name in EndgameDrillService.GetStudyNames(_drillChapters))
+                _cmbDrillStudy.Items.Add(name);
+            if (_cmbDrillStudy.Items.Count > 0) _cmbDrillStudy.SelectedIndex = 0;
+        }
+
+        private void PopulateDrillChapters()
+        {
+            if (_cmbDrillStudy == null || _cmbDrillChapter == null) return;
+            string? study = _cmbDrillStudy.SelectedItem?.ToString();
+            _cmbDrillChapter.Items.Clear();
+            foreach (var ch in _drillChapters.Where(c => c.StudyName == study))
+                _cmbDrillChapter.Items.Add(ch.ChapterName);
+            if (_cmbDrillChapter.Items.Count > 0) _cmbDrillChapter.SelectedIndex = 0;
+        }
+
+        private EndgameChapter? SelectedDrillChapter()
+        {
+            if (_cmbDrillStudy == null || _cmbDrillChapter == null) return null;
+            string? study   = _cmbDrillStudy.SelectedItem?.ToString();
+            string? chapter = _cmbDrillChapter.SelectedItem?.ToString();
+            return _drillChapters.FirstOrDefault(c => c.StudyName == study && c.ChapterName == chapter);
+        }
+
+        private void DrillStart()
+        {
+            var chapter = SelectedDrillChapter();
+            if (chapter == null) { lblStatus.Text = "Select a position first."; return; }
+
+            StopTraining();
+
+            boardControl.LoadFEN(chapter.Fen);
+            moveTree.Clear(chapter.Fen);
+            UpdateMoveList();
+            UpdateFenDisplay();
+            UpdateTurnLabel();
+
+            // Flip board to match the active side
+            if (!chapter.WhiteToMove && !boardControl.IsFlipped) boardControl.FlipBoard();
+            else if (chapter.WhiteToMove && boardControl.IsFlipped) boardControl.FlipBoard();
+
+            lblStatus.Text = chapter.ChapterName;
+            _ = TriggerAutoAnalysis();
+        }
 
         private static readonly (string Label, string? Theme)[] _puzzleThemeOptions =
         {
