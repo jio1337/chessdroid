@@ -113,6 +113,8 @@ namespace ChessDroid
         private int  _boardColorSavedIndex = -1;
         private bool _restoringBoardColor = false;
         private System.Windows.Forms.Timer? _boardColorHoverTimer;
+        private System.Windows.Forms.Timer? _drillHoverTimer;
+        private int _drillHoverLastIdx = -1;
 
         // Sound effects
         private System.Media.SoundPlayer? _sndMove;
@@ -705,6 +707,22 @@ namespace ChessDroid
             int idx = SendMessage(info.hwndList, LB_GETCURSEL, 0, 0);
             if (idx < 0 || idx >= cmbBoardColor.Items.Count) return;
             ApplyBoardColorPreview(idx);
+        }
+
+        private void DrillHoverTimer_Tick(object? sender, EventArgs e)
+        {
+            if (_cmbDrillChapter == null) return;
+            var info = new COMBOBOXINFO { cbSize = Marshal.SizeOf<COMBOBOXINFO>() };
+            if (!GetComboBoxInfo(_cmbDrillChapter.Handle, ref info) || info.hwndList == IntPtr.Zero) return;
+            int idx = SendMessage(info.hwndList, LB_GETCURSEL, 0, 0);
+            if (idx < 0 || idx >= _cmbDrillChapter.Items.Count || idx == _drillHoverLastIdx) return;
+            _drillHoverLastIdx = idx;
+            string study   = _cmbDrillStudy?.SelectedItem?.ToString() ?? "";
+            string chapter = _cmbDrillChapter.Items[idx]?.ToString() ?? "";
+            var ch = _drillChapters.FirstOrDefault(c => c.StudyName == study && c.ChapterName == chapter);
+            if (ch == null) return;
+            if (_lblDrillDesc != null) _lblDrillDesc.Text = ch.Description;
+            boardControl.LoadFEN(ch.Fen);
         }
 
         private void CmbBoardColor_DropDownClosed(object? sender, EventArgs e)
@@ -5659,6 +5677,17 @@ namespace ChessDroid
                 if (ch != null)
                     boardControl.LoadFEN(ch.Fen);
             };
+            _cmbDrillChapter.DropDown += (_, _) =>
+            {
+                _drillHoverLastIdx = -1;
+                if (_drillHoverTimer == null)
+                {
+                    _drillHoverTimer = new System.Windows.Forms.Timer { Interval = 50 };
+                    _drillHoverTimer.Tick += DrillHoverTimer_Tick;
+                }
+                _drillHoverTimer.Start();
+            };
+            _cmbDrillChapter.DropDownClosed += (_, _) => _drillHoverTimer?.Stop();
             // DockStyle.Top: last = topmost
             _pnlDrillSettings.Controls.AddRange(new Control[]
                 { _lblDrillDesc, _cmbDrillChapter, lblChapter, _cmbDrillStudy, lblStudy });
