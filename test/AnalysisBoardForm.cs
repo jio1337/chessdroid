@@ -1894,15 +1894,23 @@ namespace ChessDroid
             // Opening book injection (only from standard start, not custom position)
             bool bookReady = chkUseBook.Checked && !chkFromPosition.Checked &&
                              (rbBookChoose.Checked ? _matchBookOpening != null : openingBookService?.IsLoaded == true);
+            bool chooseMode = bookReady && rbBookChoose.Checked && _matchBookOpening != null;
             if (bookReady) startFen = GetBookStartFen(startFen);
 
             CancelClassification();
-            moveTree.Clear(startFen);
+            if (!chooseMode)
+                moveTree.Clear(startFen);
             moveListBox.Items.Clear();
             displayedNodes.Clear();
             _analysisCache.Clear(); // Clear analysis cache for new match
             boardControl.ClearBookArrows();
             _bookArrowsActive = false;
+            if (chooseMode)
+            {
+                isNavigating = true;
+                try { UpdateMoveList(); }
+                finally { isNavigating = false; }
+            }
 
             // Set up match log
             analysisOutput.Clear();
@@ -2288,11 +2296,9 @@ namespace ChessDroid
         private void UpdateSeriesScoreLabel()
         {
             if (_seriesTotal <= 1) return;
-            string n1 = GetEngineLabel(_seriesEng1File, false);
-            string n2 = GetEngineLabel(_seriesEng2File, false);
             string s1 = _seriesEng1Score % 1 == 0 ? $"{_seriesEng1Score:0}" : $"{_seriesEng1Score:0.0}";
             string s2 = _seriesEng2Score % 1 == 0 ? $"{_seriesEng2Score:0}" : $"{_seriesEng2Score:0.0}";
-            lblSeriesScore.Text = $"({_seriesPlayed}/{_seriesTotal})  {n1}: {s1}  {n2}: {s2}";
+            lblSeriesScore.Text = $"({_seriesPlayed}/{_seriesTotal})  {s1} – {s2}";
         }
 
         private void AutoSaveMatchPgn()
@@ -2351,15 +2357,23 @@ namespace ChessDroid
             string startFen = boardControl.GetFEN();
             bool bookReady = chkUseBook.Checked &&
                              (rbBookChoose.Checked ? _matchBookOpening != null : openingBookService?.IsLoaded == true);
+            bool chooseMode = bookReady && rbBookChoose.Checked && _matchBookOpening != null;
             if (bookReady) startFen = GetBookStartFen(startFen);
 
             CancelClassification();
-            moveTree.Clear(startFen);
+            if (!chooseMode)
+                moveTree.Clear(startFen);
             moveListBox.Items.Clear();
             displayedNodes.Clear();
             _analysisCache.Clear();
             boardControl.ClearBookArrows();
             _bookArrowsActive = false;
+            if (chooseMode)
+            {
+                isNavigating = true;
+                try { UpdateMoveList(); }
+                finally { isNavigating = false; }
+            }
 
             string whiteName = GetEngineLabel(whiteFile, true);
             string blackName = GetEngineLabel(blackFile, true);
@@ -2390,13 +2404,9 @@ namespace ChessDroid
 
         private string GetBookStartFen(string startFen)
         {
-            // Choose mode: replay ECO opening moves to get end FEN
+            // Choose mode: replay ECO opening moves, populate move tree from move 1
             if (rbBookChoose.Checked && _matchBookOpening != null)
-            {
-                string fen = GetOpeningEndFen(_matchBookOpening.Moves);
-                boardControl.LoadFEN(fen);
-                return fen;
-            }
+                return PopulateOpeningMovesToTree(_matchBookOpening.Moves);
 
             // Random mode: 2 Polyglot plies
             const int BookPlies = 2;
@@ -2417,30 +2427,33 @@ namespace ChessDroid
             return fenRnd;
         }
 
-        private string GetOpeningEndFen(string sanMoves)
+        private string PopulateOpeningMovesToTree(string sanMoves)
         {
-            const string start = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-            string currentFen = start;
-            string savedFen = boardControl.GetFEN();
+            const string standardStart = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+            moveTree.Clear(standardStart);
+            string currentFen = standardStart;
             bool savedNav = isNavigating;
             isNavigating = true;
-
-            var tokens = sanMoves.Split(new[] { ' ', '\t', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
-                .Where(t => !System.Text.RegularExpressions.Regex.IsMatch(t, @"^\d+\.") &&
-                             t != "1-0" && t != "0-1" && t != "1/2-1/2" && t != "*")
-                .ToList();
-
-            foreach (var san in tokens)
+            try
             {
-                string? uci = ConvertSanToUci(san, currentFen);
-                if (uci == null) break;
-                boardControl.LoadFEN(currentFen);
-                if (!boardControl.MakeMove(uci)) break;
-                currentFen = boardControl.GetFEN();
+                var tokens = sanMoves.Split(new[] { ' ', '\t', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+                    .Where(t => !System.Text.RegularExpressions.Regex.IsMatch(t, @"^\d+\.") &&
+                                 t != "1-0" && t != "0-1" && t != "1/2-1/2" && t != "*")
+                    .ToList();
+                foreach (var san in tokens)
+                {
+                    string? uci = ConvertSanToUci(san, currentFen);
+                    if (uci == null) break;
+                    boardControl.LoadFEN(currentFen);
+                    if (!boardControl.MakeMove(uci)) break;
+                    currentFen = boardControl.GetFEN();
+                    moveTree.AddMove(uci, san, currentFen);
+                }
             }
-
-            boardControl.LoadFEN(savedFen);
-            isNavigating = savedNav;
+            finally
+            {
+                isNavigating = savedNav;
+            }
             return currentFen;
         }
 
