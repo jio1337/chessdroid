@@ -22,20 +22,56 @@ namespace ChessDroid.Services
             Directory.Exists(folder) ? Directory.GetFiles(folder, "*.csv").Length : 0;
 
         /// <summary>
+        /// Returns a deterministic puzzle for today, seeded by date. Same puzzle every call on the same day.
+        /// </summary>
+        public static LichessPuzzle? GetDailyPuzzle(string folder)
+        {
+            var files = Directory.GetFiles(folder, "*.csv");
+            if (files.Length == 0) return null;
+
+            int seed = DateTime.Today.Year * 10000 + DateTime.Today.Month * 100 + DateTime.Today.Day;
+            var rng = new Random(seed);
+
+            string file = files[rng.Next(files.Length)];
+            long fileSize = new FileInfo(file).Length;
+            long startPos = (long)(rng.NextDouble() * Math.Max(0, fileSize - 8000));
+
+            var candidates = new List<LichessPuzzle>(50);
+            using (var fs = File.OpenRead(file))
+            {
+                fs.Seek(startPos, SeekOrigin.Begin);
+                using var reader = new StreamReader(fs, Encoding.UTF8);
+                if (startPos > 0) reader.ReadLine();
+                string? line;
+                while (candidates.Count < 50 && (line = reader.ReadLine()) != null)
+                {
+                    if (line.StartsWith("PuzzleId")) continue;
+                    var p = ParseLine(line);
+                    if (p != null) candidates.Add(p);
+                }
+            }
+
+            if (candidates.Count == 0) return null;
+            return candidates[rng.Next(candidates.Count)];
+        }
+
+        /// <summary>
         /// Picks a random CSV file, seeks to a random offset, and reads puzzles.
         /// When a themeFilter or rating range is supplied, over-samples to compensate for sparsity.
         /// Returns a shuffled list of up to `count` puzzles.
         /// </summary>
-        public static List<LichessPuzzle> GetRandomBatch(string folder, int count = 300, string? themeFilter = null, int ratingMin = 0, int ratingMax = int.MaxValue)
+        public static List<LichessPuzzle> GetRandomBatch(string folder, int count = 300, string? themeFilter = null, int ratingMin = 0, int ratingMax = int.MaxValue, string? openingFilter = null)
         {
             var files = Directory.GetFiles(folder, "*.csv");
             if (files.Length == 0) return new();
 
             string file    = files[_rng.Next(files.Length)];
             long fileSize  = new FileInfo(file).Length;
-            bool hasTheme  = themeFilter != null;
-            bool hasRating = ratingMin > 0 || ratingMax < int.MaxValue;
-            int  readCount = (hasTheme && hasRating) ? count * 20 : (hasTheme || hasRating) ? count * 10 : count;
+            bool hasTheme   = themeFilter != null;
+            bool hasRating  = ratingMin > 0 || ratingMax < int.MaxValue;
+            bool hasOpening = openingFilter != null;
+            int  activeFilters = (hasTheme ? 1 : 0) + (hasRating ? 1 : 0) + (hasOpening ? 1 : 0);
+            int  readCount  = activeFilters >= 2 ? count * 20 : activeFilters == 1 ? count * 10 : count;
 
             long margin   = readCount * 300L;
             long safeEnd  = Math.Max(0, fileSize - margin);
@@ -73,9 +109,10 @@ namespace ChessDroid.Services
 
             // Apply filters
             IEnumerable<LichessPuzzle> filtered = candidates;
-            if (hasTheme)  filtered = filtered.Where(p => p.Themes.Contains(themeFilter!));
-            if (hasRating) filtered = filtered.Where(p => p.Rating >= ratingMin && p.Rating <= ratingMax);
-            var results = (hasTheme || hasRating) ? filtered.Take(count).ToList() : candidates;
+            if (hasTheme)   filtered = filtered.Where(p => p.Themes.Contains(themeFilter!));
+            if (hasRating)  filtered = filtered.Where(p => p.Rating >= ratingMin && p.Rating <= ratingMax);
+            if (hasOpening) filtered = filtered.Where(p => p.OpeningTags.StartsWith(openingFilter!));
+            var results = activeFilters > 0 ? filtered.Take(count).ToList() : candidates;
 
             // Fisher-Yates shuffle
             for (int i = results.Count - 1; i > 0; i--)

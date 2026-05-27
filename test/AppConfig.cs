@@ -71,6 +71,9 @@ namespace ChessDroid
         public int PuzzleTrainingBestStreak { get; set; } = 0;
         public int GauntletBestStreak { get; set; } = 0;
         public bool PuzzleAutoNext { get; set; } = true;
+        public string DailyPuzzleLastSolvedDate { get; set; } = "";
+        public int    DailyPuzzleStreak         { get; set; } = 0;
+        public int    DailyPuzzleBestStreak     { get; set; } = 0;
         public bool VisionAutoNext { get; set; } = true;
 
         // Explanation settings
@@ -257,6 +260,9 @@ namespace ChessDroid
             GauntletBestStreak         = other.GauntletBestStreak;
             PuzzleAutoNext             = other.PuzzleAutoNext;
             VisionAutoNext             = other.VisionAutoNext;
+            DailyPuzzleLastSolvedDate  = other.DailyPuzzleLastSolvedDate;
+            DailyPuzzleStreak          = other.DailyPuzzleStreak;
+            DailyPuzzleBestStreak      = other.DailyPuzzleBestStreak;
 
             OpeningBooksFolder = other.OpeningBooksFolder;
             UseOpeningBook = other.UseOpeningBook;

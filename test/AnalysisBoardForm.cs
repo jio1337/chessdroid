@@ -5019,8 +5019,12 @@ namespace ChessDroid
         private Button? _btnPuzzleSubTraining;
         private Button? _btnPuzzleSubRush;
         private Button? _btnPuzzleSubGauntlet;
+        private Button? _btnPuzzleSubDaily;
         private Panel?  _pnlRushTimeRow;
         private Panel?  _pnlThemeFilterRow;
+        private Panel?  _pnlOpeningFilterRow;
+        private ComboBox? _cmbPuzzleOpening;
+        private string? _puzzleOpeningFilter;
         private Panel?  _pnlRatingRow;
         private Button? _ratingBtnAny, _ratingBtnBeg, _ratingBtnInt, _ratingBtnAdv, _ratingBtnMaster;
         private Label?  _lblRatingRange;
@@ -5369,27 +5373,33 @@ namespace ChessDroid
             // ── Puzzle settings (sub-mode + theme + rush time) ─────────────
             _pnlPuzzleSettings = new Panel { Dock = DockStyle.Top, Height = 98, Visible = false };
 
-            // Sub-mode switcher: Training · Rush · Gauntlet
+            // Sub-mode switcher: Training · Rush · Gauntlet · Daily
             var pnlPuzzleSub = new Panel { Dock = DockStyle.Top, Height = 32 };
             _btnPuzzleSubTraining = new Button
             {
                 Text = "Training", Font = F(9f, true),
-                Location = new Point(0, 4), Size = new Size(82, 24), FlatStyle = FlatStyle.Flat
+                Location = new Point(0, 4), Size = new Size(68, 24), FlatStyle = FlatStyle.Flat
             };
             _btnPuzzleSubRush = new Button
             {
                 Text = "Rush", Font = F(9f, true),
-                Location = new Point(88, 4), Size = new Size(82, 24), FlatStyle = FlatStyle.Flat
+                Location = new Point(72, 4), Size = new Size(68, 24), FlatStyle = FlatStyle.Flat
             };
             _btnPuzzleSubGauntlet = new Button
             {
                 Text = "Gauntlet", Font = F(9f, true),
-                Location = new Point(176, 4), Size = new Size(82, 24), FlatStyle = FlatStyle.Flat
+                Location = new Point(144, 4), Size = new Size(68, 24), FlatStyle = FlatStyle.Flat
+            };
+            _btnPuzzleSubDaily = new Button
+            {
+                Text = "Daily", Font = F(9f, true),
+                Location = new Point(216, 4), Size = new Size(68, 24), FlatStyle = FlatStyle.Flat
             };
             _btnPuzzleSubTraining.Click += (_, _) => SetPuzzleSubMode("training");
             _btnPuzzleSubRush.Click     += (_, _) => SetPuzzleSubMode("rush");
             _btnPuzzleSubGauntlet.Click += (_, _) => SetPuzzleSubMode("gauntlet");
-            pnlPuzzleSub.Controls.AddRange(new Control[] { _btnPuzzleSubTraining, _btnPuzzleSubRush, _btnPuzzleSubGauntlet });
+            _btnPuzzleSubDaily.Click    += (_, _) => SetPuzzleSubMode("daily");
+            pnlPuzzleSub.Controls.AddRange(new Control[] { _btnPuzzleSubTraining, _btnPuzzleSubRush, _btnPuzzleSubGauntlet, _btnPuzzleSubDaily });
 
             // Rush time row: 1 2 3 4 5 min
             _pnlRushTimeRow = new Panel { Dock = DockStyle.Top, Height = 30, Visible = false };
@@ -5432,6 +5442,20 @@ namespace ChessDroid
                 _puzzleThemeFilter = i >= 0 ? _puzzleThemeOptions[i].Theme : null;
             };
             _pnlThemeFilterRow.Controls.AddRange(new Control[] { _cmbPuzzleTheme, lblThemeFilter });
+
+            // Opening filter row (Training only)
+            _pnlOpeningFilterRow = new Panel { Dock = DockStyle.Top, Height = 52, Visible = false };
+            var lblOpeningFilter = new Label { Text = "Opening", Font = F(9f, true), Dock = DockStyle.Top, Height = 20 };
+            _cmbPuzzleOpening = new ComboBox { Dock = DockStyle.Top, Height = 26, DropDownStyle = ComboBoxStyle.DropDownList, Font = F(9f) };
+            foreach (var (label, _) in _puzzleOpeningOptions)
+                _cmbPuzzleOpening.Items.Add(label);
+            _cmbPuzzleOpening.SelectedIndex = 0;
+            _cmbPuzzleOpening.SelectedIndexChanged += (_, _) =>
+            {
+                int i = _cmbPuzzleOpening.SelectedIndex;
+                _puzzleOpeningFilter = i >= 0 ? _puzzleOpeningOptions[i].Opening : null;
+            };
+            _pnlOpeningFilterRow.Controls.AddRange(new Control[] { _cmbPuzzleOpening, lblOpeningFilter });
 
             // Rating range row (all sub-modes)
             _pnlRatingRow = new Panel { Dock = DockStyle.Top, Height = 30 };
@@ -5497,7 +5521,7 @@ namespace ChessDroid
 
             // DockStyle.Top: last = topmost visually — pnlPuzzleTopGap must be last
             _pnlPuzzleSettings.Controls.AddRange(new Control[]
-                { lnkResetPBs, _lblPuzzleSettingsPB, _pnlPuzzleAutoNextRow, _lblGauntletDesc, _pnlRushTimeRow, _pnlRatingRow, _pnlThemeFilterRow, pnlPuzzleSubGap, pnlPuzzleSub, pnlPuzzleTopGap });
+                { lnkResetPBs, _lblPuzzleSettingsPB, _pnlPuzzleAutoNextRow, _lblGauntletDesc, _pnlRushTimeRow, _pnlRatingRow, _pnlOpeningFilterRow, _pnlThemeFilterRow, pnlPuzzleSubGap, pnlPuzzleSub, pnlPuzzleTopGap });
 
             // ── Vision settings ────────────────────────────────────────────
             _pnlVisionSettings = new Panel { Dock = DockStyle.Top, Height = 84, Visible = false };
@@ -5881,7 +5905,8 @@ namespace ChessDroid
             {
                 bool puzzleTrainingActive = _pnlPuzzleGame?.Visible == true
                     && _puzzleSubMode == "training"
-                    && (_puzzlesClean + _puzzlesStruggled) > 0;
+                    && (_puzzlesClean + _puzzlesStruggled) > 0
+                    && _puzzleSubMode != "daily";
                 if (puzzleTrainingActive)
                     PuzzleTrainingShowResults();
                 else
@@ -6055,6 +6080,7 @@ namespace ChessDroid
             {
                 if (_puzzleSubMode == "rush")     { PuzzleRushStart();     return; }
                 if (_puzzleSubMode == "gauntlet") { PuzzleGauntletStart(); return; }
+                if (_puzzleSubMode == "daily")    { PuzzleDailyStart();    return; }
                 PuzzleTrainingStart(); return;
             }
 
@@ -6269,23 +6295,39 @@ namespace ChessDroid
         private void SetPuzzleSubMode(string subMode) // "training" | "rush" | "gauntlet"
         {
             _puzzleSubMode = subMode;
-            if (_pnlThemeFilterRow    != null) _pnlThemeFilterRow.Visible    = subMode == "training";
-            if (_pnlPuzzleAutoNextRow != null) _pnlPuzzleAutoNextRow.Visible = subMode == "training";
+            bool isTraining = subMode == "training";
+            bool isDaily    = subMode == "daily";
+            if (_pnlThemeFilterRow    != null) _pnlThemeFilterRow.Visible    = isTraining;
+            if (_pnlOpeningFilterRow  != null) _pnlOpeningFilterRow.Visible  = isTraining;
+            if (_pnlPuzzleAutoNextRow != null) _pnlPuzzleAutoNextRow.Visible = isTraining;
             if (_pnlRushTimeRow       != null) _pnlRushTimeRow.Visible       = subMode == "rush";
             if (_lblGauntletDesc      != null) _lblGauntletDesc.Visible      = subMode == "gauntlet";
-            HighlightButton(_btnPuzzleSubTraining, subMode == "training");
+            if (_pnlRatingRow         != null) _pnlRatingRow.Visible         = !isDaily;
+            HighlightButton(_btnPuzzleSubTraining, isTraining);
             HighlightButton(_btnPuzzleSubRush,     subMode == "rush");
             HighlightButton(_btnPuzzleSubGauntlet, subMode == "gauntlet");
+            HighlightButton(_btnPuzzleSubDaily,    isDaily);
             if (_pnlPuzzleSettings != null)
-                _pnlPuzzleSettings.Height = subMode == "rush" ? 142 : subMode == "gauntlet" ? 132 : 190;
+                _pnlPuzzleSettings.Height = subMode == "rush" ? 142 : subMode == "gauntlet" ? 132 : isDaily ? 110 : 242;
             if (_lblPuzzleSettingsPB != null)
             {
-                _lblPuzzleSettingsPB.Text = subMode switch
+                if (isDaily)
                 {
-                    "rush"     => config?.PuzzleRushBest > 0           ? $"Best: {config.PuzzleRushBest} puzzles" : "",
-                    "gauntlet" => config?.GauntletBestStreak > 0       ? $"Best streak: {config.GauntletBestStreak}" : "",
-                    _          => config?.PuzzleTrainingBestStreak > 0 ? $"Best streak: {config.PuzzleTrainingBestStreak}" : "",
-                };
+                    string today  = DateTime.Today.ToString("MMM d");
+                    int streak    = config?.DailyPuzzleStreak ?? 0;
+                    string pb     = config?.DailyPuzzleBestStreak > 1 ? $"  ·  Best: {config.DailyPuzzleBestStreak}" : "";
+                    string solved = config?.DailyPuzzleLastSolvedDate == DateTime.Today.ToString("yyyy-MM-dd") ? "  ·  Solved ✓" : "";
+                    _lblPuzzleSettingsPB.Text = $"{today}  ·  Streak: {streak}{pb}{solved}";
+                }
+                else
+                {
+                    _lblPuzzleSettingsPB.Text = subMode switch
+                    {
+                        "rush"     => config?.PuzzleRushBest > 0           ? $"Best: {config.PuzzleRushBest} puzzles" : "",
+                        "gauntlet" => config?.GauntletBestStreak > 0       ? $"Best streak: {config.GauntletBestStreak}" : "",
+                        _          => config?.PuzzleTrainingBestStreak > 0 ? $"Best streak: {config.PuzzleTrainingBestStreak}" : "",
+                    };
+                }
             }
         }
 
@@ -6653,6 +6695,32 @@ namespace ChessDroid
             ("Endgame",              "endgame"),
         };
 
+        private static readonly (string Label, string? Opening)[] _puzzleOpeningOptions =
+        {
+            ("Any Opening",             null),
+            ("Sicilian Defense",        "Sicilian_Defense"),
+            ("French Defense",          "French_Defense"),
+            ("Ruy Lopez",               "Ruy_Lopez"),
+            ("Italian Game",            "Italian_Game"),
+            ("Caro-Kann Defense",       "Caro-Kann_Defense"),
+            ("King's Indian Defense",   "Kings_Indian_Defense"),
+            ("Queen's Gambit",          "Queens_Gambit"),
+            ("English Opening",         "English_Opening"),
+            ("Nimzo-Indian Defense",    "Nimzo-Indian_Defense"),
+            ("Slav Defense",            "Slav_Defense"),
+            ("Dutch Defense",           "Dutch_Defense"),
+            ("King's Gambit",           "Kings_Gambit"),
+            ("Scandinavian Defense",    "Scandinavian_Defense"),
+            ("Grunfeld Defense",        "Grunfeld_Defense"),
+            ("Scotch Game",             "Scotch_Game"),
+            ("Pirc Defense",            "Pirc_Defense"),
+            ("Modern Defense",          "Modern_Defense"),
+            ("Benoni Defense",          "Benoni_Defense"),
+            ("Four Knights Game",       "Four_Knights_Game"),
+            ("Petrov's Defense",        "Petrovs_Defense"),
+            ("Indian Defense",          "Indian_Defense"),
+        };
+
         private void PuzzleTrainingStart()
         {
             if (string.IsNullOrEmpty(_puzzlesFolder)) return;
@@ -6663,7 +6731,7 @@ namespace ChessDroid
             _puzzleStreak     = 0;
             _puzzleStreakBest  = config?.PuzzleTrainingBestStreak ?? 0;
             _puzzleQueue.Clear();
-            _puzzleQueue.AddRange(LichessPuzzleService.GetRandomBatch(_puzzlesFolder, 200, _puzzleThemeFilter, _puzzleRatingMin, _puzzleRatingMax));
+            _puzzleQueue.AddRange(LichessPuzzleService.GetRandomBatch(_puzzlesFolder, 200, _puzzleThemeFilter, _puzzleRatingMin, _puzzleRatingMax, _puzzleOpeningFilter));
 
             _trainingPreFen     = boardControl.GetFEN();
             _trainingPreFlipped = boardControl.IsFlipped;
@@ -6674,6 +6742,59 @@ namespace ChessDroid
             _pnlPuzzleGame!.Visible     = true;
 
             PuzzleLoadNext();
+        }
+
+        private void PuzzleDailyStart()
+        {
+            if (string.IsNullOrEmpty(_puzzlesFolder)) return;
+            var daily = LichessPuzzleService.GetDailyPuzzle(_puzzlesFolder);
+            if (daily == null) { lblStatus.Text = "No puzzles found."; return; }
+
+            _puzzlesClean     = 0;
+            _puzzlesStruggled = 0;
+            _puzzlesAttempted = 0;
+            _puzzleHintsUsed  = 0;
+            _puzzleStreak     = 0;
+            _puzzleStreakBest  = 0;
+            _puzzleQueue.Clear();
+            _puzzleQueue.Add(daily);
+
+            _trainingPreFen     = boardControl.GetFEN();
+            _trainingPreFlipped = boardControl.IsFlipped;
+            _trainingGameActive = true;
+
+            _pnlTrainingStart!.Visible  = false;
+            _pnlTrainingResult!.Visible = false;
+            _pnlPuzzleGame!.Visible     = true;
+
+            PuzzleLoadNext();
+        }
+
+        private void DailyPuzzleCompleted()
+        {
+            string today = DateTime.Today.ToString("yyyy-MM-dd");
+            if (config != null && config.DailyPuzzleLastSolvedDate != today)
+            {
+                // Update streak
+                bool consecutive = config.DailyPuzzleLastSolvedDate ==
+                                   DateTime.Today.AddDays(-1).ToString("yyyy-MM-dd");
+                config.DailyPuzzleStreak = consecutive ? config.DailyPuzzleStreak + 1 : 1;
+                if (config.DailyPuzzleStreak > config.DailyPuzzleBestStreak)
+                    config.DailyPuzzleBestStreak = config.DailyPuzzleStreak;
+                config.DailyPuzzleLastSolvedDate = today;
+                config.Save();
+            }
+
+            bool clean = _puzzlesStruggled == 0 && _puzzleHintsUsed == 0;
+            string streakStr = (config?.DailyPuzzleStreak ?? 0) > 0
+                ? $"  ·  Streak: {config!.DailyPuzzleStreak}" : "";
+            string result = clean ? $"Solved clean!{streakStr}" : $"Solved{streakStr}";
+            SetText(_lblPuzzleFeedback, result);
+
+            if (_btnPuzzleAnalyze != null) _btnPuzzleAnalyze.Visible = true;
+            if (_btnPuzzleNext    != null) _btnPuzzleNext.Visible    = false;
+            if (_btnPuzzleSkip    != null) _btnPuzzleSkip.Visible    = false;
+            _puzzleLocked = true;
         }
 
         private void PuzzleLoadNext()
@@ -6687,7 +6808,10 @@ namespace ChessDroid
             _currentPuzzle     = null;
 
             if (_puzzleQueue.Count == 0)
-                _puzzleQueue.AddRange(LichessPuzzleService.GetRandomBatch(_puzzlesFolder!, 200, _puzzleThemeFilter));
+            {
+                if (_puzzleSubMode == "daily") { DailyPuzzleCompleted(); return; }
+                _puzzleQueue.AddRange(LichessPuzzleService.GetRandomBatch(_puzzlesFolder!, 200, _puzzleThemeFilter, _puzzleRatingMin, _puzzleRatingMax, _puzzleOpeningFilter));
+            }
 
             _currentPuzzle = _puzzleQueue[0];
             _puzzleQueue.RemoveAt(0);
@@ -6940,7 +7064,7 @@ namespace ChessDroid
             _puzzlesAttempted = 0;
             _puzzleHintsUsed  = 0;
             _puzzleQueue.Clear();
-            _puzzleQueue.AddRange(LichessPuzzleService.GetRandomBatch(_puzzlesFolder, 300, _puzzleThemeFilter, _puzzleRatingMin, _puzzleRatingMax));
+            _puzzleQueue.AddRange(LichessPuzzleService.GetRandomBatch(_puzzlesFolder, 300, _puzzleThemeFilter, _puzzleRatingMin, _puzzleRatingMax, _puzzleOpeningFilter));
 
             _trainingPreFen     = boardControl.GetFEN();
             _trainingPreFlipped = boardControl.IsFlipped;
@@ -7030,7 +7154,7 @@ namespace ChessDroid
             _gauntletStreak     = 0;
             _gauntletBestStreak = config?.GauntletBestStreak ?? 0;
             _puzzleQueue.Clear();
-            _puzzleQueue.AddRange(LichessPuzzleService.GetRandomBatch(_puzzlesFolder, 300, _puzzleThemeFilter, _puzzleRatingMin, _puzzleRatingMax));
+            _puzzleQueue.AddRange(LichessPuzzleService.GetRandomBatch(_puzzlesFolder, 300, _puzzleThemeFilter, _puzzleRatingMin, _puzzleRatingMax, _puzzleOpeningFilter));
 
             _trainingPreFen     = boardControl.GetFEN();
             _trainingPreFlipped = boardControl.IsFlipped;
