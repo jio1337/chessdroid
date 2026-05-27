@@ -5263,11 +5263,25 @@ namespace ChessDroid
                 TextAlign = ContentAlignment.MiddleLeft, ForeColor = Color.FromArgb(130, 130, 130)
             };
 
+            var lnkResetSquarePBs = new LinkLabel
+            {
+                Text = "Reset personal bests", Dock = DockStyle.Top, Height = 18,
+                Font = F(8f), TextAlign = ContentAlignment.MiddleLeft, LinkColor = Color.FromArgb(140, 140, 140)
+            };
+            lnkResetSquarePBs.LinkClicked += (_, _) =>
+            {
+                if (config == null) return;
+                foreach (var key in new[] { "Easy-White", "Easy-Black", "Easy-Random", "Challenge-White", "Challenge-Black", "Challenge-Random" })
+                    config.TrainingPersonalBests.Remove(key);
+                config.Save();
+                UpdateSquarePBLabel();
+            };
+
             // ── Wrap square settings into collapsible panel ────────────
-            _pnlSquareSettings = new Panel { Dock = DockStyle.Top, Height = 270 };
+            _pnlSquareSettings = new Panel { Dock = DockStyle.Top, Height = 288 };
             // DockStyle.Top: last = topmost visually
             _pnlSquareSettings.Controls.AddRange(new Control[]
-                { pnlTime, pnlCount, pnlPerspective, pnlMode, _lblSquareSettingsPB, lblDesc });
+                { lnkResetSquarePBs, pnlTime, pnlCount, pnlPerspective, pnlMode, _lblSquareSettingsPB, lblDesc });
 
             // ── Opening settings ───────────────────────────────────────
             _pnlOpeningSettings = new Panel { Dock = DockStyle.Top, Height = 110, Visible = false };
@@ -5543,11 +5557,25 @@ namespace ChessDroid
                 TextAlign = ContentAlignment.MiddleLeft, ForeColor = Color.FromArgb(130, 130, 130)
             };
 
+            var lnkResetVisionPBs = new LinkLabel
+            {
+                Text = "Reset personal bests", Dock = DockStyle.Top, Height = 18,
+                Font = F(8f), TextAlign = ContentAlignment.MiddleLeft, LinkColor = Color.FromArgb(140, 140, 140)
+            };
+            lnkResetVisionPBs.LinkClicked += (_, _) =>
+            {
+                if (config == null) return;
+                foreach (var key in new[] { "Vision-Timed-60", "Vision-Timed-180", "Vision-Timed-300", "Vision-Survival" })
+                    config.TrainingPersonalBests.Remove(key);
+                config.Save();
+                UpdateVisionPBLabel();
+            };
+
             var pnlVisionTopGap = new Panel { Dock = DockStyle.Top, Height = 8 };
             var pnlVisionSubGap = new Panel { Dock = DockStyle.Top, Height = 6 };
             // DockStyle.Top: last = topmost visually
             _pnlVisionSettings.Controls.AddRange(new Control[]
-                { _pnlVisionAutoNextRow, _lblVisionSettingsPB, _lblVisionDesc, _pnlVisionGlobalTimeRow, _pnlVisionTimeRow, pnlVisionSubGap, pnlVisionSub, pnlVisionTopGap });
+                { lnkResetVisionPBs, _pnlVisionAutoNextRow, _lblVisionSettingsPB, _lblVisionDesc, _pnlVisionGlobalTimeRow, _pnlVisionTimeRow, pnlVisionSubGap, pnlVisionSub, pnlVisionTopGap });
 
             // DockStyle.Top stacks back-to-front: last item in Controls = topmost visually
             _pnlTrainingStart.Controls.AddRange(new Control[]
@@ -7137,7 +7165,7 @@ namespace ChessDroid
             if (_pnlVisionGlobalTimeRow != null) _pnlVisionGlobalTimeRow.Visible = subMode == "timed";
             if (_pnlVisionAutoNextRow   != null) _pnlVisionAutoNextRow.Visible   = subMode == "training";
             if (_pnlVisionSettings != null)
-                _pnlVisionSettings.Height = subMode == "timed" ? 162 : hasTimed ? 132 : 128;
+                _pnlVisionSettings.Height = subMode == "timed" ? 180 : hasTimed ? 150 : 146;
             if (_lblVisionDesc != null)
                 _lblVisionDesc.Text = subMode == "survival"
                     ? "3 lives — wrong or timeout costs a life.\nRun ends when lives reach zero."
