@@ -283,7 +283,7 @@ namespace ChessDroid
 
             // Standard buttons
             foreach (var btn in new[] { btnSettings, btnNewGame, btnFlipBoard, btnTakeBack, btnPrevMove,
-                                        btnNextMove, btnAutoPlay, btnPlayBot, btnEditPosition, btnTraining, btnMatch, btnLoadFen, btnCopyFen, btnClassifyMoves,
+                                        btnNextMove, btnAutoPlay, btnPlayBot, btnEditPosition, btnTraining, btnMatch, btnTournament, btnLoadFen, btnCopyFen, btnClassifyMoves,
                                         btnExportPgn, btnImportPgn, btnSaveToLibrary, btnOpenLibrary, btnOpenings })
             {
                 btn.BackColor = scheme.ButtonBackColor;
@@ -907,8 +907,9 @@ namespace ChessDroid
             btnAutoPlay.Location   = new Point(btnNextMove.Right  + 2,   buttonY);
             btnPlayBot.Location    = new Point(btnAutoPlay.Right  + gap, buttonY);
             btnEditPosition.Location = new Point(btnPlayBot.Right + gap, buttonY);
-            btnTraining.Location   = new Point(btnEditPosition.Right + gap, buttonY);
-            btnMatch.Location      = new Point(btnTraining.Right   + gap, buttonY);
+            btnTraining.Location    = new Point(btnEditPosition.Right + gap, buttonY);
+            btnMatch.Location       = new Point(btnTraining.Right    + gap, buttonY);
+            btnTournament.Location  = new Point(btnMatch.Right       + gap, buttonY);
 
             // Row 3 (Y=60): FEN row — label | input | Load | Copy | ⚙
             const int fenY     = 60;
@@ -6307,6 +6308,13 @@ namespace ChessDroid
 
             if (_matchPanelActive && _trainingUiVisible)
                 StopTraining();
+        }
+
+        private void BtnTournament_Click(object? sender, EventArgs e)
+        {
+            if (matchRunning) { lblStatus.Text = "Stop the match first"; return; }
+            var form = new TournamentForm(config);
+            form.Show(this);
         }
 
         private void PuzzleTrainingShowResults()

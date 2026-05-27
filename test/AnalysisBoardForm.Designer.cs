@@ -54,6 +54,7 @@ namespace ChessDroid
             btnEditPosition = new Button();
             btnTraining = new Button();
             btnMatch = new Button();
+            btnTournament = new Button();
             lblFen = new Label();
             txtFen = new TextBox();
             btnLoadFen = new Button();
@@ -338,6 +339,17 @@ namespace ChessDroid
             btnMatch.Text = "⚔";
             btnMatch.Click += BtnMatch_Click;
             //
+            // btnTournament
+            //
+            btnTournament.FlatStyle = FlatStyle.Flat;
+            btnTournament.Font = new Font("Segoe UI", 10F);
+            btnTournament.Location = new Point(578, 530);
+            btnTournament.Name = "btnTournament";
+            btnTournament.Size = new Size(28, 28);
+            btnTournament.TabIndex = 28;
+            btnTournament.Text = "🏆";
+            btnTournament.Click += BtnTournament_Click;
+            //
             // lblFen
             // 
             lblFen.Font = new Font("Courier New", 8.25F, FontStyle.Regular, GraphicsUnit.Point, 0);
@@ -547,6 +559,7 @@ namespace ChessDroid
             pnlBoardControls.Controls.Add(btnEditPosition);
             pnlBoardControls.Controls.Add(btnTraining);
             pnlBoardControls.Controls.Add(btnMatch);
+            pnlBoardControls.Controls.Add(btnTournament);
             pnlBoardControls.Controls.Add(lblFen);
             pnlBoardControls.Controls.Add(txtFen);
             pnlBoardControls.Controls.Add(btnLoadFen);
@@ -1016,6 +1029,7 @@ namespace ChessDroid
         private Button btnEditPosition;
         private Button btnTraining;
         private Button btnMatch;
+        private Button btnTournament;
 
         private Label lblFen;
         private TextBox txtFen;
