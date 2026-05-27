@@ -51,10 +51,14 @@ namespace ChessDroid.Services
                                   ?? "Position";
                 string studyName   = tags.GetValueOrDefault("StudyName") ?? "Endgame Drills";
 
-                // First { comment } in the moves section = description
+                // First { comment } in the moves section = description; strip Lichess arrow/square annotations
                 string desc = "";
                 var cm = _commentRx.Match(part);
-                if (cm.Success) desc = cm.Groups[1].Value.Trim();
+                if (cm.Success)
+                {
+                    desc = cm.Groups[1].Value;
+                    desc = Regex.Replace(desc, @"\[%c[as]l [^\]]*\]", "").Trim();
+                }
 
                 var fenParts = fen.Split(' ');
                 bool whiteToMove = fenParts.Length < 2 || fenParts[1] == "w";

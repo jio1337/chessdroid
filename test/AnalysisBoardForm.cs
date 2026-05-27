@@ -5656,6 +5656,8 @@ namespace ChessDroid
                 var ch = SelectedDrillChapter();
                 if (_lblDrillDesc != null)
                     _lblDrillDesc.Text = ch?.Description ?? "";
+                if (ch != null)
+                    boardControl.LoadFEN(ch.Fen);
             };
             // DockStyle.Top: last = topmost
             _pnlDrillSettings.Controls.AddRange(new Control[]
