@@ -508,6 +508,14 @@ namespace ChessDroid.Services
                 return null;
             }
 
+            // Mate scores from StreamPositionEvalAsync: "Mate in +3" or "Mate in -5"
+            if (eval.StartsWith("Mate in ", StringComparison.OrdinalIgnoreCase))
+            {
+                if (int.TryParse(eval.AsSpan(8), out int mate))
+                    return mate >= 0 ? 30000 : -30000;
+                return null;
+            }
+
             // Centipawn scores: "+2.50" or "-3.00"
             if (double.TryParse(eval.TrimStart('+'), System.Globalization.NumberStyles.Float,
                                  System.Globalization.CultureInfo.InvariantCulture, out double pawns))
