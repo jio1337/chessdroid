@@ -2394,10 +2394,10 @@ namespace ChessDroid
                 {
                     string fenBeforeMove = moveTree.CurrentNode.FEN;
                     boardControl.MakeMove(bestMove);
+                    string san = ConvertUciToSan(bestMove, fenBeforeMove);
                     if (config?.ShowAnimations == true)
                         boardControl.StartAnimation(bestMove);
-
-                    string san = ConvertUciToSan(bestMove, fenBeforeMove);
+                    PlayMoveSound(san.Contains('x'), san);
                     string newFen = boardControl.GetFEN();
                     moveTree.AddMove(bestMove, san, newFen);
 
@@ -5021,6 +5021,11 @@ namespace ChessDroid
         private Button? _btnPuzzleSubGauntlet;
         private Panel?  _pnlRushTimeRow;
         private Panel?  _pnlThemeFilterRow;
+        private Panel?  _pnlRatingRow;
+        private Button? _ratingBtnAny, _ratingBtnBeg, _ratingBtnInt, _ratingBtnAdv, _ratingBtnMaster;
+        private Label?  _lblRatingRange;
+        private int     _puzzleRatingMin = 0;
+        private int     _puzzleRatingMax = int.MaxValue;
         private Label?  _lblGauntletDesc;
         private int     _rushDurationSeconds = 180;
         private Button? _rushTimeBtn1, _rushTimeBtn2, _rushTimeBtn3, _rushTimeBtn4, _rushTimeBtn5;
@@ -5428,6 +5433,22 @@ namespace ChessDroid
             };
             _pnlThemeFilterRow.Controls.AddRange(new Control[] { _cmbPuzzleTheme, lblThemeFilter });
 
+            // Rating range row (all sub-modes)
+            _pnlRatingRow = new Panel { Dock = DockStyle.Top, Height = 30 };
+            var lblRatingLabel = new Label { Text = "Rating:", Font = F(9f, true), AutoSize = true, Location = new Point(0, 7) };
+            _ratingBtnAny    = new Button { Text = "Any",    Font = F(9f), Location = new Point(58,  3), Size = new Size(50, 22), FlatStyle = FlatStyle.Flat };
+            _ratingBtnBeg    = new Button { Text = "Beg.",   Font = F(9f), Location = new Point(112, 3), Size = new Size(50, 22), FlatStyle = FlatStyle.Flat };
+            _ratingBtnInt    = new Button { Text = "Int.",   Font = F(9f), Location = new Point(166, 3), Size = new Size(46, 22), FlatStyle = FlatStyle.Flat };
+            _ratingBtnAdv    = new Button { Text = "Adv.",   Font = F(9f), Location = new Point(216, 3), Size = new Size(50, 22), FlatStyle = FlatStyle.Flat };
+            _ratingBtnMaster = new Button { Text = "Master", Font = F(9f), Location = new Point(270, 3), Size = new Size(62, 22), FlatStyle = FlatStyle.Flat };
+            _lblRatingRange  = new Label  { Font = F(8.5f),  Location = new Point(338, 7), AutoSize = true, ForeColor = Color.FromArgb(160, 160, 160) };
+            _ratingBtnAny.Click    += (_, _) => SelectPuzzleRating(0,    int.MaxValue);
+            _ratingBtnBeg.Click    += (_, _) => SelectPuzzleRating(0,    1199);
+            _ratingBtnInt.Click    += (_, _) => SelectPuzzleRating(1400, 1799);
+            _ratingBtnAdv.Click    += (_, _) => SelectPuzzleRating(1800, 2199);
+            _ratingBtnMaster.Click += (_, _) => SelectPuzzleRating(2200, int.MaxValue);
+            _pnlRatingRow.Controls.AddRange(new Control[] { lblRatingLabel, _ratingBtnAny, _ratingBtnBeg, _ratingBtnInt, _ratingBtnAdv, _ratingBtnMaster, _lblRatingRange });
+
             // Gauntlet description
             _lblGauntletDesc = new Label
             {
@@ -5476,7 +5497,7 @@ namespace ChessDroid
 
             // DockStyle.Top: last = topmost visually — pnlPuzzleTopGap must be last
             _pnlPuzzleSettings.Controls.AddRange(new Control[]
-                { lnkResetPBs, _lblPuzzleSettingsPB, _pnlPuzzleAutoNextRow, _lblGauntletDesc, _pnlRushTimeRow, _pnlThemeFilterRow, pnlPuzzleSubGap, pnlPuzzleSub, pnlPuzzleTopGap });
+                { lnkResetPBs, _lblPuzzleSettingsPB, _pnlPuzzleAutoNextRow, _lblGauntletDesc, _pnlRushTimeRow, _pnlRatingRow, _pnlThemeFilterRow, pnlPuzzleSubGap, pnlPuzzleSub, pnlPuzzleTopGap });
 
             // ── Vision settings ────────────────────────────────────────────
             _pnlVisionSettings = new Panel { Dock = DockStyle.Top, Height = 84, Visible = false };
@@ -5845,6 +5866,7 @@ namespace ChessDroid
             SetTrainingMode("square"); // initialize Square mode as default
             SetPuzzleSubMode("training"); // initialize puzzle sub-mode
             SelectRushTime(3);            // default 3 min
+            SelectPuzzleRating(0, int.MaxValue); // default Any
             SetVisionSubMode("training");
             SelectVisionTime(5);
             SelectVisionGlobalTime(180);
@@ -6255,7 +6277,7 @@ namespace ChessDroid
             HighlightButton(_btnPuzzleSubRush,     subMode == "rush");
             HighlightButton(_btnPuzzleSubGauntlet, subMode == "gauntlet");
             if (_pnlPuzzleSettings != null)
-                _pnlPuzzleSettings.Height = subMode == "rush" ? 112 : subMode == "gauntlet" ? 102 : 160;
+                _pnlPuzzleSettings.Height = subMode == "rush" ? 142 : subMode == "gauntlet" ? 132 : 190;
             if (_lblPuzzleSettingsPB != null)
             {
                 _lblPuzzleSettingsPB.Text = subMode switch
@@ -6275,6 +6297,22 @@ namespace ChessDroid
             HighlightButton(_rushTimeBtn3, minutes == 3);
             HighlightButton(_rushTimeBtn4, minutes == 4);
             HighlightButton(_rushTimeBtn5, minutes == 5);
+        }
+
+        private void SelectPuzzleRating(int min, int max)
+        {
+            _puzzleRatingMin = min;
+            _puzzleRatingMax = max;
+            HighlightButton(_ratingBtnAny,    min == 0 && max == int.MaxValue);
+            HighlightButton(_ratingBtnBeg,    min == 0 && max == 1199);
+            HighlightButton(_ratingBtnInt,    min == 1400 && max == 1799);
+            HighlightButton(_ratingBtnAdv,    min == 1800 && max == 2199);
+            HighlightButton(_ratingBtnMaster, min == 2200 && max == int.MaxValue);
+            if (_lblRatingRange != null)
+                _lblRatingRange.Text = (min == 0 && max == int.MaxValue) ? "" :
+                                       max == int.MaxValue                ? $"≥ {min}" :
+                                       min == 0                           ? $"< {max + 1}" :
+                                                                            $"{min} – {max + 1}";
         }
 
         private void SelectOpeningForTraining()
@@ -6625,7 +6663,7 @@ namespace ChessDroid
             _puzzleStreak     = 0;
             _puzzleStreakBest  = config?.PuzzleTrainingBestStreak ?? 0;
             _puzzleQueue.Clear();
-            _puzzleQueue.AddRange(LichessPuzzleService.GetRandomBatch(_puzzlesFolder, 200, _puzzleThemeFilter));
+            _puzzleQueue.AddRange(LichessPuzzleService.GetRandomBatch(_puzzlesFolder, 200, _puzzleThemeFilter, _puzzleRatingMin, _puzzleRatingMax));
 
             _trainingPreFen     = boardControl.GetFEN();
             _trainingPreFlipped = boardControl.IsFlipped;
@@ -6902,7 +6940,7 @@ namespace ChessDroid
             _puzzlesAttempted = 0;
             _puzzleHintsUsed  = 0;
             _puzzleQueue.Clear();
-            _puzzleQueue.AddRange(LichessPuzzleService.GetRandomBatch(_puzzlesFolder, 300, _puzzleThemeFilter));
+            _puzzleQueue.AddRange(LichessPuzzleService.GetRandomBatch(_puzzlesFolder, 300, _puzzleThemeFilter, _puzzleRatingMin, _puzzleRatingMax));
 
             _trainingPreFen     = boardControl.GetFEN();
             _trainingPreFlipped = boardControl.IsFlipped;
@@ -6992,7 +7030,7 @@ namespace ChessDroid
             _gauntletStreak     = 0;
             _gauntletBestStreak = config?.GauntletBestStreak ?? 0;
             _puzzleQueue.Clear();
-            _puzzleQueue.AddRange(LichessPuzzleService.GetRandomBatch(_puzzlesFolder, 300, _puzzleThemeFilter));
+            _puzzleQueue.AddRange(LichessPuzzleService.GetRandomBatch(_puzzlesFolder, 300, _puzzleThemeFilter, _puzzleRatingMin, _puzzleRatingMax));
 
             _trainingPreFen     = boardControl.GetFEN();
             _trainingPreFlipped = boardControl.IsFlipped;
@@ -7360,6 +7398,7 @@ namespace ChessDroid
             SetVisionSubMode(_visionSubMode);
             int rushMins = _rushDurationSeconds / 60;
             SelectRushTime(rushMins > 0 ? rushMins : 3);
+            SelectPuzzleRating(_puzzleRatingMin, _puzzleRatingMax);
             SelectVisionTime(_visionTimedSeconds);
             SelectVisionGlobalTime(_visionGlobalDurationSeconds);
         }

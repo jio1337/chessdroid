@@ -23,17 +23,19 @@ namespace ChessDroid.Services
 
         /// <summary>
         /// Picks a random CSV file, seeks to a random offset, and reads puzzles.
-        /// When a themeFilter is supplied, over-samples to compensate for sparsity.
+        /// When a themeFilter or rating range is supplied, over-samples to compensate for sparsity.
         /// Returns a shuffled list of up to `count` puzzles.
         /// </summary>
-        public static List<LichessPuzzle> GetRandomBatch(string folder, int count = 300, string? themeFilter = null)
+        public static List<LichessPuzzle> GetRandomBatch(string folder, int count = 300, string? themeFilter = null, int ratingMin = 0, int ratingMax = int.MaxValue)
         {
             var files = Directory.GetFiles(folder, "*.csv");
             if (files.Length == 0) return new();
 
             string file    = files[_rng.Next(files.Length)];
             long fileSize  = new FileInfo(file).Length;
-            int  readCount = themeFilter != null ? count * 10 : count;
+            bool hasTheme  = themeFilter != null;
+            bool hasRating = ratingMin > 0 || ratingMax < int.MaxValue;
+            int  readCount = (hasTheme && hasRating) ? count * 20 : (hasTheme || hasRating) ? count * 10 : count;
 
             long margin   = readCount * 300L;
             long safeEnd  = Math.Max(0, fileSize - margin);
@@ -69,10 +71,11 @@ namespace ChessDroid.Services
                 }
             }
 
-            // Apply theme filter
-            var results = themeFilter != null
-                ? candidates.Where(p => p.Themes.Contains(themeFilter)).Take(count).ToList()
-                : candidates;
+            // Apply filters
+            IEnumerable<LichessPuzzle> filtered = candidates;
+            if (hasTheme)  filtered = filtered.Where(p => p.Themes.Contains(themeFilter!));
+            if (hasRating) filtered = filtered.Where(p => p.Rating >= ratingMin && p.Rating <= ratingMax);
+            var results = (hasTheme || hasRating) ? filtered.Take(count).ToList() : candidates;
 
             // Fisher-Yates shuffle
             for (int i = results.Count - 1; i > 0; i--)
