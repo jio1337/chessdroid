@@ -273,14 +273,14 @@
 1. Rc6 (1. Rc5 Rb7 2. Rh5 Rb8 3. b5) 1... Kd5 2. Ra6 Rb7 3. Ka4 Kc4 4. Rc6+ Kd5 5. b5 $18 { Cutting off the king of weaker side along a rank can often be more effective than the same procedure a along } *
 
 
-[Event "Endgames' Database: A.Chèron 1923"]
+[Event "Endgames' Database: A.Chèron 1923 (I)"]
 [Date "2021.07.07"]
 [Result "*"]
 [Variant "From Position"]
 [ECO "?"]
 [Opening "?"]
 [StudyName "Endgames' Database"]
-[ChapterName "A.Chèron 1923"]
+[ChapterName "A.Chèron 1923 (I)"]
 [ChapterURL "https://lichess.org/study/R3Qq55Ux/DkbUjyIu"]
 [Annotator "https://lichess.org/@/pietro2009"]
 [FEN "3r4/8/8/6k1/3P4/3K4/8/5R2 w - - 0 1"]
@@ -309,14 +309,14 @@
 1. Rg2! (1. Kd4 Rd8+ 2. Kc5 Re8 3. Kd5 Rd8+ 4. Kc6 Re8 5. Re1 Kg6 6. Kd7 Ra8 (6... Re5 7. Kd6 Ra5)) 1... Kh4! 2. Rg7 (2. e5 Rxe5+ 3. Kf4 Kh3) 2... Kh5 3. Rg1! Kh6 (3... Kh4 4. e5) (3... Ra8 4. e5 Ra4 5. e6 Kh6 (5... Ra6 6. Kf4 Rxe6 7. Kf5) 6. e7 Ra8 7. Kf4 Re8 8. Kf5 Rxe7 9. Kf6) 4. Kd4 Rd8+ 5. Kc5 Re8 6. Kd5 Rd8+ 7. Ke6! Re8+ 8. Kf6! { It is important to remember that in case of a knight pawn, cuttinf off the king by two files is not sufficient to win } *
 
 
-[Event "Endgames' Database: A.Chèron 1923"]
+[Event "Endgames' Database: A.Chèron 1923 (II)"]
 [Date "2021.07.07"]
 [Result "*"]
 [Variant "From Position"]
 [ECO "?"]
 [Opening "?"]
 [StudyName "Endgames' Database"]
-[ChapterName "A.Chèron 1923"]
+[ChapterName "A.Chèron 1923 (II)"]
 [ChapterURL "https://lichess.org/study/R3Qq55Ux/wcVRD9dW"]
 [Annotator "https://lichess.org/@/pietro2009"]
 [FEN "1r6/8/4k3/8/1P6/1K6/8/3R4 w - - 0 1"]
