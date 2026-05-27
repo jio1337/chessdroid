@@ -1250,6 +1250,17 @@ namespace ChessDroid.Services
             await SafeWriteLineAsync($"{UCI_CMD_SETOPTION} Skill Level value {level}");
         }
 
+        /// Sends UCI_LimitStrength + UCI_Elo for engines that support it (SF9+).
+        /// Also sends Skill Level as fallback for older engines — unknown setoptions are silently ignored.
+        public async Task SetEloTargetAsync(int elo, int skillLevelFallback)
+        {
+            if (!IsEngineAlive() || State != EngineState.Ready) return;
+            elo = Math.Clamp(elo, 1320, 3190);
+            await SafeWriteLineAsync($"{UCI_CMD_SETOPTION} UCI_LimitStrength value true");
+            await SafeWriteLineAsync($"{UCI_CMD_SETOPTION} UCI_Elo value {elo}");
+            await SafeWriteLineAsync($"{UCI_CMD_SETOPTION} Skill Level value {skillLevelFallback}");
+        }
+
         private void CleanupProcess()
         {
             try

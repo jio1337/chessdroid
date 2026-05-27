@@ -2334,7 +2334,7 @@ namespace ChessDroid
                 }
 
                 // Set skill level
-                await _botEngine.SetSkillLevelAsync(_botSettings.GetSkillLevel());
+                await _botEngine.SetEloTargetAsync(_botSettings.EloTarget, _botSettings.GetSkillLevel());
             }
             catch (Exception ex)
             {
@@ -5006,6 +5006,7 @@ namespace ChessDroid
         private ComboBox? _cmbDrillStudy;
         private ComboBox? _cmbDrillChapter;
         private Label?    _lblDrillDesc;
+        private Button?   _btnDrillVsBot;
         private List<EndgameChapter> _drillChapters = new();
         private string?  _drillsFolder;
         private Panel? _pnlSquareSettings;
@@ -5657,7 +5658,7 @@ namespace ChessDroid
                 { lnkResetVisionPBs, _pnlVisionAutoNextRow, _lblVisionSettingsPB, _lblVisionDesc, _pnlVisionGlobalTimeRow, _pnlVisionTimeRow, pnlVisionSubGap, pnlVisionSub, pnlVisionTopGap });
 
             // ── Drill settings ─────────────────────────────────────────
-            _pnlDrillSettings = new Panel { Dock = DockStyle.Top, Height = 120, Visible = false };
+            _pnlDrillSettings = new Panel { Dock = DockStyle.Top, Height = 154, Visible = false };
             var lblStudy = new Label { Text = "Study", Font = F(9f, true), Dock = DockStyle.Top, Height = 20 };
             _cmbDrillStudy = new ComboBox { Dock = DockStyle.Top, DropDownStyle = ComboBoxStyle.DropDownList, Font = F(9f) };
             var lblChapter = new Label { Text = "Position", Font = F(9f, true), Dock = DockStyle.Top, Height = 20 };
@@ -5668,6 +5669,13 @@ namespace ChessDroid
                 ForeColor = Color.FromArgb(150, 150, 150),
                 AutoEllipsis = true
             };
+            _btnDrillVsBot = new Button
+            {
+                Text = "⚔ Practice vs Bot", Dock = DockStyle.Top, Height = 28,
+                Font = F(9f), FlatStyle = FlatStyle.Flat
+            };
+            _btnDrillVsBot.Click += (_, _) => _ = DrillPracticeAsync();
+            var pnlDrillVsBotGap = new Panel { Dock = DockStyle.Top, Height = 6 };
             _cmbDrillStudy.SelectedIndexChanged += (_, _) => PopulateDrillChapters();
             _cmbDrillChapter.SelectedIndexChanged += (_, _) =>
             {
@@ -5690,7 +5698,7 @@ namespace ChessDroid
             _cmbDrillChapter.DropDownClosed += (_, _) => _drillHoverTimer?.Stop();
             // DockStyle.Top: last = topmost
             _pnlDrillSettings.Controls.AddRange(new Control[]
-                { _lblDrillDesc, _cmbDrillChapter, lblChapter, _cmbDrillStudy, lblStudy });
+                { _btnDrillVsBot, pnlDrillVsBotGap, _lblDrillDesc, _cmbDrillChapter, lblChapter, _cmbDrillStudy, lblStudy });
 
             // DockStyle.Top stacks back-to-front: last item in Controls = topmost visually
             _pnlTrainingStart.Controls.AddRange(new Control[]
@@ -6810,6 +6818,95 @@ namespace ChessDroid
             else if (chapter.WhiteToMove && boardControl.IsFlipped) boardControl.FlipBoard();
 
             lblStatus.Text = chapter.ChapterName;
+            _ = TriggerAutoAnalysis();
+        }
+
+        private async Task DrillPracticeAsync()
+        {
+            var chapter = SelectedDrillChapter();
+            if (chapter == null) { lblStatus.Text = "Select a position first."; return; }
+            if (_botModeActive) { StopBotMode(); return; }
+            if (matchRunning) { lblStatus.Text = "Stop the engine match first"; return; }
+            if (string.IsNullOrEmpty(config?.SelectedEngine)) { lblStatus.Text = "No engine configured — click ⚙ to set up"; return; }
+
+            string[] availableEngines = Directory.Exists(config.GetEnginesPath())
+                ? Directory.GetFiles(config.GetEnginesPath(), "*.exe").Select(Path.GetFileName).Where(f => f != null).Cast<string>().ToArray()
+                : Array.Empty<string>();
+            using var dialog = new BotSettingsDialog(ThemeService.IsDarkTheme(config?.Theme),
+                availableEngines, config?.EngineProfiles ?? new(), config?.SelectedEngine ?? "");
+            if (dialog.ShowDialog() != DialogResult.OK) return;
+
+            _botSettings = dialog.Settings;
+            // User always plays the active side in the drill position
+            _botSettings.BotPlaysWhite = !chapter.WhiteToMove;
+
+            StopTraining();
+            CancelClassification();
+            boardControl.ClearEngineArrows();
+            boardControl.ClearBookArrows();
+            _bookArrowsActive = false;
+            boardControl.LoadFEN(chapter.Fen);
+            moveTree.Clear(chapter.Fen);
+            moveListBox.Items.Clear();
+            displayedNodes.Clear();
+            _analysisCache.Clear();
+            _currentClassification = null;
+            _classificationLookup = null;
+            consoleFormatter?.SetActiveClassification(null);
+            analysisOutput.Clear();
+            evalBar?.Reset();
+            UpdateMoveList();
+            UpdateFenDisplay();
+            UpdateTurnLabel();
+
+            // Flip board: user plays the active side
+            bool userPlaysBlack = _botSettings.BotPlaysWhite;
+            if (userPlaysBlack && !boardControl.IsFlipped) boardControl.FlipBoard();
+            else if (!userPlaysBlack && boardControl.IsFlipped) boardControl.FlipBoard();
+
+            try
+            {
+                lblStatus.Text = "Starting bot engine...";
+                string enginesPath = config!.GetEnginesPath();
+                string engineFile = !string.IsNullOrEmpty(_botSettings.EngineFileName)
+                    ? _botSettings.EngineFileName : config.SelectedEngine;
+                string enginePath = Path.Combine(enginesPath, engineFile);
+
+                _botEngine = new ChessEngineService(config);
+                await _botEngine.InitializeAsync(enginePath);
+
+                if (_botEngine.State != EngineState.Ready)
+                {
+                    lblStatus.Text = "Failed to start bot engine";
+                    _botEngine.Dispose();
+                    _botEngine = null;
+                    return;
+                }
+
+                await _botEngine.SetEloTargetAsync(_botSettings.EloTarget, _botSettings.GetSkillLevel());
+            }
+            catch (Exception ex)
+            {
+                lblStatus.Text = $"Bot engine error: {ex.Message}";
+                _botEngine?.Dispose();
+                _botEngine = null;
+                return;
+            }
+
+            _botModeActive = true;
+            _botMoveCts = new CancellationTokenSource();
+            btnPlayBot.Text = "⏹";
+            toolTip.SetToolTip(btnPlayBot, "Stop Bot");
+            boardControl.InteractionEnabled = true;
+            btnStartMatch.Enabled = false;
+
+            string diffLabel = _botSettings.GetDifficultyLabel();
+            string colorLabel = userPlaysBlack ? "Black" : "White";
+            analysisOutput.AppendText($"Endgame Drill: {chapter.ChapterName}\n");
+            analysisOutput.AppendText($"You play {colorLabel} — {diffLabel}\n\n");
+            lblStatus.Text = $"Drill vs Bot — {diffLabel}";
+
+            // It's always user's turn in the drill FEN — just start analysis
             _ = TriggerAutoAnalysis();
         }
 

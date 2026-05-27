@@ -4,8 +4,8 @@ namespace ChessDroid
 {
     public class BotSettingsDialog : Form
     {
-        private TrackBar trkDifficulty = null!;
-        private Label lblDifficultyValue = null!;
+        private NumericUpDown nudElo = null!;
+        private Label lblEloValue = null!;
         private ComboBox cmbEngine = null!;
         private RadioButton rbPlayWhite = null!;
         private RadioButton rbPlayBlack = null!;
@@ -15,6 +15,14 @@ namespace ChessDroid
         private Button btnCancel = null!;
 
         private readonly string[] _engineFileNames;
+
+        private static readonly (string Label, int Elo)[] _presets =
+        {
+            ("Beginner", 1350),
+            ("Club",     1700),
+            ("Advanced", 2100),
+            ("Expert",   2500),
+        };
 
         public BotSettings Settings { get; private set; } = new();
 
@@ -30,7 +38,7 @@ namespace ChessDroid
             Dictionary<string, EngineProfile> profiles, string defaultEngine)
         {
             Text = "Play vs Bot";
-            Size = new Size(280, 415);
+            Size = new Size(280, 430);
             FormBorderStyle = FormBorderStyle.FixedDialog;
             StartPosition = FormStartPosition.CenterParent;
             MaximizeBox = false;
@@ -39,57 +47,52 @@ namespace ChessDroid
             // ── Difficulty ────────────────────────────────────────────────
             var lblDifficulty = new Label
             {
-                Text = "Difficulty:",
+                Text = "Target Elo:",
                 Location = new Point(15, 18),
-                Size = new Size(75, 20),
+                Size = new Size(80, 20),
                 Font = new Font("Courier New", 9F)
             };
 
-            lblDifficultyValue = new Label
+            nudElo = new NumericUpDown
             {
-                Text = "Level 8",
-                Location = new Point(95, 18),
-                Size = new Size(160, 20),
+                Minimum = 1320,
+                Maximum = 3190,
+                Value   = 1500,
+                Increment = 10,
+                Location = new Point(100, 15),
+                Size = new Size(155, 22),
                 Font = new Font("Courier New", 9F, FontStyle.Bold),
-                TextAlign = ContentAlignment.MiddleRight
+                TextAlign = HorizontalAlignment.Right
             };
 
-            trkDifficulty = new TrackBar
+            // Preset buttons row
+            var pnlPresets = new Panel
             {
-                Minimum = 1,
-                Maximum = 20,
-                Value = 8,
-                TickFrequency = 1,
-                LargeChange = 5,
-                SmallChange = 1,
-                Location = new Point(10, 40),
-                Size = new Size(250, 40),
-                AutoSize = false
+                Location = new Point(10, 45),
+                Size = new Size(252, 28)
             };
-            trkDifficulty.Scroll += (s, e) => lblDifficultyValue.Text = $"Level {trkDifficulty.Value}";
-
-            var lblMin = new Label
+            int btnW = 60, gap = 4;
+            for (int i = 0; i < _presets.Length; i++)
             {
-                Text = "1",
-                Location = new Point(10, 80),
-                Size = new Size(20, 16),
-                Font = new Font("Courier New", 8F),
-                TextAlign = ContentAlignment.MiddleLeft
-            };
-            var lblMax = new Label
-            {
-                Text = "20",
-                Location = new Point(240, 80),
-                Size = new Size(24, 16),
-                Font = new Font("Courier New", 8F),
-                TextAlign = ContentAlignment.MiddleRight
-            };
+                var (label, elo) = _presets[i];
+                var btn = new Button
+                {
+                    Text = label,
+                    Location = new Point(i * (btnW + gap), 0),
+                    Size = new Size(btnW, 26),
+                    FlatStyle = FlatStyle.Flat,
+                    Font = new Font("Courier New", 7.5F),
+                    Tag = elo
+                };
+                btn.Click += (s, _) => nudElo.Value = (int)((Button)s!).Tag!;
+                pnlPresets.Controls.Add(btn);
+            }
 
             // ── Engine ────────────────────────────────────────────────────
             var grpEngine = new GroupBox
             {
                 Text = "Engine",
-                Location = new Point(15, 103),
+                Location = new Point(15, 83),
                 Size = new Size(240, 50),
                 Font = new Font("Courier New", 9F, FontStyle.Bold)
             };
@@ -122,7 +125,7 @@ namespace ChessDroid
             var grpColor = new GroupBox
             {
                 Text = "Play as",
-                Location = new Point(15, 163),
+                Location = new Point(15, 143),
                 Size = new Size(240, 65),
                 Font = new Font("Courier New", 9F, FontStyle.Bold)
             };
@@ -150,7 +153,7 @@ namespace ChessDroid
             var grpType = new GroupBox
             {
                 Text = "Type",
-                Location = new Point(15, 238),
+                Location = new Point(15, 218),
                 Size = new Size(240, 65),
                 Font = new Font("Courier New", 9F, FontStyle.Bold)
             };
@@ -178,7 +181,7 @@ namespace ChessDroid
             btnStart = new Button
             {
                 Text = "Start",
-                Location = new Point(55, 315),
+                Location = new Point(55, 300),
                 Size = new Size(80, 35),
                 FlatStyle = FlatStyle.Flat,
                 Font = new Font("Courier New", 9F, FontStyle.Bold)
@@ -189,10 +192,10 @@ namespace ChessDroid
                     ? _engineFileNames[cmbEngine.SelectedIndex] : "";
                 Settings = new BotSettings
                 {
-                    SkillLevel      = trkDifficulty.Value,
-                    BotPlaysWhite   = rbPlayBlack.Checked,
-                    ChallengeMode   = rbChallenge.Checked,
-                    EngineFileName  = engineFile
+                    EloTarget      = (int)nudElo.Value,
+                    BotPlaysWhite  = rbPlayBlack.Checked,
+                    ChallengeMode  = rbChallenge.Checked,
+                    EngineFileName = engineFile
                 };
                 DialogResult = DialogResult.OK;
                 Close();
@@ -201,7 +204,7 @@ namespace ChessDroid
             btnCancel = new Button
             {
                 Text = "Cancel",
-                Location = new Point(145, 315),
+                Location = new Point(145, 300),
                 Size = new Size(80, 35),
                 FlatStyle = FlatStyle.Flat,
                 Font = new Font("Courier New", 9F)
@@ -210,7 +213,7 @@ namespace ChessDroid
 
             Controls.AddRange(new Control[]
             {
-                lblDifficulty, lblDifficultyValue, trkDifficulty, lblMin, lblMax,
+                lblDifficulty, nudElo, pnlPresets,
                 grpEngine, grpColor, grpType, btnStart, btnCancel
             });
             AcceptButton = btnStart;
@@ -234,6 +237,25 @@ namespace ChessDroid
                     btn.BackColor = Color.FromArgb(60, 60, 65);
                     btn.ForeColor = Color.White;
                     btn.FlatAppearance.BorderColor = Color.FromArgb(100, 100, 105);
+                }
+                else if (c is NumericUpDown nud)
+                {
+                    nud.BackColor = Color.FromArgb(60, 60, 65);
+                    nud.ForeColor = Color.White;
+                }
+                else if (c is Panel pnl)
+                {
+                    pnl.BackColor = Color.FromArgb(45, 45, 48);
+                    foreach (Control pc in pnl.Controls)
+                    {
+                        pc.ForeColor = Color.White;
+                        pc.BackColor = Color.FromArgb(45, 45, 48);
+                        if (pc is Button pb)
+                        {
+                            pb.BackColor = Color.FromArgb(60, 60, 65);
+                            pb.FlatAppearance.BorderColor = Color.FromArgb(100, 100, 105);
+                        }
+                    }
                 }
                 else if (c is GroupBox grp)
                 {
