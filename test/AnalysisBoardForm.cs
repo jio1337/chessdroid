@@ -73,6 +73,7 @@ namespace ChessDroid
         private int _matchBlackElo;
         private string _matchWhiteFileName = "";
         private string _matchBlackFileName = "";
+        private string[] _matchEngineFiles = [];
         // Overlay labels on top/bottom material strips showing engine name + ELO during a match
         private Label _lblBlackEngineInfo = null!;
         private Label _lblWhiteEngineInfo = null!;
@@ -748,17 +749,21 @@ namespace ChessDroid
         {
             // Populate engine combo boxes
             var resolver = new EnginePathResolver(config);
-            string[] engines = resolver.GetAvailableEngines();
+            _matchEngineFiles = resolver.GetAvailableEngines();
             cmbWhiteEngine.Items.Clear();
             cmbBlackEngine.Items.Clear();
-            foreach (var eng in engines)
+            foreach (var eng in _matchEngineFiles)
             {
-                cmbWhiteEngine.Items.Add(eng);
-                cmbBlackEngine.Items.Add(eng);
+                config.EngineProfiles.TryGetValue(eng, out var prof);
+                string label = !string.IsNullOrEmpty(prof?.DisplayName)
+                    ? prof.DisplayName : Path.GetFileNameWithoutExtension(eng);
+                if (prof?.Elo > 0) label += $" ({prof.Elo})";
+                cmbWhiteEngine.Items.Add(label);
+                cmbBlackEngine.Items.Add(label);
             }
-            if (engines.Length > 0) cmbWhiteEngine.SelectedIndex = 0;
-            if (engines.Length > 1) cmbBlackEngine.SelectedIndex = 1;
-            else if (engines.Length > 0) cmbBlackEngine.SelectedIndex = 0;
+            if (_matchEngineFiles.Length > 0) cmbWhiteEngine.SelectedIndex = 0;
+            if (_matchEngineFiles.Length > 1) cmbBlackEngine.SelectedIndex = 1;
+            else if (_matchEngineFiles.Length > 0) cmbBlackEngine.SelectedIndex = 0;
 
             // Default time control selection
             cmbTimeControlType.SelectedIndex = 0; // Fixed Depth
@@ -1799,14 +1804,16 @@ namespace ChessDroid
                 return;
             }
 
-            if (cmbWhiteEngine.SelectedItem == null || cmbBlackEngine.SelectedItem == null)
+            if (cmbWhiteEngine.SelectedIndex < 0 || cmbBlackEngine.SelectedIndex < 0 ||
+                cmbWhiteEngine.SelectedIndex >= _matchEngineFiles.Length ||
+                cmbBlackEngine.SelectedIndex >= _matchEngineFiles.Length)
             {
                 lblStatus.Text = "Select both engines first";
                 return;
             }
 
-            string whiteEngineName = cmbWhiteEngine.SelectedItem.ToString()!;
-            string blackEngineName = cmbBlackEngine.SelectedItem.ToString()!;
+            string whiteEngineName = _matchEngineFiles[cmbWhiteEngine.SelectedIndex];
+            string blackEngineName = _matchEngineFiles[cmbBlackEngine.SelectedIndex];
             _matchWhiteName = Path.GetFileNameWithoutExtension(whiteEngineName);
             _matchBlackName = Path.GetFileNameWithoutExtension(blackEngineName);
 
