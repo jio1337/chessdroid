@@ -53,6 +53,7 @@ namespace ChessDroid
             btnPlayBot = new Button();
             btnEditPosition = new Button();
             btnTraining = new Button();
+            btnMatch = new Button();
             lblFen = new Label();
             txtFen = new TextBox();
             btnLoadFen = new Button();
@@ -316,6 +317,17 @@ namespace ChessDroid
             btnTraining.Text = "♟";
             btnTraining.Click += BtnTraining_Click;
             //
+            // btnMatch
+            //
+            btnMatch.FlatStyle = FlatStyle.Flat;
+            btnMatch.Font = new Font("Segoe UI", 10F);
+            btnMatch.Location = new Point(544, 530);
+            btnMatch.Name = "btnMatch";
+            btnMatch.Size = new Size(28, 28);
+            btnMatch.TabIndex = 27;
+            btnMatch.Text = "⚔";
+            btnMatch.Click += BtnMatch_Click;
+            //
             // lblFen
             // 
             lblFen.Font = new Font("Courier New", 8.25F, FontStyle.Regular, GraphicsUnit.Point, 0);
@@ -524,6 +536,7 @@ namespace ChessDroid
             pnlBoardControls.Controls.Add(btnPlayBot);
             pnlBoardControls.Controls.Add(btnEditPosition);
             pnlBoardControls.Controls.Add(btnTraining);
+            pnlBoardControls.Controls.Add(btnMatch);
             pnlBoardControls.Controls.Add(lblFen);
             pnlBoardControls.Controls.Add(txtFen);
             pnlBoardControls.Controls.Add(btnLoadFen);
@@ -544,6 +557,7 @@ namespace ChessDroid
             toolTip.SetToolTip(btnPlayBot,  "Play vs Bot");
             toolTip.SetToolTip(btnEditPosition, "Edit Position");
             toolTip.SetToolTip(btnTraining, "Training");
+            toolTip.SetToolTip(btnMatch, "Engine Match");
             toolTip.SetToolTip(btnSettings, "Settings");
             toolTip.SetToolTip(btnSaveToLibrary, "Save current game to library");
             toolTip.SetToolTip(btnOpenLibrary, "Open game library");
@@ -888,6 +902,7 @@ namespace ChessDroid
         private Button btnPlayBot;
         private Button btnEditPosition;
         private Button btnTraining;
+        private Button btnMatch;
 
         private Label lblFen;
         private TextBox txtFen;

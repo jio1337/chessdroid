@@ -79,6 +79,7 @@ namespace ChessDroid
 
         // Bot mode
         private bool _botModeActive = false;
+        private bool _matchPanelActive = false;
         private BotSettings? _botSettings;
         private ChessEngineService? _botEngine;
         private CancellationTokenSource? _botMoveCts;
@@ -167,6 +168,7 @@ namespace ChessDroid
             rightPanel.Controls.Add(_evalGraph);
             // z-order: lblAnalysis(top) → evalGraph → grpEngineMatch → analysisOutput(fill)
             rightPanel.Controls.SetChildIndex(_evalGraph, rightPanel.Controls.IndexOf(grpEngineMatch));
+            grpEngineMatch.Visible = false; // hidden until user toggles ⚔ Match button
 
             ApplyTheme();
             boardControl.SetSquareColors(
@@ -271,7 +273,7 @@ namespace ChessDroid
 
             // Standard buttons
             foreach (var btn in new[] { btnSettings, btnNewGame, btnFlipBoard, btnTakeBack, btnPrevMove,
-                                        btnNextMove, btnAutoPlay, btnPlayBot, btnEditPosition, btnTraining, btnLoadFen, btnCopyFen, btnClassifyMoves,
+                                        btnNextMove, btnAutoPlay, btnPlayBot, btnEditPosition, btnTraining, btnMatch, btnLoadFen, btnCopyFen, btnClassifyMoves,
                                         btnExportPgn, btnImportPgn, btnSaveToLibrary, btnOpenLibrary, btnOpenings })
             {
                 btn.BackColor = scheme.ButtonBackColor;
@@ -878,6 +880,7 @@ namespace ChessDroid
             btnPlayBot.Width    = iconW;
             btnEditPosition.Width = editW;
             btnTraining.Width   = iconW;
+            btnMatch.Width      = iconW;
 
             btnNewGame.Location    = new Point(pad, buttonY);
             btnFlipBoard.Location  = new Point(btnNewGame.Right   + gap, buttonY);
@@ -888,6 +891,7 @@ namespace ChessDroid
             btnPlayBot.Location    = new Point(btnAutoPlay.Right  + gap, buttonY);
             btnEditPosition.Location = new Point(btnPlayBot.Right + gap, buttonY);
             btnTraining.Location   = new Point(btnEditPosition.Right + gap, buttonY);
+            btnMatch.Location      = new Point(btnTraining.Right   + gap, buttonY);
 
             // Row 3 (Y=60): FEN row — label | input | Load | Copy | ⚙
             const int fenY     = 60;
@@ -5991,7 +5995,28 @@ namespace ChessDroid
                     StopTraining();
             }
             else
+            {
+                // Mutually exclusive with Match panel
+                if (_matchPanelActive)
+                {
+                    _matchPanelActive = false;
+                    grpEngineMatch.Visible = false;
+                    HighlightButton(btnMatch, false);
+                }
                 StartTrainingUI();
+            }
+        }
+
+        private void BtnMatch_Click(object? sender, EventArgs e)
+        {
+            if (matchRunning) { lblStatus.Text = "Stop the match first"; return; }
+
+            _matchPanelActive = !_matchPanelActive;
+            grpEngineMatch.Visible = _matchPanelActive;
+            HighlightButton(btnMatch, _matchPanelActive);
+
+            if (_matchPanelActive && _trainingUiVisible)
+                StopTraining();
         }
 
         private void PuzzleTrainingShowResults()
@@ -6092,7 +6117,7 @@ namespace ChessDroid
             _pnlTraining!.Visible = false;
             _pnlTraining.SendToBack();
             analysisOutput.Visible = true;
-            grpEngineMatch.Visible = true;
+            grpEngineMatch.Visible = _matchPanelActive;
             lblAnalysis.Visible = true;
             evalBar.Visible = config?.ShowEvalBar != false;
             if (_evalGraph != null) _evalGraph.Visible = config?.ShowEvalGraph ?? true;
