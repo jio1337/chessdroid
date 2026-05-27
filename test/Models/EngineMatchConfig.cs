@@ -17,7 +17,9 @@ namespace ChessDroid.Models
         ThreefoldRepetition,
         InsufficientMaterial,
         UserStopped,
-        EngineError
+        EngineError,
+        AdjudicationResign,
+        AdjudicationDraw
     }
 
     public enum MatchOutcome
@@ -109,6 +111,8 @@ namespace ChessDroid.Models
                 MatchTermination.InsufficientMaterial => "insufficient material",
                 MatchTermination.UserStopped => "stopped by user",
                 MatchTermination.EngineError => "engine error",
+                MatchTermination.AdjudicationResign => "adjudication",
+                MatchTermination.AdjudicationDraw => "adjudication",
                 _ => ""
             };
 

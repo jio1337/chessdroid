@@ -74,6 +74,14 @@ namespace ChessDroid
         private string _matchWhiteFileName = "";
         private string _matchBlackFileName = "";
         private string[] _matchEngineFiles = [];
+        // Series tracking
+        private int    _seriesTotal    = 1;
+        private int    _seriesPlayed   = 0;
+        private double _seriesEng1Score = 0;
+        private double _seriesEng2Score = 0;
+        private string _seriesEng1File = "";
+        private string _seriesEng2File = "";
+        private string _seriesCurrentWhiteFile = "";
         // Overlay labels on top/bottom material strips showing engine name + ELO during a match
         private Label _lblBlackEngineInfo = null!;
         private Label _lblWhiteEngineInfo = null!;
@@ -283,6 +291,9 @@ namespace ChessDroid
 
             // Checkboxes
             chkFromPosition.ForeColor = scheme.TextColor;
+            chkAdjudicate.ForeColor   = scheme.TextColor;
+            chkAutoSavePgn.ForeColor  = scheme.TextColor;
+            chkUseBook.ForeColor      = scheme.TextColor;
 
             // TextBox and ListBox
             txtFen.BackColor = scheme.PanelColor;
@@ -1826,6 +1837,16 @@ namespace ChessDroid
             _matchBlackFileName = blackEngineName;
             SetEngineInfoLabels(whiteProfile, blackProfile, whiteEngineName, blackEngineName);
 
+            // Series init
+            _seriesTotal         = (int)numGames.Value;
+            _seriesPlayed        = 0;
+            _seriesEng1Score     = 0;
+            _seriesEng2Score     = 0;
+            _seriesEng1File      = whiteEngineName;
+            _seriesEng2File      = blackEngineName;
+            _seriesCurrentWhiteFile = whiteEngineName;
+            lblSeriesScore.Text  = "";
+
             // Resolve engine paths
             string enginesPath = config.GetEnginesPath();
             string whiteEnginePath = Path.Combine(enginesPath, whiteEngineName);
@@ -1869,6 +1890,10 @@ namespace ChessDroid
                 boardControl.ResetBoard();
                 startFen = boardControl.GetFEN();
             }
+            // Opening book injection (only from standard start, not custom position)
+            if (!chkFromPosition.Checked && chkUseBook.Checked && openingBookService?.IsLoaded == true)
+                startFen = GetBookStartFen(startFen);
+
             CancelClassification();
             moveTree.Clear(startFen);
             moveListBox.Items.Clear();
@@ -1881,13 +1906,15 @@ namespace ChessDroid
             analysisOutput.Clear();
             analysisOutput.SelectionColor = analysisOutput.ForeColor;
             analysisOutput.AppendText($"Engine Match: {GetEngineLabel(whiteEngineName, true)} vs {GetEngineLabel(blackEngineName, true)}\n");
+            if (_seriesTotal > 1)
+                analysisOutput.AppendText($"Series: {_seriesTotal} games\n");
             analysisOutput.AppendText($"Time Control: {tc}\n");
             string arbiterFile = Path.GetFileName(config.SelectedEngine ?? "");
             analysisOutput.AppendText($"Arbiter: {GetEngineLabel(arbiterFile, false)} (depth {config.ContinuousAnalysisMaxDepth})\n");
             if (chkFromPosition.Checked)
-            {
                 analysisOutput.AppendText("Starting from custom position\n");
-            }
+            if (chkUseBook.Checked && openingBookService?.IsLoaded == true && !chkFromPosition.Checked)
+                analysisOutput.AppendText($"Book: {startFen}\n");
             analysisOutput.AppendText("\n");
 
             // Disable conflicting controls
@@ -1902,10 +1929,11 @@ namespace ChessDroid
             matchService.OnMatchEnded += MatchService_OnMatchEnded;
             matchService.OnStatusChanged += MatchService_OnStatusChanged;
             matchService.OnAnnotatorEvalUpdated += MatchService_OnAnnotatorEvalUpdated;
-            matchService.WaitForAnimation = config.ShowAnimations;
-            matchService.AnnotatorEngine = engineService;
-            matchService.AnnotatorDepth = config.EngineDepth;
-            boardControl.AnimationCompleted += MatchBoard_AnimationCompleted;
+            matchService.WaitForAnimation    = config.ShowAnimations;
+            matchService.AnnotatorEngine      = engineService;
+            matchService.AnnotatorDepth       = config.EngineDepth;
+            matchService.AdjudicationEnabled  = chkAdjudicate.Checked;
+            boardControl.AnimationCompleted  += MatchBoard_AnimationCompleted;
 
             // Initialize clocks display
             if (tc.Type == TimeControlType.TotalPlusIncrement)
@@ -2162,8 +2190,24 @@ namespace ChessDroid
                 PlayGameEndSound();
             }
 
-            // Re-enable controls
-            SetMatchControlsEnabled(false);
+            // Auto-save PGN
+            if (chkAutoSavePgn.Checked && result.Outcome != MatchOutcome.Interrupted)
+                AutoSaveMatchPgn();
+
+            // Series: update scores and continue if games remain
+            if (result.Outcome != MatchOutcome.Interrupted)
+            {
+                bool eng1WasWhite = _seriesCurrentWhiteFile == _seriesEng1File;
+                if (result.Outcome == MatchOutcome.WhiteWins)
+                    (eng1WasWhite ? ref _seriesEng1Score : ref _seriesEng2Score) += 1.0;
+                else if (result.Outcome == MatchOutcome.BlackWins)
+                    (eng1WasWhite ? ref _seriesEng2Score : ref _seriesEng1Score) += 1.0;
+                else if (result.Outcome == MatchOutcome.Draw)
+                { _seriesEng1Score += 0.5; _seriesEng2Score += 0.5; }
+
+                _seriesPlayed++;
+                UpdateSeriesScoreLabel();
+            }
 
             // Clean up match service
             boardControl.AnimationCompleted -= MatchBoard_AnimationCompleted;
@@ -2178,6 +2222,136 @@ namespace ChessDroid
                 matchService.Dispose();
                 matchService = null;
             }
+
+            // Continue series or re-enable controls
+            if (result.Outcome != MatchOutcome.Interrupted && _seriesPlayed < _seriesTotal)
+                _ = StartNextSeriesGameAsync();
+            else
+                SetMatchControlsEnabled(false);
+        }
+
+        private void UpdateSeriesScoreLabel()
+        {
+            if (_seriesTotal <= 1) return;
+            string n1 = GetEngineLabel(_seriesEng1File, false);
+            string n2 = GetEngineLabel(_seriesEng2File, false);
+            string s1 = _seriesEng1Score % 1 == 0 ? $"{_seriesEng1Score:0}" : $"{_seriesEng1Score:0.0}";
+            string s2 = _seriesEng2Score % 1 == 0 ? $"{_seriesEng2Score:0}" : $"{_seriesEng2Score:0.0}";
+            lblSeriesScore.Text = $"({_seriesPlayed}/{_seriesTotal})  {n1}: {s1}  {n2}: {s2}";
+        }
+
+        private void AutoSaveMatchPgn()
+        {
+            try
+            {
+                string dir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "MatchGames");
+                Directory.CreateDirectory(dir);
+                string stamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                string file = Path.Combine(dir, $"match_{stamp}.pgn");
+                File.WriteAllText(file, GeneratePgn());
+                analysisOutput.AppendText($"Saved: {file}\n");
+            }
+            catch (Exception ex)
+            {
+                analysisOutput.AppendText($"Auto-save failed: {ex.Message}\n");
+            }
+        }
+
+        private async Task StartNextSeriesGameAsync()
+        {
+            // Swap colors for odd-numbered games
+            bool eng1IsWhite = _seriesPlayed % 2 == 0;
+            string whiteFile = eng1IsWhite ? _seriesEng1File : _seriesEng2File;
+            string blackFile = eng1IsWhite ? _seriesEng2File : _seriesEng1File;
+            _seriesCurrentWhiteFile = whiteFile;
+
+            _matchWhiteFileName = whiteFile;
+            _matchBlackFileName = blackFile;
+            _matchWhiteName = Path.GetFileNameWithoutExtension(whiteFile);
+            _matchBlackName = Path.GetFileNameWithoutExtension(blackFile);
+
+            config.EngineProfiles.TryGetValue(whiteFile, out var whiteProfile);
+            config.EngineProfiles.TryGetValue(blackFile, out var blackProfile);
+            _matchWhiteElo = whiteProfile?.Elo ?? 0;
+            _matchBlackElo = blackProfile?.Elo ?? 0;
+            SetEngineInfoLabels(whiteProfile, blackProfile, whiteFile, blackFile);
+
+            string enginesPath = config.GetEnginesPath();
+            string whitePath = Path.Combine(enginesPath, whiteFile);
+            string blackPath = Path.Combine(enginesPath, blackFile);
+            if (!File.Exists(whitePath) || !File.Exists(blackPath)) { SetMatchControlsEnabled(false); return; }
+
+            // Build time control from UI
+            var tc = new EngineMatchTimeControl();
+            switch (cmbTimeControlType.SelectedIndex)
+            {
+                case 0: tc.Type = TimeControlType.FixedDepth;          tc.Depth       = (int)numDepth.Value;       break;
+                case 1: tc.Type = TimeControlType.FixedTimePerMove;    tc.MoveTimeMs  = (int)numMoveTime.Value;    break;
+                case 2: tc.Type = TimeControlType.TotalPlusIncrement;
+                        tc.TotalTimeMs = (int)numTotalTime.Value * 1000;
+                        tc.IncrementMs = (int)numIncrement.Value * 1000;                                            break;
+            }
+
+            boardControl.ResetBoard();
+            string startFen = boardControl.GetFEN();
+            if (chkUseBook.Checked && openingBookService?.IsLoaded == true)
+                startFen = GetBookStartFen(startFen);
+
+            CancelClassification();
+            moveTree.Clear(startFen);
+            moveListBox.Items.Clear();
+            displayedNodes.Clear();
+            _analysisCache.Clear();
+            boardControl.ClearBookArrows();
+            _bookArrowsActive = false;
+
+            string whiteName = GetEngineLabel(whiteFile, true);
+            string blackName = GetEngineLabel(blackFile, true);
+            analysisOutput.AppendText($"\n— Game {_seriesPlayed + 1}/{_seriesTotal}: {whiteName} (W) vs {blackName} (B) —\n\n");
+
+            matchService?.Dispose();
+            matchService = new EngineMatchService(config);
+            _previousMatchEval = null;
+            matchService.OnMovePlayed          += MatchService_OnMovePlayed;
+            matchService.OnClockUpdated        += MatchService_OnClockUpdated;
+            matchService.OnMatchEnded          += MatchService_OnMatchEnded;
+            matchService.OnStatusChanged       += MatchService_OnStatusChanged;
+            matchService.OnAnnotatorEvalUpdated += MatchService_OnAnnotatorEvalUpdated;
+            matchService.WaitForAnimation      = config.ShowAnimations;
+            matchService.AnnotatorEngine       = engineService;
+            matchService.AnnotatorDepth        = config.EngineDepth;
+            matchService.AdjudicationEnabled   = chkAdjudicate.Checked;
+            boardControl.AnimationCompleted    += MatchBoard_AnimationCompleted;
+
+            if (tc.Type == TimeControlType.TotalPlusIncrement)
+                UpdateClockDisplay(tc.TotalTimeMs, tc.TotalTimeMs, true);
+            else
+            { lblWhiteClock.Text = "W: --:--"; lblBlackClock.Text = "B: --:--"; }
+
+            clockTimer.Start();
+            await matchService.StartMatchAsync(whitePath, blackPath, _matchWhiteName, _matchBlackName, tc, startFen);
+        }
+
+        private string GetBookStartFen(string startFen)
+        {
+            const int BookPlies = 2;
+            var board = ChessBoard.FromFEN(startFen);
+            string castling = "KQkq";
+            string ep = "-";
+            bool whiteToMove = true;
+            string fen = startFen;
+
+            for (int i = 0; i < BookPlies; i++)
+            {
+                var move = openingBookService!.GetBestBookMove(fen);
+                if (move == null) break;
+                ChessRulesService.ApplyUciMove(board, move.UciMove, ref castling, ref ep);
+                whiteToMove = !whiteToMove;
+                fen = $"{board.ToFEN()} {(whiteToMove ? "w" : "b")} {castling} {ep} 0 1";
+            }
+
+            boardControl.LoadFEN(fen);
+            return fen;
         }
 
         private void MatchService_OnStatusChanged(string status)
@@ -2248,13 +2422,17 @@ namespace ChessDroid
             boardControl.InteractionEnabled = !running;
 
             // Match controls
-            cmbWhiteEngine.Enabled = !running;
-            cmbBlackEngine.Enabled = !running;
+            cmbWhiteEngine.Enabled   = !running;
+            cmbBlackEngine.Enabled   = !running;
             cmbTimeControlType.Enabled = !running;
-            numDepth.Enabled = !running;
-            numMoveTime.Enabled = !running;
-            numTotalTime.Enabled = !running;
-            numIncrement.Enabled = !running;
+            numDepth.Enabled         = !running;
+            numMoveTime.Enabled      = !running;
+            numTotalTime.Enabled     = !running;
+            numIncrement.Enabled     = !running;
+            numGames.Enabled         = !running;
+            chkAdjudicate.Enabled    = !running;
+            chkAutoSavePgn.Enabled   = !running;
+            chkUseBook.Enabled       = !running;
 
             // Toggle start/stop buttons
             btnStartMatch.Visible = !running;

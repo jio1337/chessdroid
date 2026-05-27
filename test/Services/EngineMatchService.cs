@@ -31,6 +31,13 @@ namespace ChessDroid.Services
         // Animation sync — set WaitForAnimation = true when board animations are enabled
         public bool WaitForAnimation { get; set; } = false;
 
+        // Adjudication — resign when |eval| >= 500cp for 8 plies; draw when |eval| <= 15cp for 8 plies
+        public bool AdjudicationEnabled { get; set; } = false;
+        private const int AdjudicateResignCp = 500;
+        private const int AdjudicateDrawCp   = 15;
+        private const int AdjudicatePlies    = 8;
+        private readonly List<int> _adjEvalHistory = new();
+
         // When set, this engine annotates every move with a neutral evaluation instead of
         // using each playing engine's self-reported score (which oscillates between engines).
         public ChessEngineService? AnnotatorEngine { get; set; }
@@ -121,6 +128,7 @@ namespace ChessDroid.Services
                 string fen = startingFen ?? "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
                 gameState = GameState.FromFEN(fen);
                 positionCounts.Clear();
+                _adjEvalHistory.Clear();
                 moveCount = 0;
 
                 // Initialize clocks
@@ -352,6 +360,13 @@ namespace ChessDroid.Services
                 OnMovePlayed?.Invoke(bestMove, newFen, moveTimeMs, moveEval);
                 OnClockUpdated?.Invoke(whiteRemainingMs, blackRemainingMs, gameState.WhiteToMove);
 
+                // Adjudication
+                if (AdjudicationEnabled && TryCheckAdjudication(moveEval, out var adjTermination, out var adjOutcome))
+                {
+                    EndMatch(adjTermination, adjOutcome);
+                    return;
+                }
+
                 // Check for checkmate or stalemate by verifying legal moves exist
                 if (!HasAnyLegalMove())
                 {
@@ -440,6 +455,65 @@ namespace ChessDroid.Services
             }
 
             return target;
+        }
+
+        private bool TryCheckAdjudication(string? evalStr, out MatchTermination termination, out MatchOutcome outcome)
+        {
+            termination = MatchTermination.None;
+            outcome = MatchOutcome.Interrupted;
+
+            int? cp = ParseEvalCp(evalStr);
+            if (cp == null) return false;
+
+            _adjEvalHistory.Add(cp.Value);
+            if (_adjEvalHistory.Count > AdjudicatePlies)
+                _adjEvalHistory.RemoveAt(0);
+
+            if (_adjEvalHistory.Count < AdjudicatePlies) return false;
+
+            // Resign: all recent evals heavily favour one side
+            if (_adjEvalHistory.All(e => e >= AdjudicateResignCp))
+            {
+                termination = MatchTermination.AdjudicationResign;
+                outcome = MatchOutcome.WhiteWins;
+                return true;
+            }
+            if (_adjEvalHistory.All(e => e <= -AdjudicateResignCp))
+            {
+                termination = MatchTermination.AdjudicationResign;
+                outcome = MatchOutcome.BlackWins;
+                return true;
+            }
+
+            // Draw: all recent evals are near zero
+            if (_adjEvalHistory.All(e => Math.Abs(e) <= AdjudicateDrawCp))
+            {
+                termination = MatchTermination.AdjudicationDraw;
+                outcome = MatchOutcome.Draw;
+                return true;
+            }
+
+            return false;
+        }
+
+        private static int? ParseEvalCp(string? eval)
+        {
+            if (string.IsNullOrEmpty(eval)) return null;
+
+            // Mate scores: "#3" or "#-3"
+            if (eval.StartsWith('#'))
+            {
+                if (int.TryParse(eval.AsSpan(1), out int mate))
+                    return mate >= 0 ? 30000 : -30000;
+                return null;
+            }
+
+            // Centipawn scores: "+2.50" or "-3.00"
+            if (double.TryParse(eval.TrimStart('+'), System.Globalization.NumberStyles.Float,
+                                 System.Globalization.CultureInfo.InvariantCulture, out double pawns))
+                return (int)(pawns * 100);
+
+            return null;
         }
 
         private void EndMatch(MatchTermination termination, MatchOutcome outcome)

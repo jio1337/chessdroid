@@ -95,6 +95,12 @@ namespace ChessDroid
             btnStartMatch = new Button();
             btnStopMatch = new Button();
             chkFromPosition = new CheckBox();
+            lblGames = new Label();
+            numGames = new NumericUpDown();
+            lblSeriesScore = new Label();
+            chkAdjudicate = new CheckBox();
+            chkAutoSavePgn = new CheckBox();
+            chkUseBook = new CheckBox();
             lblAnalysis = new Label();
             outerSplit.Panel1.SuspendLayout();
             outerSplit.Panel2.SuspendLayout();
@@ -110,6 +116,7 @@ namespace ChessDroid
             grpEngineMatch.SuspendLayout();
             pnlTimeParams.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)numDepth).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)numGames).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numMoveTime).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numTotalTime).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numIncrement).BeginInit();
@@ -591,11 +598,17 @@ namespace ChessDroid
             grpEngineMatch.Controls.Add(btnStartMatch);
             grpEngineMatch.Controls.Add(btnStopMatch);
             grpEngineMatch.Controls.Add(chkFromPosition);
+            grpEngineMatch.Controls.Add(lblGames);
+            grpEngineMatch.Controls.Add(numGames);
+            grpEngineMatch.Controls.Add(lblSeriesScore);
+            grpEngineMatch.Controls.Add(chkAdjudicate);
+            grpEngineMatch.Controls.Add(chkAutoSavePgn);
+            grpEngineMatch.Controls.Add(chkUseBook);
             grpEngineMatch.Dock = DockStyle.Top;
             grpEngineMatch.Font = new Font("Courier New", 9F, FontStyle.Bold, GraphicsUnit.Point, 0);
             grpEngineMatch.Location = new Point(5, 25);
             grpEngineMatch.Name = "grpEngineMatch";
-            grpEngineMatch.Size = new Size(337, 240);
+            grpEngineMatch.Size = new Size(337, 330);
             grpEngineMatch.TabIndex = 2;
             grpEngineMatch.TabStop = false;
             grpEngineMatch.Text = "Engine Match";
@@ -825,7 +838,65 @@ namespace ChessDroid
             chkFromPosition.Size = new Size(215, 19);
             chkFromPosition.TabIndex = 11;
             chkFromPosition.Text = "Start from current position";
-            // 
+            //
+            // lblGames
+            //
+            lblGames.Font = new Font("Courier New", 9F);
+            lblGames.Location = new Point(10, 241);
+            lblGames.Name = "lblGames";
+            lblGames.Size = new Size(52, 20);
+            lblGames.TabIndex = 13;
+            lblGames.Text = "Games:";
+            //
+            // numGames
+            //
+            numGames.Font = new Font("Courier New", 9F);
+            numGames.Location = new Point(65, 238);
+            numGames.Minimum = 1;
+            numGames.Maximum = 20;
+            numGames.Value = 1;
+            numGames.Name = "numGames";
+            numGames.Size = new Size(55, 23);
+            numGames.TabIndex = 14;
+            //
+            // lblSeriesScore
+            //
+            lblSeriesScore.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            lblSeriesScore.Font = new Font("Consolas", 9F, FontStyle.Bold);
+            lblSeriesScore.Location = new Point(130, 241);
+            lblSeriesScore.Name = "lblSeriesScore";
+            lblSeriesScore.Size = new Size(192, 20);
+            lblSeriesScore.TabIndex = 15;
+            lblSeriesScore.Text = "";
+            lblSeriesScore.TextAlign = ContentAlignment.MiddleRight;
+            //
+            // chkAdjudicate
+            //
+            chkAdjudicate.AutoSize = true;
+            chkAdjudicate.Font = new Font("Courier New", 9F);
+            chkAdjudicate.Location = new Point(10, 265);
+            chkAdjudicate.Name = "chkAdjudicate";
+            chkAdjudicate.TabIndex = 16;
+            chkAdjudicate.Text = "Auto-adjudicate";
+            //
+            // chkAutoSavePgn
+            //
+            chkAutoSavePgn.AutoSize = true;
+            chkAutoSavePgn.Font = new Font("Courier New", 9F);
+            chkAutoSavePgn.Location = new Point(10, 287);
+            chkAutoSavePgn.Name = "chkAutoSavePgn";
+            chkAutoSavePgn.TabIndex = 17;
+            chkAutoSavePgn.Text = "Auto-save PGN";
+            //
+            // chkUseBook
+            //
+            chkUseBook.AutoSize = true;
+            chkUseBook.Font = new Font("Courier New", 9F);
+            chkUseBook.Location = new Point(10, 309);
+            chkUseBook.Name = "chkUseBook";
+            chkUseBook.TabIndex = 18;
+            chkUseBook.Text = "Use opening book";
+            //
             // lblAnalysis
             // 
             lblAnalysis.Dock = DockStyle.Top;
@@ -866,6 +937,7 @@ namespace ChessDroid
             grpEngineMatch.PerformLayout();
             pnlTimeParams.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)numDepth).EndInit();
+            ((System.ComponentModel.ISupportInitialize)numGames).EndInit();
             ((System.ComponentModel.ISupportInitialize)numMoveTime).EndInit();
             ((System.ComponentModel.ISupportInitialize)numTotalTime).EndInit();
             ((System.ComponentModel.ISupportInitialize)numIncrement).EndInit();
@@ -944,6 +1016,12 @@ namespace ChessDroid
         private Button btnStartMatch;
         private Button btnStopMatch;
         private CheckBox chkFromPosition;
+        private Label lblGames;
+        private NumericUpDown numGames;
+        private Label lblSeriesScore;
+        private CheckBox chkAdjudicate;
+        private CheckBox chkAutoSavePgn;
+        private CheckBox chkUseBook;
 
         // Right panel - Analysis
         private Label lblAnalysis;
