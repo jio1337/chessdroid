@@ -42,6 +42,9 @@ namespace ChessDroid.Controls
         private int    _gamesPlayed  = 0;
         private double _score1       = 0;   // engine that played White in game 1
         private double _score2       = 0;
+        private int    _wins1        = 0;
+        private int    _wins2        = 0;
+        private int    _drawCount    = 0;
         private string _eng1File     = "";
         private string _eng2File     = "";
         private string _eng1Name     = "";
@@ -154,6 +157,9 @@ namespace ChessDroid.Controls
         {
             _config         = config;
             _engineBasePath = engineBasePath;
+
+            if (!string.IsNullOrEmpty(config.SelectedSite))
+                _board.SetTemplateSet(config.SelectedSite);
             _tc             = tc;
             _gamesTotal     = gamesTotal;
             _adjudicate     = adjudicate;
@@ -164,6 +170,7 @@ namespace ChessDroid.Controls
             _eng2Name = _blackName = black1Name;
 
             _score1 = _score2 = 0;
+            _wins1 = _wins2 = _drawCount = 0;
             _gamesPlayed = 0;
 
             UpdateLabels();
@@ -257,11 +264,14 @@ namespace ChessDroid.Controls
             switch (result.Outcome)
             {
                 case MatchOutcome.WhiteWins:
-                    if (eng1WasWhite) _score1 += 1; else _score2 += 1; break;
+                    if (eng1WasWhite) { _score1 += 1; _wins1++; } else { _score2 += 1; _wins2++; }
+                    break;
                 case MatchOutcome.BlackWins:
-                    if (eng1WasWhite) _score2 += 1; else _score1 += 1; break;
+                    if (eng1WasWhite) { _score2 += 1; _wins2++; } else { _score1 += 1; _wins1++; }
+                    break;
                 case MatchOutcome.Draw:
-                    _score1 += 0.5; _score2 += 0.5; break;
+                    _score1 += 0.5; _score2 += 0.5; _drawCount++;
+                    break;
             }
             _gamesPlayed++;
 
@@ -286,8 +296,8 @@ namespace ChessDroid.Controls
             }
             else
             {
-                var st1 = MakeStanding(_eng1File, _eng1Name, _score1);
-                var st2 = MakeStanding(_eng2File, _eng2Name, _score2);
+                var st1 = MakeStanding(_eng1File, _eng1Name, _score1, _wins1, _drawCount, _wins2);
+                var st2 = MakeStanding(_eng2File, _eng2Name, _score2, _wins2, _drawCount, _wins1);
                 SeriesEnded?.Invoke(st1, st2);
             }
         }
@@ -369,12 +379,22 @@ namespace ChessDroid.Controls
             _lblScore.Text = $"({_gamesPlayed}/{_gamesTotal})  {s1} – {s2}";
         }
 
-        private static TournamentStanding MakeStanding(string file, string name, double pts)
+        private static TournamentStanding MakeStanding(string file, string name,
+            double pts, int wins, int draws, int losses)
             => new TournamentStanding
             {
                 Engine = new TournamentEngineEntry { FileName = file, DisplayName = name },
-                Points = pts
+                Points = pts,
+                Wins   = wins,
+                Draws  = draws,
+                Losses = losses,
+                Played = wins + draws + losses
             };
+
+        public void SetBoardAppearance(Color light, Color dark)
+        {
+            _board.SetSquareColors(light, dark);
+        }
 
         // ── Layout ───────────────────────────────────────────────────────────
         private void ArrangeLayout()

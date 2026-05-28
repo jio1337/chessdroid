@@ -328,6 +328,15 @@ namespace ChessDroid
             _pnlStandings.Controls.Add(lblStand);
             _pnlStandings.Controls.Add(_lvStandings);
 
+            // Four distinct board color schemes — one per concurrent slot
+            (Color light, Color dark)[] boardColors =
+            {
+                (ColorTranslator.FromHtml("#F0D9B5"), ColorTranslator.FromHtml("#B58863")), // Classic brown
+                (ColorTranslator.FromHtml("#FFFCE6"), ColorTranslator.FromHtml("#769656")), // Forest green
+                (ColorTranslator.FromHtml("#DEE3E6"), ColorTranslator.FromHtml("#8CA2AD")), // Slate blue
+                (ColorTranslator.FromHtml("#F5DEB3"), ColorTranslator.FromHtml("#AE5859")), // Warm red
+            };
+
             // Create 4 board panels
             for (int i = 0; i < MaxConcurrent; i++)
             {
@@ -336,6 +345,7 @@ namespace ChessDroid
                     Visible = true,
                     BackColor = Color.FromArgb(30, 30, 30)
                 };
+                p.SetBoardAppearance(boardColors[i].light, boardColors[i].dark);
                 p.ExpandRequested += OnExpandRequested;
                 p.SeriesEnded     += OnSeriesEnded;
                 _panels[i] = p;
@@ -388,8 +398,11 @@ namespace ChessDroid
             _pnlMatch.Visible = true;
             _running = true;
 
-            int matchCount = pairings.Count;
-            _lblTournamentTitle.Text = $"Tournament — {matchCount} match{(matchCount == 1 ? "" : "es")} · {tc}";
+            int matchCount   = pairings.Count;
+            int engineCount  = allEngines.Count;
+            _lblTournamentTitle.Text = engineCount > 2
+                ? $"Tournament — {engineCount} engines · {matchCount} match{(matchCount == 1 ? "" : "es")} · {tc}"
+                : $"Tournament — {matchCount} match{(matchCount == 1 ? "" : "es")} · {tc}";
 
             // Init annotator
             if (!string.IsNullOrEmpty(_config.SelectedEngine))
@@ -477,6 +490,9 @@ namespace ChessDroid
                 _standings[key] = s;
             }
             s.Points += delta.Points;
+            s.Wins   += delta.Wins;
+            s.Draws  += delta.Draws;
+            s.Losses += delta.Losses;
             s.Played += delta.Played;
         }
 
