@@ -23,6 +23,7 @@ namespace ChessDroid
             StartPosition   = FormStartPosition.CenterParent;
             FormBorderStyle = FormBorderStyle.Sizable;
             MaximizeBox     = false;
+            try { Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch { }
             BackColor       = isDark ? Color.FromArgb(28, 28, 33) : Color.White;
             ForeColor       = isDark ? Color.FromArgb(220, 220, 220) : Color.Black;
             Font            = new Font("Courier New", 9f);

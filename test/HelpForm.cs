@@ -19,6 +19,7 @@ namespace ChessDroid
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.StartPosition = FormStartPosition.CenterScreen;
+            try { Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch { }
 
             // Help text box
             txtHelp = new RichTextBox

@@ -214,7 +214,7 @@ namespace ChessDroid
                     bool showStrips = config?.ShowMaterialStrips != false;
                     int sh = showStrips ? 22 : 0;
                     int sg = showStrips ? 2 : 0;
-                    int evalBarTotal = config?.ShowEvalBar != false ? 28 : 0;
+                    int evalBarTotal = config?.ShowEvalBar != false ? 32 : 0;
                     int boardSize = Math.Max(300, outerSplit.Height - 2 * sh - 2 * sg);
                     int idealLeft = boardSize + evalBarTotal + 10;
                     outerSplit.SplitterDistance = Math.Clamp(idealLeft,
@@ -819,7 +819,7 @@ namespace ChessDroid
             if (sender is Panel panel)
             {
                 const int evalBarWidth = 24;
-                const int evalBarGap   = 4;
+                const int evalBarGap   = 8;
                 bool showEvalBar = config?.ShowEvalBar != false;
                 evalBar.Visible  = showEvalBar;
                 int evalBarTotal = showEvalBar ? evalBarWidth + evalBarGap : 0;
@@ -1986,6 +1986,8 @@ namespace ChessDroid
             rbBookRandom.Enabled = on;
             rbBookChoose.Enabled = on;
             if (!on) lblMatchOpening.Visible = false;
+            // Opening book and "start from current position" are mutually exclusive
+            chkFromPosition.Enabled = !on;
         }
 
         private void RbBookChoose_CheckedChanged(object? sender, EventArgs e)

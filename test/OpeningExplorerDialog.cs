@@ -32,6 +32,7 @@ namespace ChessDroid
             FormBorderStyle = FormBorderStyle.Sizable;
             StartPosition = FormStartPosition.CenterParent;
             MaximizeBox = false;
+            try { Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch { }
 
             // Search bar
             var lblSearch = new Label

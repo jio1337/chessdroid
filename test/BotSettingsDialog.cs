@@ -42,6 +42,7 @@ namespace ChessDroid
             StartPosition = FormStartPosition.CenterParent;
             MaximizeBox = false;
             MinimizeBox = false;
+            try { Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch { }
 
             // ── Difficulty ────────────────────────────────────────────────
             var lblDifficulty = new Label

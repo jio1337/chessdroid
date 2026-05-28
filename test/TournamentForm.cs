@@ -78,13 +78,16 @@ namespace ChessDroid
             _config = config;
             _engineBasePath = config.GetEnginesPath();
 
-            Text            = "Chessdroid Tournament";
-            Size            = new Size(520, 510);
+            Text            = "chessdroid://tournament";
+            Size            = new Size(480, 540);
             MinimumSize     = new Size(400, 380);
             StartPosition   = FormStartPosition.CenterParent;
             BackColor       = Color.FromArgb(25, 25, 25);
             ForeColor       = Color.FromArgb(220, 220, 220);
             Font            = new Font("Courier New", 9f);
+            FormBorderStyle = FormBorderStyle.FixedSingle;
+            MaximizeBox     = false;
+            try { Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch { }
 
             // ── Setup panel ─────────────────────────────────────────────────
             _pnlSetup = new Panel { Dock = DockStyle.Fill, Padding = new Padding(20) };
@@ -139,11 +142,11 @@ namespace ChessDroid
                     new Control[] { lbl, _cmbWhite[row], _lblVs[row], _cmbBlack[row] });
             }
 
-            // Games per match
-            var lblGames = MakeLbl("Games per match:", new Point(330, 112));
+            // Games per match — placed below the engine list (y≈270), not in an isolated right column
+            var lblGames = MakeLbl("Games per match:", new Point(20, 270));
             _numGames = new NumericUpDown
             {
-                Location = new Point(330, 132),
+                Location = new Point(20, 286),
                 Size     = new Size(60, 26),
                 Minimum  = 1, Maximum = 20, Value = 2,
                 BackColor = Color.FromArgb(40, 40, 40),
@@ -152,62 +155,62 @@ namespace ChessDroid
 
             _chkAdjudicate = new CheckBox
             {
-                Text     = "Auto-adjudicate",
-                Checked  = true,
-                Location = new Point(330, 165),
-                AutoSize = true,
+                Text      = "Auto-adjudicate",
+                Checked   = true,
+                Location  = new Point(110, 289),
+                AutoSize  = true,
                 ForeColor = Color.FromArgb(200, 200, 200)
             };
 
             // Time control
-            var lblTC = MakeLbl("Time Control:", new Point(20, 282));
+            var lblTC = MakeLbl("Time Control:", new Point(20, 316));
             lblTC.Font = new Font("Courier New", 9f, FontStyle.Bold);
 
-            _rbDepth    = MakeRadio("Depth",      new Point(20,  302), true);
-            _rbMovetime = MakeRadio("Time/move",  new Point(100, 302), false);
-            _rbClock    = MakeRadio("Clock",      new Point(200, 302), false);
+            _rbDepth    = MakeRadio("Depth",      new Point(20,  336), true);
+            _rbMovetime = MakeRadio("Time/move",  new Point(100, 336), false);
+            _rbClock    = MakeRadio("Clock",      new Point(200, 336), false);
 
             _numDepth = new NumericUpDown
             {
-                Location = new Point(20, 326),
+                Location = new Point(20, 360),
                 Size     = new Size(70, 26),
                 Minimum  = 1, Maximum = 40, Value = 12,
                 BackColor = Color.FromArgb(40, 40, 40),
                 ForeColor = Color.FromArgb(220, 220, 220)
             };
-            var lblDepthUnit = MakeLbl("plies", new Point(96, 330));
+            var lblDepthUnit = MakeLbl("plies", new Point(96, 364));
 
             _numMovetime = new NumericUpDown
             {
-                Location = new Point(20, 326),
+                Location = new Point(20, 360),
                 Size     = new Size(70, 26),
                 Minimum  = 100, Maximum = 60000, Value = 1000, Increment = 100,
                 BackColor = Color.FromArgb(40, 40, 40),
                 ForeColor = Color.FromArgb(220, 220, 220),
                 Visible   = false
             };
-            var lblMtUnit = MakeLbl("ms", new Point(96, 330));
+            var lblMtUnit = MakeLbl("ms", new Point(96, 364));
 
             _numTotal = new NumericUpDown
             {
-                Location = new Point(20, 326),
+                Location = new Point(20, 360),
                 Size     = new Size(70, 26),
                 Minimum  = 10, Maximum = 3600, Value = 60,
                 BackColor = Color.FromArgb(40, 40, 40),
                 ForeColor = Color.FromArgb(220, 220, 220),
                 Visible   = false
             };
-            var lblTotalUnit = MakeLbl("s  +", new Point(96, 330));
+            var lblTotalUnit = MakeLbl("s  +", new Point(96, 364));
             _numInc = new NumericUpDown
             {
-                Location = new Point(130, 326),
+                Location = new Point(130, 360),
                 Size     = new Size(60, 26),
                 Minimum  = 0, Maximum = 300, Value = 0,
                 BackColor = Color.FromArgb(40, 40, 40),
                 ForeColor = Color.FromArgb(220, 220, 220),
                 Visible   = false
             };
-            var lblIncUnit = MakeLbl("s/move", new Point(196, 330));
+            var lblIncUnit = MakeLbl("s/move", new Point(196, 364));
 
             void UpdateTCControls()
             {
@@ -235,7 +238,7 @@ namespace ChessDroid
             _btnStart = new Button
             {
                 Text      = "▶  Start Tournament",
-                Location  = new Point(20, 426),
+                Location  = new Point(20, 460),
                 Size      = new Size(190, 34),
                 BackColor = Color.FromArgb(60, 120, 60),
                 ForeColor = Color.White,
@@ -249,7 +252,7 @@ namespace ChessDroid
             _chkUseOpeningBook = new CheckBox
             {
                 Text      = "Use opening book",
-                Location  = new Point(20, 358),
+                Location  = new Point(20, 392),
                 AutoSize  = true,
                 ForeColor = Color.FromArgb(200, 200, 200)
             };
@@ -274,7 +277,7 @@ namespace ChessDroid
             };
             _pnlBookMode = new Panel
             {
-                Location  = new Point(36, 380),
+                Location  = new Point(36, 414),
                 Size      = new Size(260, 24),
                 Visible   = false,
                 BackColor = Color.Transparent
@@ -285,7 +288,7 @@ namespace ChessDroid
             _lblChosenOpening = new Label
             {
                 Text      = "",
-                Location  = new Point(36, 406),
+                Location  = new Point(36, 440),
                 Size      = new Size(340, 18),
                 Visible   = false,
                 ForeColor = Color.FromArgb(140, 210, 140)
@@ -493,6 +496,8 @@ namespace ChessDroid
             _pnlMatch.Visible  = true;
             _running           = true;
             _btnStop.Enabled   = true;
+            FormBorderStyle    = FormBorderStyle.Sizable;
+            MaximizeBox        = true;
             Size               = new Size(1100, 720);
             MinimumSize        = new Size(800, 560);
 

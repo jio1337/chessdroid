@@ -30,6 +30,7 @@ namespace ChessDroid
         public PositionEditorForm(string initialFen, string templateSet, bool isDarkMode, string templatesPath)
         {
             InitializeComponent();
+            try { Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch { }
             BuildPalette();
             LoadImages(templateSet, templatesPath);
             ApplyTheme(isDarkMode);

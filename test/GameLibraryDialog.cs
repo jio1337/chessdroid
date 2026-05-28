@@ -29,8 +29,7 @@ namespace ChessDroid
             _games = library.LoadAll();
 
             Text = "Game Library";
-            string iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "chessdroid.ico");
-            if (File.Exists(iconPath)) Icon = new Icon(iconPath);
+            try { Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch { }
             Size = new Size(860, 420);
             MinimumSize = new Size(640, 340);
             FormBorderStyle = FormBorderStyle.Sizable;
