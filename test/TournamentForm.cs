@@ -37,6 +37,7 @@ namespace ChessDroid
         private readonly NumericUpDown   _numTotal;
         private readonly NumericUpDown   _numInc;
         private readonly Button          _btnStart;
+        private readonly CheckBox        _chkUseOpeningBook;
 
         // ── Match UI ─────────────────────────────────────────────────────────
         private readonly Panel           _pnlMatch;
@@ -57,6 +58,7 @@ namespace ChessDroid
         private readonly TournamentEngineEntry[]      _engines;   // populated after setup
         private ChessEngineService?                   _annotator;
         private bool                                  _running;
+        private PolyglotBookService?                  _bookService;
 
         // ── Results export ───────────────────────────────────────────────────
         private readonly List<string> _allPgnGames  = new();
@@ -72,12 +74,12 @@ namespace ChessDroid
             _engineBasePath = config.GetEnginesPath();
 
             Text            = "Chessdroid Tournament";
-            Size            = new Size(1100, 720);
-            MinimumSize     = new Size(800, 560);
+            Size            = new Size(520, 480);
+            MinimumSize     = new Size(400, 380);
             StartPosition   = FormStartPosition.CenterParent;
             BackColor       = Color.FromArgb(25, 25, 25);
             ForeColor       = Color.FromArgb(220, 220, 220);
-            Font            = new Font("Segoe UI", 9f);
+            Font            = new Font("Courier New", 9f);
 
             // ── Setup panel ─────────────────────────────────────────────────
             _pnlSetup = new Panel { Dock = DockStyle.Fill, Padding = new Padding(20) };
@@ -85,7 +87,7 @@ namespace ChessDroid
             var title = new Label
             {
                 Text      = "⚔  Tournament Setup",
-                Font      = new Font("Segoe UI", 14f, FontStyle.Bold),
+                Font      = new Font("Courier New", 14f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(220, 180, 80),
                 AutoSize  = true,
                 Location  = new Point(20, 16)
@@ -154,7 +156,7 @@ namespace ChessDroid
 
             // Time control
             var lblTC = MakeLbl("Time Control:", new Point(20, 282));
-            lblTC.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
+            lblTC.Font = new Font("Courier New", 9f, FontStyle.Bold);
 
             _rbDepth    = MakeRadio("Depth",      new Point(20,  302), true);
             _rbMovetime = MakeRadio("Time/move",  new Point(100, 302), false);
@@ -228,16 +230,24 @@ namespace ChessDroid
             _btnStart = new Button
             {
                 Text      = "▶  Start Tournament",
-                Location  = new Point(20, 380),
+                Location  = new Point(20, 395),
                 Size      = new Size(190, 34),
                 BackColor = Color.FromArgb(60, 120, 60),
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
-                Font      = new Font("Segoe UI", 10f, FontStyle.Bold),
+                Font      = new Font("Courier New", 10f, FontStyle.Bold),
                 Cursor    = Cursors.Hand
             };
             _btnStart.FlatAppearance.BorderSize = 0;
             _btnStart.Click += BtnStart_Click;
+
+            _chkUseOpeningBook = new CheckBox
+            {
+                Text      = "Use opening book",
+                Location  = new Point(20, 360),
+                AutoSize  = true,
+                ForeColor = Color.FromArgb(200, 200, 200)
+            };
 
             _pnlSetup.Controls.AddRange(new Control[]
             {
@@ -247,7 +257,7 @@ namespace ChessDroid
                 lblTC, _rbDepth, _rbMovetime, _rbClock,
                 _numDepth, lblDepthUnit, _numMovetime, lblMtUnit,
                 _numTotal, lblTotalUnit, _numInc, lblIncUnit,
-                _btnStart
+                _chkUseOpeningBook, _btnStart
             });
 
             // Populate engine lists
@@ -273,7 +283,7 @@ namespace ChessDroid
             _lblTournamentTitle = new Label
             {
                 Text      = "Tournament",
-                Font      = new Font("Segoe UI", 10f, FontStyle.Bold),
+                Font      = new Font("Courier New", 10f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(220, 180, 80),
                 AutoSize  = false,
                 Height    = 28,
@@ -287,10 +297,11 @@ namespace ChessDroid
                 BackColor = Color.FromArgb(120, 40, 40),
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
-                Font      = new Font("Segoe UI", 9f),
+                Font      = new Font("Courier New", 9f),
                 Cursor    = Cursors.Hand
             };
             _btnStop.FlatAppearance.BorderSize = 0;
+            _btnStop.Enabled = false;
             _btnStop.Click += (_, _) => StopTournament();
 
             _pnlBoards = new Panel { BackColor = Color.FromArgb(20, 20, 20) };
@@ -307,7 +318,7 @@ namespace ChessDroid
             var lblStand = new Label
             {
                 Text      = "Standings",
-                Font      = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                Font      = new Font("Courier New", 8.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(200, 200, 200),
                 AutoSize  = true,
                 Location  = new Point(8, 4)
@@ -322,7 +333,7 @@ namespace ChessDroid
                 ForeColor      = Color.FromArgb(210, 210, 210),
                 BorderStyle    = BorderStyle.None,
                 HeaderStyle    = ColumnHeaderStyle.Nonclickable,
-                Font           = new Font("Consolas", 8.5f),
+                Font           = new Font("Courier New", 8.5f),
                 Location       = new Point(8, 24),
                 Size           = new Size(600, 106)
             };
@@ -409,10 +420,26 @@ namespace ChessDroid
             // Queue pairings
             _queue = new Queue<TournamentPairing>(pairings);
 
+            // Load opening book if requested
+            _bookService?.Dispose();
+            _bookService = null;
+            if (_chkUseOpeningBook.Checked)
+            {
+                string booksPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory,
+                    _config.OpeningBooksFolder);
+                var svc = new PolyglotBookService();
+                svc.LoadBooksFromFolder(booksPath);
+                if (svc.IsLoaded) _bookService = svc;
+                else svc.Dispose();
+            }
+
             // Switch to match panel
-            _pnlSetup.Visible = false;
-            _pnlMatch.Visible = true;
-            _running = true;
+            _pnlSetup.Visible  = false;
+            _pnlMatch.Visible  = true;
+            _running           = true;
+            _btnStop.Enabled   = true;
+            Size               = new Size(1100, 720);
+            MinimumSize        = new Size(800, 560);
 
             int matchCount   = pairings.Count;
             int engineCount  = allEngines.Count;
@@ -440,10 +467,13 @@ namespace ChessDroid
         private void StopTournament()
         {
             _running = false;
+            _btnStop.Enabled = false;
             foreach (var p in _panels) p.StopSeries();
             _queue.Clear();
             _annotator?.Dispose();
             _annotator = null;
+            _bookService?.Dispose();
+            _bookService = null;
         }
 
         // ── Pairing assignment ────────────────────────────────────────────────
@@ -453,10 +483,52 @@ namespace ChessDroid
         {
             if (!_running || _queue.Count == 0) return;
             var pairing = _queue.Dequeue();
+            string? openingFen = _bookService?.IsLoaded == true
+                ? GenerateOpeningFen()
+                : null;
             panel.StartSeries(
                 pairing.Engine1.FileName, pairing.Engine2.FileName,
                 pairing.Engine1.Label,   pairing.Engine2.Label,
-                tc, _engineBasePath, _config, games, adj);
+                tc, _engineBasePath, _config, games, adj, openingFen);
+        }
+
+        private string GenerateOpeningFen()
+        {
+            if (_bookService?.IsLoaded != true) return "";
+
+            const string StartFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+            const int    BookPlies = 6;
+
+            var    board       = ChessBoard.FromFEN(StartFen);
+            string castling    = "KQkq";
+            string ep          = "-";
+            bool   whiteToMove = true;
+            string fen         = StartFen;
+            var    rng         = new Random();
+
+            for (int i = 0; i < BookPlies; i++)
+            {
+                var moves = _bookService.GetBookMovesForPosition(fen);
+                if (moves.Count == 0) break;
+
+                int totalWeight = moves.Sum(m => m.Weight);
+                if (totalWeight <= 0) break;
+                int pick = rng.Next(totalWeight);
+                int accum = 0;
+                PolyglotBookService.PolyglotMove? chosen = null;
+                foreach (var m in moves)
+                {
+                    accum += m.Weight;
+                    if (pick < accum) { chosen = m; break; }
+                }
+                chosen ??= moves[0];
+
+                ChessRulesService.ApplyUciMove(board, chosen.UciMove, ref castling, ref ep);
+                whiteToMove = !whiteToMove;
+                fen = $"{board.ToFEN()} {(whiteToMove ? "w" : "b")} {castling} {ep} 0 1";
+            }
+
+            return fen;
         }
 
         // ── Series ended callback ─────────────────────────────────────────────
@@ -515,6 +587,7 @@ namespace ChessDroid
         private void OnTournamentComplete()
         {
             _running = false;
+            _btnStop.Enabled = false;
             _lblTournamentTitle.Text = _lblTournamentTitle.Text.Replace("Tournament —", "Tournament — Complete ✓ —");
             string saved = SaveResultsToFile();
             if (!string.IsNullOrEmpty(saved))
@@ -795,6 +868,7 @@ namespace ChessDroid
             if (disposing)
             {
                 _annotator?.Dispose();
+                _bookService?.Dispose();
                 foreach (var p in _panels) p.Dispose();
             }
             base.Dispose(disposing);

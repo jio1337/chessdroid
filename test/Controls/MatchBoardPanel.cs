@@ -58,6 +58,10 @@ namespace ChessDroid.Controls
 
         // Raw log lines — replayed into the RichTextBox when panel is expanded
         private readonly List<string> _logLines = new();
+        private string _pendingWhiteMoveLine = "";
+
+        // Opening position for this series (empty = standard start)
+        private string _openingFen = "";
 
         // PGN tracking — one entry per half-move, accumulated per game
         private readonly List<string> _currentGameMoves = new();
@@ -124,7 +128,7 @@ namespace ChessDroid.Controls
                 ForeColor   = Color.FromArgb(210, 210, 210),
                 BorderStyle = BorderStyle.None,
                 ScrollBars  = RichTextBoxScrollBars.Vertical,
-                Font        = new Font("Consolas", 8f),
+                Font        = new Font("Courier New", 8f),
                 WordWrap    = false
             };
 
@@ -158,10 +162,12 @@ namespace ChessDroid.Controls
             string engineBasePath,
             AppConfig config,
             int gamesTotal,
-            bool adjudicate)
+            bool adjudicate,
+            string? openingFen = null)
         {
             _config         = config;
             _engineBasePath = engineBasePath;
+            _openingFen     = openingFen ?? "";
 
             if (!string.IsNullOrEmpty(config.SelectedSite))
                 _board.SetTemplateSet(config.SelectedSite);
@@ -194,6 +200,7 @@ namespace ChessDroid.Controls
         {
             _logLines.Clear();
             _currentGameMoves.Clear();
+            _pendingWhiteMoveLine = "";
             if (_isExpanded) _log.Clear();
             _fullMoveNum  = 1;
             _whiteToMove  = true;
@@ -213,7 +220,8 @@ namespace ChessDroid.Controls
 
             string wp = Path.Combine(_engineBasePath, _whiteFile);
             string bp = Path.Combine(_engineBasePath, _blackFile);
-            _ = _service.StartMatchAsync(wp, bp, _whiteName, _blackName, _tc);
+            _ = _service.StartMatchAsync(wp, bp, _whiteName, _blackName, _tc,
+                string.IsNullOrEmpty(_openingFen) ? null : _openingFen);
         }
 
         // ── Engine callbacks ─────────────────────────────────────────────────
@@ -229,21 +237,30 @@ namespace ChessDroid.Controls
             string evalTag = eval != null ? $" [{ShortEval(eval)}]" : "";
             string timeTag = $" ({moveTimeMs / 1000.0:0.0}s)";
 
-            string line = _whiteToMove
-                ? $"{_fullMoveNum}. {san}{evalTag}{timeTag}"
-                : $"  {san}{evalTag}{timeTag}";
-
             // PGN-annotated half-move: "e4 { +0.32 (0.1s) }"
             string pgnComment = eval != null
                 ? $" {{ {ShortEval(eval)} ({moveTimeMs / 1000.0:0.0}s) }}"
                 : $" {{ ({moveTimeMs / 1000.0:0.0}s) }}";
             _currentGameMoves.Add(san + pgnComment);
 
-            if (!_whiteToMove) _fullMoveNum++;
-            _whiteToMove = !_whiteToMove;
+            if (_whiteToMove)
+            {
+                // Buffer white's half-move; emit only once black replies
+                _pendingWhiteMoveLine = $"{_fullMoveNum}. {san}{evalTag}{timeTag}";
+            }
+            else
+            {
+                // Combine white + black on one line
+                string line = _pendingWhiteMoveLine.Length > 0
+                    ? $"{_pendingWhiteMoveLine}   {san}{evalTag}{timeTag}"
+                    : $"  {san}{evalTag}{timeTag}";
+                _pendingWhiteMoveLine = "";
+                _fullMoveNum++;
+                _logLines.Add(line);
+                if (_isExpanded) AppendLog(line);
+            }
 
-            _logLines.Add(line);
-            if (_isExpanded) AppendLog(line);
+            _whiteToMove = !_whiteToMove;
 
             if (eval != null) ApplyEval(eval);
         }
@@ -287,6 +304,14 @@ namespace ChessDroid.Controls
                     break;
             }
             _gamesPlayed++;
+
+            // Flush any pending white-only half-move (game ended before black replied)
+            if (_pendingWhiteMoveLine.Length > 0)
+            {
+                _logLines.Add(_pendingWhiteMoveLine);
+                if (_isExpanded) AppendLog(_pendingWhiteMoveLine);
+                _pendingWhiteMoveLine = "";
+            }
 
             string resultLine = "\n" + result.GetResultString();
             _logLines.Add(resultLine);
@@ -510,7 +535,7 @@ namespace ChessDroid.Controls
                 TextAlign = align,
                 ForeColor = Color.FromArgb(200, 200, 200),
                 BackColor = Color.Transparent,
-                Font      = new Font("Segoe UI", bold ? 8.5f : 8f,
+                Font      = new Font("Courier New", bold ? 8.5f : 8f,
                                      bold ? FontStyle.Bold : FontStyle.Regular),
                 AutoSize  = false
             };
