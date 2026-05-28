@@ -202,9 +202,21 @@ namespace ChessDroid.Controls
             _currentGameMoves.Clear();
             _pendingWhiteMoveLine = "";
             if (_isExpanded) _log.Clear();
-            _fullMoveNum  = 1;
-            _whiteToMove  = true;
-            _board.ResetBoard();
+
+            // Initialise board to opening position (or standard start)
+            if (!string.IsNullOrEmpty(_openingFen))
+            {
+                _board.LoadFEN(_openingFen);
+                var parts = _openingFen.Split(' ');
+                _whiteToMove = parts.Length < 2 || parts[1] == "w";
+                _fullMoveNum = parts.Length >= 6 && int.TryParse(parts[5], out int fm) ? fm : 1;
+            }
+            else
+            {
+                _board.ResetBoard();
+                _fullMoveNum = 1;
+                _whiteToMove = true;
+            }
 
             _service?.Dispose();
             _service = new EngineMatchService(_config!);
