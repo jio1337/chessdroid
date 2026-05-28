@@ -2265,7 +2265,7 @@ namespace ChessDroid.Services
             if (isOnlyWinningMove)
             {
                 string[] fenPartsForSide = fen.Split(' ');
-                bool whiteToMoveForSide = fenPartsForSide.Length > 1 && fenPartsForSide[1] == 'w';
+                bool whiteToMoveForSide = fenPartsForSide.Length > 1 && fenPartsForSide[1] == "w";
                 double? bestEvalParsed = MovesExplanation.ParseEvaluation(evaluation);
                 if (bestEvalParsed.HasValue)
                 {
