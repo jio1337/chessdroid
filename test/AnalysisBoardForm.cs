@@ -3939,7 +3939,16 @@ namespace ChessDroid
             if (inputForm.ShowDialog(this) == DialogResult.OK)
             {
                 string pgnText = txtPgn.Text.Trim();
-                if (!string.IsNullOrEmpty(pgnText))
+                if (string.IsNullOrEmpty(pgnText)) return;
+
+                var games = PgnGamePickerDialog.SplitPgnGames(pgnText);
+                if (games.Count > 1)
+                {
+                    using var picker = new PgnGamePickerDialog(games, isDark);
+                    if (picker.ShowDialog(this) == DialogResult.OK && picker.SelectedPgn != null)
+                        ImportPgn(picker.SelectedPgn);
+                }
+                else
                 {
                     ImportPgn(pgnText);
                 }
