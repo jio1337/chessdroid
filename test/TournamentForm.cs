@@ -1,3 +1,4 @@
+using System.Text;
 using ChessDroid.Controls;
 using ChessDroid.Models;
 using ChessDroid.Services;
@@ -56,6 +57,13 @@ namespace ChessDroid
         private readonly TournamentEngineEntry[]      _engines;   // populated after setup
         private ChessEngineService?                   _annotator;
         private bool                                  _running;
+
+        // ── Results export ───────────────────────────────────────────────────
+        private readonly List<string> _allPgnGames  = new();
+        private int    _roundCounter   = 1;
+        private int    _totalMatchCount = 0;
+        private string _tcDescription  = "";
+        private string _tcPgnTag       = "";
 
         // ── Constructor ──────────────────────────────────────────────────────
         public TournamentForm(AppConfig config)
@@ -382,6 +390,13 @@ namespace ChessDroid
             int games = (int)_numGames.Value;
             bool adj  = _chkAdjudicate.Checked;
 
+            // Init export state
+            _allPgnGames.Clear();
+            _roundCounter    = 1;
+            _totalMatchCount = pairings.Count;
+            _tcDescription   = BuildTcDescription(tc);
+            _tcPgnTag        = BuildTcPgnTag(tc);
+
             // Build standings skeleton
             _standings.Clear();
             var allEngines = pairings
@@ -459,6 +474,16 @@ namespace ChessDroid
                 _focusedPanel = null;
             }
 
+            // Collect PGN before this panel is reassigned to a new series
+            int gamesJustPlayed = panel.GamesPlayed;
+            string pgn = panel.BuildSeriesPgn(
+                "Chessdroid Tournament",
+                DateTime.Now.ToString("yyyy.MM.dd"),
+                _tcPgnTag,
+                _roundCounter);
+            if (pgn.Length > 0) _allPgnGames.Add(pgn);
+            _roundCounter += gamesJustPlayed;
+
             if (_running && _queue.Count > 0)
             {
                 var tc   = BuildTimeControl();
@@ -490,7 +515,10 @@ namespace ChessDroid
         private void OnTournamentComplete()
         {
             _running = false;
-            _lblTournamentTitle.Text = _lblTournamentTitle.Text.Replace("Tournament", "Tournament — Complete ✓");
+            _lblTournamentTitle.Text = _lblTournamentTitle.Text.Replace("Tournament —", "Tournament — Complete ✓ —");
+            string saved = SaveResultsToFile();
+            if (!string.IsNullOrEmpty(saved))
+                _lblTournamentTitle.Text += $"  ·  Saved: {saved}";
         }
 
         // ── Expand / focus ───────────────────────────────────────────────────
@@ -688,6 +716,73 @@ namespace ChessDroid
             }
             return tc;
         }
+
+        // ── Results export ────────────────────────────────────────────────────
+        private string SaveResultsToFile()
+        {
+            try
+            {
+                string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                string fileName  = $"tournament_{timestamp}.txt";
+                string path      = Path.Combine(Application.StartupPath, fileName);
+
+                var sb = new StringBuilder();
+
+                // ── Header ───────────────────────────────────────────────────
+                sb.AppendLine("Chessdroid Tournament Results");
+                sb.AppendLine($"{DateTime.Now:yyyy-MM-dd HH:mm}  |  {_standings.Count} engines  |  {_totalMatchCount} matches  |  {_tcDescription}");
+                sb.AppendLine();
+
+                // ── Standings ─────────────────────────────────────────────────
+                const string fmt = "{0,-4}  {1,-35}  {2,6}  {3,4}  {4,4}  {5,4}  {6,5}";
+                sb.AppendLine(string.Format(fmt, "Rank", "Engine", "Score", "W", "D", "L", "Games"));
+                sb.AppendLine(new string('-', 68));
+                int rank = 1;
+                foreach (var s in _standings.Values
+                    .OrderByDescending(s => s.Points)
+                    .ThenByDescending(s => s.Wins))
+                {
+                    sb.AppendLine(string.Format(fmt,
+                        rank++, s.Engine.Label, s.PointStr,
+                        s.Wins, s.Draws, s.Losses, s.Played));
+                }
+
+                // ── Games ─────────────────────────────────────────────────────
+                if (_allPgnGames.Count > 0)
+                {
+                    sb.AppendLine();
+                    sb.AppendLine(new string('=', 68));
+                    sb.AppendLine($"Games (PGN) — {_roundCounter - 1} total");
+                    sb.AppendLine(new string('=', 68));
+                    sb.AppendLine();
+                    foreach (var g in _allPgnGames)
+                        sb.Append(g);
+                }
+
+                File.WriteAllText(path, sb.ToString(), Encoding.UTF8);
+                return fileName;
+            }
+            catch
+            {
+                return "";
+            }
+        }
+
+        private static string BuildTcDescription(EngineMatchTimeControl tc) => tc.Type switch
+        {
+            TimeControlType.FixedDepth        => $"Depth {tc.Depth}",
+            TimeControlType.FixedTimePerMove  => $"{tc.MoveTimeMs}ms/move",
+            TimeControlType.TotalPlusIncrement => $"{tc.TotalTimeMs / 1000}+{tc.IncrementMs / 1000}s",
+            _                                  => "?"
+        };
+
+        private static string BuildTcPgnTag(EngineMatchTimeControl tc) => tc.Type switch
+        {
+            TimeControlType.FixedDepth         => $"depth:{tc.Depth}",
+            TimeControlType.FixedTimePerMove   => $"movetime:{tc.MoveTimeMs}",
+            TimeControlType.TotalPlusIncrement => $"{tc.TotalTimeMs / 1000}+{tc.IncrementMs / 1000}",
+            _                                  => "?"
+        };
 
         // ── Cleanup ───────────────────────────────────────────────────────────
         private void TournamentForm_Closing(object? sender, FormClosingEventArgs e)

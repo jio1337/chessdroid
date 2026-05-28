@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text;
 using ChessDroid.Models;
 using ChessDroid.Services;
 
@@ -57,6 +58,10 @@ namespace ChessDroid.Controls
 
         // Raw log lines — replayed into the RichTextBox when panel is expanded
         private readonly List<string> _logLines = new();
+
+        // PGN tracking — one entry per half-move, accumulated per game
+        private readonly List<string> _currentGameMoves = new();
+        private readonly List<(string White, string Black, string Result, List<string> Moves)> _completedGames = new();
 
         // ── Public API ───────────────────────────────────────────────────────
         public event EventHandler?                                     ExpandRequested;
@@ -172,6 +177,7 @@ namespace ChessDroid.Controls
             _score1 = _score2 = 0;
             _wins1 = _wins2 = _drawCount = 0;
             _gamesPlayed = 0;
+            _completedGames.Clear();
 
             UpdateLabels();
             BeginGame();
@@ -187,6 +193,7 @@ namespace ChessDroid.Controls
         private void BeginGame()
         {
             _logLines.Clear();
+            _currentGameMoves.Clear();
             if (_isExpanded) _log.Clear();
             _fullMoveNum  = 1;
             _whiteToMove  = true;
@@ -225,6 +232,12 @@ namespace ChessDroid.Controls
             string line = _whiteToMove
                 ? $"{_fullMoveNum}. {san}{evalTag}{timeTag}"
                 : $"  {san}{evalTag}{timeTag}";
+
+            // PGN-annotated half-move: "e4 { +0.32 (0.1s) }"
+            string pgnComment = eval != null
+                ? $" {{ {ShortEval(eval)} ({moveTimeMs / 1000.0:0.0}s) }}"
+                : $" {{ ({moveTimeMs / 1000.0:0.0}s) }}";
+            _currentGameMoves.Add(san + pgnComment);
 
             if (!_whiteToMove) _fullMoveNum++;
             _whiteToMove = !_whiteToMove;
@@ -281,6 +294,16 @@ namespace ChessDroid.Controls
 
             UpdateScoreLabel();
             _evalBar.Reset();
+
+            // Archive this game for PGN export
+            string pgnResult = result.Outcome switch
+            {
+                MatchOutcome.WhiteWins => "1-0",
+                MatchOutcome.BlackWins => "0-1",
+                MatchOutcome.Draw      => "1/2-1/2",
+                _                      => "*"
+            };
+            _completedGames.Add((_whiteName, _blackName, pgnResult, new List<string>(_currentGameMoves)));
 
             bool seriesOver = result.Outcome == MatchOutcome.Interrupted
                            || _gamesPlayed >= _gamesTotal;
@@ -394,6 +417,49 @@ namespace ChessDroid.Controls
         public void SetBoardAppearance(Color light, Color dark)
         {
             _board.SetSquareColors(light, dark);
+        }
+
+        /// <summary>
+        /// Builds a PGN block for all completed games in this series.
+        /// Each game gets proper headers and annotated moves (eval + time as comments).
+        /// </summary>
+        public string BuildSeriesPgn(string eventName, string date, string timeControlTag, int roundStart)
+        {
+            if (_completedGames.Count == 0) return "";
+
+            var sb = new StringBuilder();
+            for (int i = 0; i < _completedGames.Count; i++)
+            {
+                var (white, black, result, moves) = _completedGames[i];
+                sb.AppendLine($"[Event \"{eventName}\"]");
+                sb.AppendLine($"[Site \"Chessdroid\"]");
+                sb.AppendLine($"[Date \"{date}\"]");
+                sb.AppendLine($"[Round \"{roundStart + i}\"]");
+                sb.AppendLine($"[White \"{white}\"]");
+                sb.AppendLine($"[Black \"{black}\"]");
+                sb.AppendLine($"[Result \"{result}\"]");
+                if (!string.IsNullOrEmpty(timeControlTag))
+                    sb.AppendLine($"[TimeControl \"{timeControlTag}\"]");
+                sb.AppendLine();
+
+                // One full move (white + black) per line for readability
+                for (int m = 0; m < moves.Count; m++)
+                {
+                    if (m % 2 == 0)
+                    {
+                        if (m > 0) sb.AppendLine();
+                        sb.Append($"{m / 2 + 1}. {moves[m]}");
+                    }
+                    else
+                    {
+                        sb.Append($" {moves[m]}");
+                    }
+                }
+                sb.AppendLine();
+                sb.AppendLine(result);
+                sb.AppendLine();
+            }
+            return sb.ToString();
         }
 
         // ── Layout ───────────────────────────────────────────────────────────
