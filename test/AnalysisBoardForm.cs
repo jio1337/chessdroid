@@ -1504,9 +1504,10 @@ namespace ChessDroid
             {
                 return classResult.Quality switch
                 {
-                    MoveQualityAnalyzer.MoveQuality.Best => isDark ? ColorScheme.BestMoveColor : Color.ForestGreen,
+                    MoveQualityAnalyzer.MoveQuality.Precise   => isDark ? Color.FromArgb(89, 153, 191) : Color.SteelBlue,
+                    MoveQualityAnalyzer.MoveQuality.Best      => isDark ? ColorScheme.BestMoveColor : Color.ForestGreen,
                     MoveQualityAnalyzer.MoveQuality.Excellent => isDark ? ColorScheme.ExcellentMoveColor : Color.SeaGreen,
-                    MoveQualityAnalyzer.MoveQuality.Good => isDark ? ColorScheme.GoodMoveColor : Color.OliveDrab,
+                    MoveQualityAnalyzer.MoveQuality.Good      => isDark ? ColorScheme.GoodMoveColor : Color.OliveDrab,
                     _ => isDark ? Color.White : Color.Black
                 };
             }
@@ -4770,6 +4771,7 @@ namespace ChessDroid
                                 if (isOnlyWinningMove)
                                 {
                                     finalSymbol = "!";
+                                    finalQuality = MoveQualityAnalyzer.MoveQuality.Precise;
                                 }
                             }
                         }

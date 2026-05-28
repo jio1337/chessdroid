@@ -145,6 +145,7 @@ namespace ChessDroid.Services
             Color defaultExplanationColor,
             bool showThreats = false,
             bool isOnlyWinningMove = false,
+            bool isSavingMove = false,
             (string label, string symbol, Color color)? classification = null,
             string? overrideExplanation = null,
             string? pvUciLine = null)
@@ -214,11 +215,11 @@ namespace ChessDroid.Services
                 // Build the explanation line
                 if (!string.IsNullOrEmpty(cleanedExplanation))
                 {
-                    // Add "only winning move" indicator if applicable
+                    // Add "only winning/saving move" indicator if applicable
                     string criticalPrefix = "";
                     if (isOnlyWinningMove)
                     {
-                        criticalPrefix = "⚡ only winning move, ";
+                        criticalPrefix = isSavingMove ? "⚡ only saving move, " : "⚡ only winning move, ";
                     }
 
                     // Add classification label if provided (e.g., "BLUNDER" for second/third best when only winning move)
@@ -264,10 +265,11 @@ namespace ChessDroid.Services
                             AppendTextWithFormat(" | ", richTextBox.BackColor, GetThemeColor(Color.Gray, Color.DarkSlateGray), FontStyle.Regular);
                         }
                     }
-                    // Show "only winning move" first if applicable
+                    // Show "only winning/saving move" first if applicable
                     else if (isOnlyWinningMove)
                     {
-                        AppendTextWithFormat($"⚡ only winning move", richTextBox.BackColor, explanationColor, FontStyle.Italic);
+                        string preciseLabel = isSavingMove ? "⚡ only saving move" : "⚡ only winning move";
+                        AppendTextWithFormat(preciseLabel, richTextBox.BackColor, explanationColor, FontStyle.Italic);
                         if (!string.IsNullOrEmpty(defensesText) || !string.IsNullOrEmpty(threatsText))
                         {
                             AppendTextWithFormat(" | ", richTextBox.BackColor, GetThemeColor(Color.Gray, Color.DarkSlateGray), FontStyle.Regular);
@@ -1972,6 +1974,7 @@ namespace ChessDroid.Services
             var rows = new[]
             {
                 (MoveQualityAnalyzer.MoveQuality.Brilliant,  "!!", "Brilliant"),
+                (MoveQualityAnalyzer.MoveQuality.Precise,    "!",  "Precise"),
                 (MoveQualityAnalyzer.MoveQuality.Best,       "✓✓", "Best"),
                 (MoveQualityAnalyzer.MoveQuality.Excellent,  "✓",  "Excellent"),
                 (MoveQualityAnalyzer.MoveQuality.Good,       "·",  "Good"),
@@ -2038,6 +2041,7 @@ namespace ChessDroid.Services
         private static Color QualityColor(MoveQualityAnalyzer.MoveQuality quality, bool isDark) => quality switch
         {
             MoveQualityAnalyzer.MoveQuality.Brilliant  => isDark ? Color.FromArgb(30, 220, 170) : Color.Teal,
+            MoveQualityAnalyzer.MoveQuality.Precise    => isDark ? Color.FromArgb(89, 153, 191) : Color.SteelBlue,
             MoveQualityAnalyzer.MoveQuality.Best       => isDark ? Color.LimeGreen : Color.ForestGreen,
             MoveQualityAnalyzer.MoveQuality.Excellent  => isDark ? Color.LimeGreen : Color.ForestGreen,
             MoveQualityAnalyzer.MoveQuality.Good       => isDark ? Color.LightGray : Color.DimGray,
@@ -2256,6 +2260,20 @@ namespace ChessDroid.Services
                 }
             }
 
+            // Determine if isOnlyWinningMove is actually a saving move (player was losing/equal)
+            bool isPreciseSaving = false;
+            if (isOnlyWinningMove)
+            {
+                string[] fenPartsForSide = fen.Split(' ');
+                bool whiteToMoveForSide = fenPartsForSide.Length > 1 && fenPartsForSide[1] == 'w';
+                double? bestEvalParsed = MovesExplanation.ParseEvaluation(evaluation);
+                if (bestEvalParsed.HasValue)
+                {
+                    double sideEval = whiteToMoveForSide ? bestEvalParsed.Value : -bestEvalParsed.Value;
+                    isPreciseSaving = sideEval <= 0.27; // player was not clearly winning
+                }
+            }
+
             // Best line - always show threats
             string bestSanFull = ConvertPvToSan(pvs, 0, bestMove, fen);
             string formattedEval = FormatEvaluation(evaluation);
@@ -2303,6 +2321,7 @@ namespace ChessDroid.Services
                     pvExplanationColor,
                     showThreats: true,
                     isOnlyWinningMove: isOnlyWinningMove,
+                    isSavingMove: isPreciseSaving,
                     classification: bestMoveClassification,
                     overrideExplanation: brilliantExplanation,
                     pvUciLine: pvs.Count > 0 ? pvs[0] : null);

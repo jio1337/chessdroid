@@ -14,6 +14,7 @@ namespace ChessDroid.Services
         public enum MoveQuality
         {
             Brilliant,    // !! - Exceptional move, often a sacrifice that's hard to find
+            Precise,      // !  - Only winning or only saving move in a critical position
             Best,         // Best engine move
             Excellent,    // Very close to best (within 10cp)
             Good,         // Reasonable move (within 30cp)
