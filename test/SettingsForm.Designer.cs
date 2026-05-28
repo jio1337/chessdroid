@@ -780,7 +780,7 @@ namespace ChessDroid
             chkThreats.Size = new Size(138, 18);
             chkThreats.TabIndex = 9;
             chkThreats.Text = "Threats Analysis";
-            toolTip1.SetToolTip(chkThreats, "Show threats we create and opponent threats against us");
+            toolTip1.SetToolTip(chkThreats, "Show threats created by the best move (⚔) and opponent threats against your pieces (🛡 defenses)");
             chkThreats.UseVisualStyleBackColor = true;
             // 
             // chkWDL

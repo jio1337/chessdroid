@@ -2214,7 +2214,7 @@ namespace ChessDroid.Services
             // Best move is winning but second-best loses the advantage
             // Must account for whose turn it is (evals are from White's perspective)
             bool isOnlyWinningMove = false;
-            if (showSecondLine && evaluations.Count >= 2)
+            if (config?.ShowMoveQuality == true && showSecondLine && evaluations.Count >= 2)
             {
                 double? bestEval = MovesExplanation.ParseEvaluation(evaluation);
                 double? secondEval = MovesExplanation.ParseEvaluation(evaluations[1]);
@@ -2272,14 +2272,17 @@ namespace ChessDroid.Services
             // Check for Brilliant move (piece sacrifice that works)
             (string label, string symbol, Color color)? bestMoveClassification = null;
             string? brilliantExplanation = null;
-            double? evalForBrilliant = MovesExplanation.ParseEvaluation(evaluation);
-            if (evalForBrilliant.HasValue)
+            if (config?.ShowMoveQuality == true)
             {
-                var (isBrilliant, explanation) = IsBrilliantMove(fen, firstMove, evalForBrilliant.Value, null);
-                if (isBrilliant)
+                double? evalForBrilliant = MovesExplanation.ParseEvaluation(evaluation);
+                if (evalForBrilliant.HasValue)
                 {
-                    bestMoveClassification = ("Brilliant", "!!", GetThemeColor(Color.FromArgb(70, 178, 178), Color.FromArgb(0, 120, 120)));
-                    brilliantExplanation = explanation;
+                    var (isBrilliant, explanation) = IsBrilliantMove(fen, firstMove, evalForBrilliant.Value, null);
+                    if (isBrilliant)
+                    {
+                        bestMoveClassification = ("Brilliant", "!!", GetThemeColor(Color.FromArgb(70, 178, 178), Color.FromArgb(0, 120, 120)));
+                        brilliantExplanation = explanation;
+                    }
                 }
             }
 

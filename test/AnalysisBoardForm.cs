@@ -466,6 +466,8 @@ namespace ChessDroid
 
         private void InitializeServices()
         {
+            ExplanationFormatter.LoadFromConfig(config);
+
             // Initialize console formatter for analysis output
             consoleFormatter = new ConsoleOutputFormatter(
                 analysisOutput,
