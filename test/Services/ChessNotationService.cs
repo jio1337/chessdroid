@@ -308,6 +308,129 @@ namespace ChessDroid.Services
         }
 
         /// <summary>
+        /// Converts a single SAN move to UCI notation given the current FEN.
+        /// </summary>
+        public static string? ConvertSanToUci(string san, string fen)
+        {
+            try
+            {
+                san = san.Replace("+", "").Replace("#", "").Replace("!", "").Replace("?", "");
+
+                string[] fenParts = fen.Split(' ');
+                bool isWhiteToMove = fenParts.Length > 1 && fenParts[1] == "w";
+                string enPassantSquare = fenParts.Length > 3 ? fenParts[3] : "-";
+
+                if (san == "O-O" || san == "0-0")
+                    return isWhiteToMove ? "e1g1" : "e8g8";
+                if (san == "O-O-O" || san == "0-0-0")
+                    return isWhiteToMove ? "e1c1" : "e8c8";
+
+                char pieceType = 'P';
+                int idx = 0;
+                if (san.Length > 0 && char.IsUpper(san[0]) && san[0] != 'O')
+                {
+                    pieceType = san[0];
+                    idx = 1;
+                }
+
+                char? promotion = null;
+                if (san.Contains('='))
+                {
+                    int eqIdx = san.IndexOf('=');
+                    if (eqIdx + 1 < san.Length) promotion = char.ToLower(san[eqIdx + 1]);
+                    san = san[..eqIdx];
+                }
+                else if (san.Length >= 2 && char.IsUpper(san[^1]) && san[^1] != 'O')
+                {
+                    promotion = char.ToLower(san[^1]);
+                    san = san[..^1];
+                }
+
+                int destIdx = san.Length - 2;
+                while (destIdx >= idx)
+                {
+                    if (destIdx + 1 < san.Length &&
+                        san[destIdx] >= 'a' && san[destIdx] <= 'h' &&
+                        san[destIdx + 1] >= '1' && san[destIdx + 1] <= '8')
+                        break;
+                    destIdx--;
+                }
+                if (destIdx < idx || destIdx + 1 >= san.Length) return null;
+
+                string destSquare = san.Substring(destIdx, 2);
+                int destCol = destSquare[0] - 'a';
+                int destRow = 7 - (destSquare[1] - '1');
+
+                char? disambigFile = null;
+                char? disambigRank = null;
+                if (destIdx > idx)
+                {
+                    string middle = san.Substring(idx, destIdx - idx).Replace("x", "");
+                    foreach (char c in middle)
+                    {
+                        if (c >= 'a' && c <= 'h') disambigFile = c;
+                        else if (c >= '1' && c <= '8') disambigRank = c;
+                    }
+                }
+
+                var board = ChessBoard.FromFEN(fen);
+                char pieceChar = isWhiteToMove ? pieceType : char.ToLower(pieceType);
+                if (pieceType == 'P') pieceChar = isWhiteToMove ? 'P' : 'p';
+
+                var candidates = ChessRulesService.FindAllPiecesOfSameTypeWithEnPassant(
+                    board, char.ToLower(pieceChar), isWhiteToMove, destRow, destCol, enPassantSquare);
+
+                foreach (var (row, col) in candidates)
+                {
+                    char fileChar = (char)('a' + col);
+                    char rankChar = (char)('1' + (7 - row));
+                    if (disambigFile.HasValue && fileChar != disambigFile.Value) continue;
+                    if (disambigRank.HasValue && rankChar != disambigRank.Value) continue;
+
+                    if (ChessRulesService.CanReachSquareWithEnPassant(
+                            board, row, col, pieceChar, destRow, destCol, enPassantSquare))
+                    {
+                        string uci = $"{fileChar}{rankChar}{destSquare}";
+                        if (promotion.HasValue) uci += promotion.Value;
+                        return uci;
+                    }
+                }
+                return null;
+            }
+            catch { return null; }
+        }
+
+        /// <summary>
+        /// Applies a SAN move sequence (from ECO book format) to the starting position
+        /// and returns the resulting full FEN.
+        /// </summary>
+        public static string GetFenAfterSanMoves(string sanMoves)
+        {
+            const string StartFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+            var tokens = sanMoves
+                .Split(new[] { ' ', '\t', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+                .Where(t => !System.Text.RegularExpressions.Regex.IsMatch(t, @"^\d+\.") &&
+                            t != "1-0" && t != "0-1" && t != "1/2-1/2" && t != "*")
+                .ToList();
+
+            var    board       = ChessBoard.FromFEN(StartFen);
+            string castling    = "KQkq";
+            string ep          = "-";
+            bool   whiteToMove = true;
+            string fen         = StartFen;
+
+            foreach (var san in tokens)
+            {
+                string? uci = ConvertSanToUci(san, fen);
+                if (uci == null) break;
+                ChessRulesService.ApplyUciMove(board, uci, ref castling, ref ep);
+                whiteToMove = !whiteToMove;
+                fen = $"{board.ToFEN()} {(whiteToMove ? "w" : "b")} {castling} {ep} 0 1";
+            }
+            return fen;
+        }
+
+        /// <summary>
         /// Extracts and validates UCI move from PV string
         /// </summary>
         public static string? ExtractValidUciMove(List<string> pvs, int index, string? fallback)

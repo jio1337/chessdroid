@@ -38,6 +38,10 @@ namespace ChessDroid
         private readonly NumericUpDown   _numInc;
         private readonly Button          _btnStart;
         private readonly CheckBox        _chkUseOpeningBook;
+        private readonly RadioButton     _rbBookRandom;
+        private readonly RadioButton     _rbBookChoose;
+        private readonly Label           _lblChosenOpening;
+        private OpeningEntry?            _bookOpening;
 
         // ── Match UI ─────────────────────────────────────────────────────────
         private readonly Panel           _pnlMatch;
@@ -74,7 +78,7 @@ namespace ChessDroid
             _engineBasePath = config.GetEnginesPath();
 
             Text            = "Chessdroid Tournament";
-            Size            = new Size(520, 480);
+            Size            = new Size(520, 510);
             MinimumSize     = new Size(400, 380);
             StartPosition   = FormStartPosition.CenterParent;
             BackColor       = Color.FromArgb(25, 25, 25);
@@ -230,7 +234,7 @@ namespace ChessDroid
             _btnStart = new Button
             {
                 Text      = "▶  Start Tournament",
-                Location  = new Point(20, 395),
+                Location  = new Point(20, 426),
                 Size      = new Size(190, 34),
                 BackColor = Color.FromArgb(60, 120, 60),
                 ForeColor = Color.White,
@@ -244,9 +248,48 @@ namespace ChessDroid
             _chkUseOpeningBook = new CheckBox
             {
                 Text      = "Use opening book",
-                Location  = new Point(20, 360),
+                Location  = new Point(20, 358),
                 AutoSize  = true,
                 ForeColor = Color.FromArgb(200, 200, 200)
+            };
+
+            _rbBookRandom = new RadioButton
+            {
+                Text      = "Random",
+                Location  = new Point(36, 380),
+                AutoSize  = true,
+                Checked   = true,
+                Visible   = false,
+                ForeColor = Color.FromArgb(200, 200, 200)
+            };
+            _rbBookChoose = new RadioButton
+            {
+                Text      = "Choose...",
+                Location  = new Point(120, 380),
+                AutoSize  = true,
+                Visible   = false,
+                ForeColor = Color.FromArgb(200, 200, 200)
+            };
+            _lblChosenOpening = new Label
+            {
+                Text      = "",
+                Location  = new Point(36, 402),
+                Size      = new Size(340, 18),
+                Visible   = false,
+                ForeColor = Color.FromArgb(140, 210, 140)
+            };
+
+            _chkUseOpeningBook.CheckedChanged += (_, _) =>
+            {
+                bool on = _chkUseOpeningBook.Checked;
+                _rbBookRandom.Visible = on;
+                _rbBookChoose.Visible = on;
+                if (!on) { _lblChosenOpening.Visible = false; _bookOpening = null; }
+            };
+            _rbBookChoose.CheckedChanged += (_, _) =>
+            {
+                if (!_rbBookChoose.Checked) { _lblChosenOpening.Visible = false; return; }
+                SelectTournamentOpening();
             };
 
             _pnlSetup.Controls.AddRange(new Control[]
@@ -257,7 +300,8 @@ namespace ChessDroid
                 lblTC, _rbDepth, _rbMovetime, _rbClock,
                 _numDepth, lblDepthUnit, _numMovetime, lblMtUnit,
                 _numTotal, lblTotalUnit, _numInc, lblIncUnit,
-                _chkUseOpeningBook, _btnStart
+                _chkUseOpeningBook, _rbBookRandom, _rbBookChoose,
+                _lblChosenOpening, _btnStart
             });
 
             // Populate engine lists
@@ -483,17 +527,55 @@ namespace ChessDroid
         {
             if (!_running || _queue.Count == 0) return;
             var pairing = _queue.Dequeue();
-            string? openingFen = _bookService?.IsLoaded == true
-                ? GenerateOpeningFen()
-                : null;
+            bool bookActive = _chkUseOpeningBook.Checked &&
+                              (_bookService?.IsLoaded == true ||
+                               (_rbBookChoose.Checked && _bookOpening != null));
+            string? openingFen = bookActive ? GenerateOpeningFen() : null;
             panel.StartSeries(
                 pairing.Engine1.FileName, pairing.Engine2.FileName,
                 pairing.Engine1.Label,   pairing.Engine2.Label,
                 tc, _engineBasePath, _config, games, adj, openingFen);
         }
 
+        private void SelectTournamentOpening()
+        {
+            string booksFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Books");
+            var entries = EcoBookService.LoadAll(booksFolder);
+            if (entries.Count == 0)
+            {
+                _rbBookRandom.Checked = true;
+                return;
+            }
+
+            using var dlg = new OpeningExplorerDialog(entries, pgn =>
+            {
+                var m = System.Text.RegularExpressions.Regex.Match(
+                    pgn, @"\[Opening ""([^""]+)""\]");
+                if (!m.Success) return;
+                string tag  = m.Groups[1].Value;
+                int    dash = tag.IndexOf(" — ", StringComparison.Ordinal);
+                if (dash < 0) return;
+                string eco  = tag[..dash];
+                string name = tag[(dash + 3)..];
+                _bookOpening = entries.FirstOrDefault(e => e.Eco == eco && e.Name == name)
+                            ?? entries.FirstOrDefault(e => e.Eco == eco);
+                if (_bookOpening != null)
+                {
+                    _lblChosenOpening.Text    = $"{_bookOpening.Eco}  {_bookOpening.Name}";
+                    _lblChosenOpening.Visible = true;
+                }
+            }, ThemeService.IsDarkTheme(_config.Theme));
+
+            dlg.ShowDialog(this);
+            if (_bookOpening == null) _rbBookRandom.Checked = true;
+        }
+
         private string GenerateOpeningFen()
         {
+            // Choose mode: replay ECO opening moves to produce a fixed starting position
+            if (_rbBookChoose.Checked && _bookOpening != null)
+                return ChessNotationService.GetFenAfterSanMoves(_bookOpening.Moves);
+
             if (_bookService?.IsLoaded != true) return "";
 
             const string StartFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
