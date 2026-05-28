@@ -347,7 +347,8 @@ namespace ChessDroid
                 };
                 p.SetBoardAppearance(boardColors[i].light, boardColors[i].dark);
                 p.ExpandRequested += OnExpandRequested;
-                p.SeriesEnded     += OnSeriesEnded;
+                var captured = p;
+                p.SeriesEnded += (s1, s2) => OnSeriesEnded(captured, s1, s2);
                 _panels[i] = p;
                 _pnlBoards.Controls.Add(p);
             }
@@ -444,40 +445,30 @@ namespace ChessDroid
         }
 
         // ── Series ended callback ─────────────────────────────────────────────
-        private void OnSeriesEnded(TournamentStanding s1, TournamentStanding s2)
+        private void OnSeriesEnded(MatchBoardPanel panel, TournamentStanding s1, TournamentStanding s2)
         {
-            if (InvokeRequired) { Invoke(() => OnSeriesEnded(s1, s2)); return; }
+            if (InvokeRequired) { Invoke(() => OnSeriesEnded(panel, s1, s2)); return; }
 
-            // Update aggregate standings
             UpdateAggregate(s1);
             UpdateAggregate(s2);
             UpdateStandingsView();
 
-            // Find which panel fired this and assign next pairing (if any)
-            var panel = _panels.FirstOrDefault(p => p.Eng1File == s1.Engine.FileName
-                                                  || p.Eng1File == s2.Engine.FileName);
-            if (panel == null) return;
-
-            bool wasFocused = _focusedPanel == panel;
-            if (wasFocused)
+            if (_focusedPanel == panel)
             {
-                // Detach annotator from the series that just ended
                 panel.AnnotatorEngine = null;
                 _focusedPanel = null;
             }
 
             if (_running && _queue.Count > 0)
             {
-                var tc  = BuildTimeControl();
-                int gms = (int)_numGames.Value;
+                var tc   = BuildTimeControl();
+                int gms  = (int)_numGames.Value;
                 bool adj = _chkAdjudicate.Checked;
                 AssignNextPairing(panel, tc, gms, adj);
             }
-            else
+            else if (_queue.Count == 0 && _panels.All(p => !p.IsRunning))
             {
-                // Mark idle: no more pairings
-                bool allDone = _panels.All(p => !p.IsRunning && _queue.Count == 0);
-                if (allDone) OnTournamentComplete();
+                OnTournamentComplete();
             }
         }
 
