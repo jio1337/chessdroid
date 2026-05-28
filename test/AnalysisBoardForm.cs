@@ -4288,11 +4288,14 @@ namespace ChessDroid
                         string symbol = !string.IsNullOrEmpty(nag) ? GetSymbolForNag(nag) : "";
                         double? evalAfter = !string.IsNullOrEmpty(comment) ? ParseEvalFromComment(comment) : null;
                         if (evalAfter.HasValue) node.Evaluation = evalAfter.Value;
+                        // Skip moves with no annotation — they have no classification and must not
+                        // default to Best, which would color every unannotated move green.
+                        if (string.IsNullOrEmpty(nag) && string.IsNullOrEmpty(comment))
+                            continue;
+
                         var quality = !string.IsNullOrEmpty(symbol)
                             ? GetQualityForSymbol(symbol)
-                            : !string.IsNullOrEmpty(comment)
-                                ? ParseQualityFromComment(comment)
-                                : MoveQualityAnalyzer.MoveQuality.Best;
+                            : ParseQualityFromComment(comment);
 
                         moveResults.Add(new MoveReviewResult
                         {
@@ -5125,10 +5128,11 @@ namespace ChessDroid
         private static MoveQualityAnalyzer.MoveQuality GetQualityForSymbol(string symbol) => symbol switch
         {
             "!!" => MoveQualityAnalyzer.MoveQuality.Brilliant,
+            "!"  => MoveQualityAnalyzer.MoveQuality.Precise,
             "?!" => MoveQualityAnalyzer.MoveQuality.Inaccuracy,
-            "?" => MoveQualityAnalyzer.MoveQuality.Mistake,
+            "?"  => MoveQualityAnalyzer.MoveQuality.Mistake,
             "??" => MoveQualityAnalyzer.MoveQuality.Blunder,
-            _ => MoveQualityAnalyzer.MoveQuality.Best
+            _    => MoveQualityAnalyzer.MoveQuality.Best
         };
 
         private static string GetInlineSymbol(string san)
@@ -5146,6 +5150,7 @@ namespace ChessDroid
             string label = result.Quality switch
             {
                 MoveQualityAnalyzer.MoveQuality.Brilliant => "Brilliant",
+                MoveQualityAnalyzer.MoveQuality.Precise   => "Precise",
                 MoveQualityAnalyzer.MoveQuality.Best => "Best",
                 MoveQualityAnalyzer.MoveQuality.Excellent => "Excellent",
                 MoveQualityAnalyzer.MoveQuality.Good => "Good",
@@ -5171,6 +5176,7 @@ namespace ChessDroid
         private static MoveQualityAnalyzer.MoveQuality ParseQualityFromComment(string comment)
         {
             if (comment.Contains("Brilliant")) return MoveQualityAnalyzer.MoveQuality.Brilliant;
+            if (comment.Contains("Precise"))   return MoveQualityAnalyzer.MoveQuality.Precise;
             if (comment.Contains("Blunder")) return MoveQualityAnalyzer.MoveQuality.Blunder;
             if (comment.Contains("Mistake")) return MoveQualityAnalyzer.MoveQuality.Mistake;
             if (comment.Contains("Inaccuracy")) return MoveQualityAnalyzer.MoveQuality.Inaccuracy;
