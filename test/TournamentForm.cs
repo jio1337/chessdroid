@@ -38,6 +38,7 @@ namespace ChessDroid
         private readonly NumericUpDown   _numInc;
         private readonly Button          _btnStart;
         private readonly CheckBox        _chkUseOpeningBook;
+        private readonly Panel           _pnlBookMode;    // isolates book radios from pairing radios
         private readonly RadioButton     _rbBookRandom;
         private readonly RadioButton     _rbBookChoose;
         private readonly Label           _lblChosenOpening;
@@ -253,27 +254,38 @@ namespace ChessDroid
                 ForeColor = Color.FromArgb(200, 200, 200)
             };
 
+            // Wrap book radios in their own Panel so they don't compete with
+            // _rbRoundRobin / _rbManual (WinForms groups all RadioButtons in the
+            // same container into one mutual-exclusion set).
             _rbBookRandom = new RadioButton
             {
                 Text      = "Random",
-                Location  = new Point(36, 380),
+                Location  = new Point(0, 2),
                 AutoSize  = true,
                 Checked   = true,
-                Visible   = false,
                 ForeColor = Color.FromArgb(200, 200, 200)
             };
             _rbBookChoose = new RadioButton
             {
                 Text      = "Choose...",
-                Location  = new Point(120, 380),
+                Location  = new Point(84, 2),
                 AutoSize  = true,
-                Visible   = false,
                 ForeColor = Color.FromArgb(200, 200, 200)
             };
+            _pnlBookMode = new Panel
+            {
+                Location  = new Point(36, 380),
+                Size      = new Size(260, 24),
+                Visible   = false,
+                BackColor = Color.Transparent
+            };
+            _pnlBookMode.Controls.Add(_rbBookRandom);
+            _pnlBookMode.Controls.Add(_rbBookChoose);
+
             _lblChosenOpening = new Label
             {
                 Text      = "",
-                Location  = new Point(36, 402),
+                Location  = new Point(36, 406),
                 Size      = new Size(340, 18),
                 Visible   = false,
                 ForeColor = Color.FromArgb(140, 210, 140)
@@ -282,8 +294,7 @@ namespace ChessDroid
             _chkUseOpeningBook.CheckedChanged += (_, _) =>
             {
                 bool on = _chkUseOpeningBook.Checked;
-                _rbBookRandom.Visible = on;
-                _rbBookChoose.Visible = on;
+                _pnlBookMode.Visible = on;
                 if (!on) { _lblChosenOpening.Visible = false; _bookOpening = null; }
             };
             _rbBookChoose.CheckedChanged += (_, _) =>
@@ -300,7 +311,7 @@ namespace ChessDroid
                 lblTC, _rbDepth, _rbMovetime, _rbClock,
                 _numDepth, lblDepthUnit, _numMovetime, lblMtUnit,
                 _numTotal, lblTotalUnit, _numInc, lblIncUnit,
-                _chkUseOpeningBook, _rbBookRandom, _rbBookChoose,
+                _chkUseOpeningBook, _pnlBookMode,
                 _lblChosenOpening, _btnStart
             });
 
