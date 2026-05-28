@@ -5,7 +5,6 @@ namespace ChessDroid
     public class BotSettingsDialog : Form
     {
         private NumericUpDown nudElo = null!;
-        private Label lblEloValue = null!;
         private ComboBox cmbEngine = null!;
         private RadioButton rbPlayWhite = null!;
         private RadioButton rbPlayBlack = null!;
