@@ -724,7 +724,7 @@ namespace ChessDroid
             chkTactical.Size = new Size(145, 18);
             chkTactical.TabIndex = 1;
             chkTactical.Text = "Tactical Analysis";
-            toolTip1.SetToolTip(chkTactical, "Show pins, forks, skewers, discovered attacks");
+            toolTip1.SetToolTip(chkTactical, "Pins, forks, skewers, sacrifices, overloading, desperado, and other tactical patterns");
             chkTactical.UseVisualStyleBackColor = true;
             // 
             // chkPositional
@@ -738,7 +738,7 @@ namespace ChessDroid
             chkPositional.Size = new Size(159, 18);
             chkPositional.TabIndex = 2;
             chkPositional.Text = "Positional Analysis";
-            toolTip1.SetToolTip(chkPositional, "Show pawn structure, outposts, mobility");
+            toolTip1.SetToolTip(chkPositional, "Pawn structure, piece activity, central control, and king safety");
             chkPositional.UseVisualStyleBackColor = true;
             // 
             // chkEndgame
@@ -752,7 +752,7 @@ namespace ChessDroid
             chkEndgame.Size = new Size(138, 18);
             chkEndgame.TabIndex = 3;
             chkEndgame.Text = "Endgame Analysis";
-            toolTip1.SetToolTip(chkEndgame, "Show endgame patterns, zugzwang");
+            toolTip1.SetToolTip(chkEndgame, "King opposition, fortress detection, unstoppable pawns, drawn positions, and endgame type identification");
             chkEndgame.UseVisualStyleBackColor = true;
             // 
             // chkOpening
@@ -766,7 +766,7 @@ namespace ChessDroid
             chkOpening.Size = new Size(152, 18);
             chkOpening.TabIndex = 4;
             chkOpening.Text = "Opening Principles";
-            toolTip1.SetToolTip(chkOpening, "Show center control, development");
+            toolTip1.SetToolTip(chkOpening, "Center control and piece development advice (active for the first 20 moves)");
             chkOpening.UseVisualStyleBackColor = true;
             // 
             // chkThreats
@@ -822,7 +822,7 @@ namespace ChessDroid
             chkMoveQuality.Size = new Size(229, 18);
             chkMoveQuality.TabIndex = 12;
             chkMoveQuality.Text = "Move Quality (Brilliant/Best)";
-            toolTip1.SetToolTip(chkMoveQuality, "Show move quality indicators like chess.com (!!, !, ?!, ?, ??)");
+            toolTip1.SetToolTip(chkMoveQuality, "Brilliant (!!) detection, ⚡ only winning move indicator, and quality labels on alternatives (Inaccuracy, Mistake, Blunder)");
             chkMoveQuality.UseVisualStyleBackColor = true;
             // 
             // chkBookMoves
