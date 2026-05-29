@@ -26,15 +26,17 @@ namespace ChessDroid
         public BotSettings Settings { get; private set; } = new();
 
         public BotSettingsDialog(bool isDarkMode, string[] engines,
-            Dictionary<string, EngineProfile> profiles, string defaultEngine)
+            Dictionary<string, EngineProfile> profiles, string defaultEngine,
+            bool drillMode = false)
         {
             _engineFileNames = engines;
-            InitializeControls(engines, profiles, defaultEngine);
+            InitializeControls(engines, profiles, defaultEngine, drillMode);
             ApplyTheme(isDarkMode);
         }
 
         private void InitializeControls(string[] engines,
-            Dictionary<string, EngineProfile> profiles, string defaultEngine)
+            Dictionary<string, EngineProfile> profiles, string defaultEngine,
+            bool drillMode = false)
         {
             Text = "Play vs Bot";
             Size = new Size(280, 430);
@@ -177,11 +179,22 @@ namespace ChessDroid
             grpType.Controls.Add(rbFriendly);
             grpType.Controls.Add(rbChallenge);
 
+            // In drill mode the active side is fixed and challenge mode is always on —
+            // hide the Play as and Type groups and compact the form
+            if (drillMode)
+            {
+                grpColor.Visible = false;
+                grpType.Visible  = false;
+                Size = new Size(280, 240);
+            }
+
+            int btnY = drillMode ? 148 : 300;
+
             // ── Buttons ───────────────────────────────────────────────────
             btnStart = new Button
             {
                 Text = "Start",
-                Location = new Point(55, 300),
+                Location = new Point(55, btnY),
                 Size = new Size(80, 35),
                 FlatStyle = FlatStyle.Flat,
                 Font = new Font("Courier New", 9F, FontStyle.Bold)
@@ -204,7 +217,7 @@ namespace ChessDroid
             btnCancel = new Button
             {
                 Text = "Cancel",
-                Location = new Point(145, 300),
+                Location = new Point(145, btnY),
                 Size = new Size(80, 35),
                 FlatStyle = FlatStyle.Flat,
                 Font = new Font("Courier New", 9F)

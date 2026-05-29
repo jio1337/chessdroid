@@ -7242,7 +7242,8 @@ namespace ChessDroid
                 ? Directory.GetFiles(config.GetEnginesPath(), "*.exe").Select(Path.GetFileName).Where(f => f != null).Cast<string>().ToArray()
                 : Array.Empty<string>();
             using var dialog = new BotSettingsDialog(ThemeService.IsDarkTheme(config?.Theme),
-                availableEngines, config?.EngineProfiles ?? new(), config?.SelectedEngine ?? "");
+                availableEngines, config?.EngineProfiles ?? new(), config?.SelectedEngine ?? "",
+                drillMode: true);
             if (dialog.ShowDialog() != DialogResult.OK) return;
 
             _botSettings = dialog.Settings;
