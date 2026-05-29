@@ -5998,7 +5998,7 @@ namespace ChessDroid
             {
                 var ch = SelectedDrillChapter();
                 SetDrillDescription(ch?.Description ?? "");
-                if (ch != null)
+                if (ch != null && _drillModeSelected)
                     boardControl.LoadFEN(ch.Fen);
             };
             _cmbDrillChapter.DropDown += (_, _) =>
@@ -6727,6 +6727,9 @@ namespace ChessDroid
             if (mode == "square")  UpdateSquarePBLabel();
             if (mode == "puzzle")  SetPuzzleSubMode(_puzzleSubMode);
             if (mode == "vision")  UpdateVisionPBLabel();
+            // Re-measure description height now that the panel has its real width
+            if (mode == "drill" && IsHandleCreated)
+                BeginInvoke(() => SetDrillDescription(_lblDrillDesc?.Text ?? ""));
         }
 
         private void SetPuzzleSubMode(string subMode) // "training" | "rush" | "gauntlet"
