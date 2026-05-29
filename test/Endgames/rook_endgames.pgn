@@ -13,6 +13,7 @@
 [UTCDate "2021.07.06"]
 [UTCTime "08:26:34"]
 
+{ When the defending rook sits on the long side of the pawn (the side with more files between the rook and the pawn's file), the defender draws by placing the rook behind the pawn's queening rank, cutting the king off from the a7-square. Black's key move is Ra7+, forcing the rook onto the back rank (Ra8), after which perpetual checking along the a-file holds the draw. The long-side defense works here because White's king cannot step off the e-file without allowing the rook to reach a8 first. }
 1... Ra7+ 2. Rd7 Ra8 { The simplest defensive methods: Black prevents the positions with the pawn on seventh Rank. } (2... Ra1 3. Ke8+ (3. Rd6 Ra8!) 3... Kf6 4. e7 Ke6 5. Kf8 Rf1+ 6. Ke8 Ra1 $10) 3. Rd8 (3. Kd6+ Kf6 4. Rf7+ Kg6) (3. Rb7 Kg6 4. Kd6 Kf6 5. e7 Kf7) (3. Rd6 { [%cal Ga8a7] } 3... Kg6) 3... Ra7+ 4. Kd6 Ra6+ 5. Ke5 Ra5+ 6. Rd5 Ra8 7. Rd7+ Kg6 { The reason of draw is the position is rook: it was placed on long side } *
 
 
@@ -31,6 +32,7 @@
 [UTCDate "2021.07.06"]
 [UTCTime "08:40:49"]
 
+{ This position shows why the defending king must reach the short side (the side with fewer files between king and pawn). Here White wins by advancing the king to e7, cutting off the black king from the queening file and reaching the Lucena setup. The key is that Black's rook on the long side cannot generate enough checks to stop the king march once White's king reaches the sixth rank. Compare with the previous chapter: Black's rook is on the wrong side here, giving White a clear road to the Lucena position. }
 1. Kd6+ (1. Kd7 Kf6 2. e7 Kf7 $10) (1. Ra1 Rb7+ 2. Kd8 Rb8+ 3. Kc7 Rb2 4. Rf1 Ra2 5. e7 Ra7+ $10) 1... Kf6 2. Kd7 Kg7 3. Ke7 Kg6 (3... Rb1 4. Ra8 Rb7+ 5. Kd6 Rb6+ 6. Kd7 Rb7+ 7. Kc6 Re7 8. Kd6 Rb7 9. e7) 4. Ra1 Rb7+ 5. Kd8 Rb8+ (5... Kf6 6. e7 Rb8+ 7. Kd7 Re8 8. Kd6 Rb8 9. Rf1+ Kg7 10. Kc7 Ra8 11. Ra1) 6. Kc7 Rb2 7. Re1 Rc2+ 8. Kd7 Rd2+ 9. Ke8 Ra2 10. e7 *
 
 
@@ -49,6 +51,7 @@
 [UTCDate "2021.07.06"]
 [UTCTime "08:58:01"]
 
+{ A practical example of the Philidor defense being available but missed. Black draws with the correct 1...Ra4! — placing the rook on the long side and harassing White's king — but 1...Kg5? allows White to set up a winning Lucena-type position after Ra6. The game illustrates how a single careless move in a theoretically drawn rook endgame can be fatal: once White's rook reaches the seventh rank and the pawn advances to e6, the coordination of White's king, rook, and pawn overwhelms the passive defense. }
 1... Kg5? (1... Ra4!) 2. Ra6 Rb4 3. Ke6 Kg6?? 4. Ke7+ Kg7 5. Ra7 Rb8 6. e6 Kg6 7. Ra1 Rb7+ 8. Kd6 Rb6+ 9. Kd7 Rb7+ 10. Kc6 Rb8 11. Kc7 Rh8 (11... Rb2 12. Re1) 12. e7 Kf7 13. Kd7 Rb8 14. Rf1+ *
 
 
@@ -67,6 +70,7 @@
 [UTCDate "2021.07.07"]
 [UTCTime "07:13:02"]
 
+{ The Lucena position is the most important theoretical position in rook and pawn versus rook endgames — the attacking side wins by building a bridge. White cannot simply advance the pawn because the king would be exposed to checks; instead, the winning technique is to use the rook to shield the king from lateral checks. The key maneuver is Rg1+ followed by Rg4, placing the rook on the fourth rank so the king can step off e8 without being harassed, then march forward until the rook interposes (Re4) to block the final check. }
 { [%cal Bf1g1,Bg1g4,Bg4e4] }
 1. Rg1+ Kh7 2. Rg4! { The Bridging } 2... Re2 3. Kf7 Rf2+ 4. Ke6 Re2+ 5. Kf6 Rf2+ 6. Ke5 Re2+ 7. Re4 *
 
@@ -86,18 +90,19 @@
 [UTCDate "2021.07.06"]
 [UTCTime "09:08:38"]
 
+{ The Philidor position, analyzed by François-André Philidor in 1777, is the fundamental drawing method for the weaker side in rook and pawn versus rook endgames. Black's drawing recipe is: keep the king in front of the pawn and place the rook on the third rank (here the sixth rank from Black's perspective) until the pawn advances, then switch to checking the opposing king from behind along the eighth rank. After 1...Rb6! 2.e6 Rb1, Black gains the necessary checking distance — White's king has no shelter from the rear checks. }
 { [%cal Bb1b6,Bb6h6] }
 1... Rb6 2. e6 Rb1 *
 
 
-[Event "Endgames' Database: Kastedt's draw: the second defensive method"]
+[Event "Endgames' Database: Karstedt's draw: the second defensive method"]
 [Date "2021.07.06"]
 [Result "*"]
 [Variant "Standard"]
 [ECO "?"]
 [Opening "?"]
 [StudyName "Endgames' Database"]
-[ChapterName "Kastedt's draw: the second defensive method"]
+[ChapterName "Karstedt's draw: the second defensive method"]
 [ChapterURL "https://lichess.org/study/R3Qq55Ux/5D540mfG"]
 [Annotator "https://lichess.org/@/pietro2009"]
 [FEN "4k3/R7/8/4PK2/8/8/8/1r6 b - - 0 1"]
@@ -105,6 +110,7 @@
 [UTCDate "2021.07.06"]
 [UTCTime "09:10:55"]
 
+{ Same starting position as the Philidor chapter, but here Black uses a second defensive method (known as Karstedt's defense, after Max Karstedt who published it in 1897): active king play rather than the purely passive third-rank rook placement. The key idea is 1...Re1! — placing the rook on the e-file — followed by 2...Kf8!, keeping the king on the short side near the queening square. If the king stays close to f8, White can never force a decisive position because Black answers Ra8+ with Kg7 and then returns, denying White's king the critical e7 outpost. }
 { [%cal Bb1e1,Be1e8] }
 1... Re1! 2. Ke6 Kf8! (2... Kd8?! 3. Ra8+ Kc7 4. Re8 (4. Kf6 Kd7) 4... Rh1! (4... Re2? 5. Kf7 Rh2 6. Rg8 Rh7+ 7. Rg7 Rh8 8. Ke7 Kc6 9. e6 Kc7 10. Rg1) 5. Rg8 Re1 6. Rg2 Kd8 $10) 3. Ra8+ Kg7 4. Kd6 Kf7 5. Ra7+ Ke8 6. Ke6 Kf8 7. Ra8+ Kg7 8. Re8 Ra1! *
 
@@ -124,6 +130,7 @@
 [UTCDate "2021.07.07"]
 [UTCTime "06:35:39"]
 
+{ Black must place the rook on the long side (the a-file) with 1...Ra1!, from where perpetual checking distance is maintained. The losing mistake 1...Rg1? abandons the long side — White replies Ra6, driving the black king away, and then Rg8! followed by g7 creates an unstoppable pawn. This chapter reinforces the key defensive principle: in rook-and-pawn-versus-rook endings, the defending rook belongs on the long side where it has maximum checking distance and can prevent the king from finding shelter. }
 1... Rg1? (1... Ra1! 2. Rb6 Ra8 $10) 2. Ra6 Kf8 3. Ra8+ Ke7 4. Rg8! Rg2 5. Kh7! Kf7 6. g6+ Ke7 7. Ra8 Rh2+ 8. Kg8 Rg2 9. g7 *
 
 
@@ -142,6 +149,7 @@
 [UTCDate "2021.07.07"]
 [UTCTime "06:41:22"]
 
+{ A practical example of a critical king-move decision in a rook ending with mutual passed pawns. Black must choose the correct direction: 1...Kd3! wins by coordinating the king with the e-pawn and rook to escort the passer, while 1...Kxe3? is a blunder that hands White the draw — after 2.Kc2 the white king blockades the pawn and Black's rook on g3 cannot break through White's Re8 defense. The lesson is that in rook endings, king activity and pawn coordination often matter more than material; the wrong king step can turn a win into an immediate draw. }
 1... Kxe3? (1... Kd3! 2. Rd5+ Kxe3 3. Kc2 Ke2!? (3... Rxg3 4. Re5 Kf4 5. Re8 (5. Rd5 Kf3 6. Re5 e3 7. Kd3 Kf2) 5... Rd3 $19) 4. Rd2+ Kf3 5. Rd7 Rf8!? (5... Rxg3 6. Re7 e3 7. Kd3 Kf2) 6. Kd1 Kf2 7. Rd2+ Kf1 $19) 2. Kc2 Rxg3 3. Re8 Rg2+ $10 *
 
 
@@ -160,6 +168,7 @@
 [UTCDate "2021.07.07"]
 [UTCTime "06:52:25"]
 
+{ White's saving resource is the counter-attack 1.h4!, creating a passed pawn of his own to distract Black. If Black greedily captures 1...Rxh4??, White's rook rounds up the g-pawn and then holds the draw. The correct defense for Black is 1...Rg1+!, forcing White's king toward the pawn and maintaining the two-pawn advantage with precise play. This position illustrates how a well-timed pawn advance can completely change the evaluation of a rook endgame — the h-pawn becomes an equalizer, not a weakness. }
 1. h4! Rxh4?? (1... Rg1+! 2. Ke2 (2. Kd2 Rg2+ 3. Ke1 g4 4. Kf1 (4. h5 Kc3 5. h6 Rh2 6. Rh8 d3 7. Rc8+ Kd4 8. Rd8+ Ke3 9. Re8+ Kf3 $19) 4... Rh2 5. Rxg4 Kc3 6. Kg1 Rc2 7. Rg8 (7. h5 d3) 7... d3 8. Rc8+ Kb2 $19) 2... d3+ 3. Kd2 Rg2+ 4. Kd1 g4 5. h5 Rh2 6. Rc8+ Kd4 $19) 2. Rxg5 Kc3 3. Rd5 Rh1+ 4. Ke2 $10 *
 
 
@@ -178,6 +187,7 @@
 [UTCDate "2021.07.07"]
 [UTCTime "06:59:37"]
 
+{ From their 1965 Bled Candidates semi-final, this position arose in game 9. White can draw with 1.Ra7+ driving the king away, but the subsequent play is full of mutual errors. Black's king must stay active with 1...Ke8! to hold; retreating to c8 allows White to capture e5 with tempo and coordinate the e-pawn advance. The position demonstrates how in rook endgames with pawns on both sides, precise king positioning is essential — a single passive king move can be the difference between a draw and a loss. }
 1. Ra7+ Kc8? (1... Ke8!) 2. Kxe5 b3? (2... Rh2) 3. axb3 Rxb3 4. Kd6 Rd3+ 5. Ke6? (5. Ke7 Rh3 6. Ra4 Rh7+ 7. Ke8 Rh8+ 8. Kf7 $18) 5... Rh3 6. Ra8+ (6. Ra4 Kd8) 6... Kc7 7. Rf8 Re3! 8. e5 Re1 9. Re8 (9. Kf6 Kd7) 9... Rh1! 10. Ra8 Re1! *
 
 
@@ -196,6 +206,7 @@
 [UTCDate "2021.07.07"]
 [UTCTime "07:08:05"]
 
+{ The Umbrella is a technique where the attacking king shelters behind a pawn to avoid rook checks during the final push. Black plays 1...f4!, which White must capture with gxf4, placing White's own pawn on f4. Black's king then settles on f3, using the f4-pawn as an "umbrella" that blocks White's rook from delivering checks along the third rank. Without this pawn shelter, a king escorting a passed pawn would be driven away by perpetual harassment; the umbrella pawn solves this problem elegantly. }
 1... f4! 2. gxf4 Rb2+ 3. Kf1 Kf3 $19 { Black use the pawn f4 like an Umbrella for protecs the black king from checks } 4. Ra1 Rh2 5. Kg1 Rg2+ 6. Kh1 Rg8 7. Kh2 e2 8. f5 Kf2 9. Kh3 Rg5! (9... e1=Q?? 10. Rxe1! Kxe1 11. Kh4! $10) *
 
 
@@ -214,6 +225,7 @@
 [UTCDate "2021.07.07"]
 [UTCTime "07:21:33"]
 
+{ Black can hold the draw with either 1...Ra5 — putting the rook behind White's pawn mass and preparing to exchange — or 1...Rb4 keeping active rook play. The losing blunder 1...Rb1?? abandons all counterplay; White's king marches in via h5 and the connected f- and g-pawns become unstoppable after g5 fxg5 f5. This practical example demonstrates that in rook endings with multiple pawns, rook activity and proper defensive positioning must never be surrendered voluntarily. }
 1... Rb1?? (1... Rb4 2. f5 Rb1! 3. Kh5 Rg1!) (1... Ra5 2. g5 (2. f5 Ra1!) 2... fxg5+ 3. fxg5 Ra6 $10 (3... Ra8 $10)) 2. Kh5 Rg1 3. g5 fxg5 4. f5! Kf8 5. f6 $18 *
 
 
@@ -251,6 +263,7 @@
 [UTCDate "2021.07.07"]
 [UTCTime "07:38:30"]
 
+{ A practical example of the frontal attack defense being missed. White draws with either 1.Ke4 (keeping the king centrally active) or 1.Rh1 (getting behind Black's pawn), but 1.Ke2?? retreats the king to a passive square where it is immediately driven further back by Kb5, giving Black's king a free road to the queenside. The game illustrates a key endgame principle: in rook endings, a passive king is a losing king — maintaining active king opposition is often the difference between drawing and losing. }
 1. Ke2?? { Both 1.Ke4 and 1. Rh1 might lead to draw } 1... Kb5 2. Rb1+ Ka4 3. Rc1 Kb4 4. Rb1+ Ka3! 5. Rc1 Rd5! 6. Ke3 Kb2 7. Rc4 Kb3 *
 
 
@@ -285,9 +298,10 @@
 [Annotator "https://lichess.org/@/pietro2009"]
 [FEN "3r4/8/8/6k1/3P4/3K4/8/5R2 w - - 0 1"]
 [SetUp "1"]
-[UTCDate "2021.07.07"]
+[UTCDate "2021.07.06"]
 [UTCTime "07:59:42"]
 
+{ André Chéron's 1923 study demonstrates the winning method when the defending king is too far from the pawn to establish a blockade. White wins by marching the king to b6, displacing the defending king from the ideal blockading square, and then maneuvering the rook to d1 — driving the defending rook off the d-file with tempo. The key sequence Re1! cuts off the defending rook laterally, allowing the d-pawn to advance decisively. Compare with Chéron 1923 (II) where the defending king is close enough to the pawn to hold a draw. }
 1. Kc4 Rc8+ 2. Kb5 Rd8 3. Kc5 Rc8+ 4. Kb6! Rd8 5. Rd1! Kf6 6. Kc7 Rd5 7. Kc6 Ra5 (7... Rd8 8. d5 $18) 8. Re1! Ra6+ 9. Kb5 Rd6 10. Kc5 Rd8 11. d5 $18 *
 
 
@@ -306,6 +320,7 @@
 [UTCDate "2021.07.07"]
 [UTCTime "08:12:32"]
 
+{ Chéron's 1926 study establishes a crucial exception: even with the defending king cut off far from the pawn, the position can be drawn if the king has enough maneuvering room along the edge. Here Black's king shuffles between h4, h5, and h6 while the rook maintains lateral checking distance, and White cannot break the cycle — advancing the king triggers rook checks that restore the position. White's best attempt 1.Rg2! is met by 1...Kh4!, and after 2.Rg7 Kh5 3.Rg1! the position repeats. Note: the original annotator cautions that this "no-win" pattern also applies to knight pawns (b/g-file), where two-file king cutoff is likewise insufficient. }
 1. Rg2! (1. Kd4 Rd8+ 2. Kc5 Re8 3. Kd5 Rd8+ 4. Kc6 Re8 5. Re1 Kg6 6. Kd7 Ra8 (6... Re5 7. Kd6 Ra5)) 1... Kh4! 2. Rg7 (2. e5 Rxe5+ 3. Kf4 Kh3) 2... Kh5 3. Rg1! Kh6 (3... Kh4 4. e5) (3... Ra8 4. e5 Ra4 5. e6 Kh6 (5... Ra6 6. Kf4 Rxe6 7. Kf5) 6. e7 Ra8 7. Kf4 Re8 8. Kf5 Rxe7 9. Kf6) 4. Kd4 Rd8+ 5. Kc5 Re8 6. Kd5 Rd8+ 7. Ke6! Re8+ 8. Kf6! { It is important to remember that in case of a knight pawn, cuttinf off the king by two files is not sufficient to win } *
 
 
@@ -324,6 +339,7 @@
 [UTCDate "2021.07.07"]
 [UTCTime "08:24:04"]
 
+{ Chéron's companion study to the (I) position: here the defending king is close enough to the b-pawn to maintain a draw, in contrast to the (I) study where the king was too far away. The key defensive idea is 1...Ke5!, centralizing the king and preparing to meet Rd7 with Ke6!, keeping the king on the short side. If the defending king manages to stay on e5–e6, White can never maneuver to a winning formation because the king blocks the critical path. Compared to Chéron 1923 (I): the key difference is not the file count but the defending king's ability to reach an active central square in time. }
 1. Rd4 (1. Ka4 Ra8+ 2. Kb5 Rb8+ 3. Ka5 Ra8+ 4. Kb6 Rb8+ 5. Kc5) 1... Ke5! 2. Kc3 (2. Rd7 Ke6! 3. Ra7 Kd6 4. Ka4 Kc6 $10) 2... Rh8 (2... Rc8+ 3. Rc4 (3. Kd3 Rb8) 3... Rb8 4. Rc6 Kd5 5. Ra6 Rc8+ 6. Kb3 Rc6!) 3. Rd7 (3. b5 Rb8 4. Rh4 Kd6 5. Kb4 Kc7 $10) 3... Ke6! (3... Rb8? 4. Kc4 Ke6 5. Ra7 Kd6 6. b5 Rc8+ 7. Kb4 Rc7 8. b6) (3... Rc8+? 4. Kb3 Ke6 5. Rd4 Ke5 6. Rc4 Rb8 7. Rc6 Kd5 8. Ra6) *
 
 
@@ -342,6 +358,7 @@
 [UTCDate "2021.07.08"]
 [UTCTime "10:23:31"]
 
+{ A practical example from the 1968 USSR team championship where White misses the drawing resource. The correct 1.Rb1! holds because White's rook cuts off Black's king on the b-file while being ready to check from behind once the g-pawn advances. The losing 1.Kd3?? gives Black's rook a free tempo to reposition, and after Re1 the rook dominates the first rank — Black then escorts the g-pawn to promotion with tempo-gaining king moves that drive White's king away from the drawing zone. }
 1. Kd3?? (1. Rb1! g5 2. Kd3 Re5 3. Kd4 Re8 4. Rg1 Kg6 5. Kd3 $10) 1... Re1 2. Kd2 Re6 3. Rb1 g5 4. Rg1 Kh5! 5. Rh1+ Kg6 6. Rg1 Re5! 7. Kd3 Kf5! 8. Kd4 (8. Rf1+ Kg4 9. Kd4 Ra5 10. Ke3 Ra3+ 11. Ke2 Ra2+ 12. Ke3 Kh3) 8... Re4+ 9. Kd3 g4 10. Rf1+ Rf4 11. Ke2 g3! 12. Rxf4+ Kxf4 13. Ke1 Ke3 14. Kf1 Kf3 *
 
 
@@ -360,6 +377,7 @@
 [UTCDate "2021.07.08"]
 [UTCTime "10:30:40"]
 
+{ When the stronger side's king is in front of its own rook pawn on the a-file (or h-file), the position is a theoretical draw. The defending king only needs to reach c7 to achieve stalemate or deny the queening square — and here, the black king on e7 easily arrives at c7 in time. White's rook cannot generate progress because there is no room to build a bridge: the a-pawn's promotion square is shared with the corner, and the defending king always has access via b8 or c7. }
 1. Rh2 { The draw is inevitable } 1... Kd7 2. Rh8 Kc7 3. Rb8 Rc1 (3... Rh1 4. Rb7+ Kc8 5. Rb2 Rc1) 4. Rb2 Rc3 *
 
 
@@ -397,6 +415,7 @@
 [UTCDate "2021.07.08"]
 [UTCTime "10:56:27"]
 
+{ White's saving technique is 1.Rg8+!, giving check to force the king off the g-file and then adopting a "checking station" strategy — the rook oscillates from g8 to g5 and back, keeping Black's king busy and preventing the h-pawn from advancing without constant checks. The losing move 1.Rc3? lets Black advance h4 and reposition the rook to h7, after which the king marches in and the h-pawn decides. When defending against a rook pawn in this type of ending, long-range lateral checks are the key resource — the rook must never be passivized. }
 1. Rc3? (1. Rg8+ Kf5 2. Rf8+ Kg4 3. Rg8+ Kh3 4. Rg5 h4 5. Rg8) 1... h4 2. Re3? (2. Rc6+ Kg5 3. Rc8 h3 4. Rh8 Kg4 5. Rg8+ Kf3 6. Rf8+ Kg2 7. Rg8+ Kh1 8. Rg6 h2 9. Rg8) 2... Rh7! 3. Re1 h3 4. Rh1 Kg5 5. Ke3 Kh4 6. Kf2 Rf7+ 7. Kg1 Ra7 8. Rh2 Ra1+ 9. Kf2 Kg4 *
 
 
@@ -415,7 +434,7 @@
 [UTCDate "2021.07.08"]
 [UTCTime "15:26:02"]
 
-{ If i add a pawn on h5 or g5 there will no change: Black simply ignores his existence but with a pawn on f5, white wins( next chapter) } { [%cal Ra1a8,Gc5b6,Ba1b1,Bb1b8] }
+{ When the winning rook is in front of the a-pawn on the seventh rank and the defending king is nearby, the position is a theoretical draw regardless of any additional h- or g-pawn. The defending rook oscillates on the a-file (Ra1–Rb1–Rc1 cycling) preventing the white king from approaching, and if White's rook leaves the a-file to escort the king, Black captures the pawn or reaches b1, forcing a draw. An extra pawn on h5 or g5 changes nothing because Black simply ignores it; only a pawn on f5 (the next chapter) provides a meaningful threat that breaks the defense. } { [%cal Ra1a8,Gc5b6,Ba1b1,Bb1b8] }
  *
 
 
@@ -434,6 +453,7 @@
 [UTCDate "2021.07.08"]
 [UTCTime "15:31:36"]
 
+{ Adding a pawn on f5 converts the theoretical draw from the previous chapter into a decisive win. The f5-pawn creates a direct mating threat: 1.f6+ forces the black king to f7, after which 2.Rh8! is the winning tempo move — the rook sidesteps, Black captures the a-pawn with Rxa7, but 3.Rh7+ forks king and rook. The f-pawn's proximity to the king is the key: unlike h5 or g5, it creates a genuine tactical threat that cannot be ignored, breaking Black's defensive routine. }
 1. f6+ Kf7 2. Rh8 Rxa7 3. Rh7+ *
 
 
@@ -452,6 +472,7 @@
 [UTCDate "2021.07.08"]
 [UTCTime "15:35:28"]
 
+{ A critical moment where White must choose the correct recapture after Black's pawn exchange. After 1...hxg3, recapturing 2.hxg3? allows Black to draw with 2...g4+! — stripping away the f3-pawn and reaching equality. The winning recapture is 2.Kxg3!, and crucially after 2...Kh7 White must play 3.h4! — pushing the h-pawn immediately to create a passed pawn and neutralize Black's g-pawn. This example shows that in rook endings with multiple pawns, the choice of recapture and pawn-break timing can be the difference between winning and drawing. }
 1... hxg3 2. hxg3? (2. Kxg3! Kh7 3. h4! gxh4+ 4. Kh3 Kg7 5. f4! { [%cal Rf4f5,Rf5f6] }) 2... g4+! 3. fxg4 Rc1 $10 *
 
 
@@ -470,6 +491,7 @@
 [UTCDate "2021.07.08"]
 [UTCTime "15:50:39"]
 
+{ The Vancura position, named after Czech study composer Josef Vančura (1898–1921; study published posthumously 1924), is the main drawing technique for the defender against a rook pawn on the sixth or seventh rank. The key idea is to attack the pawn from the side with 1...Rf1+! followed by 2...Rf6!, placing the rook on the sixth rank where it simultaneously attacks the a6-pawn and delivers horizontal checks whenever the king tries to approach. The defending king stays near the kingside to avoid being cut off, and Black perpetually checks from behind whenever the white king advances to protect the pawn. Compare with the Romanovsky study (next chapter), which demonstrates the limits of this method. }
 1... Rf1+! (1... Kf7? 2. Ke4 Ke7 (2... Ra5? 3. Kd4 Kg7 4. Kc4 Kf7 5. Kb4 Ra1 6. Kb5 Rb1+ 7. Kc6 Ra1 8. Kb7 Rb1+ 9. Ka7 Ke7 10. Rb8 Rc1 11. Kb7 Rb1+ 12. Ka8 Ra1 13. a7 Kd7 14. Kb7 Rb1+ 15. Ka6 Ra1+ 16. Kb6 Rb1+ 17. Kc5 Rc1+ 18. Kd4 Rd1+ 19. Kc3 Rc1+ 20. Kd2) 3. a7 Kf7 4. Rh8) 2. Ke4 Rf6! 3. Kd5 Rb6! 4. Kc5 Rf6! 5. Kb5 Rf5+ *
 
 
@@ -488,6 +510,7 @@
 [UTCDate "2021.07.11"]
 [UTCTime "13:45:12"]
 
+{ Romanovsky's 1950 study is a famous counterexample to the Vancura method: here the pawn is already on the sixth rank and White's king is much closer, so the standard Rf1+ Rf6 approach fails to a spectacular rook sacrifice (2.Ke5 Rf6 3.Rg8+!! Kf7 4.Rf8+). Black's only draw is the paradoxical 1...Rc1! — going to the c-file rather than checking — followed by 2...Ra1, reaching a position where White cannot improve because the defending rook targets the a-pawn from behind and the defending king pivots to f7. The study teaches that Vancura is not universal: precise calculation of the specific position is always required. }
 1... Rc1! (1... Rf1+? 2. Ke5 Rf6 3. Rg8+!! Kf7 4. Rf8+) (1... Rb1? 2. Ra7+ Kf6 3. Ke4 Rb6 4. Rh7 Kg6 5. a7 Ra6 6. Rb7) 2. Rb8 (2. Ke5 Rc6) 2... Ra1 3. Rb6 (3. Rb7+ Kf6 4. a7 Ke6) 3... Ra5! (3... Kf7 4. Ke5 Ke7 5. Rb7+ Kd8 6. a7) 4. Ke4 Kf7! 5. Kd4 (5. Rh6 Kg7 (5... Ke7 6. a7 Kd7 7. Rh8)) 5... Ke7 6. Kc4 Kd7 7. Kb4 Ra1 *
 
 
@@ -506,6 +529,7 @@
 [UTCDate "2021.07.11"]
 [UTCTime "14:02:09"]
 
+{ A complex endgame from Horgen 1995 featuring mutual errors. Black draws with 1...Rf6!, attacking the h7-pawn and forcing either 2.Kxb2 Rb6+ (perpetual) or 2.Ra8+ Kxh7 3.Kxb2 Kg7 with equality. Both sides miss the decisive moves: Black's 1...Rb4?? abandons the key defensive file, and White's subsequent 3.Rc8+?? returns the king to h7 instead of the winning 3.Rc6!. The final moves show the classic technique of escorting a passed a-pawn with king and rook coordination against a lone defending rook. }
 1... Rb4?? (1... Rf6! 2. Ra8+ (2. Kxb2 Rb6+ 3. Kc3 Rc6+ 4. Kb4 Rb6+ 5. Kc5 Rc6+ 6. Kd5 Rd6+) 2... Kxh7 3. Kxb2 Kg7) 2. Rc7 Ra4 3. Rc8+?? (3. a7?? Rxa7) (3. Rc6! Kxh7 4. Kxb2 Kg7 5. Kb3 Ra1 6. Kb4 Kf7 7. Kc5 Ke7 8. Kb6 Kd7 9. Kb7) 3... Kxh7 4. Rc6 Rb4?? (4... Kg7! 5. Kxb2 Kf7 6. Kb3 Ra1 7. Kb4 Ke7 8. Kb5 Kd7) 5. a7 Ra4 6. Rc7+ Kg6 7. Kxb2 Kf6 8. Kb3 Ra1 9. Kb4 Ke6 10. Kb5 Kd6 11. Rc6+ Kd5 12. Ra6 Rb1+ 13. Ka5 Kc5 14. Rc6+! Kxc6 15. a8=Q+ *
 
 
@@ -524,6 +548,6 @@
 [UTCDate "2021.07.11"]
 [UTCTime "14:22:46"]
 
+{ White draws with 1.Ra4+!, cutting off the black king along the 4th rank so the a-pawn cannot advance without the king's support, and after 1...Kf5 2.Rc4 the rook holds the drawing position. The losing 1.Rg6+? misplaces the rook and allows Black's king to approach via f4, after which the rook loses its cutting-off ability. The critical drawing resource missed later is 4.Rh4!! — retreating the rook to the fourth rank and then shuffling (Rh3–Rf3–Ra3) to neutralize the pawn — demonstrating that the defending rook must find counterplay along the rank rather than chasing the enemy king. }
 1. Rg6+? (1. Ra4+ Kf5 2. Rc4 Ra2+ 3. Kh3 Rb2 4. Ra4) 1... Kf4 (1... Kf5 2. Rg3) 2. Ra6 (2. Rg3 Rg1+) (2. Rf6+ Ke4 3. Rc6 Ra2+ 4. Kg3 Rb2) 2... Ke4 3. Ra4+ Ke3? 4. Rg4? (4. Rh4!! Kd2 5. Rh3! Kc2 6. Rf3! a2 7. Rf2+ Kc3 8. Rf3+! Kc4 9. Ra3) 4... Ra2+! 5. Kh3 Rf2! 6. Ra4 a2 7. Ra3+ Kd4 8. Kg3 Rb2 9. Kf4 Kc4 $19 *
-
 

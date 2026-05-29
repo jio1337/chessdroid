@@ -738,7 +738,7 @@ namespace ChessDroid
             string chapter = _cmbDrillChapter.Items[idx]?.ToString() ?? "";
             var ch = _drillChapters.FirstOrDefault(c => c.StudyName == study && c.ChapterName == chapter);
             if (ch == null) return;
-            if (_lblDrillDesc != null) _lblDrillDesc.Text = ch.Description;
+            SetDrillDescription(ch.Description);
             boardControl.LoadFEN(ch.Fen);
         }
 
@@ -5981,9 +5981,8 @@ namespace ChessDroid
             _cmbDrillChapter = new ComboBox { Dock = DockStyle.Top, DropDownStyle = ComboBoxStyle.DropDownList, Font = F(9f) };
             _lblDrillDesc = new Label
             {
-                Dock = DockStyle.Top, Height = 32, Font = F(8f),
-                ForeColor = Color.FromArgb(150, 150, 150),
-                AutoEllipsis = true
+                Dock = DockStyle.Top, Height = 0, Font = F(9f),
+                ForeColor = Color.FromArgb(150, 150, 150)
             };
             _btnDrillVsBot = new Button
             {
@@ -5996,8 +5995,7 @@ namespace ChessDroid
             _cmbDrillChapter.SelectedIndexChanged += (_, _) =>
             {
                 var ch = SelectedDrillChapter();
-                if (_lblDrillDesc != null)
-                    _lblDrillDesc.Text = ch?.Description ?? "";
+                SetDrillDescription(ch?.Description ?? "");
                 if (ch != null)
                     boardControl.LoadFEN(ch.Fen);
             };
@@ -7116,6 +7114,25 @@ namespace ChessDroid
         // ── Puzzle Training ────────────────────────────────────────────────────
 
         // ── Endgame Drills ─────────────────────────────────────────────────────
+
+        private void SetDrillDescription(string text)
+        {
+            if (_lblDrillDesc == null || _pnlDrillSettings == null) return;
+            _lblDrillDesc.Text = text;
+            const int baseHeight = 122; // panel height without the description label
+            if (string.IsNullOrEmpty(text))
+            {
+                _lblDrillDesc.Height = 0;
+            }
+            else
+            {
+                int w = Math.Max(_pnlDrillSettings.ClientSize.Width, 80);
+                var sz = TextRenderer.MeasureText(text, _lblDrillDesc.Font,
+                    new Size(w, 9999), TextFormatFlags.WordBreak);
+                _lblDrillDesc.Height = sz.Height + 6;
+            }
+            _pnlDrillSettings.Height = baseHeight + _lblDrillDesc.Height;
+        }
 
         private void PopulateDrillStudies()
         {
