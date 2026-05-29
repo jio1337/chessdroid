@@ -110,7 +110,7 @@
 [UTCDate "2021.07.06"]
 [UTCTime "09:10:55"]
 
-{ Same starting position as the Philidor chapter, but here Black uses a second defensive method (known as Karstedt's defense, after Max Karstedt who published it in 1897): active king play rather than the purely passive third-rank rook placement. The key idea is 1...Re1! — placing the rook on the e-file — followed by 2...Kf8!, keeping the king on the short side near the queening square. If the king stays close to f8, White can never force a decisive position because Black answers Ra8+ with Kg7 and then returns, denying White's king the critical e7 outpost. }
+{ Same starting position as the Philidor chapter, but here Black uses a second defensive method (known as Karstedt's defense, after Max Karstedt who published it in 1897). The defining Karstedt idea is 1...Re1! — placing the rook directly behind the pawn on the e-file, preventing its advance — combined with 2...Kf8!, keeping the king on the short side near the queening square. If the king stays close to f8, White can never force a decisive position because Black answers Ra8+ with Kg7 and then returns, denying White's king the critical e7 outpost. }
 { [%cal Bb1e1,Be1e8] }
 1... Re1! 2. Ke6 Kf8! (2... Kd8?! 3. Ra8+ Kc7 4. Re8 (4. Kf6 Kd7) 4... Rh1! (4... Re2? 5. Kf7 Rh2 6. Rg8 Rh7+ 7. Rg7 Rh8 8. Ke7 Kc6 9. e6 Kc7 10. Rg1) 5. Rg8 Re1 6. Rg2 Kd8 $10) 3. Ra8+ Kg7 4. Kd6 Kf7 5. Ra7+ Ke8 6. Ke6 Kf8 7. Ra8+ Kg7 8. Re8 Ra1! *
 
@@ -134,14 +134,14 @@
 1... Rg1? (1... Ra1! 2. Rb6 Ra8 $10) 2. Ra6 Kf8 3. Ra8+ Ke7 4. Rg8! Rg2 5. Kh7! Kf7 6. g6+ Ke7 7. Ra8 Rh2+ 8. Kg8 Rg2 9. g7 *
 
 
-[Event "Endgames' Database: Labron-Knaak Baden Baden 1922"]
+[Event "Endgames' Database: Lobron-Knaak Baden Baden 1992"]
 [Date "2021.07.07"]
 [Result "*"]
 [Variant "From Position"]
 [ECO "?"]
 [Opening "?"]
 [StudyName "Endgames' Database"]
-[ChapterName "Labron-Knaak Baden Baden 1922"]
+[ChapterName "Lobron-Knaak Baden Baden 1992"]
 [ChapterURL "https://lichess.org/study/R3Qq55Ux/2zT7LbxD"]
 [Annotator "https://lichess.org/@/pietro2009"]
 [FEN "6r1/8/8/4R3/4p3/4P1P1/1K2k3/8 b - - 0 1"]
