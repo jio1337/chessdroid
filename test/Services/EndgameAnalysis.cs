@@ -106,6 +106,8 @@ namespace ChessDroid.Services
             {
                 int whitePawns = 0, blackPawns = 0;
                 int whiteOthers = 0, blackOthers = 0;
+                int pawnRow = -1, pawnCol = -1;
+                bool pawnIsWhite = false;
 
                 for (int r = 0; r < 8; r++)
                 {
@@ -116,25 +118,31 @@ namespace ChessDroid.Services
 
                         if (char.IsUpper(piece))
                         {
-                            if (piece == 'P') whitePawns++;
+                            if (piece == 'P') { whitePawns++; pawnRow = r; pawnCol = c; pawnIsWhite = true; }
                             else if (piece != 'K') whiteOthers++;
                         }
                         else
                         {
-                            if (piece == 'p') blackPawns++;
+                            if (piece == 'p') { blackPawns++; pawnRow = r; pawnCol = c; pawnIsWhite = false; }
                             else if (piece != 'k') blackOthers++;
                         }
                     }
                 }
 
-                // King and Pawn vs King
-                if (isWhite && whitePawns == 1 && whiteOthers == 0 && blackPawns == 0 && blackOthers == 0)
-                    return "King and pawn endgame (technical win)";
+                // K+P vs K — fires regardless of who is to move
+                bool whiteAttacks = whitePawns == 1 && whiteOthers == 0 && blackPawns == 0 && blackOthers == 0;
+                bool blackAttacks = blackPawns == 1 && blackOthers == 0 && whitePawns == 0 && whiteOthers == 0;
 
-                if (!isWhite && blackPawns == 1 && blackOthers == 0 && whitePawns == 0 && whiteOthers == 0)
-                    return "King and pawn endgame (technical win)";
+                if (!whiteAttacks && !blackAttacks) return null;
 
-                return null;
+                // Rook pawn — corner draw is available to the defender
+                if (pawnCol == 0 || pawnCol == 7)
+                {
+                    string corner = pawnIsWhite ? "a8/h8" : "a1/h1";
+                    return $"K+P vs K (rook pawn) — draw if defending king reaches the {corner} corner; the attacking king cannot force it out";
+                }
+
+                return "K+P vs K — win by reaching the 6th-rank square directly in front of the pawn; use king opposition to push the defending king aside";
             }
             catch
             {
@@ -183,7 +191,7 @@ namespace ChessDroid.Services
                 if (whiteBishopCount == 1 && blackBishopCount == 1 && otherPieces == 0 &&
                     whiteBishopSquareColor != blackBishopSquareColor && whiteBishopSquareColor != -1)
                 {
-                    return "opposite-colored bishops (drawish)";
+                    return "opposite-colored bishops — neither side can control the promotion square color; an extra pawn is often impossible to convert";
                 }
 
                 return null;
@@ -1268,12 +1276,11 @@ namespace ChessDroid.Services
         {
             try
             {
-                // Common fortress: Rook vs Rook + Pawn (rook behind pawn)
-                // We'll check for basic fortress indicators
-
                 int whiteRooks = 0, blackRooks = 0;
                 int whitePawns = 0, blackPawns = 0;
                 int otherWhite = 0, otherBlack = 0;
+                int whitePawnRow = -1, whitePawnCol = -1;
+                int blackPawnRow = -1, blackPawnCol = -1;
 
                 for (int r = 0; r < 8; r++)
                 {
@@ -1286,8 +1293,8 @@ namespace ChessDroid.Services
                         {
                             case 'R': whiteRooks++; break;
                             case 'r': blackRooks++; break;
-                            case 'P': whitePawns++; break;
-                            case 'p': blackPawns++; break;
+                            case 'P': whitePawns++; whitePawnRow = r; whitePawnCol = c; break;
+                            case 'p': blackPawns++; blackPawnRow = r; blackPawnCol = c; break;
                             case 'K': case 'k': break;
                             default:
                                 if (char.IsUpper(piece)) otherWhite++;
@@ -1297,13 +1304,36 @@ namespace ChessDroid.Services
                     }
                 }
 
-                // Rook endgame with single pawn - often drawable
+                // R+P vs R with exactly one pawn
                 if (whiteRooks == 1 && blackRooks == 1 && otherWhite == 0 && otherBlack == 0)
                 {
                     if (whitePawns == 1 && blackPawns == 0)
-                        return "potential fortress (R+P vs R is often drawable)";
+                    {
+                        // Rook pawn: Lucena bridge doesn't work, corner draw always available
+                        if (whitePawnCol == 0 || whitePawnCol == 7)
+                            return "rook pawn (R+P vs R) — draw if defending king reaches the corner; Lucena bridge technique does not apply to rook pawns";
+
+                        // Pawn on 7th rank: Lucena territory
+                        if (whitePawnRow == 1)
+                            return "R+P vs R, pawn on 7th rank — White aims for Lucena position: rook steps to 4th rank to shield the king from lateral checks (bridge-building)";
+
+                        // Standard R+P vs R
+                        return "R+P vs R — theoretical draw with precise play: Black holds with Philidor's method (rook to 3rd rank, switch to rear checks when pawn advances) or Karstedt's active king defense; White wins by reaching the Lucena position";
+                    }
+
                     if (blackPawns == 1 && whitePawns == 0)
-                        return "potential fortress (R+P vs R is often drawable)";
+                    {
+                        // Rook pawn: corner draw always available
+                        if (blackPawnCol == 0 || blackPawnCol == 7)
+                            return "rook pawn (R+P vs R) — draw if defending king reaches the corner; Lucena bridge technique does not apply to rook pawns";
+
+                        // Pawn on 7th rank (from Black's side): Lucena territory
+                        if (blackPawnRow == 6)
+                            return "R+P vs R, pawn on 7th rank — Black aims for Lucena position: rook steps to 4th rank to shield the king from lateral checks (bridge-building)";
+
+                        // Standard R+P vs R
+                        return "R+P vs R — theoretical draw with precise play: White holds with Philidor's method (rook to 3rd rank, switch to rear checks when pawn advances) or Karstedt's active king defense; Black wins by reaching the Lucena position";
+                    }
                 }
 
                 return null;
@@ -1357,15 +1387,9 @@ namespace ChessDroid.Services
                 var oppBishops = DetectOppositeBishops(board);
                 if (oppBishops != null) insights.Add(oppBishops);
 
-                // Add specific endgame type
+                // K+P vs K specific guidance
                 var kpk = DetectKPvK(board, whiteToMove);
                 if (kpk != null) insights.Add(kpk);
-
-                var rookEndgame = DetectRookEndgame(board);
-                if (rookEndgame != null) insights.Add(rookEndgame);
-
-                var queenEndgame = DetectQueenEndgame(board);
-                if (queenEndgame != null) insights.Add(queenEndgame);
             }
             catch { }
 
