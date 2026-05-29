@@ -51,7 +51,7 @@
 [UTCDate "2021.07.06"]
 [UTCTime "08:58:01"]
 
-{ A practical example of the Philidor defense being available but missed. Black draws with the correct 1...Ra4! — placing the rook on the long side and harassing White's king — but 1...Kg5? allows White to set up a winning Lucena-type position after Ra6. The game illustrates how a single careless move in a theoretically drawn rook endgame can be fatal: once White's rook reaches the seventh rank and the pawn advances to e6, the coordination of White's king, rook, and pawn overwhelms the passive defense. }
+{ A practical example of the lateral checking defense. Black draws cleanly with 1...Ra4! (or 1...Rb4) — cutting off the White king horizontally along the 4th rank so it cannot advance to escort the pawn. With sufficient checking distance, the rook harasses the king sideways indefinitely and White cannot make progress. The inaccuracy 1...Kg5? does not lose by force but surrenders the simplest defensive setup, leading to a more complex defense that requires precise follow-up. The lesson: when the defending king cannot reach the front of the pawn, the lateral rook cutoff is the clean and reliable solution. }
 1... Kg5? (1... Ra4!) 2. Ra6 Rb4 3. Ke6 Kg6?? 4. Ke7+ Kg7 5. Ra7 Rb8 6. e6 Kg6 7. Ra1 Rb7+ 8. Kd6 Rb6+ 9. Kd7 Rb7+ 10. Kc6 Rb8 11. Kc7 Rh8 (11... Rb2 12. Re1) 12. e7 Kf7 13. Kd7 Rb8 14. Rf1+ *
 
 
