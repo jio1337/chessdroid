@@ -418,52 +418,6 @@ namespace ChessDroid.Services
                     reasons.Add(destFile > srcFile ? "castles kingside for safety" : "castles queenside");
                 }
 
-                // ENDGAME ANALYSIS (controlled by ShowEndgameAnalysis toggle)
-                if (ExplanationFormatter.Features.ShowEndgameAnalysis && reasons.Count < 2)
-                {
-                    string? kpvk = EndgameAnalysis.DetectKPvK(tempBoard, isWhite);
-                    if (!string.IsNullOrEmpty(kpvk))
-                        reasons.Add(kpvk);
-
-                    string? oppBishops = EndgameAnalysis.DetectOppositeBishops(tempBoard);
-                    if (!string.IsNullOrEmpty(oppBishops) && reasons.Count < 2)
-                        reasons.Add(oppBishops);
-
-                    string? rookEndgame = EndgameAnalysis.DetectRookEndgame(tempBoard);
-                    if (!string.IsNullOrEmpty(rookEndgame) && reasons.Count < 2)
-                        reasons.Add(rookEndgame);
-
-                    string? queenEndgame = EndgameAnalysis.DetectQueenEndgame(tempBoard);
-                    if (!string.IsNullOrEmpty(queenEndgame) && reasons.Count < 2)
-                        reasons.Add(queenEndgame);
-
-                    string? bareKing = EndgameAnalysis.DetectBareKing(tempBoard, !isWhite);
-                    if (!string.IsNullOrEmpty(bareKing) && reasons.Count < 2)
-                        reasons.Add(bareKing);
-
-                    // DetectMaterialImbalance preserved for future mini-template use — not shown in text output
-                    // string? materialImbalance = EndgameAnalysis.DetectMaterialImbalance(tempBoard);
-
-                    // DetectQualityImbalance preserved for future mini-template use — not shown in text output
-                    // string? qualityImbalance = EndgameAnalysis.DetectQualityImbalance(tempBoard);
-
-                    // King opposition: key endgame technique to control enemy king
-                    if (pieceType == PieceType.King && reasons.Count < 2)
-                    {
-                        var (enemyKingRow, enemyKingCol) = tempBoard.GetKingPosition(!isWhite);
-                        if (enemyKingRow >= 0)
-                        {
-                            int rowDiff = Math.Abs(destRank - enemyKingRow);
-                            int colDiff = Math.Abs(destFile - enemyKingCol);
-                            bool directOpp = (rowDiff == 2 && colDiff == 0) ||
-                                            (rowDiff == 0 && colDiff == 2) ||
-                                            (rowDiff == 2 && colDiff == 2);
-                            if (directOpp)
-                                reasons.Add("takes opposition against enemy king");
-                        }
-                    }
-                }
-
                 // OPENING ANALYSIS (controlled by ShowOpeningPrinciples toggle)
                 if (ExplanationFormatter.Features.ShowOpeningPrinciples && reasons.Count < 2)
                 {
