@@ -88,7 +88,8 @@ namespace ChessDroid
         private Label _lblWhiteEngineInfo = null!;
 
         // Bot mode
-        private bool _botModeActive = false;
+        private bool _botModeActive  = false;
+        private bool _drillBotActive = false; // true while a drill Practice vs Bot session is running
         private bool _matchPanelActive = false;
         private BotSettings? _botSettings;
         private ChessEngineService? _botEngine;
@@ -2805,7 +2806,17 @@ namespace ChessDroid
             _botEngine?.Dispose();
             _botEngine = null;
 
-            RestoreChallengeSnapshot();
+            if (_drillBotActive)
+            {
+                _drillBotActive = false;
+                RestoreChallengeSnapshot(triggerAnalysis: false);
+                SetDrillControlsEnabled(true);
+                if (_btnDrillVsBot != null) _btnDrillVsBot.Text = "⚔ Practice vs Bot";
+            }
+            else
+            {
+                RestoreChallengeSnapshot();
+            }
             lblStatus.Text = result;
         }
 
@@ -3002,10 +3013,21 @@ namespace ChessDroid
             btnStartMatch.Enabled = true;
             boardControl.InteractionEnabled = true;
 
-            RestoreChallengeSnapshot();
+            if (_drillBotActive)
+            {
+                _drillBotActive = false;
+                RestoreChallengeSnapshot(triggerAnalysis: false);
+                SetDrillControlsEnabled(true);
+                if (_btnDrillVsBot != null) _btnDrillVsBot.Text = "⚔ Practice vs Bot";
+                lblStatus.Text = "Drill stopped";
+            }
+            else
+            {
+                RestoreChallengeSnapshot();
+            }
         }
 
-        private void RestoreChallengeSnapshot()
+        private void RestoreChallengeSnapshot(bool triggerAnalysis = true)
         {
             if (_challengeSnapshot == null) return;
             config?.CopyFrom(_challengeSnapshot);
@@ -3014,8 +3036,11 @@ namespace ChessDroid
             ApplyConsoleFont();
             LeftPanel_Resize(leftPanel, EventArgs.Empty);
             evalBar?.Reset();
-            lblStatus.Text = "Bot mode stopped — analysis restored";
-            _ = TriggerAutoAnalysis();
+            if (triggerAnalysis)
+            {
+                lblStatus.Text = "Bot mode stopped — analysis restored";
+                _ = TriggerAutoAnalysis();
+            }
         }
 
         private void ApplyChallengeMode()
@@ -7122,6 +7147,19 @@ namespace ChessDroid
 
         // ── Endgame Drills ─────────────────────────────────────────────────────
 
+        private void SetDrillControlsEnabled(bool enabled)
+        {
+            if (_cmbDrillStudy    != null) _cmbDrillStudy.Enabled    = enabled;
+            if (_cmbDrillChapter  != null) _cmbDrillChapter.Enabled  = enabled;
+            if (_btnTrainingStart != null) _btnTrainingStart.Enabled  = enabled;
+            // Lock mode-switcher buttons so the user can't leave drill mode mid-game
+            if (_btnSqMode     != null) _btnSqMode.Enabled     = enabled;
+            if (_btnOpMode     != null) _btnOpMode.Enabled     = enabled;
+            if (_btnPuzzleMode != null) _btnPuzzleMode.Enabled = enabled;
+            if (_btnVisionMode != null) _btnVisionMode.Enabled = enabled;
+            if (_btnDrillMode  != null) _btnDrillMode.Enabled  = enabled;
+        }
+
         private void SetDrillDescription(string text)
         {
             if (_lblDrillDesc == null || _pnlDrillSettings == null) return;
@@ -7193,7 +7231,10 @@ namespace ChessDroid
         {
             var chapter = SelectedDrillChapter();
             if (chapter == null) { lblStatus.Text = "Select a position first."; return; }
+
+            // Button acts as toggle — stop if already running
             if (_botModeActive) { StopBotMode(); return; }
+
             if (matchRunning) { lblStatus.Text = "Stop the engine match first"; return; }
             if (string.IsNullOrEmpty(config?.SelectedEngine)) { lblStatus.Text = "No engine configured — click ⚙ to set up"; return; }
 
@@ -7208,7 +7249,11 @@ namespace ChessDroid
             // User always plays the active side in the drill position
             _botSettings.BotPlaysWhite = !chapter.WhiteToMove;
 
-            StopTraining();
+            // Lock down drill controls — training panel stays visible the whole session
+            SetDrillControlsEnabled(false);
+            if (_btnDrillVsBot != null) { _btnDrillVsBot.Text = "⏹ Stop Practice"; _btnDrillVsBot.Enabled = true; }
+
+            // Board setup (no StopTraining — we keep the training panel visible)
             CancelClassification();
             boardControl.ClearEngineArrows();
             boardControl.ClearBookArrows();
@@ -7222,40 +7267,24 @@ namespace ChessDroid
             _classificationLookup = null;
             consoleFormatter?.SetActiveClassification(null);
             analysisOutput.Clear();
-            // Pin the drill description in the analysis panel for the whole session.
-            // Auto-analysis is suppressed in bot mode, so this won't be overwritten.
-            if (!string.IsNullOrEmpty(chapter.Description))
-            {
-                bool isDark = ThemeService.IsDarkTheme(config?.Theme);
-                var headerColor = isDark ? Color.FromArgb(220, 180, 80) : Color.SaddleBrown;
-                var bodyColor   = isDark ? Color.FromArgb(160, 160, 160) : Color.FromArgb(90, 90, 90);
-                var baseFont    = analysisOutput.Font;
-                analysisOutput.SelectionFont  = new Font(baseFont.FontFamily, baseFont.Size + 0.5f, FontStyle.Bold);
-                analysisOutput.SelectionColor = headerColor;
-                analysisOutput.AppendText($"📖 {chapter.ChapterName}\n\n");
-                analysisOutput.SelectionFont  = new Font(baseFont.FontFamily, baseFont.Size);
-                analysisOutput.SelectionColor = bodyColor;
-                analysisOutput.AppendText(chapter.Description);
-                analysisOutput.SelectionFont  = baseFont;
-                analysisOutput.SelectionColor = isDark ? Color.FromArgb(220, 220, 220) : Color.Black;
-            }
             evalBar?.Reset();
             UpdateMoveList();
             UpdateFenDisplay();
             UpdateTurnLabel();
 
-            // Flip board: user plays the active side
+            // Flip board so user plays the active side
             bool userPlaysBlack = _botSettings.BotPlaysWhite;
             if (userPlaysBlack && !boardControl.IsFlipped) boardControl.FlipBoard();
             else if (!userPlaysBlack && boardControl.IsFlipped) boardControl.FlipBoard();
 
+            // Start bot engine
             try
             {
                 lblStatus.Text = "Starting bot engine...";
                 string enginesPath = config!.GetEnginesPath();
-                string engineFile = !string.IsNullOrEmpty(_botSettings.EngineFileName)
+                string engineFile  = !string.IsNullOrEmpty(_botSettings.EngineFileName)
                     ? _botSettings.EngineFileName : config.SelectedEngine;
-                string enginePath = Path.Combine(enginesPath, engineFile);
+                string enginePath  = Path.Combine(enginesPath, engineFile);
 
                 _botEngine = new ChessEngineService(config);
                 await _botEngine.InitializeAsync(enginePath);
@@ -7265,6 +7294,8 @@ namespace ChessDroid
                     lblStatus.Text = "Failed to start bot engine";
                     _botEngine.Dispose();
                     _botEngine = null;
+                    SetDrillControlsEnabled(true);
+                    if (_btnDrillVsBot != null) _btnDrillVsBot.Text = "⚔ Practice vs Bot";
                     return;
                 }
 
@@ -7275,24 +7306,30 @@ namespace ChessDroid
                 lblStatus.Text = $"Bot engine error: {ex.Message}";
                 _botEngine?.Dispose();
                 _botEngine = null;
+                SetDrillControlsEnabled(true);
+                if (_btnDrillVsBot != null) _btnDrillVsBot.Text = "⚔ Practice vs Bot";
                 return;
             }
 
-            _botModeActive = true;
-            _botMoveCts = new CancellationTokenSource();
+            _drillBotActive = true;
+            _botModeActive  = true;
+            _botMoveCts     = new CancellationTokenSource();
             btnPlayBot.Text = "⏹";
             toolTip.SetToolTip(btnPlayBot, "Stop Bot");
             boardControl.InteractionEnabled = true;
             btnStartMatch.Enabled = false;
 
-            string diffLabel = _botSettings.GetDifficultyLabel();
-            string colorLabel = userPlaysBlack ? "Black" : "White";
-            analysisOutput.AppendText($"Endgame Drill: {chapter.ChapterName}\n");
-            analysisOutput.AppendText($"You play {colorLabel} — {diffLabel}\n\n");
-            lblStatus.Text = $"Drill vs Bot — {diffLabel}";
+            // Always challenge mode for drills — no eval bar, no engine lines, no hints
+            ApplyChallengeMode();
 
-            // It's always user's turn in the drill FEN — just start analysis
-            _ = TriggerAutoAnalysis();
+            string diffLabel  = _botSettings.GetDifficultyLabel();
+            string colorLabel = userPlaysBlack ? "Black" : "White";
+            lblStatus.Text = $"Drill — {chapter.ChapterName}  |  {diffLabel}  |  You play {colorLabel}";
+
+            // If bot plays White, it moves first
+            if (_botSettings.BotPlaysWhite)
+                _ = MakeBotMoveAsync();
+            // No TriggerAutoAnalysis — challenge mode suppresses analysis anyway
         }
 
         private static readonly (string Label, string? Theme)[] _puzzleThemeOptions =
