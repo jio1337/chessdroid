@@ -5318,6 +5318,7 @@ namespace ChessDroid
         private Button? _btnSqMode;
         private Button? _btnOpMode;
         private Button? _btnDrillMode;
+        private Button? _btnTrainingStart;
         private Panel?  _pnlDrillSettings;
         private ComboBox? _cmbDrillStudy;
         private ComboBox? _cmbDrillChapter;
@@ -5574,12 +5575,13 @@ namespace ChessDroid
             pnlTime.Controls.AddRange(new Control[] { lblTimeLimit, _numTimeLimit, lblTimeSuffix });
 
             var pnlStartGap = new Panel { Dock = DockStyle.Top, Height = 10 };
-            var btnStart = new Button
+            _btnTrainingStart = new Button
             {
                 Text = "Start", Font = F(11f, true),
                 Dock = DockStyle.Top, Height = 38, FlatStyle = FlatStyle.Flat
             };
-            btnStart.Click += (_, _) => TrainingStartRound();
+            _btnTrainingStart.Click += (_, _) => TrainingStartRound();
+            var btnStart = _btnTrainingStart;
 
             // ── Mode switcher (2 rows) ─────────────────────────────────
             var pnlModeSwitcher = new Panel { Dock = DockStyle.Top, Height = 66 };
@@ -6720,6 +6722,8 @@ namespace ChessDroid
             HighlightButton(_btnPuzzleMode, mode == "puzzle");
             HighlightButton(_btnVisionMode, mode == "vision");
             HighlightButton(_btnDrillMode,  mode == "drill");
+            if (_btnTrainingStart != null)
+                _btnTrainingStart.Text = mode == "drill" ? "Load position" : "Start";
             if (mode == "square")  UpdateSquarePBLabel();
             if (mode == "puzzle")  SetPuzzleSubMode(_puzzleSubMode);
             if (mode == "vision")  UpdateVisionPBLabel();
@@ -7215,6 +7219,23 @@ namespace ChessDroid
             _classificationLookup = null;
             consoleFormatter?.SetActiveClassification(null);
             analysisOutput.Clear();
+            // Pin the drill description in the analysis panel for the whole session.
+            // Auto-analysis is suppressed in bot mode, so this won't be overwritten.
+            if (!string.IsNullOrEmpty(chapter.Description))
+            {
+                bool isDark = ThemeService.IsDarkTheme(config?.Theme);
+                var headerColor = isDark ? Color.FromArgb(220, 180, 80) : Color.SaddleBrown;
+                var bodyColor   = isDark ? Color.FromArgb(160, 160, 160) : Color.FromArgb(90, 90, 90);
+                var baseFont    = analysisOutput.Font;
+                analysisOutput.SelectionFont  = new Font(baseFont.FontFamily, baseFont.Size + 0.5f, FontStyle.Bold);
+                analysisOutput.SelectionColor = headerColor;
+                analysisOutput.AppendText($"📖 {chapter.ChapterName}\n\n");
+                analysisOutput.SelectionFont  = new Font(baseFont.FontFamily, baseFont.Size);
+                analysisOutput.SelectionColor = bodyColor;
+                analysisOutput.AppendText(chapter.Description);
+                analysisOutput.SelectionFont  = baseFont;
+                analysisOutput.SelectionColor = isDark ? Color.FromArgb(220, 220, 220) : Color.Black;
+            }
             evalBar?.Reset();
             UpdateMoveList();
             UpdateFenDisplay();
