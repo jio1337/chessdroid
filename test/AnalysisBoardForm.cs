@@ -93,6 +93,7 @@ namespace ChessDroid
         private bool _matchPanelActive = false;
         private BotSettings? _botSettings;
         private ChessEngineService? _botEngine;
+        private Dictionary<string, int> _botPositionCounts = new();
         private CancellationTokenSource? _botMoveCts;
         private AppConfig? _challengeSnapshot; // non-null while challenge mode is active
         private bool _bookArrowsActive = false; // true when book arrows are shown (suppress engine arrows)
@@ -1002,6 +1003,9 @@ namespace ChessDroid
             // Bot mode: trigger bot's response after user's move
             if (_botModeActive && !matchRunning)
             {
+                string userFen = boardControl.GetFEN();
+                string? draw = CheckBotDrawConditions(userFen);
+                if (draw != null) { HandleBotGameEnd(userFen, draw); return; }
                 _ = MakeBotMoveAsync();
             }
         }
@@ -2598,6 +2602,8 @@ namespace ChessDroid
             _bookArrowsActive = false;
             boardControl.ResetBoard();
             moveTree.Clear(boardControl.GetFEN());
+            _botPositionCounts.Clear();
+            _botPositionCounts[GetFenPositionKey(boardControl.GetFEN())] = 1;
             moveListBox.Items.Clear();
             displayedNodes.Clear();
             _analysisCache.Clear();
@@ -2740,6 +2746,9 @@ namespace ChessDroid
                     return;
                 }
 
+                string? draw = CheckBotDrawConditions(currentFen);
+                if (draw != null) { HandleBotGameEnd(currentFen, draw); return; }
+
                 boardControl.InteractionEnabled = true;
                 string diffLabel = _botSettings.GetDifficultyLabel();
                 lblStatus.Text = $"Your turn — {diffLabel}";
@@ -2759,7 +2768,38 @@ namespace ChessDroid
             }
         }
 
-        private void HandleBotGameEnd(string fen)
+        private static string GetFenPositionKey(string fen)
+        {
+            var parts = fen.Split(' ');
+            return parts.Length >= 4
+                ? $"{parts[0]} {parts[1]} {parts[2]} {parts[3]}"
+                : fen;
+        }
+
+        private static bool IsInsufficientMaterial(string fenPosition)
+        {
+            var pieces = fenPosition.Where(char.IsLetter).ToList();
+            if (pieces.Count == 2) return true; // KvK
+            if (pieces.Count == 3) return pieces.All(c => "KkBbNn".Contains(c)); // K+minor vs K
+            return false;
+        }
+
+        private string? CheckBotDrawConditions(string fen)
+        {
+            var parts = fen.Split(' ');
+            if (parts.Length >= 1 && IsInsufficientMaterial(parts[0]))
+                return "Draw — insufficient material";
+            if (parts.Length >= 5 && int.TryParse(parts[4], out int halfMoves) && halfMoves >= 100)
+                return "Draw — 50-move rule";
+            string posKey = GetFenPositionKey(fen);
+            _botPositionCounts.TryGetValue(posKey, out int count);
+            _botPositionCounts[posKey] = count + 1;
+            if (_botPositionCounts[posKey] >= 3)
+                return "Draw — threefold repetition";
+            return null;
+        }
+
+        private void HandleBotGameEnd(string fen, string? forcedResult = null)
         {
             _botModeActive = false;
 
@@ -2767,32 +2807,25 @@ namespace ChessDroid
             var fenParts = fen.Split(' ');
             bool whiteToMove = fenParts.Length >= 2 && fenParts[1] == "w";
 
-            // Use board control to check if king is in check
-            // If in check with no legal moves = checkmate, otherwise stalemate
             bool inCheck = false;
-            try
-            {
-                // Try to detect check from the FEN by attempting a null analysis
-                // Simple heuristic: if the engine returned no move, it's either checkmate or stalemate
-                // We can check by seeing if the position evaluation is mate
-                inCheck = IsSideInCheck(whiteToMove);
-            }
-            catch { }
-
             string result;
-            if (inCheck)
+            if (forcedResult != null)
             {
-                // Checkmate
-                bool botWins = (_botSettings?.BotPlaysWhite == true && !whiteToMove) ||
-                               (_botSettings?.BotPlaysWhite == false && whiteToMove);
-                if (botWins)
-                    result = "Checkmate — Bot wins!";
-                else
-                    result = "Checkmate — You win!";
+                result = forcedResult;
             }
             else
             {
-                result = "Stalemate — Draw!";
+                try { inCheck = IsSideInCheck(whiteToMove); } catch { }
+                if (inCheck)
+                {
+                    bool botWins = (_botSettings?.BotPlaysWhite == true && !whiteToMove) ||
+                                   (_botSettings?.BotPlaysWhite == false && whiteToMove);
+                    result = botWins ? "Checkmate — Bot wins!" : "Checkmate — You win!";
+                }
+                else
+                {
+                    result = "Stalemate — Draw!";
+                }
             }
 
             analysisOutput.AppendText($"\n{result}\n");
@@ -7261,6 +7294,8 @@ namespace ChessDroid
             _bookArrowsActive = false;
             boardControl.LoadFEN(chapter.Fen);
             moveTree.Clear(chapter.Fen);
+            _botPositionCounts.Clear();
+            _botPositionCounts[GetFenPositionKey(chapter.Fen)] = 1;
             moveListBox.Items.Clear();
             displayedNodes.Clear();
             _analysisCache.Clear();
@@ -7327,8 +7362,9 @@ namespace ChessDroid
             string colorLabel = userPlaysBlack ? "Black" : "White";
             lblStatus.Text = $"Drill — {chapter.ChapterName}  |  {diffLabel}  |  You play {colorLabel}";
 
-            // If bot plays White, it moves first
-            if (_botSettings.BotPlaysWhite)
+            // Bot moves first only if it's their turn in the drill starting position
+            bool botMovesFirst = _botSettings.BotPlaysWhite == chapter.WhiteToMove;
+            if (botMovesFirst)
                 _ = MakeBotMoveAsync();
             // No TriggerAutoAnalysis — challenge mode suppresses analysis anyway
         }
