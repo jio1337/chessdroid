@@ -65,24 +65,24 @@
 [ChapterName "Lucena Position"]
 [ChapterURL "https://lichess.org/study/R3Qq55Ux/WMvIEQRk"]
 [Annotator "https://lichess.org/@/pietro2009"]
-[FEN "4K3/4P1k1/8/8/8/8/1r6/5R2 w - - 0 1"]
+[FEN "1K1k4/1P6/8/8/8/8/r7/2R5 w - - 0 1"]
 [SetUp "1"]
 [UTCDate "2021.07.07"]
 [UTCTime "07:13:02"]
 
-{ The Lucena position is the most important theoretical position in rook and pawn versus rook endgames — the attacking side wins by building a bridge. White cannot simply advance the pawn because the king would be exposed to checks; instead, the winning technique is to use the rook to shield the king from lateral checks. The key maneuver is Rg1+ followed by Rg4, placing the rook on the fourth rank so the king can step off e8 without being harassed, then march forward until the rook interposes (Re4) to block the final check. }
-{ [%cal Bf1g1,Bg1g4,Bg4e4] }
-1. Rg1+ Kh7 2. Rg4! { The Bridging } 2... Re2 3. Kf7 Rf2+ 4. Ke6 Re2+ 5. Kf6 Rf2+ 6. Ke5 Re2+ 7. Re4 *
+{ The Lucena position is the most important theoretical position in rook and pawn versus rook endgames — the attacking side wins by "building a bridge." White's king is blocking its own pawn — it occupies b8, the promotion square, with the pawn on b7 directly behind it — and must step aside to let the pawn queen, but doing so exposes it to rear checks from Black's rook; the winning technique solves this in two steps: 1.Rd1+ drives the defending king away, then 2.Rd4! posts the rook on the fourth rank. Now when the white king steps off b8 and Black's rook starts checking, the Rd4 rook slides to Rb4 to interpose — shielding the king so the b-pawn promotes. The bridge rank adapts to whichever pawn file is involved; the principle is always the same. }
+{ [%cal Bc1d1,Bd1d4,Bd4b4] }
+1. Rd1+ Ke7 2. Rd4! { The bridge } 2... Ra1 3. Kc7 Rc1+ 4. Kb6 Rb1+ 5. Kc6 Rc1+ 6. Kb5 Rb1+ 7. Rb4 *
 
 
-[Event "Endgames' Database: Philodor position"]
+[Event "Endgames' Database: Philidor position"]
 [Date "2021.07.06"]
 [Result "*"]
 [Variant "Standard"]
 [ECO "?"]
 [Opening "?"]
 [StudyName "Endgames' Database"]
-[ChapterName "Philodor position"]
+[ChapterName "Philidor position"]
 [ChapterURL "https://lichess.org/study/R3Qq55Ux/4PFFE1E2"]
 [Annotator "https://lichess.org/@/pietro2009"]
 [FEN "4k3/R7/8/4PK2/8/8/8/1r6 b - - 0 1"]
