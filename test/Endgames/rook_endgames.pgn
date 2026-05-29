@@ -168,7 +168,7 @@
 [UTCDate "2021.07.07"]
 [UTCTime "06:52:25"]
 
-{ White's saving resource is the counter-attack 1.h4!, creating a passed pawn of his own to distract Black. If Black greedily captures 1...Rxh4??, White's rook rounds up the g-pawn and then holds the draw. The correct defense for Black is 1...Rg1+!, forcing White's king toward the pawn and maintaining the two-pawn advantage with precise play. This position illustrates how a well-timed pawn advance can completely change the evaluation of a rook endgame — the h-pawn becomes an equalizer, not a weakness. }
+{ White's saving resource is the counter-attack 1.h4!, creating a passed pawn of his own to distract Black. If Black greedily captures 1...Rxh4??, White's rook rounds up the g-pawn and then holds the draw. Black is winning with two extra pawns; the correct winning continuation is 1...Rg1+!, driving White's king away from the center and maintaining the decisive advantage with precise play. This position illustrates how a well-timed pawn advance can completely change the evaluation of a rook endgame — the h-pawn becomes an equalizer, not a weakness. }
 1. h4! Rxh4?? (1... Rg1+! 2. Ke2 (2. Kd2 Rg2+ 3. Ke1 g4 4. Kf1 (4. h5 Kc3 5. h6 Rh2 6. Rh8 d3 7. Rc8+ Kd4 8. Rd8+ Ke3 9. Re8+ Kf3 $19) 4... Rh2 5. Rxg4 Kc3 6. Kg1 Rc2 7. Rg8 (7. h5 d3) 7... d3 8. Rc8+ Kb2 $19) 2... d3+ 3. Kd2 Rg2+ 4. Kd1 g4 5. h5 Rh2 6. Rc8+ Kd4 $19) 2. Rxg5 Kc3 3. Rd5 Rh1+ 4. Ke2 $10 *
 
 
@@ -434,7 +434,7 @@
 [UTCDate "2021.07.08"]
 [UTCTime "15:26:02"]
 
-{ When the winning rook is in front of the a-pawn on the seventh rank and the defending king is nearby, the position is a theoretical draw regardless of any additional h- or g-pawn. The defending rook oscillates on the a-file (Ra1–Rb1–Rc1 cycling) preventing the white king from approaching, and if White's rook leaves the a-file to escort the king, Black captures the pawn or reaches b1, forcing a draw. An extra pawn on h5 or g5 changes nothing because Black simply ignores it; only a pawn on f5 (the next chapter) provides a meaningful threat that breaks the defense. } { [%cal Ra1a8,Gc5b6,Ba1b1,Bb1b8] }
+{ When the winning rook is in front of the a-pawn on the seventh rank and the defending king is nearby, the position is a theoretical draw regardless of any additional h- or g-pawn. The defending rook oscillates on the a-file (Ra1–Rb1–Rc1 cycling) preventing the white king from approaching, and if White's rook leaves the a-file to escort the king, Black captures the pawn or reaches b1, forcing a draw. An extra pawn on h5 or g5 is generally too slow to break the defense in this configuration — Black can ignore it. A pawn on f5 is the critical case (see next chapter): it is close enough to the black king to create an immediate tactical threat that cannot be ignored. } { [%cal Ra1a8,Gc5b6,Ba1b1,Bb1b8] }
  *
 
 
@@ -491,7 +491,7 @@
 [UTCDate "2021.07.08"]
 [UTCTime "15:50:39"]
 
-{ The Vancura position, named after Czech study composer Josef Vančura (1898–1921; study published posthumously 1924), is the main drawing technique for the defender against a rook pawn on the sixth or seventh rank. The key idea is to attack the pawn from the side with 1...Rf1+! followed by 2...Rf6!, placing the rook on the sixth rank where it simultaneously attacks the a6-pawn and delivers horizontal checks whenever the king tries to approach. The defending king stays near the kingside to avoid being cut off, and Black perpetually checks from behind whenever the white king advances to protect the pawn. Compare with the Romanovsky study (next chapter), which demonstrates the limits of this method. }
+{ The Vancura position, named after Czech study composer Josef Vančura (1898–1921; study published posthumously 1924), is the main drawing technique for the defender against a rook pawn on the fifth or sixth rank — once the pawn reaches the seventh rank the defense generally breaks down. The key idea is to attack the pawn from the side with 1...Rf1+! followed by 2...Rf6!, placing the rook on the sixth rank where it simultaneously attacks the a6-pawn and delivers horizontal checks whenever the king tries to approach. The defending king stays near the kingside to avoid being cut off, and Black perpetually checks from behind whenever the white king advances to protect the pawn. Compare with the Romanovsky study (next chapter), which demonstrates the limits of this method. }
 1... Rf1+! (1... Kf7? 2. Ke4 Ke7 (2... Ra5? 3. Kd4 Kg7 4. Kc4 Kf7 5. Kb4 Ra1 6. Kb5 Rb1+ 7. Kc6 Ra1 8. Kb7 Rb1+ 9. Ka7 Ke7 10. Rb8 Rc1 11. Kb7 Rb1+ 12. Ka8 Ra1 13. a7 Kd7 14. Kb7 Rb1+ 15. Ka6 Ra1+ 16. Kb6 Rb1+ 17. Kc5 Rc1+ 18. Kd4 Rd1+ 19. Kc3 Rc1+ 20. Kd2) 3. a7 Kf7 4. Rh8) 2. Ke4 Rf6! 3. Kd5 Rb6! 4. Kc5 Rf6! 5. Kb5 Rf5+ *
 
 
@@ -510,7 +510,7 @@
 [UTCDate "2021.07.11"]
 [UTCTime "13:45:12"]
 
-{ Romanovsky's 1950 study is a famous counterexample to the Vancura method: here the pawn is already on the sixth rank and White's king is much closer, so the standard Rf1+ Rf6 approach fails to a spectacular rook sacrifice (2.Ke5 Rf6 3.Rg8+!! Kf7 4.Rf8+). Black's only draw is the paradoxical 1...Rc1! — going to the c-file rather than checking — followed by 2...Ra1, reaching a position where White cannot improve because the defending rook targets the a-pawn from behind and the defending king pivots to f7. The study teaches that Vancura is not universal: precise calculation of the specific position is always required. }
+{ This study is conventionally attributed to Peter Romanovsky (1950), though the same idea was published earlier by Orrin Frink (1925). It is a famous counterexample to the Vančura method: here the pawn is already on the sixth rank and White's king is much closer, so the standard Rf1+ Rf6 approach fails to a spectacular rook sacrifice (2.Ke5 Rf6 3.Rg8+!! Kf7 4.Rf8+). Black's only draw is the paradoxical 1...Rc1! — going to the c-file rather than checking — followed by 2...Ra1, reaching a position where White cannot improve because the defending rook targets the a-pawn from behind and the defending king pivots to f7. The study teaches that Vancura is not universal: precise calculation of the specific position is always required. }
 1... Rc1! (1... Rf1+? 2. Ke5 Rf6 3. Rg8+!! Kf7 4. Rf8+) (1... Rb1? 2. Ra7+ Kf6 3. Ke4 Rb6 4. Rh7 Kg6 5. a7 Ra6 6. Rb7) 2. Rb8 (2. Ke5 Rc6) 2... Ra1 3. Rb6 (3. Rb7+ Kf6 4. a7 Ke6) 3... Ra5! (3... Kf7 4. Ke5 Ke7 5. Rb7+ Kd8 6. a7) 4. Ke4 Kf7! 5. Kd4 (5. Rh6 Kg7 (5... Ke7 6. a7 Kd7 7. Rh8)) 5... Ke7 6. Kc4 Kd7 7. Kb4 Ra1 *
 
 
