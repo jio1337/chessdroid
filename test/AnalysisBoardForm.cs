@@ -8205,7 +8205,7 @@ namespace ChessDroid
             _pnlTraining.BackColor = scheme.FormBackColor;
             ApplyThemeToChildren(_pnlTraining, scheme);
             // Re-apply mode + sub-mode + rush time button highlights with current theme
-            string mode = _visionModeSelected ? "vision" : _puzzleModeSelected ? "puzzle" : _openingModeSelected ? "opening" : "square";
+            string mode = _drillModeSelected ? "drill" : _visionModeSelected ? "vision" : _puzzleModeSelected ? "puzzle" : _openingModeSelected ? "opening" : "square";
             SetTrainingMode(mode);
             SetPuzzleSubMode(_puzzleSubMode);
             SetVisionSubMode(_visionSubMode);

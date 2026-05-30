@@ -206,7 +206,7 @@
 [UTCDate "2021.07.07"]
 [UTCTime "07:08:05"]
 
-{ The Umbrella is a technique where the attacking king shelters behind a pawn to avoid rook checks during the final push. Black plays 1...f4!, which White must capture with gxf4, placing White's own pawn on f4. Black's king then settles on f3, using the f4-pawn as an "umbrella" that blocks White's rook from delivering checks along the third rank. Without this pawn shelter, a king escorting a passed pawn would be driven away by perpetual harassment; the umbrella pawn solves this problem elegantly. }
+{ The Umbrella — a technique coined by GM Mark Dvoretsky: "a pawn that shelters the attacking king from the rain of checks of the defending rook." In this completely winning position, Black has multiple winning continuations; the game continued 1...f4!, chosen by Tomáš Polák against Petr Velička (1995 Czech Team Championship) to illustrate the concept: after 2.gxf4, Black plays 2...Rb2+ to drive the White king away, then 3...Kf3 — the king shelters behind the f4-pawn (the umbrella), occupying a safe square free from rook harassment, while the e3-pawn advances to e1=Q. The Umbrella is not a rescue technique here but a clean, elegant winning method among several. }
 1... f4! 2. gxf4 Rb2+ 3. Kf1 Kf3 $19 { Black use the pawn f4 like an Umbrella for protecs the black king from checks } 4. Ra1 Rh2 5. Kg1 Rg2+ 6. Kh1 Rg8 7. Kh2 e2 8. f5 Kf2 9. Kh3 Rg5! (9... e1=Q?? 10. Rxe1! Kxe1 11. Kh4! $10) *
 
 
