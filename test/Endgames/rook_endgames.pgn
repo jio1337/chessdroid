@@ -225,7 +225,7 @@
 [UTCDate "2021.07.07"]
 [UTCTime "07:21:33"]
 
-{ Black can hold the draw with either 1...Ra5 — putting the rook behind White's pawn mass and preparing to exchange — or 1...Rb4 keeping active rook play. The losing blunder 1...Rb1?? abandons all counterplay; White's king marches in via h5 and the connected f- and g-pawns become unstoppable after g5 fxg5 f5. This practical example demonstrates that in rook endings with multiple pawns, rook activity and proper defensive positioning must never be surrendered voluntarily. }
+{ From Alexander Zaitsev vs Robert Hübner, Anderssen Memorial Büsum 1969 — a position illustrating the cardinal rule of rook endgames: an active rook draws, a passive rook loses. Multiple first moves draw (Rb4, Ra5, Rc5) because the drawing mechanism is always the same: when White plays f5, Black maneuvers the rook to the g-file (g1 or g2) to attack the g4 pawn from behind, and after White's king advances to g6, captures with Rxg4+ Kxf6 — reaching an equal ending. The only requirement is that the rook be active enough to reach the g-file in time when f5 comes. The losing blunder 1...Rb1?? fails precisely because the rook is too far from the action: it cannot reach the g-file in time, White marches the king to h5 and advances the pawns, and the rook cannot stop them from the back rank. }
 1... Rb1?? (1... Rb4 2. f5 Rb1! 3. Kh5 Rg1!) (1... Ra5 2. g5 (2. f5 Ra1!) 2... fxg5+ 3. fxg5 Ra6 $10 (3... Ra8 $10)) 2. Kh5 Rg1 3. g5 fxg5 4. f5! Kf8 5. f6 $18 *
 
 

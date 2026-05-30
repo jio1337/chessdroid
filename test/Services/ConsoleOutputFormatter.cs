@@ -124,6 +124,7 @@ namespace ChessDroid.Services
                             int delta = replacement.Length - marker.Length;
                             richTextBox.Select(marker.Start, marker.Length);
                             richTextBox.SelectedText = replacement;
+                            richTextBox.Select(marker.Start + replacement.Length, 0);
                             foreach (var m in _markers)
                                 if (m.Start > marker.Start) m.Start += delta;
                             _markers.Remove(marker);
