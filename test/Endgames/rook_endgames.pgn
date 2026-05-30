@@ -130,7 +130,7 @@
 [UTCDate "2021.07.07"]
 [UTCTime "06:35:39"]
 
-{ Black must place the rook on the long side (the a-file) with 1...Ra1!, from where perpetual checking distance is maintained. The losing mistake 1...Rg1? abandons the long side — White replies Ra6, driving the black king away, and then Rg8! followed by g7 creates an unstoppable pawn. This chapter reinforces the key defensive principle: in rook-and-pawn-versus-rook endings, the defending rook belongs on the long side where it has maximum checking distance and can prevent the king from finding shelter. }
+{ Black draws with 1...Ra1!, using the long-side defense: the rook on the a-file has maximum distance from the g5 pawn, giving it room to deliver lateral checks and control the back rank. Two key ideas: use Ra8 to prevent back-rank threats (when White's rook threatens checkmate on the back rank), and deliver lateral checks from whichever safe file the rook can reach without being captured — driving White's king away from the pawn whenever it tries to advance. White can never make progress because there is no shelter at the h-file edge. The losing mistake 1...Rg1? abandons the long side; with the rook only one file from the pawn, White plays Ra6, drives the Black king off g8 with checks, and only then Rg8! is possible — seizing the promotion square while the Black rook on g2 is neutralized. }
 1... Rg1? (1... Ra1! 2. Rb6 Ra8 $10) 2. Ra6 Kf8 3. Ra8+ Ke7 4. Rg8! Rg2 5. Kh7! Kf7 6. g6+ Ke7 7. Ra8 Rh2+ 8. Kg8 Rg2 9. g7 *
 
 
