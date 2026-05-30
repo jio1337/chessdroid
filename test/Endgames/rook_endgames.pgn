@@ -187,7 +187,7 @@
 [UTCDate "2021.07.07"]
 [UTCTime "06:59:37"]
 
-{ From their 1965 Bled Candidates semi-final, this position arose in game 9. White can draw with 1.Ra7+ driving the king away, but the subsequent play is full of mutual errors. Black's king must stay active with 1...Ke8! to hold; retreating to c8 allows White to capture e5 with tempo and coordinate the e-pawn advance. The position demonstrates how in rook endgames with pawns on both sides, precise king positioning is essential — a single passive king move can be the difference between a draw and a loss. }
+{ From their 1965 Bled Candidates semi-final, game 9 — drawn after mutual errors. After 1.Ra7+, both 1...Ke8 and 1...Kd8 hold cleanly (near-equal); 1...Kc8? is the worst of the three — after 2.Kxe5 White reaches a sharp position with real practical chances (+0.59), forcing Black to find the precise 2...Re2! to stay in the game. Even after Kc8 the position is not lost by force; it took a further error (2...b3?) in the actual game to tip the balance. The lesson: king placement after a rook check matters — retreating to the wrong square doesn't lose immediately, but it creates unnecessary complications that compound under pressure. }
 1. Ra7+ Kc8? (1... Ke8!) 2. Kxe5 b3? (2... Rh2) 3. axb3 Rxb3 4. Kd6 Rd3+ 5. Ke6? (5. Ke7 Rh3 6. Ra4 Rh7+ 7. Ke8 Rh8+ 8. Kf7 $18) 5... Rh3 6. Ra8+ (6. Ra4 Kd8) 6... Kc7 7. Rf8 Re3! 8. e5 Re1 9. Re8 (9. Kf6 Kd7) 9... Rh1! 10. Ra8 Re1! *
 
 
