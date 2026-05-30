@@ -2267,7 +2267,7 @@ namespace ChessDroid.Services
                         // Swing: huge swing (>= 2.0) where best has slight+ advantage (>= 0.27) and second doesn't
                         // Disaster: best keeps any edge (>= 0) but second is losing badly (<= -1.50)
                         bool basicTrigger = bestEval.Value >= 0.70 && secondEval.Value <= 0.50;
-                        bool swingTrigger = evalSwing >= 2.0 && bestEval.Value >= 0.27 && secondEval.Value <= 0.0;
+                        bool swingTrigger = evalSwing >= 2.0 && bestEval.Value >= 0.27 && secondEval.Value <= 0.70;
                         bool disasterTrigger = bestEval.Value >= 0.0 && secondEval.Value <= -1.50;
                         isOnlyWinningMove = basicTrigger || swingTrigger || disasterTrigger;
                     }
@@ -2275,10 +2275,10 @@ namespace ChessDroid.Services
                     {
                         // Black to move: negative eval = Black winning
                         // Basic: best has clear+ advantage (<= -0.70) AND second-best is equal or worse (>= -0.50)
-                        // Swing: huge swing (>= 2.0) where best has slight+ advantage (<= -0.27) and second doesn't
+                        // Swing: huge swing (>= 2.0) AND second-best lost most of the advantage (>= -0.70)
                         // Disaster: best keeps any edge (<= 0) but second is losing badly (>= +1.50)
                         bool basicTrigger = bestEval.Value <= -0.70 && secondEval.Value >= -0.50;
-                        bool swingTrigger = evalSwing >= 2.0 && bestEval.Value <= -0.27 && secondEval.Value >= 0.0;
+                        bool swingTrigger = evalSwing >= 2.0 && bestEval.Value <= -0.27 && secondEval.Value >= -0.70;
                         bool disasterTrigger = bestEval.Value <= 0.0 && secondEval.Value >= 1.50;
                         isOnlyWinningMove = basicTrigger || swingTrigger || disasterTrigger;
                     }
