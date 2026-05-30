@@ -13,16 +13,17 @@ namespace ChessDroid.Services
         private readonly AppConfig config;
         private readonly Func<string, string, List<string>, string, string> generateExplanation;
 
-        // Clickable marker infrastructure — supports [See line], count navigation, and game review link
-        private enum ClickAction { InsertPv, NavigateToNode, ShowGameReview }
+        // Clickable marker infrastructure — supports eval click (PV), count navigation, game review, line expand
+        private enum ClickAction { InsertPv, NavigateToNode, ShowGameReview, ExpandLine }
         private sealed class ClickMarker
         {
             public int Start;
             public int Length;
             public ClickAction Action;
-            public string? PvUci;   // InsertPv
-            public string? Fen;     // InsertPv
-            public MoveNode? Node;  // NavigateToNode
+            public string? PvUci;     // InsertPv
+            public string? Fen;       // InsertPv
+            public MoveNode? Node;    // NavigateToNode
+            public string? FullLine;  // ExpandLine — text to replace "..." with
         }
         private readonly List<ClickMarker> _markers = new();
 
@@ -118,6 +119,15 @@ namespace ChessDroid.Services
                         case ClickAction.ShowGameReview:
                             OnShowGameReview?.Invoke();
                             break;
+                        case ClickAction.ExpandLine:
+                            string replacement = marker.FullLine!;
+                            int delta = replacement.Length - marker.Length;
+                            richTextBox.Select(marker.Start, marker.Length);
+                            richTextBox.SelectedText = replacement;
+                            foreach (var m in _markers)
+                                if (m.Start > marker.Start) m.Start += delta;
+                            _markers.Remove(marker);
+                            break;
                     }
                     return;
                 }
@@ -157,18 +167,33 @@ namespace ChessDroid.Services
             {
                 classificationSuffix = $" {classification.Value.symbol}";
             }
-            AppendTextWithFormat($"{label}: {sanMove} {evaluation}{classificationSuffix}",
-                richTextBox.BackColor, headerForeColor, FontStyle.Bold);
-
-            // Append clickable [See line] link if PV data is available
+            // Eval in distinctive color — clickable to insert PV (replaces [See line])
+            Color evalColor = GetThemeColor(Color.FromArgb(180, 230, 80), Color.FromArgb(34, 130, 46));
             if (!string.IsNullOrEmpty(pvUciLine))
             {
-                AppendTextWithFormat(" ", richTextBox.BackColor, headerForeColor, FontStyle.Regular);
                 int markerStart = richTextBox.TextLength;
-                Color linkColor = GetThemeColor(Color.FromArgb(88, 166, 204), Color.FromArgb(32, 88, 140));
-                AppendTextWithFormat("[See line]", richTextBox.BackColor, linkColor, FontStyle.Underline);
+                AppendTextWithFormat($"{evaluation}", richTextBox.BackColor, evalColor, FontStyle.Bold | FontStyle.Underline);
                 int markerLength = richTextBox.TextLength - markerStart;
                 _markers.Add(new ClickMarker { Start = markerStart, Length = markerLength, Action = ClickAction.InsertPv, PvUci = pvUciLine, Fen = completeFen });
+            }
+            else
+            {
+                AppendTextWithFormat($"{evaluation}", richTextBox.BackColor, evalColor, FontStyle.Bold);
+            }
+            const int MaxPlyDisplay = 10;
+            var plyTokens = sanMove.Split(' ');
+            if (plyTokens.Length > MaxPlyDisplay)
+            {
+                string truncated = string.Join(" ", plyTokens.Take(MaxPlyDisplay));
+                string remaining = string.Join(" ", plyTokens.Skip(MaxPlyDisplay));
+                AppendTextWithFormat($" {truncated}{classificationSuffix} ", richTextBox.BackColor, headerForeColor, FontStyle.Bold);
+                int ellipsisStart = richTextBox.TextLength;
+                AppendTextWithFormat("...", richTextBox.BackColor, headerForeColor, FontStyle.Bold);
+                _markers.Add(new ClickMarker { Start = ellipsisStart, Length = richTextBox.TextLength - ellipsisStart, Action = ClickAction.ExpandLine, FullLine = remaining });
+            }
+            else
+            {
+                AppendTextWithFormat($" {sanMove}{classificationSuffix}", richTextBox.BackColor, headerForeColor, FontStyle.Bold);
             }
 
             AppendTextWithFormat(Environment.NewLine, richTextBox.BackColor, headerForeColor, FontStyle.Regular);
@@ -2241,7 +2266,7 @@ namespace ChessDroid.Services
                         // Basic: best has clear+ advantage (>= 0.70) AND second-best is equal or worse (<= 0.27)
                         // Swing: huge swing (>= 2.0) where best has slight+ advantage (>= 0.27) and second doesn't
                         // Disaster: best keeps any edge (>= 0) but second is losing badly (<= -1.50)
-                        bool basicTrigger = bestEval.Value >= 0.70 && secondEval.Value <= 0.27;
+                        bool basicTrigger = bestEval.Value >= 0.70 && secondEval.Value <= 0.50;
                         bool swingTrigger = evalSwing >= 2.0 && bestEval.Value >= 0.27 && secondEval.Value <= 0.0;
                         bool disasterTrigger = bestEval.Value >= 0.0 && secondEval.Value <= -1.50;
                         isOnlyWinningMove = basicTrigger || swingTrigger || disasterTrigger;
@@ -2249,10 +2274,10 @@ namespace ChessDroid.Services
                     else
                     {
                         // Black to move: negative eval = Black winning
-                        // Basic: best has clear+ advantage (<= -0.70) AND second-best is equal or worse (>= -0.27)
+                        // Basic: best has clear+ advantage (<= -0.70) AND second-best is equal or worse (>= -0.50)
                         // Swing: huge swing (>= 2.0) where best has slight+ advantage (<= -0.27) and second doesn't
                         // Disaster: best keeps any edge (<= 0) but second is losing badly (>= +1.50)
-                        bool basicTrigger = bestEval.Value <= -0.70 && secondEval.Value >= -0.27;
+                        bool basicTrigger = bestEval.Value <= -0.70 && secondEval.Value >= -0.50;
                         bool swingTrigger = evalSwing >= 2.0 && bestEval.Value <= -0.27 && secondEval.Value >= 0.0;
                         bool disasterTrigger = bestEval.Value <= 0.0 && secondEval.Value >= 1.50;
                         isOnlyWinningMove = basicTrigger || swingTrigger || disasterTrigger;
@@ -2325,8 +2350,6 @@ namespace ChessDroid.Services
                     classification: bestMoveClassification,
                     overrideExplanation: brilliantExplanation,
                     pvUciLine: pvs.Count > 0 ? pvs[0] : null);
-                if (showSecondLine || showThirdLine)
-                    richTextBox.AppendText(Environment.NewLine);
             }
 
             // Second best - show threats if enabled
@@ -2365,8 +2388,6 @@ namespace ChessDroid.Services
                     isOnlyWinningMove: false,
                     classification: secondClassification,
                     pvUciLine: pvs[1]);
-                if (showThirdLine)
-                    richTextBox.AppendText(Environment.NewLine);
             }
 
             // Third best - show threats if enabled

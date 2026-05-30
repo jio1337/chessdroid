@@ -4818,14 +4818,14 @@ namespace ChessDroid
                                 bool isOnlyWinningMove;
                                 if (whiteToMove)
                                 {
-                                    bool basicTrigger = bestPvEval.Value >= 0.70 && secondPvEval.Value <= 0.27;
+                                    bool basicTrigger = bestPvEval.Value >= 0.70 && secondPvEval.Value <= 0.50;
                                     bool swingTrigger = evalSwing >= 2.0 && bestPvEval.Value >= 0.27 && secondPvEval.Value <= 0.0;
                                     bool disasterTrigger = bestPvEval.Value >= 0.0 && secondPvEval.Value <= -1.50;
                                     isOnlyWinningMove = basicTrigger || swingTrigger || disasterTrigger;
                                 }
                                 else
                                 {
-                                    bool basicTrigger = bestPvEval.Value <= -0.70 && secondPvEval.Value >= -0.27;
+                                    bool basicTrigger = bestPvEval.Value <= -0.70 && secondPvEval.Value >= -0.50;
                                     bool swingTrigger = evalSwing >= 2.0 && bestPvEval.Value <= -0.27 && secondPvEval.Value >= 0.0;
                                     bool disasterTrigger = bestPvEval.Value <= 0.0 && secondPvEval.Value >= 1.50;
                                     isOnlyWinningMove = basicTrigger || swingTrigger || disasterTrigger;
@@ -6041,7 +6041,7 @@ namespace ChessDroid
             _cmbDrillChapter = new ComboBox { Dock = DockStyle.Top, DropDownStyle = ComboBoxStyle.DropDownList, Font = F(9f) };
             _lblDrillDesc = new Label
             {
-                Dock = DockStyle.Top, Height = 0, Font = F(9f),
+                Dock = DockStyle.Top, Height = 0, Font = F(10.5f),
                 ForeColor = Color.FromArgb(150, 150, 150)
             };
             _btnDrillVsBot = new Button

@@ -168,7 +168,7 @@
 [UTCDate "2021.07.07"]
 [UTCTime "06:52:25"]
 
-{ White's saving resource is the counter-attack 1.h4!, creating a passed pawn of his own to distract Black. If Black greedily captures 1...Rxh4??, White's rook rounds up the g-pawn and then holds the draw. Black is winning with two extra pawns; the correct winning continuation is 1...Rg1+!, driving White's king away from the center and maintaining the decisive advantage with precise play. This position illustrates how a well-timed pawn advance can completely change the evaluation of a rook endgame — the h-pawn becomes an equalizer, not a weakness. }
+{ Black is completely winning with two connected passed pawns and an active king. White's only resource is 1.h4! — a trap, not a salvation. The critical mistake is 1...Rxh4??: White responds 2.Rxg5 then 3.Rd5, attacking the d4-pawn directly from the d-file; Black cannot advance without losing it and the position is drawn. The only winning move is 1...Rg1+!, driving White's king away from the center; the g- and d-pawns then march forward and decide. Practice this position as Black: recognise White's traps, ignore the bait, and convert with precise pawn coordination. }
 1. h4! Rxh4?? (1... Rg1+! 2. Ke2 (2. Kd2 Rg2+ 3. Ke1 g4 4. Kf1 (4. h5 Kc3 5. h6 Rh2 6. Rh8 d3 7. Rc8+ Kd4 8. Rd8+ Ke3 9. Re8+ Kf3 $19) 4... Rh2 5. Rxg4 Kc3 6. Kg1 Rc2 7. Rg8 (7. h5 d3) 7... d3 8. Rc8+ Kb2 $19) 2... d3+ 3. Kd2 Rg2+ 4. Kd1 g4 5. h5 Rh2 6. Rc8+ Kd4 $19) 2. Rxg5 Kc3 3. Rd5 Rh1+ 4. Ke2 $10 *
 
 
