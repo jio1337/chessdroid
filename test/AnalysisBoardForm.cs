@@ -89,7 +89,9 @@ namespace ChessDroid
 
         // Bot mode
         private bool _botModeActive  = false;
-        private bool _drillBotActive = false; // true while a drill Practice vs Bot session is running
+        private bool _drillBotActive   = false; // true while a drill Practice vs Bot session is running
+        private bool _drillWatchActive = false; // true while a drill Watch Engines session is running
+        private Dictionary<string, int> _watchPositionCounts = new();
         private bool _matchPanelActive = false;
         private BotSettings? _botSettings;
         private ChessEngineService? _botEngine;
@@ -2145,6 +2147,19 @@ namespace ChessDroid
                 // Update previous eval for next move
                 _previousMatchEval = currentEval;
 
+                // Threefold repetition check for Watch Engines mode
+                if (_drillWatchActive)
+                {
+                    string posKey = GetFenPositionKey(newFen);
+                    _watchPositionCounts.TryGetValue(posKey, out int posCount);
+                    _watchPositionCounts[posKey] = posCount + 1;
+                    if (_watchPositionCounts[posKey] >= 3)
+                    {
+                        analysisOutput.AppendText("\nDraw — threefold repetition\n");
+                        matchService?.StopMatch();
+                    }
+                }
+
                 // Log to analysis output
                 var currentNode = moveTree.CurrentNode;
                 double timeSec = moveTimeMs / 1000.0;
@@ -2301,7 +2316,15 @@ namespace ChessDroid
             if (result.Outcome != MatchOutcome.Interrupted && _seriesPlayed < _seriesTotal)
                 _ = StartNextSeriesGameAsync();
             else
+            {
                 SetMatchControlsEnabled(false);
+                if (_drillWatchActive)
+                {
+                    _drillWatchActive = false;
+                    SetDrillControlsEnabled(true);
+                    if (_btnDrillWatchEngines != null) { _btnDrillWatchEngines.Text = "⚙ Watch engines"; _btnDrillWatchEngines.Enabled = true; }
+                }
+            }
         }
 
         private void UpdateSeriesScoreLabel()
@@ -5382,6 +5405,7 @@ namespace ChessDroid
         private ComboBox? _cmbDrillChapter;
         private Label?    _lblDrillDesc;
         private Button?   _btnDrillVsBot;
+        private Button?   _btnDrillWatchEngines;
         private List<EndgameChapter> _drillChapters = new();
         private string?  _drillsFolder;
         private Panel? _pnlSquareSettings;
@@ -6034,7 +6058,7 @@ namespace ChessDroid
                 { lnkResetVisionPBs, _pnlVisionAutoNextRow, _lblVisionSettingsPB, _lblVisionDesc, _pnlVisionGlobalTimeRow, _pnlVisionTimeRow, pnlVisionSubGap, pnlVisionSub, pnlVisionTopGap });
 
             // ── Drill settings ─────────────────────────────────────────
-            _pnlDrillSettings = new Panel { Dock = DockStyle.Top, Height = 154, Visible = false };
+            _pnlDrillSettings = new Panel { Dock = DockStyle.Top, Height = 184, Visible = false };
             var lblStudy = new Label { Text = "Study", Font = F(9f, true), Dock = DockStyle.Top, Height = 20 };
             _cmbDrillStudy = new ComboBox { Dock = DockStyle.Top, DropDownStyle = ComboBoxStyle.DropDownList, Font = F(9f) };
             var lblChapter = new Label { Text = "Position", Font = F(9f, true), Dock = DockStyle.Top, Height = 20 };
@@ -6050,7 +6074,18 @@ namespace ChessDroid
                 Font = F(9f), FlatStyle = FlatStyle.Flat
             };
             _btnDrillVsBot.Click += (_, _) => _ = DrillPracticeAsync();
-            var pnlDrillVsBotGap = new Panel { Dock = DockStyle.Top, Height = 6 };
+            var pnlDrillVsBotGap = new Panel { Dock = DockStyle.Top, Height = 4 };
+            _btnDrillWatchEngines = new Button
+            {
+                Text = "⚙ Watch engines", Dock = DockStyle.Top, Height = 28,
+                Font = F(9f), FlatStyle = FlatStyle.Flat
+            };
+            _btnDrillWatchEngines.Click += (_, _) =>
+            {
+                if (_drillWatchActive) { matchService?.StopMatch(); return; }
+                _ = DrillWatchEnginesAsync();
+            };
+            var pnlDrillWatchGap = new Panel { Dock = DockStyle.Top, Height = 6 };
             _cmbDrillStudy.SelectedIndexChanged += (_, _) => PopulateDrillChapters();
             _cmbDrillChapter.SelectedIndexChanged += (_, _) =>
             {
@@ -6072,7 +6107,7 @@ namespace ChessDroid
             _cmbDrillChapter.DropDownClosed += (_, _) => _drillHoverTimer?.Stop();
             // DockStyle.Top: last = topmost
             _pnlDrillSettings.Controls.AddRange(new Control[]
-                { _btnDrillVsBot, pnlDrillVsBotGap, _lblDrillDesc, _cmbDrillChapter, lblChapter, _cmbDrillStudy, lblStudy });
+                { _btnDrillVsBot, pnlDrillVsBotGap, _btnDrillWatchEngines, pnlDrillWatchGap, _lblDrillDesc, _cmbDrillChapter, lblChapter, _cmbDrillStudy, lblStudy });
 
             // DockStyle.Top stacks back-to-front: last item in Controls = topmost visually
             _pnlTrainingStart.Controls.AddRange(new Control[]
@@ -6562,6 +6597,7 @@ namespace ChessDroid
         private void TrainingStartRound()
         {
             boardControl.InteractionEnabled = true;
+            if (_drillWatchActive) { matchService?.StopMatch(); return; }
             if (_openingModeSelected) { OpeningTrainingStart();  return; }
             if (_visionModeSelected)  { VisionTrainingStart();   return; }
             if (_puzzleModeSelected)
@@ -7182,9 +7218,10 @@ namespace ChessDroid
 
         private void SetDrillControlsEnabled(bool enabled)
         {
-            if (_cmbDrillStudy    != null) _cmbDrillStudy.Enabled    = enabled;
-            if (_cmbDrillChapter  != null) _cmbDrillChapter.Enabled  = enabled;
-            if (_btnTrainingStart != null) _btnTrainingStart.Enabled  = enabled;
+            if (_cmbDrillStudy         != null) _cmbDrillStudy.Enabled         = enabled;
+            if (_cmbDrillChapter       != null) _cmbDrillChapter.Enabled       = enabled;
+            if (_btnTrainingStart      != null) _btnTrainingStart.Enabled      = enabled;
+            if (_btnDrillWatchEngines  != null) _btnDrillWatchEngines.Enabled  = enabled;
             // Lock mode-switcher buttons so the user can't leave drill mode mid-game
             if (_btnSqMode     != null) _btnSqMode.Enabled     = enabled;
             if (_btnOpMode     != null) _btnOpMode.Enabled     = enabled;
@@ -7197,7 +7234,7 @@ namespace ChessDroid
         {
             if (_lblDrillDesc == null || _pnlDrillSettings == null) return;
             _lblDrillDesc.Text = text;
-            const int baseHeight = 122; // panel height without the description label
+            const int baseHeight = 152; // panel height without the description label
             if (string.IsNullOrEmpty(text))
             {
                 _lblDrillDesc.Height = 0;
@@ -7367,6 +7404,111 @@ namespace ChessDroid
             if (botMovesFirst)
                 _ = MakeBotMoveAsync();
             // No TriggerAutoAnalysis — challenge mode suppresses analysis anyway
+        }
+
+        private async Task DrillWatchEnginesAsync()
+        {
+            var chapter = SelectedDrillChapter();
+            if (chapter == null) { lblStatus.Text = "Select a position first."; return; }
+
+            if (matchRunning) { lblStatus.Text = "Stop the engine match first"; return; }
+            if (_botModeActive) { lblStatus.Text = "Stop bot mode first"; return; }
+
+            string[] availableEngines = Directory.Exists(config?.GetEnginesPath())
+                ? Directory.GetFiles(config!.GetEnginesPath(), "*.exe")
+                    .Select(Path.GetFileName).Where(f => f != null).Cast<string>().ToArray()
+                : Array.Empty<string>();
+
+            if (availableEngines.Length == 0) { lblStatus.Text = "No engines found in Engines folder"; return; }
+
+            using var dlg = new DrillWatchDialog(ThemeService.IsDarkTheme(config?.Theme),
+                availableEngines, config?.EngineProfiles ?? new(), config?.SelectedEngine ?? "");
+            if (dlg.ShowDialog() != DialogResult.OK) return;
+
+            string enginesPath = config!.GetEnginesPath();
+            string whitePath = Path.Combine(enginesPath, dlg.WhiteEngine);
+            string blackPath = Path.Combine(enginesPath, dlg.BlackEngine);
+            if (!File.Exists(whitePath) || !File.Exists(blackPath))
+            { lblStatus.Text = "Engine file not found"; return; }
+
+            // Lock drill controls
+            SetDrillControlsEnabled(false);
+            _drillWatchActive = true;
+            if (_btnDrillWatchEngines != null) { _btnDrillWatchEngines.Text = "⏹ Stop Watch"; _btnDrillWatchEngines.Enabled = true; }
+
+            // Board setup
+            boardControl.LoadFEN(chapter.Fen);
+            moveTree.Clear(chapter.Fen);
+            moveListBox.Items.Clear();
+            displayedNodes.Clear();
+            _analysisCache.Clear();
+            analysisOutput.Clear();
+            evalBar?.Reset();
+            UpdateMoveList();
+            UpdateFenDisplay();
+            UpdateTurnLabel();
+
+            // Flip to match active side
+            if (!chapter.WhiteToMove && !boardControl.IsFlipped) boardControl.FlipBoard();
+            else if (chapter.WhiteToMove && boardControl.IsFlipped) boardControl.FlipBoard();
+
+            // Engine names for display
+            config.EngineProfiles.TryGetValue(dlg.WhiteEngine, out var wProf);
+            config.EngineProfiles.TryGetValue(dlg.BlackEngine, out var bProf);
+            _matchWhiteName     = !string.IsNullOrEmpty(wProf?.DisplayName) ? wProf!.DisplayName : Path.GetFileNameWithoutExtension(dlg.WhiteEngine);
+            _matchBlackName     = !string.IsNullOrEmpty(bProf?.DisplayName) ? bProf!.DisplayName : Path.GetFileNameWithoutExtension(dlg.BlackEngine);
+            _matchWhiteElo      = wProf?.Elo ?? 0;
+            _matchBlackElo      = bProf?.Elo ?? 0;
+            _matchWhiteFileName = dlg.WhiteEngine;
+            _matchBlackFileName = dlg.BlackEngine;
+
+            // Series init (single game)
+            _seriesTotal            = 1;
+            _seriesPlayed           = 0;
+            _seriesEng1Score        = 0;
+            _seriesEng2Score        = 0;
+            _seriesEng1File         = dlg.WhiteEngine;
+            _seriesEng2File         = dlg.BlackEngine;
+            _seriesCurrentWhiteFile = dlg.WhiteEngine;
+            lblSeriesScore.Text     = "";
+
+            // Seed position counts for threefold detection
+            _watchPositionCounts.Clear();
+            _watchPositionCounts[GetFenPositionKey(chapter.Fen)] = 1;
+
+            // Output header
+            analysisOutput.AppendText($"Engine Watch — {chapter.ChapterName}\n");
+            analysisOutput.AppendText($"{_matchWhiteName} vs {_matchBlackName}  |  60+0\n\n");
+
+            // Set up match service
+            matchService?.Dispose();
+            matchService = new Services.EngineMatchService(config);
+            _previousMatchEval = null;
+            matchService.OnMovePlayed           += MatchService_OnMovePlayed;
+            matchService.OnClockUpdated         += MatchService_OnClockUpdated;
+            matchService.OnMatchEnded           += MatchService_OnMatchEnded;
+            matchService.OnStatusChanged        += MatchService_OnStatusChanged;
+            matchService.OnAnnotatorEvalUpdated += MatchService_OnAnnotatorEvalUpdated;
+            boardControl.AnimationCompleted     += MatchBoard_AnimationCompleted;
+
+            // Set annotator engine for eval bar
+            matchService.AnnotatorEngine = engineService;
+            matchService.AnnotatorDepth  = config.EngineDepth;
+            SetEngineInfoLabels(wProf, bProf, dlg.WhiteEngine, dlg.BlackEngine);
+
+            // 60+0 time control
+            var tc = new EngineMatchTimeControl
+            {
+                Type        = TimeControlType.TotalPlusIncrement,
+                TotalTimeMs = 60_000,
+                IncrementMs = 0
+            };
+
+            clockTimer.Start();
+            matchRunning = true;
+            btnStartMatch.Enabled = false;
+
+            await matchService.StartMatchAsync(whitePath, blackPath, _matchWhiteName, _matchBlackName, tc, chapter.Fen);
         }
 
         private static readonly (string Label, string? Theme)[] _puzzleThemeOptions =
