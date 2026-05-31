@@ -229,24 +229,6 @@
 1... Rb1?? (1... Rb4 2. f5 Rb1! 3. Kh5 Rg1!) (1... Ra5 2. g5 (2. f5 Ra1!) 2... fxg5+ 3. fxg5 Ra6 $10 (3... Ra8 $10)) 2. Kh5 Rg1 3. g5 fxg5 4. f5! Kf8 5. f6 $18 *
 
 
-[Event "Endgames' Database: The pawn has not crossed the Mid-Line: the frontal attack"]
-[Date "2021.07.07"]
-[Result "*"]
-[Variant "From Position"]
-[ECO "?"]
-[Opening "?"]
-[StudyName "Endgames' Database"]
-[ChapterName "The pawn has not crossed the Mid-Line: the frontal attack"]
-[ChapterURL "https://lichess.org/study/R3Qq55Ux/LApYGFcs"]
-[Annotator "https://lichess.org/@/pietro2009"]
-[FEN "2r5/8/4k3/8/2P5/2K5/8/3R4 w - - 0 1"]
-[SetUp "1"]
-[UTCDate "2021.07.07"]
-[UTCTime "07:32:43"]
-
-{ Horizontally cutting the king off is a useful defensive method. In this sort of position, black king should stay on fifth or sixth rank } { [%cal Rc8b8,Rb8b3,Rb8a8,Ra8a3,Rc8c3,Rc8d8,Rd8d3] }
-1. Kb4 Rb8+ 2. Ka5 Rc8 (2... Ra8+ 3. Kb6) 3. Kb5 Rb8+ 4. Ka6 Rc8 5. Rd4 Ke5 6. Rh4 Kd6 *
-
 
 [Event "Endgames' Database: Kochiev-Smyslov L'vov zt 1978"]
 [Date "2021.07.07"]
@@ -263,7 +245,7 @@
 [UTCDate "2021.07.07"]
 [UTCTime "07:38:30"]
 
-{ A practical example of the frontal attack defense being missed. White draws with either 1.Ke4 (keeping the king centrally active) or 1.Rh1 (getting behind Black's pawn), but 1.Ke2?? retreats the king to a passive square where it is immediately driven further back by Kb5, giving Black's king a free road to the queenside. The game illustrates a key endgame principle: in rook endings, a passive king is a losing king — maintaining active king opposition is often the difference between drawing and losing. }
+{ From Alexander Kochiev vs Vasily Smyslov — 7th World Champion and co-author of Rook Endings — Soviet Zonal, Lvov 1978. This is a deeply theoretical draw with many critical branches, each requiring precise responses — consider watching the engines play and analyzing before practicing. The core principle: White must keep the rook active on the long side (Ra1, Rf1, or Rb1) to maintain checking distance and contest the pawn. The one clear mistake is 1.Ke2?? from the start — passive king retreat surrenders all defensive resources; Smyslov exploited it with Rd5!, supporting the pawn while escaping the checks, and converted without difficulty. }
 1. Ke2?? { Both 1.Ke4 and 1. Rh1 might lead to draw } 1... Kb5 2. Rb1+ Ka4 3. Rc1 Kb4 4. Rb1+ Ka3! 5. Rc1 Rd5! 6. Ke3 Kb2 7. Rc4 Kb3 *
 
 
