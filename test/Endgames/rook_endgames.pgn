@@ -359,7 +359,7 @@
 [UTCDate "2021.07.08"]
 [UTCTime "10:30:40"]
 
-{ When the stronger side's king is in front of its own rook pawn on the a-file (or h-file), the position is a theoretical draw. The defending king only needs to reach c7 to achieve stalemate or deny the queening square — and here, the black king on e7 easily arrives at c7 in time. White's rook cannot generate progress because there is no room to build a bridge: the a-pawn's promotion square is shared with the corner, and the defending king always has access via b8 or c7. }
+{ When the stronger side's king is in front of its own a-pawn (or h-pawn), the position is a theoretical draw — one of the most important exceptions in rook endgame theory. The a-pawn must promote on a8, the square White's own king occupies; to free it, the king must step to b8, but b8 is covered by Black's king the moment it reaches c7 — trapping White's king on a8 forever. Black's king on e7 is exactly two moves from c7 (Kd7-Kc7); after that, White is in permanent zugzwang with no winning plan. As a bonus resource, if Black's king reaches b8 with all escape squares covered, stalemate is available. The Lucena bridge is impossible: the board edge eliminates the flank escape the king needs. Compare the next chapter (Rook Endgames-6): same structure but Black's king starts on f7 — one move too far from c7 — and White wins. That single tempo difference is the entire endgame. }
 1. Rh2 { The draw is inevitable } 1... Kd7 2. Rh8 Kc7 3. Rb8 Rc1 (3... Rh1 4. Rb7+ Kc8 5. Rb2 Rc1) 4. Rb2 Rc3 *
 
 
