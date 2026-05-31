@@ -378,7 +378,7 @@
 [UTCDate "2021.07.08"]
 [UTCTime "10:38:31"]
 
-{ White wins, because the black king fails to reach c7 in time }
+{ The companion to Rook Endgames-5: Black's king starts on f7 — one tempo too far from c7, the blockade square that drew in the previous chapter. White immediately activates the king (1.Rh2 Ke7 2.Rh8 Kd6 3.Rb8 Kb7), driving Black's king away from the queenside with precise rook checks. The critical move is 8.Rc6+! — driving the king to b5 AND repositioning the rook to the c-file to control the back rank; both 8.Ra6 and 8.Re6 fail, allowing Black's rook to reach a8 or generate enough counterplay to draw. After 8...Kb5 9.Rc8, White's rook controls the 8th rank and the king marches to b8 — perpetual checks run out of effective squares and the pawn promotes. The entire game hinges on one square: king on e7 draws (two moves from c7), king on f7 loses (three moves from c7). }
 1. Rh2 Ke7 2. Rh8 Kd6 3. Rb8 Ra1 4. Kb7 Rb1+ 5. Kc8 Rc1+ 6. Kd8 Rh1 7. Rb6+ Kc5 8. Rc6+! (8. Ra6 Rh8+ 9. Kd7 Rh7+ 10. Ke8 Rh8+ 11. Kf7 Ra8) (8. Re6 Ra1) 8... Kb5 9. Rc8 Rh8+ 10. Kc7 Rh7+ *
 
 
