@@ -5405,7 +5405,7 @@ namespace ChessDroid
         private Panel?  _pnlDrillSettings;
         private ComboBox? _cmbDrillStudy;
         private ComboBox? _cmbDrillChapter;
-        private Label?    _lblDrillDesc;
+        private RichTextBox? _lblDrillDesc;
         private Button?   _btnDrillVsBot;
         private Button?   _btnDrillWatchEngines;
         private List<EndgameChapter> _drillChapters = new();
@@ -6065,10 +6065,12 @@ namespace ChessDroid
             _cmbDrillStudy = new ComboBox { Dock = DockStyle.Top, DropDownStyle = ComboBoxStyle.DropDownList, Font = F(9f) };
             var lblChapter = new Label { Text = "Position", Font = F(9f, true), Dock = DockStyle.Top, Height = 20 };
             _cmbDrillChapter = new ComboBox { Dock = DockStyle.Top, DropDownStyle = ComboBoxStyle.DropDownList, Font = F(9f) };
-            _lblDrillDesc = new Label
+            _lblDrillDesc = new RichTextBox
             {
                 Dock = DockStyle.Top, Height = 0, Font = F(10.5f),
-                ForeColor = Color.FromArgb(150, 150, 150)
+                ReadOnly = true, BorderStyle = BorderStyle.None,
+                ScrollBars = RichTextBoxScrollBars.Vertical,
+                WordWrap = true
             };
             _btnDrillVsBot = new Button
             {
@@ -7236,7 +7238,8 @@ namespace ChessDroid
         {
             if (_lblDrillDesc == null || _pnlDrillSettings == null) return;
             _lblDrillDesc.Text = text;
-            const int baseHeight = 152; // panel height without the description label
+            const int baseHeight = 152; // panel height without the description
+            const int maxDescHeight = 120; // max visible lines before scrollbar kicks in
             if (string.IsNullOrEmpty(text))
             {
                 _lblDrillDesc.Height = 0;
@@ -7246,7 +7249,7 @@ namespace ChessDroid
                 int w = Math.Max(_pnlDrillSettings.ClientSize.Width, 80);
                 var sz = TextRenderer.MeasureText(text, _lblDrillDesc.Font,
                     new Size(w, 9999), TextFormatFlags.WordBreak);
-                _lblDrillDesc.Height = sz.Height + 6;
+                _lblDrillDesc.Height = Math.Min(sz.Height + 6, maxDescHeight);
             }
             _pnlDrillSettings.Height = baseHeight + _lblDrillDesc.Height;
         }

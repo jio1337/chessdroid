@@ -1,10 +1,10 @@
-[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Anastasia's Mate"]
+﻿[Event "37 Checkmate Patterns: Anastasia's Mate"]
 [Date "2021.06.28"]
 [Result "*"]
 [Variant "Standard"]
 [ECO "?"]
 [Opening "?"]
-[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[StudyName "37 Checkmate Patterns That All Chess Players Should Know"]
 [ChapterName "Anastasia's Mate"]
 [ChapterURL "https://lichess.org/study/qqwWQNXO/N4qeZJXE"]
 [Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
@@ -18,13 +18,13 @@
 1. Qxh7+ Kxh7 2. Rh3+ Nh4 3. Rxh4# *
 
 
-[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Anderssen's Mate"]
+[Event "37 Checkmate Patterns: Anderssen's Mate"]
 [Date "2021.06.29"]
 [Result "*"]
 [Variant "Standard"]
 [ECO "?"]
 [Opening "?"]
-[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[StudyName "37 Checkmate Patterns That All Chess Players Should Know"]
 [ChapterName "Anderssen's Mate"]
 [ChapterURL "https://lichess.org/study/qqwWQNXO/0ryPuJne"]
 [Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
@@ -38,13 +38,13 @@
 1. Rh8# *
 
 
-[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Arabian Mate"]
+[Event "37 Checkmate Patterns: Arabian Mate"]
 [Date "2021.06.28"]
 [Result "*"]
 [Variant "Standard"]
 [ECO "?"]
 [Opening "?"]
-[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[StudyName "37 Checkmate Patterns That All Chess Players Should Know"]
 [ChapterName "Arabian Mate"]
 [ChapterURL "https://lichess.org/study/qqwWQNXO/HEyDRXjy"]
 [Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
@@ -58,13 +58,13 @@
 1... g2+ 2. Rxg2 Rh4+ 3. Rh2 Rxh2# *
 
 
-[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Back Rank Mate"]
+[Event "37 Checkmate Patterns: Back Rank Mate"]
 [Date "2021.06.28"]
 [Result "*"]
 [Variant "Standard"]
 [ECO "?"]
 [Opening "?"]
-[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[StudyName "37 Checkmate Patterns That All Chess Players Should Know"]
 [ChapterName "Back Rank Mate"]
 [ChapterURL "https://lichess.org/study/qqwWQNXO/rmOs9UIr"]
 [Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
@@ -78,13 +78,13 @@
 1... Qa1+ (1... Qe1+ { This is a free queen by white. } 2. Qxe1) 2. Qb1 (2. Qe1 Qxe1#) 2... Qxb1# *
 
 
-[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Balestra Mate"]
+[Event "37 Checkmate Patterns: Balestra Mate"]
 [Date "2021.06.29"]
 [Result "*"]
 [Variant "Standard"]
 [ECO "?"]
 [Opening "?"]
-[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[StudyName "37 Checkmate Patterns That All Chess Players Should Know"]
 [ChapterName "Balestra Mate"]
 [ChapterURL "https://lichess.org/study/qqwWQNXO/mUff1Ok8"]
 [Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
@@ -98,13 +98,13 @@
 1. Bc6# *
 
 
-[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Blackburne's Mate"]
+[Event "37 Checkmate Patterns: Blackburne's Mate"]
 [Date "2021.06.29"]
 [Result "*"]
 [Variant "Standard"]
 [ECO "?"]
 [Opening "?"]
-[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[StudyName "37 Checkmate Patterns That All Chess Players Should Know"]
 [ChapterName "Blackburne's Mate"]
 [ChapterURL "https://lichess.org/study/qqwWQNXO/IqwXKgBc"]
 [Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
@@ -118,13 +118,13 @@
 1. Bh7# *
 
 
-[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Blind Swine Mate"]
+[Event "37 Checkmate Patterns: Blind Swine Mate"]
 [Date "2021.06.29"]
 [Result "*"]
 [Variant "Standard"]
 [ECO "?"]
 [Opening "?"]
-[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[StudyName "37 Checkmate Patterns That All Chess Players Should Know"]
 [ChapterName "Blind Swine Mate"]
 [ChapterURL "https://lichess.org/study/qqwWQNXO/HOza3rit"]
 [Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
@@ -138,13 +138,13 @@
 1. Rg7+ Kh8 2. Rh7+ Kg8 3. Rbg7# *
 
 
-[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Boden's Mate"]
+[Event "37 Checkmate Patterns: Boden's Mate"]
 [Date "2021.06.28"]
 [Result "*"]
 [Variant "Standard"]
 [ECO "?"]
 [Opening "?"]
-[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[StudyName "37 Checkmate Patterns That All Chess Players Should Know"]
 [ChapterName "Boden's Mate"]
 [ChapterURL "https://lichess.org/study/qqwWQNXO/f2STAwUw"]
 [Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
@@ -158,13 +158,13 @@
 1. Qxc6+ { If your opponent takes with his b-pawn, you can simply play Bxa6#. } 1... Qxc6 2. Rxc6+ bxc6 3. Bxa6# *
 
 
-[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Corner Mate"]
+[Event "37 Checkmate Patterns: Corner Mate"]
 [Date "2021.06.29"]
 [Result "*"]
 [Variant "Standard"]
 [ECO "?"]
 [Opening "?"]
-[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[StudyName "37 Checkmate Patterns That All Chess Players Should Know"]
 [ChapterName "Corner Mate"]
 [ChapterURL "https://lichess.org/study/qqwWQNXO/R7qOIp2k"]
 [Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
@@ -178,13 +178,13 @@
 1. Rg1+ Kh8 2. Nxf7# *
 
 
-[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Corridor Mate"]
+[Event "37 Checkmate Patterns: Corridor Mate"]
 [Date "2021.06.29"]
 [Result "*"]
 [Variant "Standard"]
 [ECO "?"]
 [Opening "?"]
-[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[StudyName "37 Checkmate Patterns That All Chess Players Should Know"]
 [ChapterName "Corridor Mate"]
 [ChapterURL "https://lichess.org/study/qqwWQNXO/7njIPMNe"]
 [Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
@@ -198,13 +198,13 @@
 1. Rgf1+ Ke6 2. Qe4# *
 
 
-[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Diagonal Corridor Mate"]
+[Event "37 Checkmate Patterns: Diagonal Corridor Mate"]
 [Date "2021.06.30"]
 [Result "*"]
 [Variant "Standard"]
 [ECO "?"]
 [Opening "?"]
-[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[StudyName "37 Checkmate Patterns That All Chess Players Should Know"]
 [ChapterName "Diagonal Corridor Mate"]
 [ChapterURL "https://lichess.org/study/qqwWQNXO/CN6RZZl5"]
 [Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
@@ -218,13 +218,13 @@
 1. Be5# *
 
 
-[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Damiano's Mate"]
+[Event "37 Checkmate Patterns: Damiano's Mate"]
 [Date "2021.06.29"]
 [Result "*"]
 [Variant "Standard"]
 [ECO "?"]
 [Opening "?"]
-[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[StudyName "37 Checkmate Patterns That All Chess Players Should Know"]
 [ChapterName "Damiano's Mate"]
 [ChapterURL "https://lichess.org/study/qqwWQNXO/MjNxHw62"]
 [Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
@@ -238,13 +238,13 @@
 1. Qh5+ (1. Qh2+ { Ohno! Your queen is gonna be captured! } { [%cal Ga2h2] }) 1... Kg8 2. Qh7# *
 
 
-[Event "️37 Checkmate Patterns That All Chess Players Should Know️: David and Goliath Mate"]
+[Event "37 Checkmate Patterns: David and Goliath Mate"]
 [Date "2021.06.29"]
 [Result "*"]
 [Variant "Standard"]
 [ECO "?"]
 [Opening "?"]
-[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[StudyName "37 Checkmate Patterns That All Chess Players Should Know"]
 [ChapterName "David and Goliath Mate"]
 [ChapterURL "https://lichess.org/study/qqwWQNXO/uTRILAQf"]
 [Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
@@ -258,13 +258,13 @@
 1. h4# *
 
 
-[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Double Bishop Mate"]
+[Event "37 Checkmate Patterns: Double Bishop Mate"]
 [Date "2021.06.29"]
 [Result "*"]
 [Variant "Standard"]
 [ECO "?"]
 [Opening "?"]
-[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[StudyName "37 Checkmate Patterns That All Chess Players Should Know"]
 [ChapterName "Double Bishop Mate"]
 [ChapterURL "https://lichess.org/study/qqwWQNXO/x7rJjUh1"]
 [Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
@@ -278,13 +278,13 @@
 1. Qxf7+ Kh8 2. Qf6+ 2... Bxf6 3. Bxf6# *
 
 
-[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Dovetail Mate"]
+[Event "37 Checkmate Patterns: Dovetail Mate"]
 [Date "2021.06.29"]
 [Result "*"]
 [Variant "Standard"]
 [ECO "?"]
 [Opening "?"]
-[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[StudyName "37 Checkmate Patterns That All Chess Players Should Know"]
 [ChapterName "Dovetail Mate"]
 [ChapterURL "https://lichess.org/study/qqwWQNXO/itYGXU8f"]
 [Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
@@ -298,13 +298,13 @@
 1. Rxh7+ Kxh7 2. Qh5+ Kg7 3. Qh6# *
 
 
-[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Epaulette Mate"]
+[Event "37 Checkmate Patterns: Epaulette Mate"]
 [Date "2021.06.29"]
 [Result "*"]
 [Variant "Standard"]
 [ECO "?"]
 [Opening "?"]
-[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[StudyName "37 Checkmate Patterns That All Chess Players Should Know"]
 [ChapterName "Epaulette Mate"]
 [ChapterURL "https://lichess.org/study/qqwWQNXO/GgWbxy6b"]
 [Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
@@ -318,13 +318,13 @@
 1. Qe6# *
 
 
-[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Fool's Mate"]
+[Event "37 Checkmate Patterns: Fool's Mate"]
 [Date "2021.06.29"]
 [Result "*"]
 [Variant "Standard"]
 [ECO "?"]
 [Opening "?"]
-[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[StudyName "37 Checkmate Patterns That All Chess Players Should Know"]
 [ChapterName "Fool's Mate"]
 [ChapterURL "https://lichess.org/study/qqwWQNXO/YXLifaTU"]
 [Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
@@ -338,13 +338,13 @@
 1. Qh5# *
 
 
-[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Greco's Mate"]
+[Event "37 Checkmate Patterns: Greco's Mate"]
 [Date "2021.06.29"]
 [Result "*"]
 [Variant "Standard"]
 [ECO "?"]
 [Opening "?"]
-[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[StudyName "37 Checkmate Patterns That All Chess Players Should Know"]
 [ChapterName "Greco's Mate"]
 [ChapterURL "https://lichess.org/study/qqwWQNXO/N7Zv5l1U"]
 [Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
@@ -358,13 +358,13 @@
 1. Rh1+ 1... Qh3 2. Rxh3+ 2... Bh4 3. Rxh4# *
 
 
-[Event "️37 Checkmate Patterns That All Chess Players Should Know️: H-file Mate"]
+[Event "37 Checkmate Patterns: H-file Mate"]
 [Date "2021.06.30"]
 [Result "*"]
 [Variant "Standard"]
 [ECO "?"]
 [Opening "?"]
-[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[StudyName "37 Checkmate Patterns That All Chess Players Should Know"]
 [ChapterName "H-file Mate"]
 [ChapterURL "https://lichess.org/study/qqwWQNXO/rkuwpJvz"]
 [Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
@@ -378,13 +378,13 @@
 1. Rh8# *
 
 
-[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Hook Mate"]
+[Event "37 Checkmate Patterns: Hook Mate"]
 [Date "2021.06.29"]
 [Result "*"]
 [Variant "Standard"]
 [ECO "?"]
 [Opening "?"]
-[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[StudyName "37 Checkmate Patterns That All Chess Players Should Know"]
 [ChapterName "Hook Mate"]
 [ChapterURL "https://lichess.org/study/qqwWQNXO/FTJI5gXn"]
 [Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
@@ -398,13 +398,13 @@
 1. Qxh6+ Kxh6 2. Rh4+ Kg7 3. Rh7# *
 
 
-[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Kill Box Mate"]
+[Event "37 Checkmate Patterns: Kill Box Mate"]
 [Date "2021.06.30"]
 [Result "*"]
 [Variant "Standard"]
 [ECO "?"]
 [Opening "?"]
-[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[StudyName "37 Checkmate Patterns That All Chess Players Should Know"]
 [ChapterName "Kill Box Mate"]
 [ChapterURL "https://lichess.org/study/qqwWQNXO/vbTmZ61m"]
 [Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
@@ -418,13 +418,13 @@
 1. Rf5+ Ke4 2. Qd5+ Ke3 3. Rf3+ Ke2 4. Qd3+ Ke1 5. Rf1# *
 
 
-[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Lawnmower Mate"]
+[Event "37 Checkmate Patterns: Lawnmower Mate"]
 [Date "2021.06.30"]
 [Result "*"]
 [Variant "Standard"]
 [ECO "?"]
 [Opening "?"]
-[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[StudyName "37 Checkmate Patterns That All Chess Players Should Know"]
 [ChapterName "Lawnmower Mate"]
 [ChapterURL "https://lichess.org/study/qqwWQNXO/EqqIkPW9"]
 [Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
@@ -438,13 +438,13 @@
 1. Rb2 1... Ka5 2. Ra3# *
 
 
-[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Legal's Mate"]
+[Event "37 Checkmate Patterns: Legal's Mate"]
 [Date "2021.06.30"]
 [Result "*"]
 [Variant "Standard"]
 [ECO "?"]
 [Opening "?"]
-[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[StudyName "37 Checkmate Patterns That All Chess Players Should Know"]
 [ChapterName "Legal's Mate"]
 [ChapterURL "https://lichess.org/study/qqwWQNXO/pRm4p0kG"]
 [Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
@@ -458,13 +458,13 @@
 1. Bxf7+ Ke7 2. Nd5# *
 
 
-[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Lolli's Mate"]
+[Event "37 Checkmate Patterns: Lolli's Mate"]
 [Date "2021.06.30"]
 [Result "*"]
 [Variant "Standard"]
 [ECO "?"]
 [Opening "?"]
-[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[StudyName "37 Checkmate Patterns That All Chess Players Should Know"]
 [ChapterName "Lolli's Mate"]
 [ChapterURL "https://lichess.org/study/qqwWQNXO/fWuAsCKo"]
 [Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
@@ -478,13 +478,13 @@
 1. Qg7# *
 
 
-[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Max Lange Mate"]
+[Event "37 Checkmate Patterns: Max Lange Mate"]
 [Date "2021.06.30"]
 [Result "*"]
 [Variant "Standard"]
 [ECO "?"]
 [Opening "?"]
-[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[StudyName "37 Checkmate Patterns That All Chess Players Should Know"]
 [ChapterName "Max Lange Mate"]
 [ChapterURL "https://lichess.org/study/qqwWQNXO/NrJYEVXl"]
 [Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
@@ -498,13 +498,13 @@
 1. Qg8# *
 
 
-[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Mayet's Mate"]
+[Event "37 Checkmate Patterns: Mayet's Mate"]
 [Date "2021.06.30"]
 [Result "*"]
 [Variant "Standard"]
 [ECO "?"]
 [Opening "?"]
-[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[StudyName "37 Checkmate Patterns That All Chess Players Should Know"]
 [ChapterName "Mayet's Mate"]
 [ChapterURL "https://lichess.org/study/qqwWQNXO/LwI4F6wz"]
 [Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
@@ -518,13 +518,13 @@
 1. Ba5+ Ke8 2. Rd8# *
 
 
-[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Morphy's Mate"]
+[Event "37 Checkmate Patterns: Morphy's Mate"]
 [Date "2021.06.30"]
 [Result "*"]
 [Variant "Standard"]
 [ECO "?"]
 [Opening "?"]
-[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[StudyName "37 Checkmate Patterns That All Chess Players Should Know"]
 [ChapterName "Morphy's Mate"]
 [ChapterURL "https://lichess.org/study/qqwWQNXO/UNQpCWd2"]
 [Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
@@ -538,13 +538,13 @@
 1. Bd4# *
 
 
-[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Opera Mate"]
+[Event "37 Checkmate Patterns: Opera Mate"]
 [Date "2021.06.30"]
 [Result "*"]
 [Variant "Standard"]
 [ECO "?"]
 [Opening "?"]
-[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[StudyName "37 Checkmate Patterns That All Chess Players Should Know"]
 [ChapterName "Opera Mate"]
 [ChapterURL "https://lichess.org/study/qqwWQNXO/LPwfEIlE"]
 [Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
@@ -558,13 +558,13 @@
 1. Rd8# *
 
 
-[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Pillsbury's Mate"]
+[Event "37 Checkmate Patterns: Pillsbury's Mate"]
 [Date "2021.06.30"]
 [Result "*"]
 [Variant "Standard"]
 [ECO "?"]
 [Opening "?"]
-[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[StudyName "37 Checkmate Patterns That All Chess Players Should Know"]
 [ChapterName "Pillsbury's Mate"]
 [ChapterURL "https://lichess.org/study/qqwWQNXO/TxeWLv48"]
 [Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
@@ -578,13 +578,13 @@
 1. Rg1+ 1... Qg3 2. Rxg3+ 2... Ng4 3. Rxg4+ 3... Bg5+ 4. Rxg5# *
 
 
-[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Railroad Mate"]
+[Event "37 Checkmate Patterns: Railroad Mate"]
 [Date "2021.06.30"]
 [Result "*"]
 [Variant "Standard"]
 [ECO "?"]
 [Opening "?"]
-[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[StudyName "37 Checkmate Patterns That All Chess Players Should Know"]
 [ChapterName "Railroad Mate"]
 [ChapterURL "https://lichess.org/study/qqwWQNXO/FryYu6hg"]
 [Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
@@ -598,13 +598,13 @@
 1. Rh5+ Kg6 2. Qf5+ Kg7 3. Rh7+ Kg8 4. Qf7# *
 
 
-[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Reti's Mate"]
+[Event "37 Checkmate Patterns: Reti's Mate"]
 [Date "2021.06.30"]
 [Result "*"]
 [Variant "Standard"]
 [ECO "?"]
 [Opening "?"]
-[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[StudyName "37 Checkmate Patterns That All Chess Players Should Know"]
 [ChapterName "Reti's Mate"]
 [ChapterURL "https://lichess.org/study/qqwWQNXO/uO5DnxF1"]
 [Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
@@ -618,13 +618,13 @@
 1. Bd8# *
 
 
-[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Scholar's Mate"]
+[Event "37 Checkmate Patterns: Scholar's Mate"]
 [Date "2021.06.30"]
 [Result "*"]
 [Variant "Standard"]
 [ECO "?"]
 [Opening "?"]
-[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[StudyName "37 Checkmate Patterns That All Chess Players Should Know"]
 [ChapterName "Scholar's Mate"]
 [ChapterURL "https://lichess.org/study/qqwWQNXO/96FB44RF"]
 [Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
@@ -638,13 +638,13 @@
 1. Qxf7# *
 
 
-[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Smothered Mate"]
+[Event "37 Checkmate Patterns: Smothered Mate"]
 [Date "2021.06.29"]
 [Result "*"]
 [Variant "Standard"]
 [ECO "?"]
 [Opening "?"]
-[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[StudyName "37 Checkmate Patterns That All Chess Players Should Know"]
 [ChapterName "Smothered Mate"]
 [ChapterURL "https://lichess.org/study/qqwWQNXO/2QQS2m08"]
 [Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
@@ -658,13 +658,13 @@
 1. Qxf7+ Kh8 2. Qg8+ 2... Rxg8 3. Nf7# *
 
 
-[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Suffocation Mate"]
+[Event "37 Checkmate Patterns: Suffocation Mate"]
 [Date "2021.06.30"]
 [Result "*"]
 [Variant "Standard"]
 [ECO "?"]
 [Opening "?"]
-[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[StudyName "37 Checkmate Patterns That All Chess Players Should Know"]
 [ChapterName "Suffocation Mate"]
 [ChapterURL "https://lichess.org/study/qqwWQNXO/t21pwfcY"]
 [Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
@@ -678,13 +678,13 @@
 1. Ne7# *
 
 
-[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Swallow's Tail Mate"]
+[Event "37 Checkmate Patterns: Swallow's Tail Mate"]
 [Date "2021.06.30"]
 [Result "*"]
 [Variant "Standard"]
 [ECO "?"]
 [Opening "?"]
-[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[StudyName "37 Checkmate Patterns That All Chess Players Should Know"]
 [ChapterName "Swallow's Tail Mate"]
 [ChapterURL "https://lichess.org/study/qqwWQNXO/bv94sorn"]
 [Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
@@ -698,13 +698,13 @@
 1. Qg5# *
 
 
-[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Triangle Mate"]
+[Event "37 Checkmate Patterns: Triangle Mate"]
 [Date "2021.06.30"]
 [Result "*"]
 [Variant "Standard"]
 [ECO "?"]
 [Opening "?"]
-[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[StudyName "37 Checkmate Patterns That All Chess Players Should Know"]
 [ChapterName "Triangle Mate"]
 [ChapterURL "https://lichess.org/study/qqwWQNXO/DKIbMgr7"]
 [Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
@@ -718,13 +718,13 @@
 1. Qf5# *
 
 
-[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Vukovic Mate"]
+[Event "37 Checkmate Patterns: Vukovic Mate"]
 [Date "2021.06.30"]
 [Result "*"]
 [Variant "Standard"]
 [ECO "?"]
 [Opening "?"]
-[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[StudyName "37 Checkmate Patterns That All Chess Players Should Know"]
 [ChapterName "Vukovic Mate"]
 [ChapterURL "https://lichess.org/study/qqwWQNXO/oO5f3WG9"]
 [Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
@@ -738,13 +738,13 @@
 1. Ra7+ Kf8 2. Rf7# *
 
 
-[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Revising Puzzles"]
+[Event "37 Checkmate Patterns: Revising Puzzles"]
 [Date "2021.06.30"]
 [Result "*"]
 [Variant "Standard"]
 [ECO "?"]
 [Opening "?"]
-[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[StudyName "37 Checkmate Patterns That All Chess Players Should Know"]
 [ChapterName "Revising Puzzles"]
 [ChapterURL "https://lichess.org/study/qqwWQNXO/PzngtOS4"]
 [Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
