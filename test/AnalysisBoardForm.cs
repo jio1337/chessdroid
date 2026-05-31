@@ -1784,7 +1784,7 @@ namespace ChessDroid
         private void AnalysisBoardForm_KeyDown(object? sender, KeyEventArgs e)
         {
             // Arrow keys and Home/End are handled in ProcessCmdKey
-            if (e.KeyCode == Keys.Back)
+            if (e.KeyCode == Keys.Back && ActiveControl is not (TextBox or NumericUpDown or RichTextBox or ComboBox))
             {
                 BtnTakeBack_Click(sender, e);
                 e.Handled = true;
