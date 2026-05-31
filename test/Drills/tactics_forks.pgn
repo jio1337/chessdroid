@@ -1,0 +1,330 @@
+[Event "Tactics: Double Attacks (Forks): The Big Idea"]
+[Date "2020.04.07"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Tactics: Double Attacks (Forks)"]
+[ChapterName "The Big Idea"]
+[ChapterURL "https://lichess.org/study/iuRuGw9B/A8TW25b5"]
+[Annotator "https://lichess.org/@/silurianblue"]
+[FEN "8/2q5/5k2/8/8/2N5/8/3K3R w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2020.04.07"]
+[UTCTime "23:43:09"]
+
+{ A fork is a double attack — one move attacks two or more enemy pieces simultaneously, forcing the opponent to lose material since they can only save one. Knights are the classic forking piece, but queens, rooks, bishops, and even pawns can fork too. Find the move that wins material by attacking two targets at once. }
+
+{ [%csl Gf6,Gc7,Gh1][%cal Gc7g7,Gc6g6,Gf8f4,Gc8c4] }
+ *
+
+
+[Event "Tactics: Double Attacks (Forks): Rooks Can Fork Too"]
+[Date "2020.04.07"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Tactics: Double Attacks (Forks)"]
+[ChapterName "Rooks Can Fork Too"]
+[ChapterURL "https://lichess.org/study/iuRuGw9B/sscDHePT"]
+[Annotator "https://lichess.org/@/silurianblue"]
+[FEN "8/4r3/2k5/8/8/1B4K1/8/8 b - - 0 1"]
+[SetUp "1"]
+[UTCDate "2020.04.07"]
+[UTCTime "23:50:25"]
+
+ *
+
+
+[Event "Tactics: Double Attacks (Forks): White Wins"]
+[Date "2020.04.07"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Tactics: Double Attacks (Forks)"]
+[ChapterName "White Wins"]
+[ChapterURL "https://lichess.org/study/iuRuGw9B/N4MAiv6m"]
+[Annotator "https://lichess.org/@/silurianblue"]
+[FEN "6k1/p1q1r1pp/8/1p1P4/8/1P3N1P/P4PP1/1R1R2K1 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2020.04.07"]
+[UTCTime "23:49:36"]
+
+ *
+
+
+[Event "Tactics: Double Attacks (Forks): King in the Centre"]
+[Date "2020.04.07"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Tactics: Double Attacks (Forks)"]
+[ChapterName "King in the Centre"]
+[ChapterURL "https://lichess.org/study/iuRuGw9B/EZUMlg6h"]
+[Annotator "https://lichess.org/@/silurianblue"]
+[FEN "r2q1rk1/p2nppbp/3p2p1/8/4P2P/2P2N2/P3BPP1/R2QK2R b - - 0 1"]
+[SetUp "1"]
+[UTCDate "2020.04.07"]
+[UTCTime "23:54:31"]
+
+1... Bxc3+ { [%csl Ge1,Ga1] } 2. Nd2 Bxa1 3. Qxa1 *
+
+
+[Event "Tactics: Double Attacks (Forks): King Still in the Centre"]
+[Date "2020.04.07"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Tactics: Double Attacks (Forks)"]
+[ChapterName "King Still in the Centre"]
+[ChapterURL "https://lichess.org/study/iuRuGw9B/hzmiMZoJ"]
+[Annotator "https://lichess.org/@/silurianblue"]
+[FEN "r3k2r/ppp1bppp/2np1n2/1N6/q3P3/5N2/P1PB1PPP/1R1QK2R w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2020.04.07"]
+[UTCTime "23:58:50"]
+
+1. Nxc7+ { [%csl Ge8,Ga8] } 1... Kd7 2. Nxa8 Rxa8 3. Rxb7+ Kc8 4. Ba5 (4. Qb1) 4... Qxa5+ (4... Kxb7) *
+
+
+[Event "Tactics: Double Attacks (Forks): Take Note of Unprotected Pieces"]
+[Date "2020.04.08"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Tactics: Double Attacks (Forks)"]
+[ChapterName "Take Note of Unprotected Pieces"]
+[ChapterURL "https://lichess.org/study/iuRuGw9B/xxFkGNNa"]
+[Annotator "https://lichess.org/@/silurianblue"]
+[FEN "r1bq1rk1/pp2bppp/3p1n2/1Np1p3/4P3/1P1P1N2/P1P2PPP/R1BQK2R b - - 0 1"]
+[SetUp "1"]
+[UTCDate "2020.04.08"]
+[UTCTime "00:07:02"]
+
+{ [%csl Gb5] }
+1... Bg4 (1... d5 2. Nc3 Ng4 3. Nxd5) (1... Qa5+ { [%csl Gb5,Ge1] } 2. Bd2 (2. Nc3 Qxc3+) 2... Qxb5 { [%csl Gc8,Ge7,Gf6,Gd2,Gf3] }) 2. Nc3 Nxe4 3. Nxe4 *
+
+
+[Event "Tactics: Double Attacks (Forks): Built on an Earlier Motif"]
+[Date "2020.04.08"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Tactics: Double Attacks (Forks)"]
+[ChapterName "Built on an Earlier Motif"]
+[ChapterURL "https://lichess.org/study/iuRuGw9B/03oeybcG"]
+[Annotator "https://lichess.org/@/silurianblue"]
+[FEN "r1bqk2r/pp2bppp/2n1pn2/8/2pN4/2N3P1/PP2PPBP/R1BQ1RK1 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2020.04.08"]
+[UTCTime "00:19:10"]
+
+{ [%csl Gc6,Gb7][%cal Gd4c6,Gg2c6,Gb7c6] }
+1. Nxc6 bxc6 { [%cal Gg2c6] } 2. Bxc6+ { [%cal Gc6e8,Gc6a8] } *
+
+
+[Event "Tactics: Double Attacks (Forks): Double Double Attack"]
+[Date "2020.04.08"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Tactics: Double Attacks (Forks)"]
+[ChapterName "Double Double Attack"]
+[ChapterURL "https://lichess.org/study/iuRuGw9B/h5CblzEF"]
+[Annotator "https://lichess.org/@/silurianblue"]
+[FEN "r1bqk2r/pp2bppp/3ppn2/8/1nPN4/2N3P1/PP2PPBP/R1BQK2R w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2020.04.08"]
+[UTCTime "07:54:12"]
+
+ *
+
+
+[Event "Tactics: Double Attacks (Forks): Pieces on the Same Rank"]
+[Date "2020.04.08"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Tactics: Double Attacks (Forks)"]
+[ChapterName "Pieces on the Same Rank"]
+[ChapterURL "https://lichess.org/study/iuRuGw9B/S2MbEEO3"]
+[Annotator "https://lichess.org/@/silurianblue"]
+[FEN "r1bqr1k1/ppp2ppp/2n2n2/2b1p3/8/2NBPNB1/PPP2PPP/R2Q1RK1 b - - 0 1"]
+[SetUp "1"]
+[UTCDate "2020.04.08"]
+[UTCTime "00:23:07"]
+
+ *
+
+
+[Event "Tactics: Double Attacks (Forks): Knight on e5"]
+[Date "2020.04.08"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Tactics: Double Attacks (Forks)"]
+[ChapterName "Knight on e5"]
+[ChapterURL "https://lichess.org/study/iuRuGw9B/bQhmtxaG"]
+[Annotator "https://lichess.org/@/silurianblue"]
+[FEN "r1bqkb1r/pp3ppp/4pn2/2p1Nn2/2p5/4P1P1/PP3PBP/RNBQ1RK1 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2020.04.08"]
+[UTCTime "07:40:03"]
+
+{ [%csl Gg1] }
+1. Qxd8+ Kxd8 2. Nxf7+ { [%cal Gf7d8,Gf7h8] } 2... Ke8 3. Nxh8 *
+
+
+[Event "Tactics: Double Attacks (Forks): Seeing the Whole Board"]
+[Date "2020.04.08"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Tactics: Double Attacks (Forks)"]
+[ChapterName "Seeing the Whole Board"]
+[ChapterURL "https://lichess.org/study/iuRuGw9B/BIPrC9nF"]
+[Annotator "https://lichess.org/@/silurianblue"]
+[FEN "r1bq1rk1/p2n1pbp/2p1p1p1/3pP3/N7/4BP2/PPPQB1PP/R3K2R b - - 0 1"]
+[SetUp "1"]
+[UTCDate "2020.04.08"]
+[UTCTime "07:37:19"]
+
+1... Qa5 (1... Qh4+ { [%csl Ge1][%cal Ge1f1] } 2. Kf1 (2. Bf2 { [%cal Gh4e1] } 2... Qxa4) (2. g3 Qxa4)) *
+
+
+[Event "Tactics: Double Attacks (Forks): Pin and Lose!"]
+[Date "2020.04.08"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Tactics: Double Attacks (Forks)"]
+[ChapterName "Pin and Lose!"]
+[ChapterURL "https://lichess.org/study/iuRuGw9B/VTQUDqS6"]
+[Annotator "https://lichess.org/@/silurianblue"]
+[FEN "rnbqk2r/p1p2ppp/1p2pn2/3p4/1bPP4/2N2NP1/PP2PP1P/R1BQKB1R w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2020.04.08"]
+[UTCTime "07:57:15"]
+
+1. Qa4+ Nc6 (1... Bd7 2. Qxb4) *
+
+
+[Event "Tactics: Double Attacks (Forks): A Neat Promotion Trick"]
+[Date "2020.04.08"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Tactics: Double Attacks (Forks)"]
+[ChapterName "A Neat Promotion Trick"]
+[ChapterURL "https://lichess.org/study/iuRuGw9B/fIANo3Fj"]
+[Annotator "https://lichess.org/@/silurianblue"]
+[FEN "2r3k1/1rP2pbp/6p1/p7/P3N1PP/5PK1/8/2RR4 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2020.04.08"]
+[UTCTime "00:32:01"]
+
+ *
+
+
+[Event "Tactics: Double Attacks (Forks): Another Fork"]
+[Date "2020.04.08"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Tactics: Double Attacks (Forks)"]
+[ChapterName "Another Fork"]
+[ChapterURL "https://lichess.org/study/iuRuGw9B/xi6IwV3d"]
+[Annotator "https://lichess.org/@/silurianblue"]
+[FEN "r2qkb1r/1p1bpp1p/p1np1np1/2p5/P1B1P3/2N2Q1P/1PPPNPP1/R1B1K2R b - - 0 1"]
+[SetUp "1"]
+[UTCDate "2020.04.08"]
+[UTCTime "00:45:52"]
+
+ *
+
+
+[Event "Tactics: Double Attacks (Forks): Look For the Weak Points"]
+[Date "2020.04.08"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Tactics: Double Attacks (Forks)"]
+[ChapterName "Look For the Weak Points"]
+[ChapterURL "https://lichess.org/study/iuRuGw9B/jdzTaRHj"]
+[Annotator "https://lichess.org/@/silurianblue"]
+[FEN "r2qr1k1/pbp2pbp/5np1/4p3/2B5/2N1P3/PP3PPP/R1BQ1RK1 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2020.04.08"]
+[UTCTime "00:25:20"]
+
+ *
+
+
+[Event "Tactics: Double Attacks (Forks): Uncoordinated Rooks"]
+[Date "2020.04.08"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Tactics: Double Attacks (Forks)"]
+[ChapterName "Uncoordinated Rooks"]
+[ChapterURL "https://lichess.org/study/iuRuGw9B/tZodgbkY"]
+[Annotator "https://lichess.org/@/silurianblue"]
+[FEN "4q1k1/1p3pp1/2p4p/2R5/P7/P5P1/2P2P1P/R6K b - - 0 1"]
+[SetUp "1"]
+[UTCDate "2020.04.08"]
+[UTCTime "00:28:36"]
+
+ *
+
+
+[Event "Tactics: Double Attacks (Forks): The Power of the Queen"]
+[Date "2020.04.08"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Tactics: Double Attacks (Forks)"]
+[ChapterName "The Power of the Queen"]
+[ChapterURL "https://lichess.org/study/iuRuGw9B/eewwWg1t"]
+[Annotator "https://lichess.org/@/silurianblue"]
+[FEN "r3kb1r/1pq2ppp/p1n1b3/2p5/7N/1PBBP3/P2P1PPP/R2QK2R b - - 0 1"]
+[SetUp "1"]
+[UTCDate "2020.04.08"]
+[UTCTime "00:35:45"]
+
+ *
+
+
+[Event "Tactics: Double Attacks (Forks): A Nice One to Finish"]
+[Date "2020.04.08"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Tactics: Double Attacks (Forks)"]
+[ChapterName "A Nice One to Finish"]
+[ChapterURL "https://lichess.org/study/iuRuGw9B/Ex334vnF"]
+[Annotator "https://lichess.org/@/silurianblue"]
+[FEN "5rk1/pp2bppp/2pq4/8/8/2P2Q1P/PPB2PP1/4R2K w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2020.04.08"]
+[UTCTime "00:39:06"]
+
+ *
+
+
