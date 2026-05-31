@@ -1,0 +1,122 @@
+﻿[Event "Intermediate: Tactics: Discovered Attack/Check: Introduction"]
+[Date "2019.01.25"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Intermediate: Tactics: Discovered Attack/Check"]
+[ChapterName "Introduction"]
+[ChapterURL "https://lichess.org/study/OqvmgOXT/67hjK0Yp"]
+[Annotator "https://lichess.org/@/jomega"]
+[FEN "5q2/3k2pp/8/8/8/5N2/6PP/5RK1 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2019.01.25"]
+[UTCTime "18:29:48"]
+[ChapterMode "gamebook"]
+
+{ A discovered attack occurs when a piece moves and unmasks an attack from a piece behind it — the moving piece creates a second threat simultaneously. A discovered check is especially powerful since the opponent must address the check first. }
+1. Ne5+ { Correct. The Knight checks and at the same time discovers an attack on the Queen. Black has to answer the check by moving the King, and so loses the Queen. } { [%cal Gf1f8,Ge5d7] } 1... Ke7 { Of course Black protects the Queen so as to retake. } 2. Rxf8 { Of course. White wins the Queen for his Rook. After Black recaptures, White is ahead a Knight. White should then capture the Black pawns with his Knight and King being careful to keep the Knight pawn so as to avoid any possibility of a draw.
+- Have you internalized the Knight's move?
+- Do you see indirect attacks such as the Rook's indirect attack on the Black Queen in the initial position?
+- Can you win this endgame against the strongest opposition? } *
+
+
+[Event "Intermediate: Tactics: Discovered Attack/Check: Discovered Check"]
+[Date "2019.06.03"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Intermediate: Tactics: Discovered Attack/Check"]
+[ChapterName "Discovered Check"]
+[ChapterURL "https://lichess.org/study/OqvmgOXT/KHCRriRX"]
+[Annotator "https://lichess.org/@/jomega"]
+[FEN "5k2/3q2pp/8/8/8/5N2/6PP/5RK1 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2019.06.03"]
+[UTCTime "17:18:59"]
+[ChapterMode "gamebook"]
+
+{ This is the second of the Lichess Discovery exercises. This is similar to the previous chapter with the Queen and King swapped. }
+1. Ne5+ { Correct. The Knight attacks the Queen and discovers an attack by the Rook on the King. This is called a Discovered Check. } { [%cal Ge5d7,Gf1f8] } 1... Ke7 { Black moves to recapture on d7. } 2. Nxd7 { After Black recaptures, White is ahead a Rook. White wins easily because the King and Rook can mate alone and Black has no counter-play.
+- Have you internalized the Knight's move?
+- Do you see indirect attacks such as the Rook's indirect attack on the Black King in the initial position?
+- Can you win this endgame against the strongest opposition? } *
+
+
+[Event "Intermediate: Tactics: Discovered Attack/Check: If you find a good move..."]
+[Date "2019.06.03"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Intermediate: Tactics: Discovered Attack/Check"]
+[ChapterName "If you find a good move..."]
+[ChapterURL "https://lichess.org/study/OqvmgOXT/E46UTIIS"]
+[Annotator "https://lichess.org/@/jomega"]
+[FEN "r2q1bnr/pp2k1pp/3p1p2/1Bp1N1B1/8/2Pp4/PP3PPP/RN1bR1K1 w - - 0 12"]
+[SetUp "1"]
+[UTCDate "2019.06.03"]
+[UTCTime "17:32:55"]
+[ChapterMode "gamebook"]
+
+{ "If you find a good move, look for a better one." - Emanuel Lasker
+
+The next Lichess Discovered Attacks Exercise is to mate in 2! The other hint is that the first move is a discovered check. }
+12. Ng6+ { Excellent! White is down material and wants a strong finish for giving up his Queen. Black is in check by two pieces; a double check. The only possible response to a double check is to move the King. } (12. Nc6+? { Did you count pieces from the start? Did you create the A/D network?
+White is down a Queen and two pawns for a piece in the initial position. So, while this move wins Black's Queen, it does not win big material and certainly is not a checkmate in two moves. } 12... Kf7 13. Nxd8+ Rxd8 14. Rxd1 fxg5 15. Bxd3 { Black's extra pawn is doubled. Otherwise material is equal. }) 12... Kf7 { Forced. } 13. Nxh8# { Black is mated.
+- Be sure to assess the material in a puzzle.
+- Mate in two puzzles require forced mate against all possible moves by the opponent.
+- Double checks are usually very strong. } (13. Be8+ { This leads to mate, but not in two moves from the initial position. } 13... Qxe8 14. Nxh8#) *
+
+
+[Event "Intermediate: Tactics: Discovered Attack/Check: Setting Up a Discovery I"]
+[Date "2019.06.03"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Intermediate: Tactics: Discovered Attack/Check"]
+[ChapterName "Setting Up a Discovery I"]
+[ChapterURL "https://lichess.org/study/OqvmgOXT/SzsZQwKz"]
+[Annotator "https://lichess.org/@/jomega"]
+[FEN "3k4/7R/p2P4/2p1b3/8/2P3rB/P4r2/1K2R3 w - - 3 41"]
+[SetUp "1"]
+[UTCDate "2019.06.03"]
+[UTCTime "18:10:17"]
+[ChapterMode "gamebook"]
+
+{ This Lichess lesson is about setting up a Discovery. This is similar to setting up a pin, skewer, fork or other tactic.
+
+How does White set up a Discovery? }
+41. Rd7+ { Correct. Black should not play ...Ke8?? because then 42.Rxe5+. } (41. Rxe5?? { This is a blunder because now Black can force mate with ...Rg1+! } 41... Rg1+ 42. Bf1 Rgxf1+ 43. Re1 Rxe1#) (41. Be6? { This looks strong because it threatens, say, 41.Ra7 and then 42.Ra8#. However, Black has a good response in ...Bg7. } 41... Bg7 { Black has counter-play. }) (41. Rh8+?? { This loses the Rook to ...Bxh8. } 41... Bxh8 $19) (41. Rc7?? { This loses the Bishop to Rxh3. White cannot then play Rxe5 because his back rank is weak! } 41... Rxh3 $19 42. Rxe5?? Rh1+ 43. Re1 Rxe1#) 41... Kc8 { Since ...Ke8 would just lose the Bishop with check. } (41... Ke8 42. Rxe5+ $18 { White wins. }) 42. Rf7+ { Good. This is a clean win of the exchange and White gets a winning position. } (42. Rxe5?? { This is a blunder because now Black can force mate with ...Rg1+! } 42... Rg1+ 43. Bf1 Rgxf1+ 44. Re1 Rxe1#) (42. Rc7+ { This wins but is more complex than the main line. } 42... Kb8 43. Rc8+ Kb7 44. d7 Bf6 45. Bf1 Rd2 46. Re6 Rxd7 47. Bxa6+ Ka7 48. Rxf6 $18) (42. Rh7+ { This wins but is more complex than the main line. } 42... Kb8 43. d7 Bc7 44. Rh8+ Ka7 45. Rd1 Rf6 46. d8=Q Bxd8 47. Rdxd8 Rxc3 48. Ra8+ $18) 42... Rxh3 { Black has nothing better. } 43. Rxf2 { White has won the exchange. } (43. Rxe5?? { This is a blunder because now Black forces mate with ...Rh1+! } 43... Rh1+ 44. Re1 Rxe1#) 43... Bxd6 { Black gets his Bishop out of trouble and captures White's passed pawn. Is this going to be a difficult ending?
+Find the move that makes the win easiest. } (43... Bg3 { This skewer does not work. } 44. Rf8+ Kd7 45. Rd1 $18) 44. Rf7 { Excellent! The threat is Re8#. Black will lose more material because his Bishop and pawns are loose and White will have mating threats.
+- Did you notice White's back rank weakness in the initial position?
+- Did you notice Black's unguarded pieces in the initial position?
+- Are you uncomfortable with your ability to win the final position? If so analyze it with a computer to see the winning techniques. } 44... Kd8 *
+
+
+[Event "Intermediate: Tactics: Discovered Attack/Check: Setting Up a Discovery II"]
+[Date "2019.06.03"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Intermediate: Tactics: Discovered Attack/Check"]
+[ChapterName "Setting Up a Discovery II"]
+[ChapterURL "https://lichess.org/study/OqvmgOXT/83HTYrs0"]
+[Annotator "https://lichess.org/@/jomega"]
+[FEN "3r4/1R1P1k1p/1p1q2p1/1Pp5/2P5/6P1/4Q1KP/8 w - - 6 51"]
+[SetUp "1"]
+[UTCDate "2019.06.03"]
+[UTCTime "19:07:53"]
+[ChapterMode "gamebook"]
+
+{ This is Discovered Check #5 in the Lichess practice. We are challenged to get a winning position in 3 moves. }
+51. Qe8+ { Correct. White forces the removal of the blockade. } 51... Rxe8 { Black must take the Queen or else lose his Rook. There is no perpetual check draw because White's Queen would be able to interpose at h4. } (51... Kg7 52. Qxd8 Qd2+ 53. Kh3 Qh6+ 54. Qh4 $18) 52. d8=Q+ { Excellent. } (52. dxe8=Q+?? { This is a blunder because Black can respond ...Kxe8. } 52... Kxe8 $19) 52... Qe7 { Black was in check and his Queen was unguarded. Perhaps in a game ...Re7 and hope the opponent does not take the Queen! } (52... Re7 { Hoping for a blunder. } 53. Qxd6 Rxb7 54. Qd5+ $18 { The fork finishes Black. }) 53. Rxe7+ { Correct. Black will play ...Rxe7 and White can respond Qxb6 creating a passed pawn.
+- Are you familiar with the pattern of removing the blockade on a passed pawn?
+- Did you see that Black's Queen was unguarded?
+Play the final position out with a computer for additional practice in winning a won game. } (53. Qxb6 { This also wins. }) (53. Qd5+ { This wins but White has a better move. }) (53. Qxe7+ { This is a blunder that loses the Queen to ...Rxe7. White has a much better move. }) (53. Qxe8+ { This is a blunder that loses the Queen to ...Kxe8. White has a much better move. }) *
+
+
+
