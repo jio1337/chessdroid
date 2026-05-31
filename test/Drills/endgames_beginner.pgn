@@ -1,0 +1,440 @@
+﻿[Event "Beginner Endgames You Must Know!: Introduction"]
+[Date "2021.05.24"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Beginner Endgames You Must Know!"]
+[ChapterName "Introduction"]
+[ChapterURL "https://lichess.org/study/wukLYIXj/i8C1m7oU"]
+[Annotator "https://lichess.org/@/NoseKnowsAll"]
+[FEN "4k3/R7/8/8/8/8/8/4K3 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.05.24"]
+[UTCTime "16:53:15"]
+[ChapterMode "gamebook"]
+
+{ A progressive beginner endgame study covering the most essential techniques: staircase and ladder mates, queen and rook box, K+P key squares, and opposition. Each chapter builds on the previous one — master these and you'll never lose a winning endgame at the beginner level. } { [%cal Ba7h7] }
+ *
+
+
+[Event "Beginner Endgames You Must Know!: Staircase mate"]
+[Date "2021.05.24"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Beginner Endgames You Must Know!"]
+[ChapterName "Staircase mate"]
+[ChapterURL "https://lichess.org/study/wukLYIXj/aad83qtx"]
+[Annotator "https://lichess.org/@/NoseKnowsAll"]
+[FEN "8/8/8/8/4k3/Q7/1Q6/4K3 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.05.24"]
+[UTCTime "16:53:15"]
+
+{ The staircase mate uses two queens (or queen and rook) to drive the king to the edge rank by rank. The key: keep both pieces on adjacent ranks so they always defend each other — the king can never attack an unprotected queen. }
+1. Qbb4+ { Notice how both queens defend each other, and together the queens control the 3rd and 4th rank. There's only one place for the poor black king to go: up! } { [%cal Bb4h4,Ba3h3] } 1... Kd5 2. Qaa5+ { Up, up, and away! } { [%cal Ba5h5,Bb4h4] } 2... Kc6 3. Qbb6+ { See how it's nice the queen on b6 is already protected? Our pattern does not depend at all on where black's king goes. } { [%cal Bb6h6,Ba5h5] } 3... Kd7 4. Qaa7+ { [%cal Ba7h7,Bb6h6] } 4... Kc8 5. Qbb8# { With every move coming with check, you can be sure you're heading towards checkmate and not going to accidentally stalemate your opponent. } { [%cal Bb8h8,Ba7h7] } *
+
+
+[Event "Beginner Endgames You Must Know!: Sideways staircase mate"]
+[Date "2021.05.24"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Beginner Endgames You Must Know!"]
+[ChapterName "Sideways staircase mate"]
+[ChapterURL "https://lichess.org/study/wukLYIXj/HYMvmWf4"]
+[Annotator "https://lichess.org/@/NoseKnowsAll"]
+[FEN "8/8/8/4k3/2Q5/3Q4/8/4K3 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.05.24"]
+[UTCTime "16:53:15"]
+
+{ A common occurrence in many of these endgames: without pawns on the board, the definition of "up" is irrelevant! You can re-orient this mate any way you want. As Ender Wiggin from the novel "Ender's Game" once put it: the enemy gate is down. }
+1. Qce4+ { In this example we perform the same staircase mate but this time walk the king to the far right of the board to his doom. } { [%cal Bd3d8,Be4e8] } 1... Kf6 2. Qdf3+ { [%cal Be4e8,Bf3f8] } 2... Kg5 3. Qeg4+ Kh6 4. Qfh3# { Notice how you can premove this entire checkmating sequence. The black king can't stop you! } *
+
+
+[Event "Beginner Endgames You Must Know!: Staircase mate with a rook"]
+[Date "2021.05.24"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Beginner Endgames You Must Know!"]
+[ChapterName "Staircase mate with a rook"]
+[ChapterURL "https://lichess.org/study/wukLYIXj/RFzyvDZm"]
+[Annotator "https://lichess.org/@/NoseKnowsAll"]
+[FEN "8/8/8/2k5/1R6/Q7/8/4K3 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.05.24"]
+[UTCTime "16:53:15"]
+
+{ This same staircase mate works just as well with a queen and a rook too. You have to be careful though - the rook MUST be closer to the black king than the queen. }
+1. Qa5+ { [%cal Ba5h5,Bb4h4] } (1. Qa4 Kd6 2. Qb5 Kc7 3. Qc5+?! { This orientation of the pieces is definitely not the right way to go. Notice how the queen is closer to the king than the rook. Now you might accidentally lose your queen if you try the same staircase mate... } 3... Kd7 4. Rd4+ Ke6 5. Qe5+?? { Oops! Remember: with the rook between the queen and enemy king, there's no way for his king to attack any of your undefended pieces! } 5... Kxe5!) 1... Kc6 2. Rb6+ { [%cal Bb6h6,Ba5h5] } 2... Kd7 3. Qa7+ Kc8 4. Rb8# *
+
+
+[Event "Beginner Endgames You Must Know!: Exercise 1: Staircase mate with a rook"]
+[Date "2021.05.24"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Beginner Endgames You Must Know!"]
+[ChapterName "Exercise 1: Staircase mate with a rook"]
+[ChapterURL "https://lichess.org/study/wukLYIXj/Tg5fUN8X"]
+[Annotator "https://lichess.org/@/NoseKnowsAll"]
+[FEN "8/8/8/2k5/R7/1Q6/8/4K3 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.05.24"]
+[UTCTime "16:53:15"]
+[ChapterMode "gamebook"]
+
+{ Your first exercise. What's the easiest way to staircase your opponent, given the way the pieces are currently setup? }
+1. Rc4+! { Yes! With the rook in front of the queen (in this case, between the king and queen), we can be certain that the rook is always protected. The staircase mate follows immediately. } { [%cal Bc4c8,Bb3b8] } (1. Qb5+?? { Don't worry, this is a typical mistake. With the queen in front of the rook, you might forget that sometimes the queen is undefended and can be freely captured. Try again. } { [%cal Gc5b5] }) (1. Qb4+ { Yes this move wins, but we haven't created the staircase mate we know and love! }) (1. Rb4 { This move should also create the correct staircase if you were planning to follow up with Qa3->Qa5. But why reshuffle our pieces when they're already setup perfectly to staircase our opponent in a different direction? }) 1... Kd5 2. Qd3+ (2. Qb5+ { Excellent! You have now setup the staircase mate we know and love - walking the black king up the board. For this exercise, though, let's try to walk the black king to the h file instead. }) 2... Ke5 3. Re4+ Kf5 4. Qf3+ Kg5 5. Rg4+ Kh5 6. Qh3# { This checkmate is the easiest of all the checkmates, but being able to pull this off quickly is a crucial part of everyone's game. Even the World Champion Magnus Carlsen needs to know this checkmate! https://lichess.org/II6pkHsh#123 } *
+
+
+[Event "Beginner Endgames You Must Know!: Ladder mate"]
+[Date "2021.05.24"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Beginner Endgames You Must Know!"]
+[ChapterName "Ladder mate"]
+[ChapterURL "https://lichess.org/study/wukLYIXj/7EktV4MO"]
+[Annotator "https://lichess.org/@/NoseKnowsAll"]
+[FEN "8/8/8/8/8/1k6/R7/2Q1K3 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.05.24"]
+[UTCTime "16:53:15"]
+
+{ Sometimes your pieces are in a different position than the usual staircase mate, and instead you can perform this so-called ladder mate. Note that this is not any better or worse than the staircase mate, but having both checkmates fully under your belt can be useful if there are more pieces on the board! }
+1. Ra3+ { The beginning of the ladder mate. We will walk the king down the board as if he is climbing down a ladder. } { [%cal Bc1a3,Ba3c3,Bc1c3] } (1. Rb2+ { If you fully understand the staircase mate, we can use this to see that this move leads to a quick checkmate. However, let's learn a new way to checkmate instead! Sometimes the pieces aren't set up for the classic staircase mate. } 1... Ka3 2. Qa1#) 1... Kb4 { Notice how the king only has one legal move! } 2. Qc3+ Kb5 { Again, only one legal move! } 3. Ra5+ { As with the staircase mate, we must start with the rook in order to ensure all our pieces stay protected. } (3. Qc5+?? { Starting with the queen is a no-go! } 3... Kxc5) 3... Kb6 4. Qc5+ Kb7 5. Ra7+ Kb8 6. Qc7# { This checkmate pattern gets its name from the squares our queen and rook took - resembling a ladder. } { [%csl Gc1,Ga3,Gc3,Ga5,Gc5,Ga7,Gc7][%cal Gc1a3,Ga3c3,Gc3a5,Ga5c5,Gc5a7,Ga7c7] } *
+
+
+[Event "Beginner Endgames You Must Know!: A small trick in the ladder mate"]
+[Date "2021.05.24"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Beginner Endgames You Must Know!"]
+[ChapterName "A small trick in the ladder mate"]
+[ChapterURL "https://lichess.org/study/wukLYIXj/QBJ0JaTk"]
+[Annotator "https://lichess.org/@/NoseKnowsAll"]
+[FEN "8/8/8/1k6/8/R7/8/2Q1K3 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.05.24"]
+[UTCTime "16:53:15"]
+
+{ This position is identical to the previous one, except the black king lies on b5 instead of b4. If we naively follow the ladder mate sequence, we might be in for a rude awakening... }
+1. Qc3 Kb6 { Black again only has one move. Note, however, that none of white's moves have been check. } 2. Ra5 Kb7 3. Qc5 Kb8 4. Ra7?? $10 { Oops. We accidentally stalemated the black king! This will probably only occur if white is too busy premoving the ladder mate pattern to notice that these moves weren't coming with check. To avoid falling into this, just make sure that your last rook move hits with check. This can be accomplished many different ways, but my personal choice would be a king move. } (4. Kd2! Kb7 { Black again only has one legal move. But this move walks directly into the ladder mate we know and love. } 5. Ra7+ Kb8 6. Qc7# { Nice. The pattern hits exclusively with checks and ends in checkmate. }) *
+
+
+[Event "Beginner Endgames You Must Know!: The two rook shuffle"]
+[Date "2021.05.24"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Beginner Endgames You Must Know!"]
+[ChapterName "The two rook shuffle"]
+[ChapterURL "https://lichess.org/study/wukLYIXj/7SsNnILX"]
+[Annotator "https://lichess.org/@/NoseKnowsAll"]
+[FEN "8/8/8/8/8/3k4/1R6/R3K3 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.05.24"]
+[UTCTime "16:53:15"]
+
+{ Our last king-less checkmate uses two rooks. We want to perform the staircase mate, but because rooks can't protect diagonally, we'll have to make a few intermediate moves in order to get the job done. }
+1. Ra3+ { Just as in the staircase mate - whenever we can control all the squares along two consecutive ranks/files, the king must move towards his doom! } { [%cal Ba3h3,Bb2h2] } 1... Kc4! { A clever move by black - he sees that you are trying to checkmate him with the staircase method, so he stops you in your tracks. So what can we do? } 2. Rh2! { We quickly move our rook as far away as possible from the enemy king and continue our idea of checking him up the board.
+PRO TIP: Rooks need space to work. When checking the king, make sure your rook is as far away from the king as possible! } (2. Rb4+?? Kxb4 { Both staircase patterns fail! }) (2. Rc3+?? Kxc3 { Both staircase patterns fail! }) 2... Kb4 3. Rg3 { Now that both rooks have escaped the black king's reach, we can continue the staircase checkmate. } (3. Rh4+?? { Stay alert to your opponent's threats! } 3... Kxa3) 3... Kc4 4. Rh4+ { [%cal Bh4a4,Bg3a3] } 4... Kd5 5. Rg5+ { Up he goes! } { [%cal Bg5a5,Bh4a4] } 5... Ke6 6. Rh6+ { [%cal Bg5a5,Bh6a6] } 6... Kf7 7. Ra5! { We've been here before. Give your rooks space to check before continuing the staircase mate. } 7... Kg7 8. Rb6 Kf7 9. Ra7+ { [%cal Bb6h6,Ba7h7] } 9... Ke8 10. Rb8# *
+
+
+[Event "Beginner Endgames You Must Know!: Exercise 2: The two rook shuffle"]
+[Date "2021.05.24"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Beginner Endgames You Must Know!"]
+[ChapterName "Exercise 2: The two rook shuffle"]
+[ChapterURL "https://lichess.org/study/wukLYIXj/OrUEVA1k"]
+[Annotator "https://lichess.org/@/NoseKnowsAll"]
+[FEN "8/8/8/8/2k5/4K2R/6R1/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.05.24"]
+[UTCTime "16:53:15"]
+[ChapterMode "gamebook"]
+
+{ Exercise 2: Let's checkmate the king using the two rook shuffle we just learned. But there's a problem... our king is actually in the way! }
+1. Ke2! (1. Kd2 { Also completely correct! Play Ke2 instead for the solution I input into this exercise. }) (1. Kf2 { Also completely correct! Play Ke2 instead for the solution I input into this exercise. }) (1. Ke4 { This is a great move if you were planning to checkmate the king by pushing him towards the a file! Nice! However, this exercise asks you to perform the same shuffle we just saw instead. }) (1. Kf4? { This move doesn't get out of the way of our rooks, right? }) (1. Kf3? { This move doesn't get out of the way of our rooks, right? }) (1. Rg4+ { While this move will certainly checkmate eventually, you're not making immediate progress here because black can play Kc3! Your king is in the way of your rooks. }) 1... Kd4 2. Rg4+ { And now we've reached the same checkmating pattern we just learned. Let's play this out to checkmate so that you can fully practice it. } 2... Ke5 3. Rh5+ Kf6 4. Ra4 (4. Rb5 { Equally good. Play Ra4 for the intended solution, with this move to follow next. }) 4... Kg6 5. Rb5 Kf6 6. Ra6+ Ke7 7. Rb7+ Kd8 8. Ra8# { Nicely done!
+PRO TIP: Once you have mastered fundamental endgames, you'll see them pop up everywhere! Keep your eyes out for ways you can transform a position that you don't fully understand into one you have already mastered such as by playing Ke2 at the beginning of this exercise.
+Here's Magnus Carlsen himself pulling this off! https://lichess.org/bqu8Ozhr/black#65 } *
+
+
+[Event "Beginner Endgames You Must Know!: The queen box"]
+[Date "2021.05.24"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Beginner Endgames You Must Know!"]
+[ChapterName "The queen box"]
+[ChapterURL "https://lichess.org/study/wukLYIXj/56iA0NCU"]
+[Annotator "https://lichess.org/@/NoseKnowsAll"]
+[FEN "8/8/8/3k4/8/2Q5/4K3/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.05.24"]
+[UTCTime "16:53:15"]
+
+{ While this is not the fastest way to checkmate with just a queen and king left, this is definitely the easiest. So how do we push him down the board? Our goal is to imprison the black king in an ever-shrinking box, and then finally checkmate him. }
+1. Qb4 { Our queen moves a knight's move away from the king (so it is not hanging for free), and shrinks the box the king can travel within to just the 4 top ranks. } { [%cal Bb4h4,Bb4b8] } 1... Kc6 (1... Ke5 2. Qc4 { [%cal Bc4c8,Bc4h4] } 2... Kf5 3. Qd4 { We can checkmate our opponent in any quadrant of the board. Remember to stay a knight's move away from the king! } { [%cal Bd4d8,Bd4h4] }) 2. Qa5 { [%cal Ba5a8,Ba5h5] } 2... Kb7 3. Qc5 { We are again a knight's move away from the king. While this new box has changed from the previous ones, do notice how it is smaller.
+PRO TIP: Centralizing the queen is a good idea if you can't quite get any pattern to work out. } { [%cal Bc5c8,Bc5a5] } 3... Ka6 4. Qb4 { [%cal Bb4b8,Bb4a4] } 4... Ka7 5. Qb5 { The king is now stuck to only two squares, and is ready to be checkmated } { [%csl Ra7,Ra8][%cal Bb5b8,Bb5a5] } 5... Ka8 6. Kd3! { CAUTION: DO NOT STALEMATE YOUR OPPONENT.
+Once our opponent is completely restricted, we bring our king into the action.
+PRO TIP: A lone queen cannot ever checkmate a king. } (6. Qb6?? $10 { Stalemate!
+PRO TIP: Make sure your opponent's king always has at least one square it can move to after you make your move. }) 6... Ka7 7. Kc4 Ka8 8. Kc5 Ka7 9. Kc6 Ka8 10. Qb7# { With our king fully participating, we are able to checkmate the king by placing our queen directly in front of the king. Now that we finally can cover those last two squares in the box, black is checkmated. } (10. Kc7 Ka7 11. Qb7# { Just as good. }) *
+
+
+[Event "Beginner Endgames You Must Know!: An important king standoff"]
+[Date "2021.05.24"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Beginner Endgames You Must Know!"]
+[ChapterName "An important king standoff"]
+[ChapterURL "https://lichess.org/study/wukLYIXj/8ZE0KEgU"]
+[Annotator "https://lichess.org/@/NoseKnowsAll"]
+[FEN "8/8/8/3k4/8/3K4/7R/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.05.24"]
+[UTCTime "16:53:15"]
+
+{ When the kings are exactly two squares away from each other, they are in what's known as "opposition." Notice how both kings are holding their ground against each other.
+
+PRO TIP: When two kings are in opposition, the player who has to move their king FIRST must give up ground. } { [%cal Gd3c4,Gd3d4,Gd3e4,Rd5c4,Rd5d4,Rd5e4] }
+1. Rh5+ { In this case, white can force the opponent king backwards with this annoying rook check.
+This concept of taking opposition between two kings in order to force your opponent backwards will be a crucial part of many endgames, especially king and pawn endgames. } { [%csl Gc5,Gc4,Gd4,Ge4,Ge5,Gd5][%cal Gd3c4,Gd3d4,Gd3e4,Bh5a5] } *
+
+
+[Event "Beginner Endgames You Must Know!: A first rook mate"]
+[Date "2021.05.24"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Beginner Endgames You Must Know!"]
+[ChapterName "A first rook mate"]
+[ChapterURL "https://lichess.org/study/wukLYIXj/XAhp9gWl"]
+[Annotator "https://lichess.org/@/NoseKnowsAll"]
+[FEN "8/3k4/7R/4K3/8/8/8/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.05.24"]
+[UTCTime "16:53:15"]
+
+{ First I will introduce the old-fashioned way to checkmate with the king and rook (which takes forever). In the upcoming chapters, we'll see more efficient technique. Here, the main idea is to keep forcing the black king up the board by taking away more and more ranks from him. To do this, we need to take opposition from black. }
+1. Rg6!! { A genius waiting move that forces black to self-destruct. Either (1) black has to move into opposition with Ke7 (reaching the position we saw from the previous chapter), (2) the black king voluntarily moves onto the back rank in which case Rg7 seals his fate, or (3) we get a chance to chase him down to the edge of the board. } 1... Kc7 (1... Ke7?! { [%cal Ge5d6,Ge5e6,Ge5f6] } 2. Rg7+ Kf8 3. Kf6 { The progress we're looking for. Black is now trapped on the back rank. }) (1... Ke8?! 2. Rg7 Kf8 3. Kf6 { The progress we're looking for. Black is now trapped on the back rank. }) 2. Kd5 Kb7 3. Kc5 Ka7 4. Kb5 { Finally, black has to walk into opposition, and we can force him onto the back rank. } 4... Kb7 { [%cal Gb5a6,Gb5b6,Gb5c6] } 5. Rg7+ { [%csl Ga6,Gb6,Gc6,Gc7,Gb7,Ga7][%cal Gb5a6,Gb5b6,Gb5c6,Bg7a7] } 5... Kc8 6. Kc6 { With the king stuck on one less rank than the original position, we repeat the same pattern until checkmate. } 6... Kd8 7. Ra7!! { The genius waiting move again.
+PRO TIP: When checking with a rook, it's often best to keep as much space from enemy kings as possible. } (7. Rb7?! { This doesn't accomplish the same thing as Ra7 because we're not far enough from the king. } 7... Kc8 { With the kings in opposition, we would love to play Rb8#... } 8. Rb8+?? Kxb8 $10 { Oops. The rook was too close to the king. }) (7. Rh7?! { The right idea, but the wrong execution. Black is never going to intentionally walk into opposition, so the game will continue like so: } 7... Ke8 8. Kd6 Kf8 9. Ke6 Kg8 { Our rook is again too close to the enemy king. We'll have to reposition it two more times before being able to checkmate. }) 7... Ke8 8. Kd6 Kf8 9. Ke6 { Notice how it's immediately checkmate if at any point black walks into opposition with our king. } 9... Kg8 (9... Ke8 { Walking into opposition immediately results in checkmate. } 10. Ra8#) 10. Kf6 Kh8 11. Kg6 { Again, we've chased black to the edge of the board and the king has to self-destruct by walking into opposition. } 11... Kg8 { [%cal Gg6f7,Gg6g7,Gg6h7] } 12. Ra8# { [%csl Gf7,Gg7,Gh7,Gh8,Gg8,Gf8][%cal Gg6f7,Gg6g7,Gg6h7,Ba8h8] } *
+
+
+[Event "Beginner Endgames You Must Know!: The rook box"]
+[Date "2021.05.24"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Beginner Endgames You Must Know!"]
+[ChapterName "The rook box"]
+[ChapterURL "https://lichess.org/study/wukLYIXj/OPBv5FWe"]
+[Annotator "https://lichess.org/@/NoseKnowsAll"]
+[FEN "8/8/8/8/8/3k4/1R6/3K4 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.05.24"]
+[UTCTime "16:53:15"]
+
+{ Instead of the previously described (and painfully slow) pattern, we will now instead checkmate the king by squeezing it into a smaller and smaller box. The key advice to remember here is: the enemy gate is down. So with every move, don't worry about how we shrink the box, let's just shrink the overall box! }
+1. Re2! { The black king is already stuck on less than one-half of the board. } { [%cal Be2e8,Be2a2] } (1. Rb3+ { This is the old-fashioned way to learn it. When the kings are lined up, we can check the king back and he must be stuck on less ranks/files of the board. But does this really limit the overall squares the black king can move to? Hardly... } { [%csl Gc2,Gd2,Ge2][%cal Gd1c2,Gd1d2,Gd1e2,Gb3h3] }) 1... Kc3 { First we'll see what happens if black thinks that the only way he's going to get checkmated is on the 8th rank. Next chapter we'll revisit this position and see better defense from black. } 2. Rd2 { [%cal Bd2d8,Bd2a2] } 2... Kb3 3. Rc2 { [%cal Bc2c8,Bc2a2] } 3... Ka3 4. Kc1 { Always improve the king when the rook can no longer tighten the box. } 4... Kb3 5. Kb1 Ka3 6. Rb2! { The black king is now stuck to a single file. Remember: the enemy gate is down, which in this case means we are checkmating the opponent against the far left wall. } { [%cal Bb2b8,Bb2a2] } 6... Ka4 7. Kc2 Ka3 8. Kc3 Ka4 { With the king trapped on one file, we need to again use opposition in order to find a checkmate. As in the previous example, we can only checkmate the black king once the kings are lined up in opposition. In this case it's against the far left wall instead of the top wall. } 9. Rb1!! { Excellent! Now the opponent has to either step into opposition with Ka3 and immediately get checkmated, or we can chase him all the way up the board until he has to step into opposition. } (9. Kc4? { This move looks good, but the black king can escape this opposition and we're not any closer to checkmate. } 9... Ka5) 9... Ka5 (9... Ka3? 10. Ra1#) 10. Kc4 { We continue our chase. Notice how the black king can no longer walk down the board because he would be stepping directly into opposition and therefore mate with Ra1#. } 10... Ka6 11. Kc5 Ka7 12. Kc6 Ka8 13. Kc7 { The chase is complete. With nowhere left to go, the black king is finally forced to walk into opposition and checkmate himself. } 13... Ka7 14. Ra1# *
+
+
+[Event "Beginner Endgames You Must Know!: The rook box with better defense"]
+[Date "2021.05.24"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Beginner Endgames You Must Know!"]
+[ChapterName "The rook box with better defense"]
+[ChapterURL "https://lichess.org/study/wukLYIXj/tGmDrQtl"]
+[Annotator "https://lichess.org/@/NoseKnowsAll"]
+[FEN "8/8/8/8/8/3k4/R7/3K4 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.05.24"]
+[UTCTime "16:53:15"]
+
+1. Re2 { Now let's see what happens if black plays smarter and realizes that stepping towards any of the four walls will lead to a fast checkmate.
+PRO TIP: If you're looking to survive the longest in any endgame, stay central with your king. It is much easier to get checkmated against a wall than in the center of the board. } { [%cal Be2e8,Be2a2] } 1... Kd4 2. Kd2 { Our rook could not make a move that shrunk the box, so we take the time out to improve our king. This moves takes opposition (and therefore the important c3 and d3 squares from our opponent), shrinking the box a tiny bit. } 2... Kd5 3. Kd3 { If our opponent lets us, we can continue to take opposition - black has to keep giving ground. } (3. Re3? { Reasonable, but this move doesn't make progress. } 3... Kd4 { Now we see it's us who has to give up ground! The rook cannot move because then the king escapes the box. The king cannot move because it must protect the rook. }) 3... Kc5 { And here's the only tricky move to remember in this checkmate. } (3... Kc6 4. Re5 { Mission accomplished - the box is being shrunk } 4... Kd6 5. Kd4 { And we've seen this position already. Black has to continue giving ground. }) (3... Kd6 4. Kd4 { The box continues to be shrunk... }) 4. Ke4!! { Because black is not threatening to escape the box created by our rook for one turn, our king is allowed to cross over to the other side of the e file in order to force the king back. } { [%csl Bd5][%cal Be2e8,Be2a2] } 4... Kc4 (4... Kd6 5. Kd4 { Taking opposition. We've seen this position above. Black has to continue giving up ground. }) 5. Rc2+ { Opposition allows us to continue shrinking the box. } { [%cal Ge4d3,Ge4d4,Ge4d5,Bc2c8] } 5... Kb3 6. Kd3 Kb4 7. Rc3 Kb5 8. Rc4 { [%cal Bc4c8,Bc4a4] } 8... Kb6 { The box has been shrunk as much as we can with just the rook. Now we again involve our king to force the black king further back. } 9. Kc3 Kb5 10. Kb3 Kb6 11. Kb4 { We continue the pattern. Within the box defined by our rook, improve the king as much as possible until we hit the critical juncture here. Black has to give up ground by either going towards the side of the board or give up ground by going towards the top of the board. } { [%cal Bc4c8,Bc4a4] } 11... Ka6 12. Kc5! { Compare this position to the position on move 4. When the king is not threatening to leave the box created by our rook, our king is able to crossover the line in order to cover the b6 (in the previous position d5) square. } { [%csl Bb6][%cal Bc4c8,Bc4a4] } 12... Kb7 (12... Ka5?! 13. Rb4 { With the king trapped on the side of the board, we know how to chase him all the way to a corner. }) 13. Kb5 Ka7 14. Kc6! { Crossing over again. } { [%csl Bb7] } 14... Kb8 (14... Ka6?! 15. Ra4#) 15. Kb6 Ka8 16. Rc8# { The king is trapped. No need to chase him any further.
+To remember this checkmate, ask yourself two questions: (1) Can I use my rook to shrink the box around the king further? If so, make a rook move. If not, (2) Where do I need to position my king to keep shrinking this box further? This usually means taking opposition from our opponent and push him back more. } *
+
+
+[Event "Beginner Endgames You Must Know!: Exercise 3: The crucial rook box position"]
+[Date "2021.05.24"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Beginner Endgames You Must Know!"]
+[ChapterName "Exercise 3: The crucial rook box position"]
+[ChapterURL "https://lichess.org/study/wukLYIXj/ldlxdMdS"]
+[Annotator "https://lichess.org/@/NoseKnowsAll"]
+[FEN "8/8/2k5/8/3K4/4R3/8/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.05.24"]
+[UTCTime "16:53:15"]
+[ChapterMode "gamebook"]
+
+{ Black has just played Kc6, trying to stay as central as possible. What maneuver do we need to remember in order to take opposition away from our opponent? } { [%cal Be3e8,Be3a3] }
+1. Ke5! { Nice job! Because the black king wasn't threatening to escape our box, white can cross over this line in order to wrestle away more space from the black king. } { [%csl Bd6] } (1. Kc4? { A good try, but not correct. In this case black can go back with Kd6 and our best move should be to repeat ourselves with Kd4, trying again. We have taken opposition, but in this case our opponent sadly does not need to give ground. } 1... Kd6 2. Kd4) (1. Re5?! { This move definitely makes a lot of sense, but after Kd6 it's us that has to give ground. The rook needs to stay in place to prevent the enemy king from escaping the box, and the white king has to keep protecting the rook. } 1... Kd6) (1. Re6+ { An excellent move that I didn't show in the previous chapter. After Kd7, we have Kd5 and we have made progress. And after Kb5!? we can play Rd6! and black must again walk into opposition with Kb4 Rb6+, giving further ground. } 1... Kb5 2. Rd6! Kb4 3. Rb6+ Ka5 4. Kc5) 1... Kd7 { The best try from black would have been to stay centralized with Kc5, but walking into opposition like that allows Rc3+, and we have successfully shrunk the box. } (1... Kc5 2. Rc3+ Kb4 3. Kd4 { The box has shrunk. }) 2. Kd5 (2. Rc3! { The fastest way to mate! This excellent move is one I didn't show in the previous chapter. After Ke7, we have Rc7+ and the king is forced onto the back rank. } 2... Ke7 3. Rc7+ Kd8 4. Kd6) 2... Kc7 3. Ke6 { Not the fastest way to win (we should already be thinking about trapping him against the top wall instead of the left wall), but this is the move that we have already discussed. } { [%csl Bd7] } (3. Rb3! { The fastest way to mate! Now Black will again have to walk into opposition and next be forced against the top wall. } 3... Kd7 4. Rb7+ Kc8 5. Kc6) (3. Re6?! { This move definitely makes a lot of sense, but after Kd7 it's us that has to give ground. The rook needs to stay in place to prevent the enemy king from escaping the box, and the white king has to keep protecting the rook. }) 3... Kc6 4. Rc3+ Kb5 5. Kd5 Kb4 6. Kd4 $18 { And we again have shrunk the box considerably. White is making progress.
+Here's Magnus Carlsen pulling this checkmate off in only 5 seconds! https://lichess.org/nPI3zfiw/black#123 } (6. Rd3! { The fastest way to mate! Now black will again have to walk into opposition and next be forced against the top wall. } 6... Kb5 7. Rb3+ Ka4 8. Kc4) (6. Re3! { The fastest way to mate! Now black will again have to walk into opposition and next be forced against the top wall. } 6... Kb5 7. Rb3+ Ka4 8. Kc4) (6. Rf3! { The fastest way to mate! Now black will again have to walk into opposition and next be forced against the top wall. } 6... Kb5 7. Rb3+ Ka4 8. Kc4) (6. Rg3! { The fastest way to mate! Now black will again have to walk into opposition and next be forced against the top wall. } 6... Kb5 7. Rb3+ Ka4 8. Kc4) (6. Rh3! { The fastest way to mate! Now black will again have to walk into opposition and next be forced against the top wall. } 6... Kb5 7. Rb3+ Ka4 8. Kc4) (6. Rc5! { An equally good move. We have shrunk the box to the bottom left corner and have made considerable progress. Play Kd4 instead to solve this exercise. }) *
+
+
+[Event "Beginner Endgames You Must Know!: King and pawn endgame"]
+[Date "2021.05.24"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Beginner Endgames You Must Know!"]
+[ChapterName "King and pawn endgame"]
+[ChapterURL "https://lichess.org/study/wukLYIXj/2ru3TC7p"]
+[Annotator "https://lichess.org/@/NoseKnowsAll"]
+[FEN "8/3k4/8/8/3PK3/8/8/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.05.24"]
+[UTCTime "16:53:15"]
+
+{ The goal of every king and pawn endgame is to create a queen (or rook!) with this pawn. Once that happens, using what we've learned from the previous chapters in this study, we know how to checkmate the lone king.
+
+Here, we again use opposition to push black's king back. This time the plan is to take control of the queening square. }
+1. Kd5! { Black must retreat, which allows our king to infiltrate even further. } { [%cal Gd5c6,Gd5d6,Gd5e6] } (1. d5?? $10 { A terrible mistake that draws the game. We'll see precisely how this plays out in a coming chapter, but in the meantime...
+PRO TIP: Always get your king up in the endgame. Especially in king and pawn endgames, be sure to get your king as active as possible before pushing pawns. } 1... Kd6 2. Kd4 $10) 1... Kc7 2. Ke6 Kd8 3. Kd6 { Taking opposition again means the black king must retreat again. } { [%cal Gd6c7,Gd6d7,Gd6e7] } 3... Ke8 (3... Kc8 4. Ke7 { This amounts to the same thing as in the main line. }) 4. Kc7 { Now that white has control of the d8 square, we can push our pawn all the way home until we queen. } { [%csl Bd8] } 4... Ke7 5. d5 Ke8 6. d6 Kf7 7. d7 Ke7 8. d8=Q+ $18 { We'll be able to win this endgame as in https://lichess.org/study/wukLYIXj/56iA0NCU } *
+
+
+[Event "Beginner Endgames You Must Know!: King and pawn endgame"]
+[Date "2021.05.24"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Beginner Endgames You Must Know!"]
+[ChapterName "King and pawn endgame"]
+[ChapterURL "https://lichess.org/study/wukLYIXj/A1W1Huoz"]
+[Annotator "https://lichess.org/@/NoseKnowsAll"]
+[FEN "8/3k4/8/8/4K3/3P4/8/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.05.24"]
+[UTCTime "16:53:15"]
+
+1. Kd5 { As before, we always seek opposition in these king and pawn endgames in order to force the black king backwards. } { [%cal Gd5c6,Gd5d6,Gd5e6] } 1... Kc7 2. Ke6 Kd8 3. Kd6 { Opposition again! } { [%cal Gd6c7,Gd6d7,Gd6e7] } 3... Ke8 { We now need our pawn a little closer in order to show how to finally kick the black king away from d8 for good. } 4. d4 (4. Kc7?! { It's too early for this because black can now dive bomb our pawn, and we'll have to retreat in order to defend it... } 4... Ke7 5. d4 Ke6 6. Kc6 Ke7 { This is still winning, but we now must transpose to the main line in order to win from here. }) 4... Kd8 5. d5 { White already has the opposition between the kings, so again black must give ground. } 5... Kc8 6. Ke7 { [%csl Bd8] } 6... Kc7 7. d6+ Kc8 8. d7+ Kc7 9. d8=Q+ $18 { After promotion, checkmate is soon to follow. } *
+
+
+[Event "Beginner Endgames You Must Know!: Drawing a king and pawn endgame"]
+[Date "2021.05.24"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Beginner Endgames You Must Know!"]
+[ChapterName "Drawing a king and pawn endgame"]
+[ChapterURL "https://lichess.org/study/wukLYIXj/fHmVLjSJ"]
+[Annotator "https://lichess.org/@/NoseKnowsAll"]
+[FEN "8/8/3k4/3P4/3K4/8/8/8 b - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.05.24"]
+[UTCTime "16:53:15"]
+
+{ Black has to step backwards, but because white has pushed their pawn too far, black can draw this endgame by always trying to gain opposition. }
+1... Kd7 2. Ke5 Ke7! { Opposition! White cannot enter with the king. First let's see how to keep drawing this if white tries a different approach with their king. We'll see what happens if they push the pawn a little later. } 3. Ke4 Kd6 4. Kd4 { We return to the original position.
+PRO TIP: Get your king up in the endgame as much as possible. No matter which side you are playing. } 4... Kd7 5. Kc5 Kc7! { Opposition! White cannot enter here either. } 6. d6+ (6. Kb5 Kd6 7. Kc4 { If white ever leaves the defense of the pawn, we can now pressure the pawn, forcing white to retreat. }) 6... Kd7 7. Kd5 Kd8! { Black must be ready to gain opposition from white no matter which direction they head to: the e file or the c file. } { [%cal Gd5e6,Gd5c6,Gd8e8,Gd8c8] } 8. Ke6 Ke8! { Opposition. White makes no progress on this side of the pawn. } 9. Kd5 Kd7 10. Kc5 Kd8! 11. Kc6 Kc8! { Opposition again. White makes no progress here either. } 12. d7+ Kd8 13. Kd6 $10 { If white ever pushes this pawn to the 7th rank, we immediately get stalemated. Black draws the game.
+This concept of opposition is explored further in the next endgame study: https://lichess.org/study/UsqmCsgC/YBtOyp2n } *
+
+
+[Event "Beginner Endgames You Must Know!: Exercise 4: Can you draw this?"]
+[Date "2021.05.24"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Beginner Endgames You Must Know!"]
+[ChapterName "Exercise 4: Can you draw this?"]
+[ChapterURL "https://lichess.org/study/wukLYIXj/6bficx4X"]
+[Annotator "https://lichess.org/@/NoseKnowsAll"]
+[FEN "8/8/3k4/3P4/3K4/8/8/8 b - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.05.24"]
+[UTCTime "16:53:15"]
+[ChapterMode "gamebook"]
+
+{ This important endgame requires both sides to fully understand the power of taking the opposition. Strong players can draw this position given less than 1 second. Can you? }
+1... Kd7 (1... Ke7 { This also draws. But be careful about giving up opposition after Ke5. If you were on the back rank, this would be a losing maneuver! }) (1... Kc7 { This also draws. But be careful about giving up opposition after Kc5. If you were on the back rank, this would be a losing maneuver! }) 2. Ke5 Ke7! (2... Kd8?? { Oh no! After Kd6, your opponent takes the opposition and wins the game. }) (2... Ke8?? { Oh no! After Ke6, your opponent takes the opposition and wins the game. }) 3. Ke4 Kd6 4. Kd4 Kd7 (4... Ke7 { This also draws. But be careful about giving up opposition after Ke5. If you were on the back rank, this would be a losing maneuver! }) (4... Kc7 { This also draws. But be careful about giving up opposition after Kc5. If you were on the back rank, this would be a losing maneuver! }) 5. Kc5 Kc7! (5... Kc8?? { Oh no! After Kc6, your opponent takes the opposition and wins the game. }) (5... Kd8?? { Oh no! After Kd6, your opponent takes the opposition and wins the game. }) 6. d6+ Kd7 (6... Kd8 { Yes this also draws. Play Kd7 instead to get back to the main line. }) (6... Kc8?? { Oh no! After Kc6, your opponent takes the opposition and wins the game. }) 7. Kd5 Kd8! (7... Ke8?? { Oh no! After Ke6, your opponent takes the opposition and wins the game. }) (7... Kc8?? { Oh no! After Kc6, your opponent takes the opposition and wins the game. }) 8. Ke6 Ke8 9. d7+ Kd8 10. Kd6 $10 { Nice job escaping with the draw.
+Here's Magnus Carlsen nailing this technique against the upcomer Alireza Firouzja as well! https://lichess.org/VRbVnnAa/black#138 } *
+
+
+[Event "Capablanca - Kostic"]
+[Site "Havana CUB"]
+[Date "1919.03.25"]
+[Round "1"]
+[White "Jose Raul Capablanca"]
+[Black "Borislav Kostic"]
+[Result "1-0"]
+[Variant "Standard"]
+[ECO "C42"]
+[Opening "Petrov's Defense: Cozio Attack"]
+[StudyName "Beginner Endgames You Must Know!"]
+[ChapterName "The king is a fighter!"]
+[ChapterURL "https://lichess.org/study/wukLYIXj/kai3A0Xb"]
+[Annotator "https://lichess.org/@/NoseKnowsAll"]
+
+{ I will leave this endgame study with advice that I have already repeated several times.
+
+PRO TIP: In an endgame, get your king up the board as much as possible. Once there is no more fear of getting checkmated, the king is a fighting piece that can help you win the game! Activate it as best you can.
+
+Here is a famous example from Capablanca. Skip ahead to move 49 to see the endgame. }
+1. e4 e5 2. Nf3 Nf6 3. Nxe5 d6 4. Nf3 Nxe4 5. Qe2 Qe7 6. d3 Nf6 7. Bg5 Qxe2+ 8. Bxe2 Be7 9. Nc3 Bd7 10. O-O O-O 11. Rfe1 Nc6 12. d4 Rfe8 13. Bb5 a6 14. Ba4 b5 15. Bb3 Na5 16. Re3 c6 17. Rae1 Kf8 18. Bf4 Nb7 19. h3 h6 20. Bh2 Bd8 21. Rxe8+ Bxe8 22. a4 c5 23. Ne4 Nxe4 24. Bd5 Ra7 25. Bxe4 Be7 26. axb5 axb5 27. dxc5 dxc5 28. Bb8 Ra8 29. Bg3 Ra7 30. Bb8 Ra8 31. Bg3 Ra7 32. Ne5 Nd8 33. b3 Ne6 34. Bd5 Nd4 35. c3 Nf5 36. Bh2 b4 37. g4 Nd6 38. c4 Ra3 39. Re3 Nc8 40. Bb7 Na7 41. Bd5 f6 42. Nf3 Nc6 43. Nh4 Nd4 44. Nf5 Nxf5 45. gxf5 Bd7 46. Be4 Ra6 47. Rd3 Bc6 48. Bxc6 Rxc6 49. Kg2! { With so many pieces traded, it's clear neither side will be getting checkmated. Now is the time to activate our king! } 49... Ra6 50. Kf3 Ra2 51. Bg3! { In a perfect world we would keep bringing our king up the board. First we defend the f2 pawn. } 51... Ke8 52. Bf4 Ra6 53. Be3 Ra1 54. Kg4 { Now that the f2 pawn is again solidly defended, we keep bringing our king up in the endgame! } 54... Ra7 (54... Rh1 55. h4 { This wouldn't have stopped Capablanca from marching his king further up the board. }) 55. Kh5! Kf7 { Black stops us from reaching the g6 square - the optimal square to apply pressure to black's pawns. } { [%csl Bg6] } 56. Rd5 Ra3 57. Rd7 Ke8 58. Rd3 Kf7 59. h4 Ra7 60. Rd5 Ra5?! (60... Rc7! { Black surely wanted to avoid this passive defense, but it might have just worked out. } 61. Bf4 Ra7 62. Bg3 Bf8 63. Bf4 Be7 64. Bd2 Ra3 { With best play, black might have still had a draw here... }) (60... Ra3? $16 { The move black wants to play doesn't work. White will transpose to this on move 63. }) 61. Rd7 Ke8 62. Rd3 Kf7 63. Rd5! { But with several precise moves from white, we are now able to make further progress. After these incoming piece trades, our king is able to enter further. } 63... Ra3 64. Bxc5 Bxc5 65. Rxc5 Rxb3 66. Rc7+! Kf8 67. Kg6! { With white's king so active, and black's king so passive, white is certainly winning now. } 67... Rf3 68. Rf7+ Ke8 69. Rxg7 Rf4 (69... Rxf2 70. h5 $18 { Capablanca will win both the f and h pawns whenever he feels like it. Black can do nothing against white's active king. }) 70. h5 Rxc4 71. Kxh6 Kf8 72. Rb7 Rg4 73. f3 (73. Kh7! { [%cal Gh5h6] } 73... Rg5 74. h6 Rxf5 75. Kg6! Rxf2 76. Rb8+ Ke7 77. h7 $18 { Capablanca found this key winning idea (which depends on the active king and passed h pawn) only two moves later. }) 73... Rg5 74. Rxb4 Kf7 (74... Rxf5 75. Kg6! { If black played the "obvious" move, the king returns to its active post and wins the game. } 75... Rxf3 76. Rb8+ Ke7 77. h6 $18 { [%cal Gh6h7,Gh7h8] }) 75. Rg4 Rxf5 76. f4 Ra5 77. Rg7+ Kf8 78. Rb7 f5 79. Kg6 Ra6+ 80. Kxf5 Ra5+ 81. Kg4 Ra6 82. Kg5! { Notice how Capablanca is never quick to push his pawns, but first seeks to activate his king as much as possible before pushing any pawns. } 82... Rc6 (82... Ra5+ 83. f5 $18 { The f pawn will protect the white king from lateral checks, so we can keep walking up the board to further support these pawns queening. }) 83. f5 Kg8 84. f6 Rc1 85. Rg7+ Kf8 86. h6 $18 { 1-0 Black resigns. } { A fitting finish. Black's king is completely dominated and white's king dominates. Remember that your king is a fighter. Get your king up in the endgame! } 1-0
+
+
+[Event "Beginner Endgames You Must Know!: Thanks for enjoying this study!"]
+[Date "2021.05.24"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Beginner Endgames You Must Know!"]
+[ChapterName "Thanks for enjoying this study!"]
+[ChapterURL "https://lichess.org/study/wukLYIXj/uCRQ1IkV"]
+[Annotator "https://lichess.org/@/NoseKnowsAll"]
+[FEN "4k3/R7/8/8/8/8/8/4K3 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.05.24"]
+[UTCTime "16:53:15"]
+[ChapterMode "gamebook"]
+
+{ Be sure to like this study and share with your friends if you enjoyed it! Feel free to ask/answer any questions in the chat room if you're stuck on a key idea. You can check out my other instructive studies too if you're working on improving your game.
+-NoseKnowsAll
+
+* Beginner endgames you must know! https://lichess.org/study/wukLYIXj
+* Intermediate endgames you must know! https://lichess.org/study/UsqmCsgC (the next in the series)
+* More endgames you must know! https://lichess.org/study/xtDSXkyi
+* Advanced endgames you must know! https://lichess.org/study/UO2zqigQ
+* Rook endgames you must know! https://lichess.org/study/bnboDhFM
+* Knights | How to dominate your opponents! https://lichess.org/study/kI8ikTU4
+* Bishops | Slice through the opposition! https://lichess.org/study/kNn68T8l
+* Rooks | Infiltrate for activity! https://lichess.org/study/U7tTRtdj
+* Always sacrifice the exchange! https://lichess.org/study/h3ccaYFE
+* Beautiful checkmates https://lichess.org/study/YtBYXc3m } { [%cal Ba7h7] }
+ *
+
+
+
