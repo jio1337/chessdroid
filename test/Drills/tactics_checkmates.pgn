@@ -1,0 +1,759 @@
+[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Anastasia's Mate"]
+[Date "2021.06.28"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[ChapterName "Anastasia's Mate"]
+[ChapterURL "https://lichess.org/study/qqwWQNXO/N4qeZJXE"]
+[Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
+[FEN "r4r1k/1p2Nppp/p5n1/3p4/P2qn2Q/R7/1P4PP/5R1K w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.06.28"]
+[UTCTime "09:08:52"]
+[ChapterMode "gamebook"]
+
+{ Anastasia's Mate: a knight and rook combine to trap the king against the h-file, squeezed between the knight, the rook, and its own pawns. Find the winning sequence. }
+1. Qxh7+ Kxh7 2. Rh3+ Nh4 3. Rxh4# *
+
+
+[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Anderssen's Mate"]
+[Date "2021.06.29"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[ChapterName "Anderssen's Mate"]
+[ChapterURL "https://lichess.org/study/qqwWQNXO/0ryPuJne"]
+[Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
+[FEN "6k1/6P1/5K2/8/8/8/8/7R w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.06.29"]
+[UTCTime "14:11:14"]
+[ChapterMode "gamebook"]
+
+{ Anderssen's Mate: the rook delivers checkmate on the back rank while a pawn on the 7th rank controls the king's escape square diagonally. One move wins. }
+1. Rh8# *
+
+
+[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Arabian Mate"]
+[Date "2021.06.28"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[ChapterName "Arabian Mate"]
+[ChapterURL "https://lichess.org/study/qqwWQNXO/HEyDRXjy"]
+[Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
+[FEN "7k/pp2N2p/8/4p3/P5r1/1P1PPnp1/2P1R3/R6K b - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.06.28"]
+[UTCTime "09:18:53"]
+[ChapterMode "gamebook"]
+
+{ Arabian Mate: knight and rook combine to checkmate the king in the corner — one of the oldest named patterns in chess. The knight covers the king's escape squares while the rook delivers mate. }
+1... g2+ 2. Rxg2 Rh4+ 3. Rh2 Rxh2# *
+
+
+[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Back Rank Mate"]
+[Date "2021.06.28"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[ChapterName "Back Rank Mate"]
+[ChapterURL "https://lichess.org/study/qqwWQNXO/rmOs9UIr"]
+[Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
+[FEN "2R5/pp3ppk/7p/3p4/1Q6/P1q5/2P2PPP/6K1 b - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.06.28"]
+[UTCTime "09:24:28"]
+[ChapterMode "gamebook"]
+
+{ Back Rank Mate: the king is trapped on its back rank by its own pawns with no escape — a rook or queen delivers checkmate along that rank. A classic consequence of not creating a luft (escape square) for your king. }
+1... Qa1+ (1... Qe1+ { This is a free queen by white. } 2. Qxe1) 2. Qb1 (2. Qe1 Qxe1#) 2... Qxb1# *
+
+
+[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Balestra Mate"]
+[Date "2021.06.29"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[ChapterName "Balestra Mate"]
+[ChapterURL "https://lichess.org/study/qqwWQNXO/mUff1Ok8"]
+[Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
+[FEN "4k3/8/5Q2/8/8/5B3/8/6K1 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.06.29"]
+[UTCTime "14:13:15"]
+[ChapterMode "gamebook"]
+
+{ Balestra Mate: queen and bishop combine to checkmate — the bishop controls one diagonal while the queen covers the remaining escape squares. One move. }
+1. Bc6# *
+
+
+[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Blackburne's Mate"]
+[Date "2021.06.29"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[ChapterName "Blackburne's Mate"]
+[ChapterURL "https://lichess.org/study/qqwWQNXO/IqwXKgBc"]
+[Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
+[FEN "5rk1/8/8/6N1/8/3B4/1B6/6K1 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.06.29"]
+[UTCTime "14:14:51"]
+[ChapterMode "gamebook"]
+
+{ Blackburne's Mate: two bishops and a knight combine to checkmate the king trapped in the corner — named after Joseph Henry Blackburne. Find the one-move finish. }
+1. Bh7# *
+
+
+[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Blind Swine Mate"]
+[Date "2021.06.29"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[ChapterName "Blind Swine Mate"]
+[ChapterURL "https://lichess.org/study/qqwWQNXO/HOza3rit"]
+[Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
+[FEN "5rk1/1R2R3/8/8/8/8/8/6K1 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.06.29"]
+[UTCTime "14:16:02"]
+[ChapterMode "gamebook"]
+
+{ Blind Swine Mate: two rooks on the 7th rank — nicknamed "blind swine" — cooperate to systematically checkmate the king by controlling the g- and h-files. }
+1. Rg7+ Kh8 2. Rh7+ Kg8 3. Rbg7# *
+
+
+[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Boden's Mate"]
+[Date "2021.06.28"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[ChapterName "Boden's Mate"]
+[ChapterURL "https://lichess.org/study/qqwWQNXO/f2STAwUw"]
+[Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
+[FEN "2kr2r1/1p1n1p2/p1p4p/3q4/1P1Pn1b1/5N2/P1Q1BPPB/2R2RK1 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.06.28"]
+[UTCTime "09:34:24"]
+[ChapterMode "gamebook"]
+
+{ Boden's Mate: two bishops on crossing diagonals checkmate the king after it has castled — the king's own pieces block its escape. Named after Samuel Boden. Find the sequence. }
+1. Qxc6+ { If your opponent takes with his b-pawn, you can simply play Bxa6#. } 1... Qxc6 2. Rxc6+ bxc6 3. Bxa6# *
+
+
+[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Corner Mate"]
+[Date "2021.06.29"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[ChapterName "Corner Mate"]
+[ChapterURL "https://lichess.org/study/qqwWQNXO/R7qOIp2k"]
+[Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
+[FEN "5br1/5pkp/3N4/2n1P3/8/8/3B4/2K4R w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.06.29"]
+[UTCTime "14:20:16"]
+[ChapterMode "gamebook"]
+
+{ Corner Mate: rook and knight trap the king in the corner — the rook drives the king in while the knight delivers the final checkmate. Find the two-move sequence. }
+1. Rg1+ Kh8 2. Nxf7# *
+
+
+[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Corridor Mate"]
+[Date "2021.06.29"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[ChapterName "Corridor Mate"]
+[ChapterURL "https://lichess.org/study/qqwWQNXO/7njIPMNe"]
+[Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
+[FEN "8/1Q6/5kp1/6p1/8/8/1K6/3R2R1 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.06.29"]
+[UTCTime "14:23:15"]
+[ChapterMode "gamebook"]
+
+{ Corridor Mate: the king is confined to a narrow corridor (a rank or file) with no escape — a queen or rook delivers checkmate along that line. Find the two-move finish. }
+1. Rgf1+ Ke6 2. Qe4# *
+
+
+[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Diagonal Corridor Mate"]
+[Date "2021.06.30"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[ChapterName "Diagonal Corridor Mate"]
+[ChapterURL "https://lichess.org/study/qqwWQNXO/CN6RZZl5"]
+[Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
+[FEN "6bk/7p/8/8/8/6B1/8/6K1 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.06.30"]
+[UTCTime "01:07:57"]
+[ChapterMode "gamebook"]
+
+{ Diagonal Corridor Mate: the king is trapped on a diagonal with no escape — an opposing bishop delivers checkmate along that same diagonal. One move wins. }
+1. Be5# *
+
+
+[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Damiano's Mate"]
+[Date "2021.06.29"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[ChapterName "Damiano's Mate"]
+[ChapterURL "https://lichess.org/study/qqwWQNXO/MjNxHw62"]
+[Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
+[FEN "5r1k/6p1/6P1/4Q3/8/8/r7/6K1 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.06.29"]
+[UTCTime "23:41:12"]
+[ChapterMode "gamebook"]
+
+{ Damiano's Mate: queen sacrifice on h5 forces the king to the edge, after which queen on h7 delivers checkmate — the pawns block all escape. Named after Pedro Damiano (1512). }
+1. Qh5+ (1. Qh2+ { Ohno! Your queen is gonna be captured! } { [%cal Ga2h2] }) 1... Kg8 2. Qh7# *
+
+
+[Event "️37 Checkmate Patterns That All Chess Players Should Know️: David and Goliath Mate"]
+[Date "2021.06.29"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[ChapterName "David and Goliath Mate"]
+[ChapterURL "https://lichess.org/study/qqwWQNXO/uTRILAQf"]
+[Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
+[FEN "8/8/1R6/5pkp/8/5KPP/8/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.06.29"]
+[UTCTime "23:45:31"]
+[ChapterMode "gamebook"]
+
+{ David and Goliath Mate: the humble pawn delivers the final checkmate — the "little guy" wins with king and rook support cutting off all escape squares. One move. }
+1. h4# *
+
+
+[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Double Bishop Mate"]
+[Date "2021.06.29"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[ChapterName "Double Bishop Mate"]
+[ChapterURL "https://lichess.org/study/qqwWQNXO/x7rJjUh1"]
+[Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
+[FEN "rr4k1/2Q2p1p/6p1/2q5/2Bbp1b1/8/P4PPP/B3R1K1 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.06.29"]
+[UTCTime "11:46:29"]
+[ChapterMode "gamebook"]
+
+{ Double Bishop Mate: two bishops on crossing diagonals cover all the king's escape squares and deliver checkmate together. Find the forcing sequence. }
+1. Qxf7+ Kh8 2. Qf6+ 2... Bxf6 3. Bxf6# *
+
+
+[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Dovetail Mate"]
+[Date "2021.06.29"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[ChapterName "Dovetail Mate"]
+[ChapterURL "https://lichess.org/study/qqwWQNXO/itYGXU8f"]
+[Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
+[FEN "r1bq2rk/ppp1bp1p/2np4/4p2R/4P3/2PP1Q2/PP3PP1/RNB1K1N1 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.06.29"]
+[UTCTime "11:52:11"]
+[ChapterMode "gamebook"]
+
+{ Dovetail Mate: the queen delivers checkmate with the king flanked by two of its own pieces that block escape — the shape resembles a dovetail joint. Find the three-move combination. }
+1. Rxh7+ Kxh7 2. Qh5+ Kg7 3. Qh6# *
+
+
+[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Epaulette Mate"]
+[Date "2021.06.29"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[ChapterName "Epaulette Mate"]
+[ChapterURL "https://lichess.org/study/qqwWQNXO/GgWbxy6b"]
+[Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
+[FEN "3rkr2/8/7Q/8/8/8/8/6K1 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.06.29"]
+[UTCTime "23:47:03"]
+[ChapterMode "gamebook"]
+
+{ Epaulette Mate: the king is flanked by two of its own pieces (like military shoulder epaulettes) that block its escape — the queen delivers checkmate from in front. One move. }
+1. Qe6# *
+
+
+[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Fool's Mate"]
+[Date "2021.06.29"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[ChapterName "Fool's Mate"]
+[ChapterURL "https://lichess.org/study/qqwWQNXO/YXLifaTU"]
+[Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
+[FEN "rnbqkbnr/ppppp2p/5p2/6p1/3PP3/8/PPP2PPP/RNBQKBNR w KQkq - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.06.29"]
+[UTCTime "23:49:35"]
+[ChapterMode "gamebook"]
+
+{ Fool's Mate: the fastest checkmate in chess — the queen delivers mate diagonally when Black has weakened the f- and g-file pawns. One move. }
+1. Qh5# *
+
+
+[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Greco's Mate"]
+[Date "2021.06.29"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[ChapterName "Greco's Mate"]
+[ChapterURL "https://lichess.org/study/qqwWQNXO/N7Zv5l1U"]
+[Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
+[FEN "2q4k/6p1/5b2/8/2B5/8/8/2KR4 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.06.29"]
+[UTCTime "23:51:00"]
+[ChapterMode "gamebook"]
+
+{ Greco's Mate: rook drives the king off the back rank; the bishop controls the escape diagonal; the rook delivers checkmate. Named after Gioachino Greco (1600s). Find the sequence. }
+1. Rh1+ 1... Qh3 2. Rxh3+ 2... Bh4 3. Rxh4# *
+
+
+[Event "️37 Checkmate Patterns That All Chess Players Should Know️: H-file Mate"]
+[Date "2021.06.30"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[ChapterName "H-file Mate"]
+[ChapterURL "https://lichess.org/study/qqwWQNXO/rkuwpJvz"]
+[Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
+[FEN "6k1/6P1/5K2/8/8/8/7R/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.06.30"]
+[UTCTime "01:13:43"]
+[ChapterMode "gamebook"]
+
+{ H-file Mate: rook delivers checkmate along the h-file with the king's escape blocked by the board edge and a pawn. One move. }
+1. Rh8# *
+
+
+[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Hook Mate"]
+[Date "2021.06.29"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[ChapterName "Hook Mate"]
+[ChapterURL "https://lichess.org/study/qqwWQNXO/FTJI5gXn"]
+[Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
+[FEN "3r1r2/1bp1qpk1/pbn1pNpp/4P3/2R5/3BQN2/PP3PPP/5RK1 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.06.29"]
+[UTCTime "12:03:11"]
+[ChapterMode "gamebook"]
+
+{ Hook Mate: queen sacrifice opens the h-file; rook and knight combine to "hook" the king into a mating net in the corner. Find the three-move sequence. }
+1. Qxh6+ Kxh6 2. Rh4+ Kg7 3. Rh7# *
+
+
+[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Kill Box Mate"]
+[Date "2021.06.30"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[ChapterName "Kill Box Mate"]
+[ChapterURL "https://lichess.org/study/qqwWQNXO/vbTmZ61m"]
+[Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
+[FEN "8/3Q1R2/8/4k3/8/8/7K/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.06.30"]
+[UTCTime "01:22:04"]
+[ChapterMode "gamebook"]
+
+{ Kill Box Mate: queen and rook systematically tighten a "box" around the king, cutting off escape squares rank by rank until checkmate. Find the five-move sequence. }
+1. Rf5+ Ke4 2. Qd5+ Ke3 3. Rf3+ Ke2 4. Qd3+ Ke1 5. Rf1# *
+
+
+[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Lawnmower Mate"]
+[Date "2021.06.30"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[ChapterName "Lawnmower Mate"]
+[ChapterURL "https://lichess.org/study/qqwWQNXO/EqqIkPW9"]
+[Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
+[FEN "8/8/8/8/k7/6R1/7R/1K6 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.06.30"]
+[UTCTime "02:49:33"]
+[ChapterMode "gamebook"]
+
+{ Lawnmower Mate: two rooks alternate cutting off ranks (like a lawnmower cutting grass), systematically pushing the king to the edge for checkmate. Find the two-move finish. }
+1. Rb2 1... Ka5 2. Ra3# *
+
+
+[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Legal's Mate"]
+[Date "2021.06.30"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[ChapterName "Legal's Mate"]
+[ChapterURL "https://lichess.org/study/qqwWQNXO/pRm4p0kG"]
+[Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
+[FEN "r2qkbnr/ppp2ppp/2np4/4N3/2B1P3/2N5/PPPP1PPP/R1BbK2R w KQkq - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.06.30"]
+[UTCTime "02:52:32"]
+[ChapterMode "gamebook"]
+
+{ Legal's Mate: a seemingly reckless bishop sacrifice exposes the king; two knights and a bishop deliver checkmate while the opponent captures the queen. Named after Sire de Légal (1787). }
+1. Bxf7+ Ke7 2. Nd5# *
+
+
+[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Lolli's Mate"]
+[Date "2021.06.30"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[ChapterName "Lolli's Mate"]
+[ChapterURL "https://lichess.org/study/qqwWQNXO/fWuAsCKo"]
+[Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
+[FEN "4r1k1/5p1p/5PpQ/8/8/8/5PPP/6K1 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.06.30"]
+[UTCTime "02:54:21"]
+[ChapterMode "gamebook"]
+
+{ Lolli's Mate: queen and pawn cooperate to checkmate the castled king — the pawn controls the g7 escape while the queen delivers mate. Named after Giambattista Lolli. One move. }
+1. Qg7# *
+
+
+[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Max Lange Mate"]
+[Date "2021.06.30"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[ChapterName "Max Lange Mate"]
+[ChapterURL "https://lichess.org/study/qqwWQNXO/NrJYEVXl"]
+[Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
+[FEN "4Q3/5Bpk/7p/8/8/8/8/6K1 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.06.30"]
+[UTCTime "03:05:03"]
+[ChapterMode "gamebook"]
+
+{ Max Lange Mate: queen and bishop trap the king in the corner — the bishop covers the escape diagonal while the queen delivers checkmate. Named after Max Lange (1800s). One move. }
+1. Qg8# *
+
+
+[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Mayet's Mate"]
+[Date "2021.06.30"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[ChapterName "Mayet's Mate"]
+[ChapterURL "https://lichess.org/study/qqwWQNXO/LwI4F6wz"]
+[Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
+[FEN "2nk4/4pp2/8/8/8/8/3B4/3R2K1 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.06.30"]
+[UTCTime "04:19:01"]
+[ChapterMode "gamebook"]
+
+{ Mayet's Mate: bishop drives the king forward with check; the rook delivers checkmate on the back rank with the bishop controlling the escape diagonal. Two moves. }
+1. Ba5+ Ke8 2. Rd8# *
+
+
+[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Morphy's Mate"]
+[Date "2021.06.30"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[ChapterName "Morphy's Mate"]
+[ChapterURL "https://lichess.org/study/qqwWQNXO/UNQpCWd2"]
+[Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
+[FEN "7k/7p/8/8/8/4B3/8/2K3R1 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.06.30"]
+[UTCTime "04:21:09"]
+[ChapterMode "gamebook"]
+
+{ Morphy's Mate: bishop and rook combine to checkmate the king in the corner — the bishop controls the long diagonal while the rook covers the back rank. Named after Paul Morphy. One move. }
+1. Bd4# *
+
+
+[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Opera Mate"]
+[Date "2021.06.30"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[ChapterName "Opera Mate"]
+[ChapterURL "https://lichess.org/study/qqwWQNXO/LPwfEIlE"]
+[Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
+[FEN "1n2kb1r/p4ppp/4q3/4p1B1/4P3/8/PPP2PPP/2KR4 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.06.30"]
+[UTCTime "04:22:13"]
+[ChapterMode "gamebook"]
+
+{ Opera Mate: rook delivers checkmate on the back rank while a bishop covers the escape diagonal — the king's own pieces block it in. From Morphy's famous Opera Game (Paris, 1858). One move. }
+1. Rd8# *
+
+
+[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Pillsbury's Mate"]
+[Date "2021.06.30"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[ChapterName "Pillsbury's Mate"]
+[ChapterURL "https://lichess.org/study/qqwWQNXO/TxeWLv48"]
+[Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
+[FEN "5rk1/2q1bp1p/7n/8/8/2B3/PP6/2KR4 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.06.30"]
+[UTCTime "04:25:14"]
+[ChapterMode "gamebook"]
+
+{ Pillsbury's Mate: the rook opens the g-file by driving away the king's defenders; the bishop controls the h8 diagonal; the rook delivers checkmate on g8. Named after Harry Nelson Pillsbury. }
+1. Rg1+ 1... Qg3 2. Rxg3+ 2... Ng4 3. Rxg4+ 3... Bg5+ 4. Rxg5# *
+
+
+[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Railroad Mate"]
+[Date "2021.06.30"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[ChapterName "Railroad Mate"]
+[ChapterURL "https://lichess.org/study/qqwWQNXO/FryYu6hg"]
+[Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
+[FEN "8/8/8/6k1/8/5Q1R/8/6K1 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.06.30"]
+[UTCTime "04:27:19"]
+[ChapterMode "gamebook"]
+
+{ Railroad Mate: queen and rook alternate checks like trains on parallel tracks, driving the king to the back rank where it is checkmated. Find the four-move sequence. }
+1. Rh5+ Kg6 2. Qf5+ Kg7 3. Rh7+ Kg8 4. Qf7# *
+
+
+[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Reti's Mate"]
+[Date "2021.06.30"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[ChapterName "Reti's Mate"]
+[ChapterURL "https://lichess.org/study/qqwWQNXO/uO5DnxF1"]
+[Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
+[FEN "rnb5/ppk5/2p5/6B1/8/8/5PPP/3R2K1 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.06.30"]
+[UTCTime "04:29:13"]
+[ChapterMode "gamebook"]
+
+{ Réti's Mate: bishop delivers checkmate with the rook controlling the king's back rank escape — the king is squeezed between its own pieces and the two attacking pieces. Named after Richard Réti. One move. }
+1. Bd8# *
+
+
+[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Scholar's Mate"]
+[Date "2021.06.30"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[ChapterName "Scholar's Mate"]
+[ChapterURL "https://lichess.org/study/qqwWQNXO/96FB44RF"]
+[Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
+[FEN "r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.06.30"]
+[UTCTime "04:30:03"]
+[ChapterMode "gamebook"]
+
+{ Scholar's Mate: the classic 4-move checkmate — queen and bishop attack f7, the weakest square in Black's starting position. One move to finish. }
+1. Qxf7# *
+
+
+[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Smothered Mate"]
+[Date "2021.06.29"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[ChapterName "Smothered Mate"]
+[ChapterURL "https://lichess.org/study/qqwWQNXO/2QQS2m08"]
+[Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
+[FEN "r2r2k1/p1Q2ppp/1npN3q/4p3/2B5/6P1/PPP2P2/5RK1 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.06.29"]
+[UTCTime "12:07:15"]
+[ChapterMode "gamebook"]
+
+{ Smothered Mate: the queen is sacrificed to lure the rook onto g8; the knight then delivers checkmate with the king completely surrounded ("smothered") by its own pieces. Find the three-move combination. }
+1. Qxf7+ Kh8 2. Qg8+ 2... Rxg8 3. Nf7# *
+
+
+[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Suffocation Mate"]
+[Date "2021.06.30"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[ChapterName "Suffocation Mate"]
+[ChapterURL "https://lichess.org/study/qqwWQNXO/t21pwfcY"]
+[Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
+[FEN "5rk1/5p1p/8/3N4/8/8/1B6/6K1 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.06.30"]
+[UTCTime "04:32:16"]
+[ChapterMode "gamebook"]
+
+{ Suffocation Mate: knight and bishop combine to "suffocate" the king — the bishop controls the long diagonal while the knight delivers checkmate, with the king's own pawns blocking all escape. One move. }
+1. Ne7# *
+
+
+[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Swallow's Tail Mate"]
+[Date "2021.06.30"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[ChapterName "Swallow's Tail Mate"]
+[ChapterURL "https://lichess.org/study/qqwWQNXO/bv94sorn"]
+[Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
+[FEN "8/5p1p/6k1/8/6K1/4Q3/8/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.06.30"]
+[UTCTime "04:37:21"]
+[ChapterMode "gamebook"]
+
+{ Swallow's Tail Mate (also called Guéridon Mate): the queen delivers checkmate with the king flanked by two of its own pawns that block all escape — the pattern resembles a swallow's forked tail. One move. }
+1. Qg5# *
+
+
+[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Triangle Mate"]
+[Date "2021.06.30"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[ChapterName "Triangle Mate"]
+[ChapterURL "https://lichess.org/study/qqwWQNXO/DKIbMgr7"]
+[Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
+[FEN "8/6p1/6k1/7R/8/5Q2/8/6K1 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.06.30"]
+[UTCTime "04:38:43"]
+[ChapterMode "gamebook"]
+
+{ Triangle Mate: queen and rook form a triangular mating net — the rook cuts off one side while the queen delivers checkmate, with the king trapped in the corner of the triangle. One move. }
+1. Qf5# *
+
+
+[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Vukovic Mate"]
+[Date "2021.06.30"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[ChapterName "Vukovic Mate"]
+[ChapterURL "https://lichess.org/study/qqwWQNXO/oO5f3WG9"]
+[Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
+[FEN "7r/6k1/4KNpp/R7/8/8/8/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.06.30"]
+[UTCTime "04:40:32"]
+[ChapterMode "gamebook"]
+
+{ Vukovic Mate: rook and knight collaborate — the rook drives the king to the back rank and the knight delivers checkmate, controlling the king's escape squares. Named after Vladimir Vuković. Two moves. }
+1. Ra7+ Kf8 2. Rf7# *
+
+
+[Event "️37 Checkmate Patterns That All Chess Players Should Know️: Revising Puzzles"]
+[Date "2021.06.30"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "️37 Checkmate Patterns That All Chess Players Should Know️"]
+[ChapterName "Revising Puzzles"]
+[ChapterURL "https://lichess.org/study/qqwWQNXO/PzngtOS4"]
+[Annotator "https://lichess.org/@/Capta1n_Amer1ca"]
+[FEN "rk6/p2R1p2/1pQ5/3Pq3/7b/6P1/P1P4K/8 b - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.06.30"]
+[UTCTime "02:57:57"]
+[ChapterMode "gamebook"]
+
+{ A challenging finale combining multiple checkmate motifs. Mate in 6 — how many of the patterns from this study can you spot in the solution? }
+1... Qxg3+ 2. Kh1 Qf3+ 3. Kh2 Bg3+ 4. Kh3 Bf4+ 5. Kh4 Qg3+ 6. Kh5 Qg5# *
+
