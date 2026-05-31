@@ -1,0 +1,270 @@
+[Event "Tactics: Pin (and win!): The Big Idea"]
+[Date "2020.04.23"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Tactics: Pin (and win!)"]
+[ChapterName "The Big Idea"]
+[ChapterURL "https://lichess.org/study/PzRdZth2/d3zDLiKX"]
+[Annotator "https://lichess.org/@/silurianblue"]
+[FEN "7N/1k6/8/8/4r3/8/2K1B3/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2020.04.23"]
+[UTCTime "09:17:58"]
+
+ *
+
+
+[Event "Tactics: Pin (and win!): Two Can Play at That Game"]
+[Date "2020.04.23"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Tactics: Pin (and win!)"]
+[ChapterName "Two Can Play at That Game"]
+[ChapterURL "https://lichess.org/study/PzRdZth2/D8WduJ1z"]
+[Annotator "https://lichess.org/@/silurianblue"]
+[FEN "7r/8/4B3/1k6/8/8/4K3/8 b - - 0 1"]
+[SetUp "1"]
+[UTCDate "2020.04.23"]
+[UTCTime "09:21:26"]
+
+ *
+
+
+[Event "Tactics: Pin (and win!): A Bit of Help Required"]
+[Date "2020.04.23"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Tactics: Pin (and win!)"]
+[ChapterName "A Bit of Help Required"]
+[ChapterURL "https://lichess.org/study/PzRdZth2/CSx5rvVs"]
+[Annotator "https://lichess.org/@/silurianblue"]
+[FEN "8/1k3K2/8/3r4/8/8/1B2B3/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2020.04.23"]
+[UTCTime "09:23:10"]
+
+ *
+
+
+[Event "Tactics: Pin (and win!): Teamwork"]
+[Date "2020.04.23"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Tactics: Pin (and win!)"]
+[ChapterName "Teamwork"]
+[ChapterURL "https://lichess.org/study/PzRdZth2/iBXn6HZN"]
+[Annotator "https://lichess.org/@/silurianblue"]
+[FEN "7q/1pk5/2p3p1/7p/3R3P/PP3N2/1KP3P1/8 b - - 0 1"]
+[SetUp "1"]
+[UTCDate "2020.04.23"]
+[UTCTime "09:29:45"]
+
+ *
+
+
+[Event "Tactics: Pin (and win!): Free Knight?"]
+[Date "2020.04.23"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Tactics: Pin (and win!)"]
+[ChapterName "Free Knight?"]
+[ChapterURL "https://lichess.org/study/PzRdZth2/ENjd7eKT"]
+[Annotator "https://lichess.org/@/silurianblue"]
+[FEN "8/3p1kp1/n1p1pq1p/8/3P4/R6P/1PK2BP1/R7 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2020.04.23"]
+[UTCTime "09:34:35"]
+
+ *
+
+
+[Event "Tactics: Pin (and win!): Two Motifs"]
+[Date "2020.04.23"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Tactics: Pin (and win!)"]
+[ChapterName "Two Motifs"]
+[ChapterURL "https://lichess.org/study/PzRdZth2/jVZjJ95Q"]
+[Annotator "https://lichess.org/@/silurianblue"]
+[FEN "r1bqkb1r/ppp2ppp/3p1n2/4p3/1nPP4/2N1PN2/PP3PPP/R1BQKB1R w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2020.04.23"]
+[UTCTime "09:49:28"]
+
+1. Qa4+ Ke7 (1... Qd7 2. Qxb4) (1... Bd7 2. Qxb4) (1... Nc6 2. Qxc6+ (2. d5 Bd7 3. dxc6 Bxc6 4. Qd1) 2... bxc6) 2. Qxb4 *
+
+
+[Event "Tactics: Pin (and win!): \"The Defensive Power of a Pinned Piece is Only Imaginary\""]
+[Date "2020.04.23"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Tactics: Pin (and win!)"]
+[ChapterName "\"The Defensive Power of a Pinned Piece is Only Imaginary\""]
+[ChapterURL "https://lichess.org/study/PzRdZth2/Qp1f6PDN"]
+[Annotator "https://lichess.org/@/silurianblue"]
+[FEN "3r2k1/2q2pb1/2n1b1pp/2p1p3/2N5/2PP2P1/5PBP/2BQ1RK1 b - - 0 1"]
+[SetUp "1"]
+[UTCDate "2020.04.23"]
+[UTCTime "09:53:30"]
+
+ *
+
+
+[Event "Tactics: Pin (and win!): An Opening Mishap"]
+[Date "2020.04.23"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Tactics: Pin (and win!)"]
+[ChapterName "An Opening Mishap"]
+[ChapterURL "https://lichess.org/study/PzRdZth2/gO744npw"]
+[Annotator "https://lichess.org/@/silurianblue"]
+[FEN "r1bqk2r/pppnppbp/5np1/3p4/8/1PN1PN2/PBPP1PPP/R2QKB1R w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2020.04.23"]
+[UTCTime "10:03:50"]
+
+ *
+
+
+[Event "Tactics: Pin (and win!): Also Good for the Endgame"]
+[Date "2020.04.23"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Tactics: Pin (and win!)"]
+[ChapterName "Also Good for the Endgame"]
+[ChapterURL "https://lichess.org/study/PzRdZth2/zfoDFepi"]
+[Annotator "https://lichess.org/@/silurianblue"]
+[FEN "8/2r5/R1p4k/8/1P6/8/5P2/5K2 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2020.04.23"]
+[UTCTime "10:21:15"]
+
+ *
+
+
+[Event "Tactics: Pin (and win!): Another Opening Blunder"]
+[Date "2020.04.23"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Tactics: Pin (and win!)"]
+[ChapterName "Another Opening Blunder"]
+[ChapterURL "https://lichess.org/study/PzRdZth2/G0aqQ5ve"]
+[Annotator "https://lichess.org/@/silurianblue"]
+[FEN "rnbqk2r/pppp1ppp/4pn2/8/1bPPP3/2N5/PP3PPP/R1BQKBNR b - - 0 1"]
+[SetUp "1"]
+[UTCDate "2020.04.23"]
+[UTCTime "10:01:46"]
+
+ *
+
+
+[Event "Tactics: Pin (and win!): Pinning and Winning"]
+[Date "2020.04.23"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Tactics: Pin (and win!)"]
+[ChapterName "Pinning and Winning"]
+[ChapterURL "https://lichess.org/study/PzRdZth2/IlNKQ2aU"]
+[Annotator "https://lichess.org/@/silurianblue"]
+[FEN "2r4r/2b1p1k1/1pR2pp1/pP1p3p/P7/4P1P1/1B1P2KP/4R3 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2020.04.23"]
+[UTCTime "10:30:13"]
+
+ *
+
+
+[Event "Tactics: Pin (and win!): An Assisted Epaulette"]
+[Date "2020.04.23"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Tactics: Pin (and win!)"]
+[ChapterName "An Assisted Epaulette"]
+[ChapterURL "https://lichess.org/study/PzRdZth2/bwtKH8nG"]
+[Annotator "https://lichess.org/@/silurianblue"]
+[FEN "4rkr1/1p1Rn1pp/p1p1p2B/5p2/3Q4/8/PPq1PPPP/3R2K1 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2020.04.23"]
+[UTCTime "10:07:02"]
+
+ *
+
+
+[Event "Tactics: Pin (and win!): Fighting Fire With Fire"]
+[Date "2020.04.23"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Tactics: Pin (and win!)"]
+[ChapterName "Fighting Fire With Fire"]
+[ChapterURL "https://lichess.org/study/PzRdZth2/C7AJWhqw"]
+[Annotator "https://lichess.org/@/silurianblue"]
+[FEN "kr6/pq3p2/8/8/8/8/Q2PP1BP/6K1 b - - 0 1"]
+[SetUp "1"]
+[UTCDate "2020.04.23"]
+[UTCTime "10:09:31"]
+
+ *
+
+
+[Event "Tactics: Pin (and win!): A Clever Trick"]
+[Date "2020.04.23"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Tactics: Pin (and win!)"]
+[ChapterName "A Clever Trick"]
+[ChapterURL "https://lichess.org/study/PzRdZth2/DZtkvdL4"]
+[Annotator "https://lichess.org/@/silurianblue"]
+[FEN "8/6k1/2b2r2/6pp/8/5BP1/5RKP/8 b - - 0 1"]
+[SetUp "1"]
+[UTCDate "2020.04.23"]
+[UTCTime "09:43:03"]
+
+ *
+
+
+[Event "Tactics: Pin (and win!): A Beautiful Finish"]
+[Date "2020.04.23"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Tactics: Pin (and win!)"]
+[ChapterName "A Beautiful Finish"]
+[ChapterURL "https://lichess.org/study/PzRdZth2/rJcPjMym"]
+[Annotator "https://lichess.org/@/silurianblue"]
+[FEN "3r2rk/p4p1p/3p1Pp1/3R4/2p1B2Q/7P/1q4P1/4R2K w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2020.04.23"]
+[UTCTime "10:12:52"]
+
+ *
+
+

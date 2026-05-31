@@ -6465,7 +6465,7 @@ namespace ChessDroid
             if (_btnPuzzleMode != null)
                 _btnPuzzleMode.Visible = LichessPuzzleService.HasPuzzles(_puzzlesFolder);
 
-            _drillsFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Endgames");
+            _drillsFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Drills");
             if (EndgameDrillService.HasDrills(_drillsFolder))
             {
                 _drillChapters = EndgameDrillService.LoadFromFolder(_drillsFolder);
@@ -6806,7 +6806,7 @@ namespace ChessDroid
                 _lblTrainingTitle.Text = mode == "opening" ? "Opening Training"
                                        : mode == "puzzle"  ? "Puzzle Training"
                                        : mode == "vision"  ? "Board Vision"
-                                       : mode == "drill"   ? "Endgame Drills"
+                                       : mode == "drill"   ? "Drills"
                                        : "Square Training";
             if (_pnlSquareSettings  != null) _pnlSquareSettings.Visible  = mode == "square";
             if (_pnlOpeningSettings != null) _pnlOpeningSettings.Visible = mode == "opening";

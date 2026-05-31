@@ -77,9 +77,9 @@
     </None>
   </ItemGroup>
 
-  <!-- Copy endgame drill PGN files to output -->
+  <!-- Copy drill PGN files to output -->
   <ItemGroup>
-    <None Include="Endgames\**\*.*">
+    <None Include="Drills\**\*.*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

@@ -49,7 +49,7 @@ namespace ChessDroid.Services
                 string chapterName = tags.GetValueOrDefault("ChapterName")
                                   ?? tags.GetValueOrDefault("Event")
                                   ?? "Position";
-                string studyName   = tags.GetValueOrDefault("StudyName") ?? "Endgame Drills";
+                string studyName   = tags.GetValueOrDefault("StudyName") ?? "Drills";
 
                 // First { comment } in the moves section = description; strip Lichess arrow/square annotations
                 string desc = "";
