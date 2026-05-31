@@ -13,7 +13,7 @@
 [UTCDate "2021.07.06"]
 [UTCTime "08:26:34"]
 
-{ When the defending rook sits on the long side of the pawn (the side with more files between the rook and the pawn's file), the defender draws by placing the rook behind the pawn's queening rank, cutting the king off from the a7-square. Black's key move is Ra7+, forcing the rook onto the back rank (Ra8), after which perpetual checking along the a-file holds the draw. The long-side defense works here because White's king cannot step off the e-file without allowing the rook to reach a8 first. }
+{ When Black's rook sits on the long side of the pawn (the side with more files between rook and pawn's file), the position is a draw. Here the pawn is on the e-file and Black's rook is on a2 — the long side, 4 files away. Black's key move is Ra7+: this check forces White's rook to interpose with Rd7, since 2.Kf8?? Ra8 is checkmate, giving Black the tempo to play Ra8. With the rook on the 8th rank, Black controls the promotion square e8 directly — any pawn advance to e7 is met by Re8. If White's king tries to march around, Black generates lateral rank checks (Ra6+, Ra5+) with 3+ files of checking distance, and White can never escape the cycle without abandoning the pawn. }
 1... Ra7+ 2. Rd7 Ra8 { The simplest defensive methods: Black prevents the positions with the pawn on seventh Rank. } (2... Ra1 3. Ke8+ (3. Rd6 Ra8!) 3... Kf6 4. e7 Ke6 5. Kf8 Rf1+ 6. Ke8 Ra1 $10) 3. Rd8 (3. Kd6+ Kf6 4. Rf7+ Kg6) (3. Rb7 Kg6 4. Kd6 Kf6 5. e7 Kf7) (3. Rd6 { [%cal Ga8a7] } 3... Kg6) 3... Ra7+ 4. Kd6 Ra6+ 5. Ke5 Ra5+ 6. Rd5 Ra8 7. Rd7+ Kg6 { The reason of draw is the position is rook: it was placed on long side } *
 
 
@@ -32,7 +32,7 @@
 [UTCDate "2021.07.06"]
 [UTCTime "08:40:49"]
 
-{ This position shows why the defending king must reach the short side (the side with fewer files between king and pawn). Here White wins by advancing the king to e7, cutting off the black king from the queening file and reaching the Lucena setup. The key is that Black's rook on the long side cannot generate enough checks to stop the king march once White's king reaches the sixth rank. Compare with the previous chapter: Black's rook is on the wrong side here, giving White a clear road to the Lucena position. }
+{ Black's rook sits on the long side of the pawn (b8, queenside) — the theoretically correct defensive placement — but it fails here because White's rook already occupies a7, sealing off the long-side checking distance that saved Black in the previous chapter. White wins with 1.Kd6+!, gaining a critical tempo: the check drives the Black king to f6, preventing it from reaching f7 to blockade. Compare 1.Kd7? Kf6 2.e7 Kf7 — without the check, Black's king reaches f7 and draws by Philidor blockade. After 1...Kf6 2.Kd7 Kg7 3.Ke7, the Black king is cut off from the queening square. White retreats the rook to a1 to build the Lucena bridge: once the pawn reaches e7, the rook intercepts to shield the king from rear checks and the pawn promotes. }
 1. Kd6+ (1. Kd7 Kf6 2. e7 Kf7 $10) (1. Ra1 Rb7+ 2. Kd8 Rb8+ 3. Kc7 Rb2 4. Rf1 Ra2 5. e7 Ra7+ $10) 1... Kf6 2. Kd7 Kg7 3. Ke7 Kg6 (3... Rb1 4. Ra8 Rb7+ 5. Kd6 Rb6+ 6. Kd7 Rb7+ 7. Kc6 Re7 8. Kd6 Rb7 9. e7) 4. Ra1 Rb7+ 5. Kd8 Rb8+ (5... Kf6 6. e7 Rb8+ 7. Kd7 Re8 8. Kd6 Rb8 9. Rf1+ Kg7 10. Kc7 Ra8 11. Ra1) 6. Kc7 Rb2 7. Re1 Rc2+ 8. Kd7 Rd2+ 9. Ke8 Ra2 10. e7 *
 
 
