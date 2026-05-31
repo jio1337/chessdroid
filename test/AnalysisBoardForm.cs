@@ -738,9 +738,9 @@ namespace ChessDroid
             int idx = SendMessage(info.hwndList, LB_GETCURSEL, 0, 0);
             if (idx < 0 || idx >= _cmbDrillChapter.Items.Count || idx == _drillHoverLastIdx) return;
             _drillHoverLastIdx = idx;
-            string study   = _cmbDrillStudy?.SelectedItem?.ToString() ?? "";
-            string chapter = _cmbDrillChapter.Items[idx]?.ToString() ?? "";
-            var ch = _drillChapters.FirstOrDefault(c => c.StudyName == study && c.ChapterName == chapter);
+            string study = _cmbDrillStudy?.SelectedItem?.ToString() ?? "";
+            var chapters = _drillChapters.Where(c => c.StudyName == study).ToList();
+            var ch = idx < chapters.Count ? chapters[idx] : null;
             if (ch == null) return;
             SetDrillDescription(ch.Description);
             boardControl.LoadFEN(ch.Fen);
@@ -7263,17 +7263,20 @@ namespace ChessDroid
             if (_cmbDrillStudy == null || _cmbDrillChapter == null) return;
             string? study = _cmbDrillStudy.SelectedItem?.ToString();
             _cmbDrillChapter.Items.Clear();
+            int n = 1;
             foreach (var ch in _drillChapters.Where(c => c.StudyName == study))
-                _cmbDrillChapter.Items.Add(ch.ChapterName);
+                _cmbDrillChapter.Items.Add($"Ch.{n++}: {ch.ChapterName}");
             if (_cmbDrillChapter.Items.Count > 0) _cmbDrillChapter.SelectedIndex = 0;
         }
 
         private EndgameChapter? SelectedDrillChapter()
         {
             if (_cmbDrillStudy == null || _cmbDrillChapter == null) return null;
-            string? study   = _cmbDrillStudy.SelectedItem?.ToString();
-            string? chapter = _cmbDrillChapter.SelectedItem?.ToString();
-            return _drillChapters.FirstOrDefault(c => c.StudyName == study && c.ChapterName == chapter);
+            string? study = _cmbDrillStudy.SelectedItem?.ToString();
+            int idx = _cmbDrillChapter.SelectedIndex;
+            if (idx < 0) return null;
+            var chapters = _drillChapters.Where(c => c.StudyName == study).ToList();
+            return idx < chapters.Count ? chapters[idx] : null;
         }
 
         private void DrillStart()
