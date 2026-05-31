@@ -454,7 +454,7 @@
 [UTCDate "2021.07.08"]
 [UTCTime "15:35:28"]
 
-{ A critical moment where White must choose the correct recapture after Black's pawn exchange. After 1...hxg3, recapturing 2.hxg3? allows Black to draw with 2...g4+! — stripping away the f3-pawn and reaching equality. The winning recapture is 2.Kxg3!, and crucially after 2...Kh7 White must play 3.h4! — pushing the h-pawn immediately to create a passed pawn and neutralize Black's g-pawn. This example shows that in rook endings with multiple pawns, the choice of recapture and pawn-break timing can be the difference between winning and drawing. }
+{ A critical moment where White must choose the correct recapture after Black's pawn exchange. After 1...hxg3, recapturing 2.hxg3? allows Black to draw with 2...g4+! — stripping away the f3-pawn and reaching equality. The winning recapture is 2.Kxg3!, and crucially after 2...Kh7 White must play 3.h4! — pushing the h-pawn immediately to force the exchange of Black's g-pawn, activate the White king, and eliminate all Black counterplay before the king can reach e7 to blockade the c7 pawn. This example shows that in rook endings with multiple pawns, the choice of recapture and pawn-break timing can be the difference between winning and drawing. }
 1... hxg3 2. hxg3? (2. Kxg3! Kh7 3. h4! gxh4+ 4. Kh3 Kg7 5. f4! { [%cal Rf4f5,Rf5f6] }) 2... g4+! 3. fxg4 Rc1 $10 *
 
 
