@@ -283,7 +283,7 @@
 [UTCDate "2021.07.06"]
 [UTCTime "07:59:42"]
 
-{ André Chéron's 1923 study demonstrates the winning method when the defending king is too far from the pawn to establish a blockade. White wins by marching the king to b6, displacing the defending king from the ideal blockading square, and then maneuvering the rook to d1 — driving the defending rook off the d-file with tempo. The key sequence Re1! cuts off the defending rook laterally, allowing the d-pawn to advance decisively. Compare with Chéron 1923 (II) where the defending king is close enough to the pawn to hold a draw. }
+{ André Chéron (1895–1980) — three-time French champion and pioneer of rook endgame theory — demonstrated the winning method when the defending king is stranded too far from the pawn. Chéron's rule: pawn rank (4) plus files the defending king is cut off (3) equals 7, well above the threshold of 5, so White wins. White's king marches to b6 — not to displace Black's king (it never threatens to blockade from g5) but to threaten Kc7, attacking the rook directly and evicting it from the d-file. Then Rd1! plants the rook behind the pawn, defending it from capture; once the rook is driven to a5, Re1! sets the decisive trap — if the pawn advances to d5 and Black captures, Re5 attacks the rook laterally along rank 5, forcing it off entirely and the pawn queens. Compare with Chéron 1923 (II) where the defending king is close enough to blockade and draw. }
 1. Kc4 Rc8+ 2. Kb5 Rd8 3. Kc5 Rc8+ 4. Kb6! Rd8 5. Rd1! Kf6 6. Kc7 Rd5 7. Kc6 Ra5 (7... Rd8 8. d5 $18) 8. Re1! Ra6+ 9. Kb5 Rd6 10. Kc5 Rd8 11. d5 $18 *
 
 
