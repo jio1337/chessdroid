@@ -435,7 +435,7 @@
 [UTCDate "2021.07.08"]
 [UTCTime "15:31:36"]
 
-{ Adding a pawn on f5 converts the theoretical draw from the previous chapter into a decisive win. The f5-pawn creates a direct mating threat: 1.f6+ forces the black king to f7, after which 2.Rh8! is the winning tempo move — the rook sidesteps, Black captures the a-pawn with Rxa7, but 3.Rh7+ forks king and rook. The f-pawn's proximity to the king is the key: unlike h5 or g5, it creates a genuine tactical threat that cannot be ignored, breaking Black's defensive routine. }
+{ Adding a pawn on f5 converts the theoretical draw from the previous chapter into a decisive win. The f-pawn forces the key sequence: 1.f6+ drives the Black king to f7, after which 2.Rh8! vacates a8 to lure Black into 2...Rxa7 — but 3.Rh7+ then forks king and rook along the 7th rank. The king must move and 4.Rxa7 wins the rook cleanly. If Black ignores the a-pawn, White promotes it with the rook dominating the 8th rank. The f5-pawn is decisive because only the f-file delivers a check that traps the king on f7 and sets up the fork — a g- or h-pawn creates no such geometry, leaving Black's defensive routine intact. }
 1. f6+ Kf7 2. Rh8 Rxa7 3. Rh7+ *
 
 
