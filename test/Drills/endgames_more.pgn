@@ -1,0 +1,452 @@
+﻿[Event "More Endgames You Must Know!: Introduction"]
+[Date "2021.06.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "More Endgames You Must Know!"]
+[ChapterName "Introduction"]
+[ChapterURL "https://lichess.org/study/xtDSXkyi/wXLVBBXD"]
+[Annotator "https://lichess.org/@/NoseKnowsAll"]
+[FEN "7k/7P/8/5KN1/8/8/8/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.06.27"]
+[UTCTime "19:09:04"]
+[ChapterMode "gamebook"]
+
+{ A companion endgame study covering knight circuits, bishop vs pawns, opposite-colour bishop fortresses, and pawn majority technique. Complements the beginner/intermediate/advanced series with important practical positions. }
+ *
+
+
+[Event "More Endgames You Must Know!: Sacrificing for king activity"]
+[Date "2021.06.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "More Endgames You Must Know!"]
+[ChapterName "Sacrificing for king activity"]
+[ChapterURL "https://lichess.org/study/xtDSXkyi/UsO5patU"]
+[Annotator "https://lichess.org/@/NoseKnowsAll"]
+[FEN "8/8/1k3p2/5Pp1/KP4P1/8/8/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.06.27"]
+[UTCTime "19:09:04"]
+
+{ We already know from basic opposition that if the only pawn on the board was the b pawn, white would be unable to make a queen - black has an easy draw by sitting in front of the b pawn and taking opposition if necessary. So what changes when we have more pawns on the board? }
+1. b5 Kb7 (1... Kc5?? 2. Ka5 $18 { Black shouldn't hand us opposition for free! Now the b pawn immediately queens. }) 2. Ka5 Ka7 { Black regains the opposition and asks us what we are up to... } 3. b6+ Kb7 4. Kb5 Kb8 5. Kc6 Kc8 { Opposition again. The b pawn cannot queen. } 6. Kd6! { The point of our play! We recognize that queening the b pawn is impossible, but we can use it as a distraction while our king makes a mad dash to the other side of the board and takes everything else! } 6... Kb7 7. Ke6 Kxb6 8. Kxf6 { This chapter is nothing more than further evidence that you have to bring your king up in the endgame at all costs - even a pawn or two. } 8... Kc6 9. Kxg5 $18 { The rest is trivial. We're queening at least one of our pawns, with checkmate soon to follow.
+PRO TIP: The more pawns on the board, the more likely it is that the stronger side will be able to win. We've seen how hard it is to win with only one pawn left. But 3 against 2 is often much easier. 4 against 3 is easier still. } *
+
+
+[Event "More Endgames You Must Know!: Freezing a pawn majority"]
+[Date "2021.06.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "More Endgames You Must Know!"]
+[ChapterName "Freezing a pawn majority"]
+[ChapterURL "https://lichess.org/study/xtDSXkyi/4ZziFqOE"]
+[Annotator "https://lichess.org/@/NoseKnowsAll"]
+[FEN "8/8/2k3p1/1p6/1K6/6PP/8/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.06.27"]
+[UTCTime "19:09:04"]
+
+{ We might think that white has an easy draw: "They simply push the kingside pawns to create a passed pawn, and while we run to the kingside to deal with it, white will win the b pawn." This concept is correct, but care must be taken when pushing a pawn majority. }
+1. g4?? { But g4 here is a huge mistake. Let's see how to punish it! } (1. h4! { Correct. } 1... Kd5 2. g4 Ke4 3. h5 gxh5 4. gxh5 Kf5 5. Kxb5 Kg5 6. Kc5 Kxh5 $10 { The previously-described plan put correctly into action. Draw. }) 1... g5! { Now we've frozen white's kingside pawn majority with only our g pawn. With the pawn majority crippled like this, we are already essentially up a pawn - the passed b pawn! } 2. Kc3 (2. h4 gxh4 3. g5 Kd5 $19 { Black enters the square of the g pawn. The h pawn will win the game. } { [%cal Gg5g8,Gg5d5,Gd5d8,Gd8g8] }) 2... Kc5 3. Kb3 b4 4. Kb2 Kc4 5. Kc2 Kd4! { We sacrifice the b pawn in order to win everything on the kingside, just as in chapter 2. } 6. Kb3 Ke4 7. Kxb4 Kf4 (7... Kf3?? { Care must always be taken in king and pawn endgames! } 8. h4!! gxh4 (8... Kxg4 9. hxg5 Kxg5 $10) 9. g5 $10 { And our king is outside the square of the g pawn! The best we can now hope for is a drawn queen vs queen endgame. For more practice on the rule of the square, please check out https://lichess.org/study/UsqmCsgC/0UNWhbnU. } { [%cal Gg5d5,Gd5d8,Gg5g8,Gg8d8] }) 8. Kc4 Kg3 9. Kd4 Kxh3 10. Ke4 Kxg4 $19 { We will win by maintaining the opposition, as in https://lichess.org/study/wukLYIXj/2ru3TC7p. } *
+
+
+[Event "More Endgames You Must Know!: Exercise 1: The ole' switcheroo"]
+[Date "2021.06.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "More Endgames You Must Know!"]
+[ChapterName "Exercise 1: The ole' switcheroo"]
+[ChapterURL "https://lichess.org/study/xtDSXkyi/wZ3dUlft"]
+[Annotator "https://lichess.org/@/NoseKnowsAll"]
+[FEN "8/3k4/p7/3K3p/P6P/8/8/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.06.27"]
+[UTCTime "19:09:04"]
+[ChapterMode "gamebook"]
+
+{ Winning this king and pawn endgame requires some precision, but no extra knowledge beyond what we've already learned. Put your skills to the test! }
+1. a5! { We use this pawn move to waste a tempo and show black that we have the opposition! } 1... Ke7 { I hope you considered how we were making progress if black played Kc7 instead. Taking opposition with Kc5 wouldn't have led to further progress after Kd7, repeating. } (1... Kc7!? { The other interesting try. Again, we run to the h pawn and are faster in the pawn race. } 2. Ke5 Kc6 3. Kf5 Kb5 4. Kg5 Kxa5 5. Kxh5 Kb5 6. Kg6 a5 7. h5 a4 8. h6 a3 9. h7 a2 10. h8=Q $18 { [%cal Gh8a1] }) 2. Ke5! (2. Kc6?? { Getting greedy and rushing towards the a pawn is not good enough. After Ke6! black takes the opposition and will lock us against our will on the a file in front of our a pawn! } 2... Ke6 3. Kb6 Kd6 4. Kxa6 Kc6 5. Ka7 Kc7 $10) 2... Kf7 (2... Kd7?! { Too easy. We are way too fast to queen the h pawn. } 3. Kf5 Kc6 4. Kg5 Kb5 5. Kxh5 Kxa5 6. Kg6 Kb5 7. h5 a5 8. h6 a4 9. h7 a3 10. h8=Q $18) 3. Kf5! (3. Kf4?? { With Kf6, black regains the opposition from us and prevents us from snagging his vulnerable h pawn. } 3... Kf6 $10) 3... Kg7 { Opposition again forced black to keep giving ground. } (3... Ke7?! 4. Kg5 Ke6 5. Kxh5 Kf5 6. Kh6 Kf6 7. h5 Kf7 8. Kg5 Kg7 9. Kf5 Kh6 10. Ke6 Kxh5 11. Kd6 Kg6 12. Kc6 Kf6 13. Kb6 Ke6 14. Kxa6 Kd7 15. Kb7 $18) 4. Kg5 Kh7 5. Kxh5 Kg7 { We've won the h pawn and maintained opposition, but as we know from the intermediate endgame study, this isn't always enough. How do we actually make further progress? } 6. Kg5 Kh7 7. Kf6! $18 { Exactly! We abandon the h pawn in exchange for winning the a pawn.
+Even Magnus Carlsen knows all about this technique! Here he is running circles around GM Daniel Naroditsky's king to secure the win: https://lichess.org/wLIkjU4x/black#97 } (7. Kh5?! { This simply repeats the position. How are you making progress? }) (7. Kf5 { Just as good as the main line. Play Kf6 instead for the solution. }) (7. Kf4 { Just as good as the main line. Play Kf6 instead for the solution. }) *
+
+
+[Event "More Endgames You Must Know!: Exercise 2: Unfreezing the pawn majority"]
+[Date "2021.06.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "More Endgames You Must Know!"]
+[ChapterName "Exercise 2: Unfreezing the pawn majority"]
+[ChapterURL "https://lichess.org/study/xtDSXkyi/BGK7jVGE"]
+[Annotator "https://lichess.org/@/NoseKnowsAll"]
+[FEN "8/1p2kp2/p3p2p/4P2P/1P4P1/P3K3/8/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.06.27"]
+[UTCTime "19:09:04"]
+[ChapterMode "gamebook"]
+
+{ Black has done well to freeze our kingside pawn majority with his single h pawn. Also, they are threatening f6 in order to activate their king. Is there a way to win this seemingly blocked king and pawn endgame? }
+1. g5!! (1. Kd4?? { A reasonable move, but after b5!, black is the one who's winning! Black's threat of f6 (breaking through to the weak g pawn) cannot be overlooked. } 1... b5 2. Kc5 f6 3. exf6+ Kxf6 4. Kb6 e5 5. Kxa6 e4 6. Kxb5 e3 7. a4 e2 8. a5 e1=Q $19) 1... hxg5 { Brilliantly timed. With this one move, we let black know that our kingside majority is not frozen at all! } 2. h6! (2. Kf3?? { This move doesn't come with any threat. Black is able to play f5, either activating their king after exf6+ Kxf6 or gaining two connected passed pawns on the 5th rank. Black is now winning. } 2... f5 3. exf6+ Kxf6 $19) (2. Ke4?? { This move doesn't come with any threat. Black is able to play f5+, either activating their king after exf6+ Kxf6 or gaining two connected passed pawns on the 5th rank. Black is now winning. }) 2... Kf8 { In actual fact, we have a passed h pawn. Black must play Kf8 to get inside the square of the h pawn. } 3. Kf3 Kg8 (3... f5?! { There is an easy win here. } 4. exf6 Kg8 5. Kg4 e5 6. Kxg5 e4 7. Kf4 $18) 4. Kg4 Kh7 5. Kxg5 { This is now a winning position, as we've transposed our previously-crippled kingside majority into a powerful passed pawn. } 5... b5 { Black holds firm, hoping we can't make further progress. What's the fastest way to win? } 6. Kf6! (6. Kh5?! { Gaining opposition here only repeats the position after Kh8 Kg5. }) 6... Kxh6 7. Kxf7 Kg5 8. Kxe6 $18 { We'll win the game with our passed e pawn. } (8. Ke7! $18 { Also winning if you understand the "trebuchet" technique. Let's just win directly with Kxe6 instead. }) *
+
+
+[Event "New York"]
+[Site "New York, NY USA"]
+[Date "1924.03.23"]
+[Round "6"]
+[White "Jose Raul Capablanca"]
+[Black "Savielly Tartakower"]
+[Result "1-0"]
+[Variant "Standard"]
+[ECO "A40"]
+[Opening "Horwitz Defense"]
+[StudyName "More Endgames You Must Know!"]
+[ChapterName "Capablanca shows us how it's done"]
+[ChapterURL "https://lichess.org/study/xtDSXkyi/DfIe6e9B"]
+[Annotator "https://lichess.org/@/NoseKnowsAll"]
+
+{ Skip to move 34 to see the endgame we shall be exploring. }
+1. d4 e6 2. Nf3 f5 3. c4 Nf6 4. Bg5 Be7 5. Nc3 O-O 6. e3 b6 7. Bd3 Bb7 8. O-O Qe8 9. Qe2 Ne4 10. Bxe7 Nxc3 11. bxc3 Qxe7 12. a4 Bxf3 13. Qxf3 Nc6 14. Rfb1 Rae8 15. Qh3 Rf6 16. f4 Na5 17. Qf3 d6 18. Re1 Qd7 19. e4 fxe4 20. Qxe4 g6 21. g3 Kf8 22. Kg2 Rf7 23. h4 d5 24. cxd5 exd5 25. Qxe8+ Qxe8 26. Rxe8+ Kxe8 27. h5 Rf6 28. hxg6 hxg6 29. Rh1 Kf8 30. Rh7 Rc6 31. g4 Nc4 (31... Nb3! { This insane move is possibly enough to draw the game. Tartakower needed to visualize the entire following line in order to understand why. } 32. g5 Nc1! { [%csl Gd3] } 33. Bb1 Ne2! { [%csl Gf4][%cal Ge2f4] } 34. Kf3 Nxc3 35. Bd3 Na2 36. f5? Rc3 37. Ke2 Nc1+! 38. Kd2 Rxd3+ 39. Kxc1 gxf5 { And everything works out perfectly for black. No easy feat! }) 32. g5 Ne3+ 33. Kf3 Nf5? { We join this game at a critical juncture. White has the more active rook and minor piece, but this knight is firmly blockading our kingside pawns from promoting. How do we make further progress? } 34. Bxf5!! { Capablanca willingly goes in for this minor piece trade, seeing a way to activate his king in the endgame at the mere cost of two (irrelevant) pawns. } 34... gxf5 (34... Rxc3+?? 35. Kg4 gxf5+ 36. Kxf5 { Black should not be so quick to force our king up in the endgame for us! }) 35. Kg3!! Rxc3+ { It is extremely instructive to see how Capablanca is not at all concerned about losing material; he only thinks of improving his king as much as possible. } 36. Kh4! Rf3 37. g6! Rxf4+ 38. Kg5 { This was the position that Capablanca had seen when he played 34. Bxf5. His rook will be master of the board on the 7th rank, his king will be untouchable on f6, threatening several checkmates, and his passed pawn on g6 or g7 will be threatening to queen if black makes a small mistake. White is already winning. } 38... Re4 (38... Rg4+?? 39. Kf6 { [%cal Gh7h8] } 39... Kg8 (39... Ke8 40. g7 f4 41. Rh8+ Kd7 42. g8=Q Rxg8 43. Rxg8 $18 { White is up a rook and easily winning. }) 40. Rxc7 $18 { Black would have to give up the rook to stop checkmate now. } { [%cal Gc7c8] }) 39. Kf6! { "It is a frequently available finesse in such positions not to capture hostile pawns, but to pass them by in order to be protected in the rear against checks by the rook" -Richard Reti.
+Capablanca threatens Rh8#. } { [%cal Gh7h8] } 39... Kg8 40. Rg7+ Kh8 41. Rxc7 { Capablanca threatens Rc8#. } { [%cal Gc7c8] } 41... Re8 42. Kxf5 { Only now do we take this pawn, simply to avoid it forcing our rook or king into passivity at a later move. } 42... Re4 43. Kf6 { Again threatening Rc8# } { [%cal Gc7c8] } 43... Rf4+ 44. Ke5 Rg4 45. g7+! Kg8 (45... Rxg7 46. Rxg7 Kxg7 47. Kxd5 Kf7 48. Kc6 Ke7 49. Kb7 { White mops of all the remaining pawns and easily wins any king and pawn endgame. }) 46. Rxa7 Rg1 47. Kxd5 { Finally Capablanca has regained all his sacrificed material, while black is forced to wait passively and pray these remaining queenside pawns cannot queen. Spoiler alert: they can. } 47... Rc1 48. Kd6 Rc2 49. d5 Rc1 50. Rc7 { PRO TIP: When you are winning a king and pawn endgame, your opponent has to avoid every piece trade. Therefore, you can threaten piece trades to improve your overall position. } 50... Ra1 51. Kc6 Rxa4 52. d6 $18 { Tartakower resigned rather than watch this d pawn march up the board and make a new queen like so: } 52... Rd4 53. d7 b5 54. Rc8+ Kxg7 55. d8=Q Rxd8 56. Rxd8 $18 { PRO TIP: Get your king up in the endgame! I've said it before and I'll say it again. The king is the best piece for pushing your endgame agenda. } 1-0
+
+
+[Event "More Endgames You Must Know!: Knights vs pawns"]
+[Date "2021.06.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "More Endgames You Must Know!"]
+[ChapterName "Knights vs pawns"]
+[ChapterURL "https://lichess.org/study/xtDSXkyi/liBhsKlz"]
+[Annotator "https://lichess.org/@/NoseKnowsAll"]
+[FEN "4k3/8/4N3/5n1P/8/8/8/7K w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.06.27"]
+[UTCTime "19:09:04"]
+
+{ PRO TIP: When playing endgames against knights, rook pawns are especially valuable because knights are terrible at dealing with them. This is often remembered with the phrase, "knights on the rim are grim."
+
+The further up the board the pawn is, the more difficult it is for black to stop. Here, white has an easy win utilizing this fact! }
+1. Ng7+! Nxg7 2. h6 Kf7 (2... Ne6 3. h7 $18 { Imagine how tragic it would be if the white king was on g2 instead of h1... then Nf4+ Kg3 and Ng6 stops the h pawn in its tracks! Here though, it's impossible to cover h8 in one move. }) 3. h7! $18 { Promotion is unstoppable. We'll win this final position by following the pattern we learned in the other intermediate endgame study https://lichess.org/study/UsqmCsgC/AGJrweqW. } { [%cal Gh7h8] } *
+
+
+[Event "More Endgames You Must Know!: The correct circuit: knight against rook pawn"]
+[Date "2021.06.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "More Endgames You Must Know!"]
+[ChapterName "The correct circuit: knight against rook pawn"]
+[ChapterURL "https://lichess.org/study/xtDSXkyi/Iq7iPB5G"]
+[Annotator "https://lichess.org/@/NoseKnowsAll"]
+[FEN "K7/8/5N2/8/8/7p/4k3/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.06.27"]
+[UTCTime "19:09:04"]
+
+{ White is up a knight against a pawn, but as we learned in the other intermediate endgame study, one knight alone is not enough to mate. So while white is up a piece, the white king is so far out of the game that in fact white is almost lost! The best chance is going for a draw by sacrificing our knight for the last remaining black pawn. } { [%cal Gh3h1] }
+1. Ng4! { The knight prepares to sacrifice itself if the h pawn pushes. } 1... Kf3 2. Nh2+! { This knight move ensures that the knight reaches the so-called "correct circuit." Specifically, the knight needs to remain on the following highlighted squares in order to ensure the pawn cannot promote.
+Let's explore black's different attempts to dislodge this knight and promote the h pawn to see why these four squares are so important... } { [%csl Bh2,Bf1,Be3,Bg4] } 2... Kg3 3. Nf1+ { [%csl Bf1,Bh2,Bg4,Be3] } 3... Kg2 { This looks hopeless now for white, right? } (3... Kf2 4. Nh2 $10 { No progress here. }) 4. Ne3+ { No worries at all! White stays in this circuit with tempo, and can meet any king move with either Ng4 or Nf1 again, stopping the h pawn. } { [%csl Bf1,Be3,Bg4,Bh2] } 4... Kf2 5. Ng4+ { [%csl Be3,Bf1,Bh2,Bg4] } 5... Kg3 { Finally, black escapes the checks and forces the knight away from h2. Is this enough to finally promote the h pawn? } (5... Kf3 6. Nh2+ $10 { Returning to our original position. Black has made no progress. }) 6. Ne3! { No! White remains in the correct circuit, and continues blocking the h pawn from promoting! } { [%csl Be3,Bf1,Bg4,Bh2] } 6... h2 7. Nf1+! Kg2 8. Nxh2 $10 { If the white knight can reach this circuit before the enemy h pawn has reached the 7th rank, then white has a draw.
+To remember which squares make up the correct circuit, start from the 7th rank square on the pawn's file (in this case h2), visualize the knight move that reaches the 8th rank (in this case f1), and then complete the circuit by making two more knight moves (in this case e3 and g4). } *
+
+
+[Event "More Endgames You Must Know!: When the knight is stronger than the pawn"]
+[Date "2021.06.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "More Endgames You Must Know!"]
+[ChapterName "When the knight is stronger than the pawn"]
+[ChapterURL "https://lichess.org/study/xtDSXkyi/zJGzThGA"]
+[Annotator "https://lichess.org/@/NoseKnowsAll"]
+[FEN "8/8/8/8/8/p2K4/k3N3/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.06.27"]
+[UTCTime "19:09:04"]
+
+{ While I personally haven't found this position that practical, it's still important to know that there are always exceptions to the rule, however rare they may be. Here, black's king is so poorly placed that for once, the knight is stronger than the rook pawn! }
+1. Kc2! { The black king is stuck on the a1 and a2 squares, and can only hope for a draw by stalemating himself. } 1... Ka1 2. Nc1! { But we aren't interested in a draw anymore! By covering the a2 square with our knight, black is forced to push the pawn to a2, sealing their fate. } (2. Nc3?? a2 $10 { The knight can't possibly attack the a1 square in one move. Black escapes with a self-stalemate. }) 2... a2 3. Nb3# { While a lone knight is not enough to checkmate, with a little help from an accidental ally, anything is possible.
+In general, these rare positions are wins for white if the knight can move to the same color square as the black king. Since neither piece can triangulate, we need our knight to eventually attack the other color square (a2) to force black to push the pawn forward and self-mate. } *
+
+
+[Event "More Endgames You Must Know!: An important knight fortress"]
+[Date "2021.06.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "More Endgames You Must Know!"]
+[ChapterName "An important knight fortress"]
+[ChapterURL "https://lichess.org/study/xtDSXkyi/v8qylNgl"]
+[Annotator "https://lichess.org/@/NoseKnowsAll"]
+[FEN "7k/7P/8/5KN1/8/8/8/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.06.27"]
+[UTCTime "19:09:04"]
+
+{ Here's another example of why a rook pawn is the worst pawn to be left with. We're up a knight and a pawn, but the position is hopelessly drawn once again due to stalemate threats. }
+1. Ke6 (1. Kg6 $10 { Stalemate! }) 1... Kg7 { As is always the case here, black stays in the corner and there's no way for white to make progress without stalemating the black king. } 2. Kf5 (2. Ke7 Kh8 3. Kf7 $10 { Another stalemate! }) (2. Nf7 { Controlling h8 loses the all-important pawn! } 2... Kxh7 $10) 2... Kh8 3. Kg4 Kg7 4. Kh5 Kh8 5. Kh6 $10 { We are simply not capable of defending the h pawn with our king without stalemating black's king. Therefore, our knight cannot move anywhere to let us control the h8 square and kick the enemy king out from this blockading square. If only we had activated our king first and not pushed the h pawn so far up the board! } *
+
+
+[Event "More Endgames You Must Know!: Exercise 3: Reaching the correct circuit"]
+[Date "2021.06.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "More Endgames You Must Know!"]
+[ChapterName "Exercise 3: Reaching the correct circuit"]
+[ChapterURL "https://lichess.org/study/xtDSXkyi/2eMdy0HJ"]
+[Annotator "https://lichess.org/@/NoseKnowsAll"]
+[FEN "K7/8/8/5N2/8/7p/8/3k4 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.06.27"]
+[UTCTime "19:09:04"]
+[ChapterMode "gamebook"]
+
+{ Now it's your turn: what's the correct circuit and how do we get our knight there? }
+1. Ne3+! (1. Nh6?? { The correct idea (heading for g4), but too slow. Black pushes the h pawn to h2 and the knight cannot sacrifice itself in time to stop promotion. }) (1. Ng3?? { Stopping h1 isn't enough to win. We have to stop h2! After h2, Kb7 Ke1, Kc6 Kf2, Nh1 Kg2, our knight is hopelessly trapped. }) 1... Ke2 2. Ng4 Kf3 { Nice! our knight gets to the correct circuit just in time! h2 is now impossible unless the black king can disturb our knight from its circuit... } 3. Nh2+ Kg2 { Great job! Staying in the correct circuit holds the draw! } 4. Ng4 Kg3 5. Ne3 h2 6. Nf1+ Kg2 7. Nxh2 $10 { Black did not have to push the pawn to h2, but they were clearly not making any progress otherwise. Nice job nailing this concept!
+Here's Magnus Carlsen explaining his understanding of a similar position: https://youtu.be/k1SCXb2WA2U?t=120 } *
+
+
+[Event "More Endgames You Must Know!: Exercise 4: The power of the rook pawn"]
+[Date "2021.06.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "More Endgames You Must Know!"]
+[ChapterName "Exercise 4: The power of the rook pawn"]
+[ChapterURL "https://lichess.org/study/xtDSXkyi/Fv8iqNJp"]
+[Annotator "https://lichess.org/@/NoseKnowsAll"]
+[FEN "8/1p3pkp/3n2p1/P2Bp3/8/6P1/5PKP/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.06.27"]
+[UTCTime "19:09:04"]
+[ChapterMode "gamebook"]
+
+1. Bxb7! { Excellent! Black would be wise not to accept this Greek gift, as the passed a pawn will prove too strong. But Kf6, a6 Nb5, Bc6 Na7, Bd5 is hopeless as well - black is essentially down a piece trying to deal with this passed a pawn! } 1... Nxb7 (1... Kf6 2. a6 Nb5 3. Bc6 Na7 4. Bd5 Ke7 $18) 2. a6 Nd6 3. a7 Nb5 4. a8=Q $18 { This is another excellent example about how learning a few important endgames will open your mind to so many new possibilities! } *
+
+
+[Event "More Endgames You Must Know!: Exercise 5: A draw or a win?"]
+[Date "2021.06.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "More Endgames You Must Know!"]
+[ChapterName "Exercise 5: A draw or a win?"]
+[ChapterURL "https://lichess.org/study/xtDSXkyi/so08LZU4"]
+[Annotator "https://lichess.org/@/NoseKnowsAll"]
+[FEN "8/8/8/8/3N4/p7/k2K4/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.06.27"]
+[UTCTime "19:09:04"]
+[ChapterMode "gamebook"]
+
+{ It's clear that after Kc1 or Kc2, black has nothing better than a draw by moving their king back and forth between a1 and a2. But do we have better? }
+1. Kc1! (1. Kc2?? { This is only a draw! After Ka1 our knight is on the wrong color to eventually give mate! A sample line is: Ka1, Nb3+ Ka2, Nc1+ Ka1, Nb3+ Ka2= } 1... Ka1 2. Nb3+ Ka2 3. Nc1+ Ka1 4. Nb3+ Ka2 5. Nc1+ Ka1 $10) 1... Ka1 { That's right! We're going for a win! But what's the precise follow-up? } 2. Kc2! Ka2 { Exactly! By triangulating now, we force the black king onto a light square. Now that our knight can move to the correct color, it's only a matter of time before we checkmate the black king in the corner... } 3. Ne2 (3. Nb3?? $10 { Oops. Don't get too hasty here and stalemate your opponent! }) 3... Ka1 4. Nc1! (4. Nc3?? { After a2, we no longer have a knight move that attacks the a1 square! } 4... a2 5. Na4 $10) 4... a2 { Excellent again! With a sequence of precise moves, the a2 square is covered, and black is forced to push the a pawn... } 5. Nb3# { I've personally never had the pleasure of playing such a checkmate in one of my games. Maybe one day! } *
+
+
+[Event "More Endgames You Must Know!: Bishops vs pawns"]
+[Date "2021.06.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "More Endgames You Must Know!"]
+[ChapterName "Bishops vs pawns"]
+[ChapterURL "https://lichess.org/study/xtDSXkyi/YURvl6Sa"]
+[Annotator "https://lichess.org/@/NoseKnowsAll"]
+[FEN "8/4B3/8/6K1/8/8/p1k5/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.06.27"]
+[UTCTime "19:09:04"]
+
+{ Thankfully, bishops are much much better at stopping pawns than knights. Regardless of whether your opponent has a rook pawn, a central pawn, an active king, or our king is doing nothing to help, there's only one ingredient necessary to stop the pawn. }
+1. Bf6! { If the bishop can control the queening square (actually any square on the pawn's path to promotion), then it's an easy draw. } 1... Kb1 2. Bh8 { Our bishop can wait on correct diagonal forever. There is no progress. } 2... Kc2 3. Bg7 Kb1 4. Bf6 a1=Q 5. Bxa1 $10 *
+
+
+[Event "More Endgames You Must Know!: Bishop against two pawns"]
+[Date "2021.06.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "More Endgames You Must Know!"]
+[ChapterName "Bishop against two pawns"]
+[ChapterURL "https://lichess.org/study/xtDSXkyi/BG0MFRaQ"]
+[Annotator "https://lichess.org/@/NoseKnowsAll"]
+[FEN "8/8/B3k3/4pp2/8/5K2/8/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.06.27"]
+[UTCTime "19:09:04"]
+
+{ In fact, bishops are often a good match for two pawns as well. While there are many ways to draw this position as white, the following move shows black we know exactly what we're doing. }
+1. Bd3! { White willingly walks into a fork because black playing e4+ would instantly draw the game! } 1... Kf6 (1... e4+ 2. Bxe4 fxe4+ 3. Kxe4 $10) 2. Bb1 { All we have to do now is point our bishop at e4 and f5. Black must defend the f5 pawn with the king and so is unable to make progress. } 2... Kg5 3. Bd3 Kf6 { There was no progress on the kingside... } (3... f4 4. Be4! { As soon as black places the pawns on the opposite color of our bishop, our king and bishop now form an impenetrable light-square blockade. The pawns will never move again: } 4... Kf6 5. Ba8 Kf5 6. Be4+ Kf6 7. Ba8 Ke6 8. Be4 Kd6 9. Ba8 Kc5 10. Be4 Kd4 11. Ba8 Kd3 12. Be4+ Kd4 $10) 4. Bb1 Ke6 5. Bd3 e4+ (5... Kd5? 6. Bxf5 $10 { There is no progress on the queenside either. }) 6. Bxe4 fxe4+ 7. Kxe4 $10 { Eventually black has to admit that the game is a dead draw. } *
+
+
+[Event "More Endgames You Must Know!: Bishop against three pawns?"]
+[Date "2021.06.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "More Endgames You Must Know!"]
+[ChapterName "Bishop against three pawns?"]
+[ChapterURL "https://lichess.org/study/xtDSXkyi/2q5DJTF5"]
+[Annotator "https://lichess.org/@/NoseKnowsAll"]
+[FEN "8/8/4kp2/4p3/3p4/3B1K2/8/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.06.27"]
+[UTCTime "19:09:04"]
+
+{ In fact, the bishop can sometimes be a match for 3 pawns as well. The key defensive technique here is that the pawns must remain firmly blockaded on a single diagonal. As long as we ensure black cannot push any of these pawns, the position is level. }
+1. Kg4! { Stopping f5 } 1... Kd5 2. Kf3! { Stopping e4 } 2... Kd6 (2... Kc5 3. Bb1 Kb4 4. Bf5 (4. Bd3?! Kc3 5. Ke4?? { One of the few ways to lose while blockading these pawns: } 5... f5+!! 6. Kxf5 Kxd3 $19) 4... Kc3 5. Ke2! $10 { Stopping d3. No progress here either. }) 3. Kg3 { If black isn't threatening to move any of the pawns, we can simply wait as well. } (3. Bb1 $10 { Just as fine of a waiting move. }) (3. Ke4?! Ke6 { We're not able to blockade the f5 pawn push now. While this position is still a draw, white will have to scramble in order to regain the easy blockade we previously had. } 4. Bc4+! Ke7 5. Kf5 $10 { [%csl Gf6] }) 3... Ke6 4. Kg4 Kf7 5. Kf5 Ke7 6. Be4 $10 { The pawns remain blockaded on the b1-h7 diagonal. No progress can be made. } *
+
+
+[Event "More Endgames You Must Know!: Exercise 6: Opposite-color bishops"]
+[Date "2021.06.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "More Endgames You Must Know!"]
+[ChapterName "Exercise 6: Opposite-color bishops"]
+[ChapterURL "https://lichess.org/study/xtDSXkyi/3rQ30cMS"]
+[Annotator "https://lichess.org/@/NoseKnowsAll"]
+[FEN "8/b7/B3k3/4pp2/8/5K2/8/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.06.27"]
+[UTCTime "19:09:04"]
+[ChapterMode "gamebook"]
+
+{ We just saw how strong a bishop is at defending against pawns, but surely giving our opponent an extra bishop is enough for them to make progress, right? Wrong! White has an easy draw here with the exact same drawing technique we just explored! }
+1. Bd3!! { Exactly! By focusing on e4 and f5, black is tied down to defending the f5 pawn with the king. } (1. Bc4+! $10 { Technically this move draws too as long as we find the correct follow-up... }) 1... Kf6 2. Bb1 (2. Bc2 $10 { Just as good. Play Bb1 instead for the solution. }) 2... Bc5 (2... f4 3. Be4 $10 { Just as before, our light-square blockade can not be disturbed. }) 3. Bd3 (3. Bc2 $10 { Just as good. Play Bd3 instead for the solution. }) 3... e4+ 4. Bxe4 fxe4+ 5. Kxe4 $10 { Our defensive task exists purely on the light squares. Even giving our opponent an extra dark squared bishop isn't enough to break our light square blockade. } *
+
+
+[Event "More Endgames You Must Know!: The wrong-color bishop"]
+[Date "2021.06.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "More Endgames You Must Know!"]
+[ChapterName "The wrong-color bishop"]
+[ChapterURL "https://lichess.org/study/xtDSXkyi/FlrkwDav"]
+[Annotator "https://lichess.org/@/NoseKnowsAll"]
+[FEN "7k/8/8/7P/5K2/8/2B5/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.06.27"]
+[UTCTime "19:09:04"]
+
+{ We've already seen this example before in the other study, but just to recap: if the black king can reach the corner square in front of the rook pawn, and the color of the bishop is opposite that of the queening square, black draws easily by simply staying in the corner. } { [%csl Rc2,Gh8] }
+1. Kg5 Kg7 2. h6+ Kh8 3. Kg6 Kg8 4. Bb3+ Kh8 5. h7 $10 { No matter what we try, black stays in the corner for a draw. For a great example of what this means, see: https://lichess.org/study/UsqmCsgC/zyG2WNmK } *
+
+
+[Event "More Endgames You Must Know!: Another important fortress"]
+[Date "2021.06.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "More Endgames You Must Know!"]
+[ChapterName "Another important fortress"]
+[ChapterURL "https://lichess.org/study/xtDSXkyi/ucXJfWRF"]
+[Annotator "https://lichess.org/@/NoseKnowsAll"]
+[FEN "6k1/7p/4K2P/4B3/8/8/8/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.06.27"]
+[UTCTime "19:09:04"]
+
+{ There are other simple fortresses to know that involve bishops. In this case, white controls the queening square, but the h7 pawn (on the opposite color of the bishop) simply cannot be pushed aside. Here, black stays as close to the h7 pawn as possible, and draws easily. }
+1. Kf6 Kf8 (1... Kh8?? 2. Kf7#! { A rare situation where a single bishop is able to deliver checkmate! }) 2. Kf5 Kg8 3. Ke6 Kf8 4. Kd7 Kg8 5. Ke7 $10 { Stalemate. We either let black stay in the corner, or stalemate the black king. } *
+
+
+[Event "More Endgames You Must Know!: Exercise 7: A desperation play"]
+[Date "2021.06.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "More Endgames You Must Know!"]
+[ChapterName "Exercise 7: A desperation play"]
+[ChapterURL "https://lichess.org/study/xtDSXkyi/UcI16RHU"]
+[Annotator "https://lichess.org/@/NoseKnowsAll"]
+[FEN "8/5k1p/7P/5KP1/8/4B2n/8/8 b - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.06.27"]
+[UTCTime "19:09:04"]
+[ChapterMode "gamebook"]
+
+{ Black's knight is dominated by the bishop on e3, black's king is more passive than white's, and black is down a pawn. Is there any hope left? }
+1... Nxg5! { We're going berserk! Is this madness or part of a master drawing plan? } 2. Bxg5 Kg8 (2... Kf8 { This move is equivalent to the main line. Play Kg8 for the solution. }) (2... Ke8 { This move is equivalent to the main line. Play Kg8 for the solution. }) 3. Kf6 Kh8 (3... Kf8 { This move is equivalent to the main line. Play Kh8 instead for the solution. }) 4. Ke7 { "I dare you to play Kf7 and stalemate me. I'm not scared of your blockaded h pawn!" } 4... Kg8 5. Bd2 Kh8 6. Kf6 Kg8 7. Bc3 Kf8! $10 { By avoiding the final trick of Kh8?? Kf7#, we prove that white cannot make further progress without stalemating us. } (7... Kh8?? { The last trick left! White plays Kf7# and you have to go home in tears... } 8. Kf7#) *
+
+
+[Event "Capablanca - Marshall"]
+[Site "New York, NY USA"]
+[Date "1909.06.23"]
+[Round "23"]
+[White "Frank James Marshall"]
+[Black "Jose Raul Capablanca"]
+[Result "0-1"]
+[Variant "Standard"]
+[ECO "D33"]
+[Opening "Tarrasch Defense: Rubinstein System"]
+[StudyName "More Endgames You Must Know!"]
+[ChapterName "Pushing the queenside majority"]
+[ChapterURL "https://lichess.org/study/xtDSXkyi/SclTFf1q"]
+[Annotator "https://lichess.org/@/NoseKnowsAll"]
+
+{ I will leave this endgame study with another practical endgame example.
+
+PRO TIP: Play on the side of the board where you have an advantage. This usually means the side of the board where you have a pawn majority relative to your opponent, or the side of the board where you have more space.
+
+Here is another famous example from Capablanca. Skip to move 26 to see the endgame. }
+1. d4 d5 2. c4 e6 3. Nc3 c5 4. cxd5 exd5 5. Nf3 Nc6 6. g3 Be6 7. Bg2 Be7 8. O-O Nf6 9. Bg5 Ne4 10. Bxe7 Qxe7 11. Ne5?! (11. dxc5 Nxc3 (11... Qxc5 12. Rc1 $16) 12. bxc3 Qxc5 13. Ng5! $16) 11... Nxd4 12. Nxe4 dxe4 13. e3 Nf3+ 14. Nxf3 exf3 15. Qxf3 O-O 16. Rfc1 Rab8 17. Qe4 Qc7 18. Rc3 b5 19. a3 c4 20. Bf3 Rfd8 21. Rd1 Rxd1+ 22. Bxd1 Rd8 23. Bf3 g6 24. Qc6 Qe5 25. Qe4 Qxe4 26. Bxe4 Rd1+! { Black activates the black rook on the 8th rank, limiting the white rook to only 3 squares: c3, c2, and e2. } 27. Kg2 a5! { Black has more pawns on the queenside, far away from the white king. Therefore, Capablanca pushes his queenside majority in the hopes of creating a queen. } 28. Rc2 b4! (28... a4?? { With the queenside majority now firmly blockaded, this simple pawn move would have lost all of black's advantage. } 29. Kf3 $10) 29. axb4 axb4 { The potential passed c or b pawn is already on the 5th rank and is very close to becoming a queen. } 30. Bf3 Rb1 { Keeping the white rook tied down to the b pawn ensures white cannot get play actively. } 31. Be2 b3!! { At first this move seems counter-intuitive. Doesn't it fix the c4 pawn as a backwards pawn? Yes, but also no. If the pawns must stay fixed as they are, then this would be a terrible move for black. However, Capablanca saw a small tactic that ensures the queenside majority will keep pushing: } 32. Rd2 (32. Rc3? { Blockading the c pawn loses the b pawn. Black is queening next. } 32... Rxb2 $19) 32... Rc1! { With this move, Capablanca was sure he could successfully play c3. The threat is Rc2 which would instantly win the game. } 33. Bd1 { Marshall desperately tries to stop Rc2, but with his pieces so passive, and black's queenside majority so far advanced, black must be winning. Capablanca immediately pushes through. } (33. Kf3?? Rc2 { [%cal Gc2b2,Gc2d2] } 34. Rxc2 (34. Rd4 c3 35. bxc3 b2 36. Rb4 Ba2 $19 { A sample line that shows black's pawn pushing through. } { [%cal Gb2b1] }) 34... bxc2 $19 { c1=Q is unstoppable. } { [%cal Gc2c1] }) 33... c3! { [%cal Gc3c2] } 34. bxc3 b2! { Black deflects the rook from defense of the d1 bishop, effectively winning the game. } { [%cal Gb2b1] } 35. Rxb2 (35. Bc2?? Rxc2! 36. Rxc2 b1=Q $19) 35... Rxd1 { The smoke has cleared, and black's queenside majority has left him a piece up. As long as white's passed c pawn stays under control, this should be an easy conversion. } 36. Rc2 Bf5 37. Rb2 Rc1 { PRO TIP: Rooks belong behind passed pawns. Whether you're pushing through your own passed pawns or stopping your opponents', it's almost always correct to place your rook directly behind the passed pawn in order to escort it forward or stop its progress. } 38. Rb3 Be4+ 39. Kh3 (39. f3? Rc2+ 40. Kg1 Bxf3 $19) 39... Rc2 40. f4 h5! { Capablanca shows his understanding of pawn majorities. Notice how the kingside majority is fully blockaded on the light squares. } 41. g4? { Desperate, but Marshall was in Zugzwang. Every move loses a pawn immediately. } (41. Ra3? Bf5+ 42. Kh4 Rxh2+ $19) (41. Kh4? Rxh2+ $19) (41. Rb1? Rxc3 $19) 41... hxg4+ 42. Kxg4 Rxh2 43. Rb4 f5+ 44. Kg3 (44. Kg5?? Kg7! $19 { The trap that Capablanca set. Rh5# is unstoppable. }) 44... Re2 45. Rc4 Rxe3+ 46. Kh4 Kg7 47. Rc7+ Kf6! { Capablanca always brings his king up in the endgame, even while up a piece. } { [%cal Re4c6] } 48. Rd7 Bg2 { Rh3# is effectively unstoppable } 49. Rd6+ Kg7 $19 { 0-1 White resigns. } { Marshall resigned rather than allow Rh3+ Kg5 Rh5# or the more direct Rh3#, depending where black's king is. } 50. Rd7+ Kh6 51. Rd6 Rh3# 0-1
+
+
+[Event "More Endgames You Must Know!: Thanks for enjoying this study!"]
+[Date "2021.06.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "More Endgames You Must Know!"]
+[ChapterName "Thanks for enjoying this study!"]
+[ChapterURL "https://lichess.org/study/xtDSXkyi/2eZijyU1"]
+[Annotator "https://lichess.org/@/NoseKnowsAll"]
+[FEN "7k/7P/8/5KN1/8/8/8/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2021.06.27"]
+[UTCTime "19:09:04"]
+[ChapterMode "gamebook"]
+
+{ Be sure to like this study and share with your friends if you enjoyed it! Feel free to ask/answer any questions in the chat room if you're stuck on a key idea. You can check out my other instructive studies too if you're working on improving your game.
+-NoseKnowsAll
+
+* Beginner endgames you must know! https://lichess.org/study/wukLYIXj
+* Intermediate endgames you must know! https://lichess.org/study/UsqmCsgC
+* More endgames you must know! https://lichess.org/study/xtDSXkyi
+* Advanced endgames you must know! https://lichess.org/study/UO2zqigQ (the next in the series)
+* Rook endgames you must know! https://lichess.org/study/bnboDhFM
+* Knights | How to dominate your opponents! https://lichess.org/study/kI8ikTU4
+* Bishops | Slice through the opposition! https://lichess.org/study/kNn68T8l
+* Rooks | Infiltrate for activity! https://lichess.org/study/U7tTRtdj
+* Always sacrifice the exchange! https://lichess.org/study/h3ccaYFE
+* Beautiful checkmates https://lichess.org/study/YtBYXc3m }
+ *
+
+
+
