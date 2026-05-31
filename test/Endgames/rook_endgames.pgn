@@ -382,14 +382,14 @@
 1. Rh2 Ke7 2. Rh8 Kd6 3. Rb8 Ra1 4. Kb7 Rb1+ 5. Kc8 Rc1+ 6. Kd8 Rh1 7. Rb6+ Kc5 8. Rc6+! (8. Ra6 Rh8+ 9. Kd7 Rh7+ 10. Ke8 Rh8+ 11. Kf7 Ra8) (8. Re6 Ra1) 8... Kb5 9. Rc8 Rh8+ 10. Kc7 Rh7+ *
 
 
-[Event "Endgames' Database: Vladimirov-Rashkovskhy USSR chsf, Chelyabinsk 1975"]
+[Event "Endgames' Database: Vladimirov-Rashkovsky USSR chsf, Chelyabinsk 1975"]
 [Date "2021.07.08"]
 [Result "*"]
 [Variant "From Position"]
 [ECO "?"]
 [Opening "?"]
 [StudyName "Endgames' Database"]
-[ChapterName "Vladimirov-Rashkovskhy USSR chsf, Chelyabinsk 1975"]
+[ChapterName "Vladimirov-Rashkovsky USSR chsf, Chelyabinsk 1975"]
 [ChapterURL "https://lichess.org/study/R3Qq55Ux/F8Fl0xFM"]
 [Annotator "https://lichess.org/@/pietro2009"]
 [FEN "2R5/4r3/6k1/7p/8/8/3K4/8 w - - 0 1"]
@@ -397,7 +397,7 @@
 [UTCDate "2021.07.08"]
 [UTCTime "10:56:27"]
 
-{ White's saving technique is 1.Rg8+!, giving check to force the king off the g-file and then adopting a "checking station" strategy — the rook oscillates from g8 to g5 and back, keeping Black's king busy and preventing the h-pawn from advancing without constant checks. The losing move 1.Rc3? lets Black advance h4 and reposition the rook to h7, after which the king marches in and the h-pawn decides. When defending against a rook pawn in this type of ending, long-range lateral checks are the key resource — the rook must never be passivized. }
+{ From Yevgeniy Vladimirov — later Kasparov's second — vs Nukhim Rashkovsky, USSR Championship qualifying semifinal, Chelyabinsk 1975. White draws with 1.Rg8+!, establishing a checking distance defense on the g-file: the rook oscillates between g8 (checking the king) and g5 (attacking the h-pawn directly), preventing king and pawn from coordinating. The key moment: after Kh2, White plays Rg3! — if Black pushes h3, Rxh3+ captures the pawn; if the king moves to escort it, Rg8+ checks again. The pawn can never reach h1. The losing move 1.Rc3? is fatal: Black plays h4 then repositions the rook to h7, creating a pawn-rook battery on the h-file that White's passive rook cannot stop — once the pawn passes h5, the checking distance defense can never be established. }
 1. Rc3? (1. Rg8+ Kf5 2. Rf8+ Kg4 3. Rg8+ Kh3 4. Rg5 h4 5. Rg8) 1... h4 2. Re3? (2. Rc6+ Kg5 3. Rc8 h3 4. Rh8 Kg4 5. Rg8+ Kf3 6. Rf8+ Kg2 7. Rg8+ Kh1 8. Rg6 h2 9. Rg8) 2... Rh7! 3. Re1 h3 4. Rh1 Kg5 5. Ke3 Kh4 6. Kf2 Rf7+ 7. Kg1 Ra7 8. Rh2 Ra1+ 9. Kf2 Kg4 *
 
 
