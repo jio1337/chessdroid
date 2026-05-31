@@ -13,6 +13,8 @@
 [UTCDate "2020.04.23"]
 [UTCTime "09:17:58"]
 
+{ An absolute pin ties a piece to its king — the pinned piece cannot move without exposing the king to check. Find the move that creates the winning pin in this position. }
+
  *
 
 
