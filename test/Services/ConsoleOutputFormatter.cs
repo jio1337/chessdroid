@@ -2270,7 +2270,9 @@ namespace ChessDroid.Services
                         bool basicTrigger = bestEval.Value >= 0.70 && secondEval.Value <= 0.50;
                         bool swingTrigger = evalSwing >= 2.0 && bestEval.Value >= 0.27 && secondEval.Value <= 0.70;
                         bool disasterTrigger = bestEval.Value >= 0.0 && secondEval.Value <= -1.50;
-                        isOnlyWinningMove = basicTrigger || swingTrigger || disasterTrigger;
+                        // Only saving move: best barely draws (~0) but alternatives clearly lose
+                        bool nearDrawTrigger = Math.Abs(bestEval.Value) <= 0.50 && secondEval.Value <= -2.0;
+                        isOnlyWinningMove = basicTrigger || swingTrigger || disasterTrigger || nearDrawTrigger;
                     }
                     else
                     {
@@ -2278,10 +2280,12 @@ namespace ChessDroid.Services
                         // Basic: best has clear+ advantage (<= -0.70) AND second-best is equal or worse (>= -0.50)
                         // Swing: huge swing (>= 2.0) AND second-best lost most of the advantage (>= -0.70)
                         // Disaster: best keeps any edge (<= 0) but second is losing badly (>= +1.50)
+                        // Only saving move: best barely draws (~0) but alternatives clearly lose
                         bool basicTrigger = bestEval.Value <= -0.70 && secondEval.Value >= -0.50;
                         bool swingTrigger = evalSwing >= 2.0 && bestEval.Value <= -0.27 && secondEval.Value >= -0.70;
                         bool disasterTrigger = bestEval.Value <= 0.0 && secondEval.Value >= 1.50;
-                        isOnlyWinningMove = basicTrigger || swingTrigger || disasterTrigger;
+                        bool nearDrawTrigger = Math.Abs(bestEval.Value) <= 0.50 && secondEval.Value >= 2.0;
+                        isOnlyWinningMove = basicTrigger || swingTrigger || disasterTrigger || nearDrawTrigger;
                     }
                 }
             }
