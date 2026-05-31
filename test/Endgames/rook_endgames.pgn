@@ -90,7 +90,7 @@
 [UTCDate "2021.07.06"]
 [UTCTime "09:08:38"]
 
-{ The Philidor position, analyzed by François-André Philidor in 1777, is the fundamental drawing method for the weaker side in rook and pawn versus rook endgames. Black's drawing recipe is: keep the king in front of the pawn and place the rook on the third rank (here the sixth rank from Black's perspective) until the pawn advances, then switch to checking the opposing king from behind along the eighth rank. After 1...Rb6! 2.e6 Rb1, Black gains the necessary checking distance — White's king has no shelter from the rear checks. }
+{ The Philidor position, analyzed by François-André Philidor in 1777, is the fundamental drawing method for the weaker side in rook and pawn versus rook endgames. Black's drawing recipe is: keep the king in front of the pawn and place the rook on the third rank (here rank 6 on the board, which is Black's third rank counting from Black's back rank) until the pawn advances, then switch to checking the opposing king from behind along the eighth rank. After 1...Rb6! 2.e6 Rb1, Black gains the necessary checking distance — White's king has no shelter from the rear checks. }
 { [%cal Bb1b6,Bb6h6] }
 1... Rb6 2. e6 Rb1 *
 
@@ -110,7 +110,7 @@
 [UTCDate "2021.07.06"]
 [UTCTime "09:10:55"]
 
-{ Same starting position as the Philidor chapter, but here Black uses a second defensive method (known as Karstedt's defense, after Max Karstedt who published it in 1897). The defining Karstedt idea is 1...Re1! — placing the rook directly behind the pawn on the e-file, preventing its advance — combined with 2...Kf8!, keeping the king on the short side near the queening square. If the king stays close to f8, White can never force a decisive position because Black answers Ra8+ with Kg7 and then returns, denying White's king the critical e7 outpost. }
+{ Same starting position as the Philidor chapter, but here Black uses a second defensive method (known as Karstedt's defense, after Max Karstedt who published it in 1897). The defining Karstedt idea is 1...Re1! — placing the rook on the e-file behind the pawn, ready to harass the attacking king with checks once the pawn advances — combined with 2...Kf8!, keeping the king on the short side near the queening square. If the king stays close to f8, White can never force a decisive position because Black answers Ra8+ with Kg7 and then returns, denying White's king the critical e7 outpost. }
 { [%cal Bb1e1,Be1e8] }
 1... Re1! 2. Ke6 Kf8! (2... Kd8?! 3. Ra8+ Kc7 4. Re8 (4. Kf6 Kd7) 4... Rh1! (4... Re2? 5. Kf7 Rh2 6. Rg8 Rh7+ 7. Rg7 Rh8 8. Ke7 Kc6 9. e6 Kc7 10. Rg1) 5. Rg8 Re1 6. Rg2 Kd8 $10) 3. Ra8+ Kg7 4. Kd6 Kf7 5. Ra7+ Ke8 6. Ke6 Kf8 7. Ra8+ Kg7 8. Re8 Ra1! *
 
@@ -206,7 +206,7 @@
 [UTCDate "2021.07.07"]
 [UTCTime "07:08:05"]
 
-{ The Umbrella — a technique coined by GM Mark Dvoretsky: "a pawn that shelters the attacking king from the rain of checks of the defending rook." In this completely winning position, Black has multiple winning continuations; the game continued 1...f4!, chosen by Tomáš Polák against Petr Velička (1995 Czech Team Championship) to illustrate the concept: after 2.gxf4, Black plays 2...Rb2+ to drive the White king away, then 3...Kf3 — the king shelters behind the f4-pawn (the umbrella), occupying a safe square free from rook harassment, while the e3-pawn advances to e1=Q. The Umbrella is not a rescue technique here but a clean, elegant winning method among several. }
+{ The Umbrella — a technique coined by IM Mark Dvoretsky: "a pawn that shelters the attacking king from the rain of checks of the defending rook." In this completely winning position, Black has multiple winning continuations; the game continued 1...f4!, chosen by Tomáš Polák against Petr Velička (1995 Czech Team Championship) to illustrate the concept: after 2.gxf4, Black plays 2...Rb2+ to drive the White king away, then 3...Kf3 — the king shelters behind the f4-pawn (the umbrella), occupying a safe square free from rook harassment, while the e3-pawn advances to e1=Q. The Umbrella is not a rescue technique here but a clean, elegant winning method among several. }
 1... f4! 2. gxf4 Rb2+ 3. Kf1 Kf3 $19 { Black use the pawn f4 like an Umbrella for protecs the black king from checks } 4. Ra1 Rh2 5. Kg1 Rg2+ 6. Kh1 Rg8 7. Kh2 e2 8. f5 Kf2 9. Kh3 Rg5! (9... e1=Q?? 10. Rxe1! Kxe1 11. Kh4! $10) *
 
 
