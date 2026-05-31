@@ -259,12 +259,12 @@
 [ChapterName "Rook Endgames-4"]
 [ChapterURL "https://lichess.org/study/R3Qq55Ux/houeZf7o"]
 [Annotator "https://lichess.org/@/pietro2009"]
-[FEN "1r6/8/8/8/1P1k4/1K6/8/2R5 w - - 0 1"]
+[FEN "1r6/8/8/8/1P1k4/1K6/8/2R5 b - - 0 1"]
 [SetUp "1"]
 [UTCDate "2021.07.07"]
 [UTCTime "07:49:35"]
 
-{ With black on move, this is draw: 1...Kd5! 2.Rc4!? Kd6! 3.Ka4 Kd5! }
+{ A theoretical study position illustrating the knight pawn (b-pawn) exception: despite the Rule of Five suggesting White wins (pawn rank 4 + king 2 files away = 6), the b-pawn draws because White's king has no room to outflank on the a-file side. Black draws with the only correct move 1...Kd5! — placing the king in front of the pawn to shadow White's king and control the blockade square. After 2.Rc4, the only saving move is 2...Kd6! (not 2...Kc5? which loses to 3.b5+!, displacing the king with tempo); Black then returns 3...Kd5 and answers any b5 with Kc5! (instant blockade). Passive moves lose immediately: 1...Rb7? lets White march Ka4-Ka5, and 1...Kc4? runs into Rc2+! chasing the king away. }
 1. Rc6 (1. Rc5 Rb7 2. Rh5 Rb8 3. b5) 1... Kd5 2. Ra6 Rb7 3. Ka4 Kc4 4. Rc6+ Kd5 5. b5 $18 { Cutting off the king of weaker side along a rank can often be more effective than the same procedure a along } *
 
 
