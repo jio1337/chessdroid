@@ -340,7 +340,7 @@
 [UTCDate "2021.07.08"]
 [UTCTime "10:23:31"]
 
-{ A practical example from the 1968 USSR team championship where White misses the drawing resource. The correct 1.Rb1! holds because White's rook cuts off Black's king on the b-file while being ready to check from behind once the g-pawn advances. The losing 1.Kd3?? gives Black's rook a free tempo to reposition, and after Re1 the rook dominates the first rank — Black then escorts the g-pawn to promotion with tempo-gaining king moves that drive White's king away from the drawing zone. }
+{ From Mikhail Tal vs Igor Zaitsev, 6th Soviet Team Chess Cup, Riga 1968 (0-1). The correct 1.Rb1! draws by routing the rook to g1 in two moves — the g-pawn needs three moves to reach g3, so White is exactly one tempo ahead; from g1 the rook perpetually checks the king off the g-file, and the h-file edge leaves the king no escape to the right. The blunder 1.Kd3?? wastes that one tempo: Black immediately plays Re1!, seizing the back rank, then reorganizes freely with Re6 and Kh5. The winning technique: Re4+ drives White's king back with tempo, the Rook Shield (Rf4 interposes White's check while escorting the pawn) advances the g-pawn to g3, and the resulting K+P endgame is trivially won. }
 1. Kd3?? (1. Rb1! g5 2. Kd3 Re5 3. Kd4 Re8 4. Rg1 Kg6 5. Kd3 $10) 1... Re1 2. Kd2 Re6 3. Rb1 g5 4. Rg1 Kh5! 5. Rh1+ Kg6 6. Rg1 Re5! 7. Kd3 Kf5! 8. Kd4 (8. Rf1+ Kg4 9. Kd4 Ra5 10. Ke3 Ra3+ 11. Ke2 Ra2+ 12. Ke3 Kh3) 8... Re4+ 9. Kd3 g4 10. Rf1+ Rf4 11. Ke2 g3! 12. Rxf4+ Kxf4 13. Ke1 Ke3 14. Kf1 Kf3 *
 
 
