@@ -1,0 +1,254 @@
+[Event "Tactics: Back-rank: The Big Idea"]
+[Date "2020.04.02"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Tactics: Back-rank"]
+[ChapterName "The Big Idea"]
+[ChapterURL "https://lichess.org/study/GxOEyGDh/XumRgO3n"]
+[Annotator "https://lichess.org/@/silurianblue"]
+[FEN "6k1/r4ppp/8/8/8/6P1/2R2PKP/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2020.04.02"]
+[UTCTime "13:18:38"]
+
+{ A back-rank mate exploits a king trapped behind its own pawns with no escape squares. The back rank (1st for White, 8th for Black) becomes a mating net when the king cannot flee sideways. Find the move that delivers or threatens the back-rank checkmate. }
+
+ *
+
+
+[Event "Tactics: Back-rank: Which Rook?"]
+[Date "2020.04.02"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Tactics: Back-rank"]
+[ChapterName "Which Rook?"]
+[ChapterURL "https://lichess.org/study/GxOEyGDh/hFGYdqXF"]
+[Annotator "https://lichess.org/@/silurianblue"]
+[FEN "3r3r/pp3pk1/4p1p1/8/Q7/2P3P1/PP3P2/K7 b - - 0 1"]
+[SetUp "1"]
+[UTCDate "2020.04.02"]
+[UTCTime "13:25:48"]
+
+ *
+
+
+[Event "Tactics: Back-rank: Her Majesty"]
+[Date "2020.04.02"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Tactics: Back-rank"]
+[ChapterName "Her Majesty"]
+[ChapterURL "https://lichess.org/study/GxOEyGDh/Wk913nHT"]
+[Annotator "https://lichess.org/@/silurianblue"]
+[FEN "6k1/p2r1ppp/8/8/5Q2/2P3P1/3R1PKP/q7 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2020.04.02"]
+[UTCTime "13:35:50"]
+
+ *
+
+
+[Event "Tactics: Back-rank: Overloaded Rook"]
+[Date "2020.04.02"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Tactics: Back-rank"]
+[ChapterName "Overloaded Rook"]
+[ChapterURL "https://lichess.org/study/GxOEyGDh/wvy4i6r1"]
+[Annotator "https://lichess.org/@/silurianblue"]
+[FEN "1r4k1/3r1ppp/8/8/8/8/3R1PPP/3R2K1 b - - 0 1"]
+[SetUp "1"]
+[UTCDate "2020.04.02"]
+[UTCTime "13:31:29"]
+
+ *
+
+
+[Event "Tactics: Back-rank: The Power of Doubled Rooks"]
+[Date "2020.04.02"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Tactics: Back-rank"]
+[ChapterName "The Power of Doubled Rooks"]
+[ChapterURL "https://lichess.org/study/GxOEyGDh/6aEGpQVw"]
+[Annotator "https://lichess.org/@/silurianblue"]
+[FEN "1r4k1/1r3ppp/4p3/8/P1p1P3/6P1/3R1PKP/3R4 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2020.04.02"]
+[UTCTime "13:36:31"]
+
+ *
+
+
+[Event "Tactics: Back-rank: Flight Square?"]
+[Date "2020.04.02"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Tactics: Back-rank"]
+[ChapterName "Flight Square?"]
+[ChapterURL "https://lichess.org/study/GxOEyGDh/DF6uBylE"]
+[Annotator "https://lichess.org/@/silurianblue"]
+[FEN "6k1/1br1pp1p/6p1/8/P7/6P1/1R3P1P/6K1 b - - 0 1"]
+[SetUp "1"]
+[UTCDate "2020.04.02"]
+[UTCTime "13:43:40"]
+
+ *
+
+
+[Event "Tactics: Back-rank: Everything is Attacked!"]
+[Date "2020.04.02"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Tactics: Back-rank"]
+[ChapterName "Everything is Attacked!"]
+[ChapterURL "https://lichess.org/study/GxOEyGDh/jHYiIGgj"]
+[Annotator "https://lichess.org/@/silurianblue"]
+[FEN "6k1/4rpp1/p6p/1p6/4Q2P/8/PPPR1qP1/1K6 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2020.04.02"]
+[UTCTime "14:39:49"]
+
+ *
+
+
+[Event "Tactics: Back-rank: Material is Not Important"]
+[Date "2020.04.02"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Tactics: Back-rank"]
+[ChapterName "Material is Not Important"]
+[ChapterURL "https://lichess.org/study/GxOEyGDh/Zbu2iqFg"]
+[Annotator "https://lichess.org/@/silurianblue"]
+[FEN "3r2k1/1p3pp1/p2q3p/8/7Q/8/P4PPP/2R3K1 b - - 0 1"]
+[SetUp "1"]
+[UTCDate "2020.04.02"]
+[UTCTime "14:42:08"]
+
+ *
+
+
+[Event "Tactics: Back-rank: The King Controls the Key Square"]
+[Date "2020.04.02"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Tactics: Back-rank"]
+[ChapterName "The King Controls the Key Square"]
+[ChapterURL "https://lichess.org/study/GxOEyGDh/cqYZqKqE"]
+[Annotator "https://lichess.org/@/silurianblue"]
+[FEN "1r3k2/p4ppp/8/3q4/8/6P1/1P2QP1P/4R1K1 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2020.04.02"]
+[UTCTime "14:43:48"]
+
+ *
+
+
+[Event "Tactics: Back-rank: Thorn Pawn"]
+[Date "2020.04.02"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Tactics: Back-rank"]
+[ChapterName "Thorn Pawn"]
+[ChapterURL "https://lichess.org/study/GxOEyGDh/xjhOgFi6"]
+[Annotator "https://lichess.org/@/silurianblue"]
+[FEN "r7/5kpp/5p2/7P/p7/1P4Q1/PKPqRPP1/8 b - - 0 1"]
+[SetUp "1"]
+[UTCDate "2020.04.02"]
+[UTCTime "14:47:19"]
+
+ *
+
+
+[Event "Tactics: Back-rank: Variation on an Earlier Idea"]
+[Date "2020.04.02"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Tactics: Back-rank"]
+[ChapterName "Variation on an Earlier Idea"]
+[ChapterURL "https://lichess.org/study/GxOEyGDh/ryNElnj0"]
+[Annotator "https://lichess.org/@/silurianblue"]
+[FEN "k3q3/p3r1p1/P4p2/8/7p/1P5Q/PKP1RPP1/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2020.04.02"]
+[UTCTime "14:49:17"]
+
+ *
+
+
+[Event "Tactics: Back-rank: Counting"]
+[Date "2020.04.02"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Tactics: Back-rank"]
+[ChapterName "Counting"]
+[ChapterURL "https://lichess.org/study/GxOEyGDh/3ohidyZ7"]
+[Annotator "https://lichess.org/@/silurianblue"]
+[FEN "4r3/p3rkp1/P3qp2/8/2P5/1P6/2Q2PPP/2RR2K1 b - - 0 1"]
+[SetUp "1"]
+[UTCDate "2020.04.02"]
+[UTCTime "14:51:42"]
+
+ *
+
+
+[Event "Tactics: Back-rank: Removing the Defender"]
+[Date "2020.04.02"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Tactics: Back-rank"]
+[ChapterName "Removing the Defender"]
+[ChapterURL "https://lichess.org/study/GxOEyGDh/e5ukpBdj"]
+[Annotator "https://lichess.org/@/silurianblue"]
+[FEN "6k1/2r2ppp/1p6/pP6/Pb6/6P1/2r2PBP/1R1R2K1 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2020.04.02"]
+[UTCTime "14:56:27"]
+
+ *
+
+
+[Event "Tactics: Back-rank: Finale"]
+[Date "2020.04.02"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Tactics: Back-rank"]
+[ChapterName "Finale"]
+[ChapterURL "https://lichess.org/study/GxOEyGDh/dIlSgavj"]
+[Annotator "https://lichess.org/@/silurianblue"]
+[FEN "5rk1/p5pp/2pb1q2/Q2p4/P7/3R3P/1PP3P1/3R2K1 b - - 0 1"]
+[SetUp "1"]
+[UTCDate "2020.04.02"]
+[UTCTime "15:02:11"]
+
+ *
+
+
