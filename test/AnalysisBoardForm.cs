@@ -114,6 +114,7 @@ namespace ChessDroid
         }
         [DllImport("user32.dll")] private static extern bool GetComboBoxInfo(IntPtr hwnd, ref COMBOBOXINFO pcbi);
         [DllImport("user32.dll")] private static extern int SendMessage(IntPtr hWnd, int msg, int wParam, int lParam);
+        [DllImport("user32.dll")] private static extern IntPtr GetFocus();
         private const int LB_GETCURSEL = 0x0188;
         private string _hoverPreviewSaved = "";
         private int    _pieceSavedIndex = -1;
@@ -1784,7 +1785,8 @@ namespace ChessDroid
         private void AnalysisBoardForm_KeyDown(object? sender, KeyEventArgs e)
         {
             // Arrow keys and Home/End are handled in ProcessCmdKey
-            if (e.KeyCode == Keys.Back && ActiveControl is not (TextBox or NumericUpDown or RichTextBox or ComboBox))
+            var focused = Control.FromHandle(GetFocus());
+            if (e.KeyCode == Keys.Back && focused is not (TextBox or NumericUpDown or RichTextBox or ComboBox))
             {
                 BtnTakeBack_Click(sender, e);
                 e.Handled = true;
