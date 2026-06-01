@@ -1364,7 +1364,8 @@ namespace ChessDroid
         private void BtnCopyFen_Click(object? sender, EventArgs e)
         {
             string fen = boardControl.GetFEN();
-            Clipboard.SetText(fen);
+            try { Clipboard.SetText(fen); }
+            catch { Clipboard.SetDataObject(fen, true); }
             lblStatus.Text = "FEN copied to clipboard";
         }
 
@@ -2556,10 +2557,19 @@ namespace ChessDroid
             matchRunning = running;
 
             // Disable/enable game controls
-            btnNewGame.Enabled = !running;
-            btnTakeBack.Enabled = !running;
-            btnLoadFen.Enabled = !running;
-            btnPlayBot.Enabled = !running;
+            btnNewGame.Enabled        = !running;
+            btnTakeBack.Enabled       = !running;
+            btnLoadFen.Enabled        = !running;
+            btnPlayBot.Enabled        = !running;
+            btnImportPgn.Enabled      = !running;
+            btnExportPgn.Enabled      = !running;
+            btnSaveToLibrary.Enabled  = !running;
+            btnOpenLibrary.Enabled    = !running;
+            btnOpenings.Enabled       = !running;
+            btnClassifyMoves.Enabled  = !running;
+            btnSettings.Enabled       = !running;
+            btnTraining.Enabled       = !running;
+            btnTournament.Enabled     = !running;
             boardControl.InteractionEnabled = !running;
 
             // Match controls
