@@ -82,6 +82,7 @@ namespace ChessDroid
         private string _seriesEng1File = "";
         private string _seriesEng2File = "";
         private string _seriesCurrentWhiteFile = "";
+        private string _seriesStartFen = "";
         private OpeningEntry? _matchBookOpening;
         // Overlay labels on top/bottom material strips showing engine name + ELO during a match
         private Label _lblBlackEngineInfo = null!;
@@ -1904,6 +1905,7 @@ namespace ChessDroid
                 boardControl.ResetBoard();
                 startFen = boardControl.GetFEN();
             }
+            _seriesStartFen = startFen; // remember for game 2+ in a series
             // Opening book injection (only from standard start, not custom position)
             bool bookReady = chkUseBook.Checked && !chkFromPosition.Checked &&
                              (rbBookChoose.Checked ? _matchBookOpening != null : openingBookService?.IsLoaded == true);
@@ -2389,9 +2391,9 @@ namespace ChessDroid
                         tc.IncrementMs = (int)numIncrement.Value * 1000;                                            break;
             }
 
-            boardControl.ResetBoard();
-            string startFen = boardControl.GetFEN();
-            bool bookReady = chkUseBook.Checked &&
+            string startFen = _seriesStartFen;
+            boardControl.LoadFEN(startFen);
+            bool bookReady = chkUseBook.Checked && !chkFromPosition.Checked &&
                              (rbBookChoose.Checked ? _matchBookOpening != null : openingBookService?.IsLoaded == true);
             bool chooseMode = bookReady && rbBookChoose.Checked && _matchBookOpening != null;
             if (bookReady) startFen = GetBookStartFen(startFen);
