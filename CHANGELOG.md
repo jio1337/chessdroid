@@ -7,6 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [3.17.0] - 2026-06-01
+
+### Added
+- **Tournament Mode** — simultaneous engine-vs-engine matches on a live 2×2 board grid. Round-robin (auto-generates all N×(N-1)/2 pairings) and Manual (up to 4 custom pairs) modes. Click any board to expand it for eval bar + move log. Live standings table (Score/W/D/L/Games). Overflow pairings queue and start as slots free. Full PGN auto-saved on completion. Launched via 🏆 button.
+- **Engine Match series** — play N games per match with color swap each game. Auto-adjudication when advantage is decisive. Compact score label. Opening book: Random (weighted Polyglot, 6 plies) or Choose (ECO `OpeningExplorerDialog`). PGN auto-saved with engine names, eval, and time annotations per move.
+- **Endgame & Tactics Drills** — PGN-based position library in `Drills/` folder (renamed from `Endgames/`). Ships 10 PGN files: 01 Pins, 02 Back-rank (14ch), 03 Forks (18ch), 04 Discovered (5ch), 05 Checkmates (38ch), 06 Beginner Endgames (21ch), 07 Intermediate Endgames (25ch), 08 Advanced Endgames (27ch), 09 More Endgames (22ch), 10 Rook Database (28 GM positions). All prefixed for alphabetical load order. Hover preview, scrollable description, auto-flip.
+- **Drill educational descriptions** — all chapters have 2–4 sentence descriptions covering technique, key idea, and game attribution. Researched by two independent agents per chapter and verified by a blind final fact-check pass.
+- **Practice vs Bot from drills** — load drill FEN and play the active side against the engine (always Challenge mode). `BotSettingsDialog` hides irrelevant groups in drill context. Drill controls locked during play.
+- **Watch Engines from drills** — two engines play the drill position at 60+0 TC with threefold detection.
+- **Bot mode Elo targeting** — replaced Level 1–20 slider with direct Elo input (1320–3190) + Beginner/Club/Advanced/Expert presets. Uses `UCI_LimitStrength + UCI_Elo` for SF9+; older engines silently fall back to mapped Skill Level.
+- **Bot draw detection** — threefold repetition, insufficient material (KvK / K+minor vs K), 50-move rule. `_botPositionCounts` dict, `CheckBotDrawConditions` called after every move. Works in regular bot mode and drill Practice vs Bot.
+- **Precise (!) move quality** — new tier between Brilliant and Best. Assigned when the player played the single only-good move. Steel blue color. Context-aware text: "⚡ only saving move" or "⚡ only winning move". Round-trips through PGN via `{ [+X.XX] Precise }` comment + `$1` NAG.
+- **Daily Puzzle sub-mode** — date-seeded, same puzzle all day, consecutive-day streak tracking (persisted to `config.DailyPuzzleLastSolvedDate/Streak/BestStreak`).
+- **Puzzle by Opening filter** — 22 curated openings, `StartsWith` matching on `OpeningTags` column (Training sub-mode only).
+- **Puzzle rating range filter** — Any / Beginner (<1200) / Intermediate (1400–1800) / Advanced (1800–2200) / Master (2200+). Range label shown next to the 5 filter buttons.
+- **Multi-game PGN picker** — `PgnGamePickerDialog` splits multi-game PGN files and presents a ListView with #/White/Black/Result/Moves/Date/Event columns. Single-game files bypass it entirely.
+- **`ChessNotationService` static helpers** — `ConvertSanToUci(san, fen)` and `GetFenAfterSanMoves(sanMoves)` for the SAN→UCI→FEN pipeline used by tournament Choose opening mode.
+
+### Changed
+- **Analysis output overhaul** — eval displayed first in color (lime dark / forest green light), bold, underlined, clickable (loads PV into move tree). "Best line:" / "Second best:" labels removed. Lines truncated to 10 half-moves with expandable "..." inline. Blank lines between entries removed.
+- **"Only winning move" threshold** — `swingTrigger` widened to ±0.70 (from 0.0) in both `AnalysisBoardForm` and `ConsoleOutputFormatter`. Catches large eval drops where second-best is still slightly in winner's favor.
+- **nearDrawTrigger** — "only saving move" fires when |bestEval| ≤ 0.50 AND second ≥ 2.0, catching barely-drawing moves like Ke5 (+0.07 vs Kf6 +4.23).
+- **Drill chapter combobox** — shows `Ch.N:` prefix for all chapters; lookup by index not name.
+- **Engine Match panel** — hidden by default behind ⚔ toggle button; mutually exclusive with Training panel.
+- **Explanation settings** — `ExplanationFormatter.LoadFromConfig` now called at startup and after every settings dialog close. All four toggles (Tactical, Positional, Endgame, Opening Principles) correctly apply.
+- **Backspace take-back guard** — uses Win32 `GetFocus()` instead of `ActiveControl` to correctly detect focus inside nested NumericUpDown controls (e.g. engine match time control fields).
+- **Tournament setup** — form compacted from 480×540 to 360×510; Start Tournament button moved up 35px.
+
+### Fixed
+- **Bot move sound** — bot moves were silent; only player moves played sound. Both now play correctly.
+- **Green moves on PGN/library load** — unannotated moves were defaulting to `MoveQuality.Best` (lime green) during annotation rebuild. Fixed by skipping moves where both NAG and comment are empty.
+- **Lucena Position** — replaced broken FEN (defending king g7 too close, Rg4 bridge refuted by Rb8+!) with canonical Wikipedia example. Correct bridge: `Rd1+ Ke7 Rd4!`.
+- **Philidor typo** — "Philodor" corrected in both `[ChapterName]` and `[Event]` PGN headers.
+- **Drill tab on Stop Practice** — Stop Practice no longer resets to Square tab; `ApplyTrainingTheme` checks `_drillModeSelected` first in mode detection chain.
+- **Bot drill side** — `DrillPracticeAsync` now uses `botMovesFirst = BotPlaysWhite == chapter.WhiteToMove`; fixes positions where it's Black to move (e.g. Philidor).
+- **ParseEvalCp** — `EngineMatchService.ParseEvalCp` handles both `#N`/`#-N` and `"Mate in N"` formats from `StreamPositionEvalAsync`. Previously silently dropped mate evals, delaying adjudication.
+- **`ShowMoveQuality` gate** — Brilliant detection and `isOnlyWinningMove` computation now correctly gated on `config?.ShowMoveQuality == true`.
+- **Multiple drill description corrections** — Ch3 (lateral checking defense, not Philidor), Ch6 Karstedt (defining move clarified), Ch7 Rook Endgames-3 (long-side defense rewrite), Ch8 Lobron-Knaak (attribution — Lobron not Labron, 1992 not 1922), Ch9 Dreev-Beliavsky (Black is winning, not defending), Ch10 Larsen-Tal (drawing lines corrected), Ch11 Umbrella Velicka-Polak (full rewrite with Dvoretsky attribution), and more. Three errors caught by independent blind fact-check: Ch5 Philidor rank, Ch6 'preventing advance', Ch11 Dvoretsky IM not GM.
+
+---
+
 ## [3.16.0] - 2026-05-26
 
 ### Added

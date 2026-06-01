@@ -1,4 +1,4 @@
-## chessdroid v3.16.0 — User Guide
+## chessdroid v3.17.0 — User Guide
 
 ### Welcome to chessdroid!
 
@@ -367,7 +367,17 @@ Create a folder in `Templates/` with 12 PNG files (wK, wQ, wR, wB, wN, wP, bK, b
 
 ## Version History
 
-**v3.16.0** — Training Grounds (Current)
+**v3.17.0** — The Arena (Current)
+- Tournament Mode: simultaneous engine matches, 2×2 live board grid, round-robin/manual pairing, live standings, PGN auto-save
+- Engine Match series with adjudication, opening book (Random/Choose), PGN auto-save with eval annotations
+- Endgame & Tactics Drills: 10 PGN files, all chapters with researched descriptions, Practice vs Bot, Watch Engines
+- Bot Elo targeting (1320–3190 + presets), draw detection (threefold/insufficient material/50-move rule)
+- Analysis output overhaul: clickable eval, 10-ply truncation + expandable "...", no blank lines
+- Precise (!) move quality — the only winning/saving move
+- Daily Puzzle sub-mode, Puzzle by Opening filter, Rating range filter
+- Multi-game PGN picker, Drills folder expanded to 10 PGN files
+
+**v3.16.0** — Training Grounds
 - Puzzle Training (5.94M Lichess puzzles), Puzzle Rush, Puzzle Gauntlet, Board Vision (Timed + Survival)
 - Persistent streaks, accuracy %, personal bests shown before each run, per-section reset links
 - Monochromatic board theme, training mode icons, lowercase chessdroid branding
@@ -546,5 +556,5 @@ chessdroid is released under the MIT License. Free and open-source forever!
 
 **Enjoy analyzing with chessdroid!**
 
-*Last Updated: 2026-05-26*
-*Version: 3.16.0*
+*Last Updated: 2026-06-01*
+*Version: 3.17.0*
