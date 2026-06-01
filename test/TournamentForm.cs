@@ -79,8 +79,8 @@ namespace ChessDroid
             _engineBasePath = config.GetEnginesPath();
 
             Text            = "chessdroid://tournament";
-            Size            = new Size(480, 540);
-            MinimumSize     = new Size(400, 380);
+            Size            = new Size(360, 510);
+            MinimumSize     = new Size(330, 380);
             StartPosition   = FormStartPosition.CenterParent;
             BackColor       = Color.FromArgb(25, 25, 25);
             ForeColor       = Color.FromArgb(220, 220, 220);
@@ -110,7 +110,7 @@ namespace ChessDroid
             _lstRREngines = new CheckedListBox
             {
                 Location      = new Point(20, 132),
-                Size          = new Size(280, 130),
+                Size          = new Size(255, 130),
                 BackColor     = Color.FromArgb(40, 40, 40),
                 ForeColor     = Color.FromArgb(220, 220, 220),
                 BorderStyle   = BorderStyle.FixedSingle,
@@ -238,7 +238,7 @@ namespace ChessDroid
             _btnStart = new Button
             {
                 Text      = "▶  Start Tournament",
-                Location  = new Point(20, 460),
+                Location  = new Point(20, 425),
                 Size      = new Size(190, 34),
                 BackColor = Color.FromArgb(60, 120, 60),
                 ForeColor = Color.White,
