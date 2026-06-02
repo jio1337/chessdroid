@@ -1262,64 +1262,40 @@ namespace ChessDroid.Services
         /// </summary>
         private static bool HasMateInOne(ChessBoard board, bool weAreWhite)
         {
-            // Find enemy king
-            char enemyKing = weAreWhite ? 'k' : 'K';
-            int kingRow = -1, kingCol = -1;
-            for (int r = 0; r < 8; r++)
-            {
-                for (int c = 0; c < 8; c++)
-                {
-                    if (board.GetPiece(r, c) == enemyKing)
-                    {
-                        kingRow = r;
-                        kingCol = c;
-                        break;
-                    }
-                }
-                if (kingRow >= 0) break;
-            }
+            var (kingRow, kingCol) = board.GetKingPosition(!weAreWhite);
             if (kingRow < 0) return false;
 
-            // Try all our pieces and all possible moves
-            for (int srcR = 0; srcR < 8; srcR++)
-            {
-                for (int srcC = 0; srcC < 8; srcC++)
+            // Pre-build our piece list (~8-16 pieces vs 64 square scan per call)
+            var ourPieces = new List<(int r, int c, char p)>(16);
+            for (int r0 = 0; r0 < 8; r0++)
+                for (int c0 = 0; c0 < 8; c0++)
                 {
-                    char piece = board.GetPiece(srcR, srcC);
-                    if (piece == '.') continue;
+                    char p0 = board.GetPiece(r0, c0);
+                    if (p0 != '.' && char.IsUpper(p0) == weAreWhite)
+                        ourPieces.Add((r0, c0, p0));
+                }
 
-                    bool pieceIsWhite = char.IsUpper(piece);
-                    if (pieceIsWhite != weAreWhite) continue; // Not our piece
-
-                    // Try all destination squares
-                    for (int destR = 0; destR < 8; destR++)
+            foreach (var (srcR, srcC, piece) in ourPieces)
+            {
+                for (int destR = 0; destR < 8; destR++)
+                {
+                    for (int destC = 0; destC < 8; destC++)
                     {
-                        for (int destC = 0; destC < 8; destC++)
-                        {
-                            if (srcR == destR && srcC == destC) continue;
+                        if (srcR == destR && srcC == destC) continue;
 
-                            // Check if this is a valid move
-                            if (!CanMakeMove(board, srcR, srcC, destR, destC, piece, weAreWhite))
-                                continue;
+                        if (!CanMakeMove(board, srcR, srcC, destR, destC, piece, weAreWhite))
+                            continue;
 
-                            // Simulate the move
-                            using var pooled = BoardPool.Rent(board);
-                            ChessBoard afterMove = pooled.Board;
-                            afterMove.SetPiece(srcR, srcC, '.');
-                            afterMove.SetPiece(destR, destC, piece);
+                        using var pooled = BoardPool.Rent(board);
+                        ChessBoard afterMove = pooled.Board;
+                        afterMove.SetPiece(srcR, srcC, '.');
+                        afterMove.SetPiece(destR, destC, piece);
 
-                            // Handle pawn promotion (assume queen)
-                            if (char.ToUpper(piece) == 'P' && (destR == 0 || destR == 7))
-                            {
-                                afterMove.SetPiece(destR, destC, weAreWhite ? 'Q' : 'q');
-                            }
+                        if (char.ToUpper(piece) == 'P' && (destR == 0 || destR == 7))
+                            afterMove.SetPiece(destR, destC, weAreWhite ? 'Q' : 'q');
 
-                            // Check if this is checkmate
-                            if (IsCheckmate(afterMove, !weAreWhite))
-                            {
-                                return true;
-                            }
-                        }
+                        if (IsCheckmate(afterMove, !weAreWhite))
+                            return true;
                     }
                 }
             }
@@ -1333,17 +1309,20 @@ namespace ChessDroid.Services
         /// </summary>
         private static bool HasMateInTwo(ChessBoard board, bool weAreWhite)
         {
-            // Try all our moves (our first move)
-            for (int srcR = 0; srcR < 8; srcR++)
-            {
-                for (int srcC = 0; srcC < 8; srcC++)
+            // Pre-build piece lists to replace O(64) scans per iteration with O(n) piece lists
+            var ourPieces = new List<(int r, int c, char p)>(16);
+            var oppPieces = new List<(int r, int c, char p)>(16);
+            for (int r0 = 0; r0 < 8; r0++)
+                for (int c0 = 0; c0 < 8; c0++)
                 {
-                    char piece = board.GetPiece(srcR, srcC);
-                    if (piece == '.') continue;
+                    char p0 = board.GetPiece(r0, c0);
+                    if (p0 == '.') continue;
+                    if (char.IsUpper(p0) == weAreWhite) ourPieces.Add((r0, c0, p0));
+                    else oppPieces.Add((r0, c0, p0));
+                }
 
-                    bool pieceIsWhite = char.IsUpper(piece);
-                    if (pieceIsWhite != weAreWhite) continue;
-
+            foreach (var (srcR, srcC, piece) in ourPieces)
+            {
                     for (int destR = 0; destR < 8; destR++)
                     {
                         for (int destC = 0; destC < 8; destC++)
@@ -1366,22 +1345,8 @@ namespace ChessDroid.Services
                             if (IsCheckmate(afterOurMove, !weAreWhite))
                                 continue; // Skip, we want mate in 2, not 1
 
-                            // Check if opponent's king is in check - required for forcing sequence
-                            char enemyKing = weAreWhite ? 'k' : 'K';
-                            int kingRow = -1, kingCol = -1;
-                            for (int r = 0; r < 8; r++)
-                            {
-                                for (int c = 0; c < 8; c++)
-                                {
-                                    if (afterOurMove.GetPiece(r, c) == enemyKing)
-                                    {
-                                        kingRow = r;
-                                        kingCol = c;
-                                        break;
-                                    }
-                                }
-                                if (kingRow >= 0) break;
-                            }
+                            // Use cached king position — SetPiece maintains the cache
+                            var (kingRow, kingCol) = afterOurMove.GetKingPosition(!weAreWhite);
 
                             bool givesCheck = kingRow >= 0 &&
                                 ChessUtilities.IsSquareAttackedBy(afterOurMove, kingRow, kingCol, weAreWhite);
@@ -1389,19 +1354,17 @@ namespace ChessDroid.Services
                             // Only consider checking moves for forced mate in 2
                             if (!givesCheck) continue;
 
+                            // Opponent pieces after our move: same as oppPieces minus any piece we captured
+                            bool weCaptured = board.GetPiece(destR, destC) != '.' &&
+                                              char.IsUpper(board.GetPiece(destR, destC)) != weAreWhite;
+
                             // Try all opponent responses
                             bool allResponsesLeadToMate = true;
                             bool hasLegalResponse = false;
 
-                            for (int oppSrcR = 0; oppSrcR < 8; oppSrcR++)
+                            foreach (var (oppSrcR, oppSrcC, oppPiece) in oppPieces)
                             {
-                                for (int oppSrcC = 0; oppSrcC < 8; oppSrcC++)
-                                {
-                                    char oppPiece = afterOurMove.GetPiece(oppSrcR, oppSrcC);
-                                    if (oppPiece == '.') continue;
-
-                                    bool oppIsWhite = char.IsUpper(oppPiece);
-                                    if (oppIsWhite == weAreWhite) continue; // Not opponent's piece
+                                    if (weCaptured && oppSrcR == destR && oppSrcC == destC) continue; // captured
 
                                     for (int oppDestR = 0; oppDestR < 8; oppDestR++)
                                     {
@@ -1440,8 +1403,6 @@ namespace ChessDroid.Services
                                         if (!allResponsesLeadToMate) break;
                                     }
                                     if (!allResponsesLeadToMate) break;
-                                }
-                                if (!allResponsesLeadToMate) break;
                             }
 
                             // If all legal responses lead to mate in 1, we have mate in 2
@@ -1449,7 +1410,6 @@ namespace ChessDroid.Services
                                 return true;
                         }
                     }
-                }
             }
 
             return false;
@@ -1477,22 +1437,8 @@ namespace ChessDroid.Services
         /// </summary>
         private static bool IsCheckmate(ChessBoard board, bool kingIsWhite)
         {
-            // Find the king
             char king = kingIsWhite ? 'K' : 'k';
-            int kingRow = -1, kingCol = -1;
-            for (int r = 0; r < 8; r++)
-            {
-                for (int c = 0; c < 8; c++)
-                {
-                    if (board.GetPiece(r, c) == king)
-                    {
-                        kingRow = r;
-                        kingCol = c;
-                        break;
-                    }
-                }
-                if (kingRow >= 0) break;
-            }
+            var (kingRow, kingCol) = board.GetKingPosition(kingIsWhite);
             if (kingRow < 0) return false;
 
             // King must be in check
