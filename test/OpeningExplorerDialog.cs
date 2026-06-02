@@ -126,11 +126,13 @@ namespace ChessDroid
             btnClose.Click += (_, __) => Close();
 
             // Layout buttons at bottom-right
-            this.Resize += (_, __) =>
+            void PositionButtons()
             {
                 btnClose.Location = new Point(ClientSize.Width - btnClose.Width - 10, ClientSize.Height - btnClose.Height - 10);
                 btnLoad.Location  = new Point(btnClose.Left - btnLoad.Width - 8, btnClose.Top);
-            };
+            }
+            this.Load   += (_, __) => PositionButtons();
+            this.Resize += (_, __) => PositionButtons();
 
             Controls.AddRange(new Control[] { lblSearch, txtSearch, grid, lblMoves, btnLoad, btnClose });
             AcceptButton = btnLoad;
