@@ -313,6 +313,9 @@ namespace ChessDroid.Services
         /// </summary>
         private static void DetectRealHangingPieces(ChessBoard board, bool attackerIsWhite, List<Threat> threats)
         {
+            // Build attack map once — IsSquareAttacked is O(1) HashSet lookup vs O(64) scan each call
+            var cache = new BoardCache(board);
+
             for (int r = 0; r < 8; r++)
             {
                 for (int c = 0; c < 8; c++)
@@ -325,12 +328,11 @@ namespace ChessDroid.Services
                     // Look for enemy pieces (that we attack)
                     if (pieceIsWhite == attackerIsWhite) continue;
 
-                    // Check if this piece is attacked by us
-                    bool isAttacked = IsSquareAttackedBy(board, r, c, attackerIsWhite);
+                    // O(1) HashSet lookup instead of O(64) board scan
+                    bool isAttacked = cache.IsSquareAttacked(r, c, attackerIsWhite);
                     if (!isAttacked) continue;
 
-                    // Check if it's defended
-                    bool isDefended = IsSquareAttackedBy(board, r, c, !attackerIsWhite);
+                    bool isDefended = cache.IsSquareAttacked(r, c, !attackerIsWhite);
 
                     PieceType pieceType = PieceHelper.GetPieceType(piece);
                     int pieceValue = ChessUtilities.GetPieceValue(pieceType);
@@ -415,8 +417,17 @@ namespace ChessDroid.Services
                     }
                     else if (pieceValue >= 3)
                     {
-                        // Piece is defended - check if we can win material via lower-value attacker
-                        int lowestAttackerValue = GetLowestAttackerValue(board, r, c, attackerIsWhite);
+                        // Piece is defended — find cheapest attacker using cached piece list (~8 pieces vs 64 squares)
+                        int lowestAttackerValue = int.MaxValue;
+                        foreach (var (ar, ac, ap) in cache.GetPieces(attackerIsWhite))
+                        {
+                            if (ChessUtilities.CanAttackSquare(board, ar, ac, ap, r, c))
+                            {
+                                int v = ChessUtilities.GetPieceValue(PieceHelper.GetPieceType(ap));
+                                if (v < lowestAttackerValue) lowestAttackerValue = v;
+                            }
+                        }
+                        if (lowestAttackerValue == int.MaxValue) lowestAttackerValue = 0;
                         if (lowestAttackerValue > 0 && lowestAttackerValue < pieceValue)
                         {
                             // We can trade favorably, but only if piece can't escape
@@ -898,6 +909,18 @@ namespace ChessDroid.Services
 
             var (ourKingRow, ourKingCol) = board.GetKingPosition(movingPlayerIsWhite);
 
+            // Pre-build opponent non-king piece list once — replaces 64-square canCapture scan per candidate move
+            var oppNonKingPieces = new List<(int r, int c, char p)>(16);
+            for (int r0 = 0; r0 < 8; r0++)
+                for (int c0 = 0; c0 < 8; c0++)
+                {
+                    char p0 = board.GetPiece(r0, c0);
+                    if (p0 == '.') continue;
+                    if (char.IsUpper(p0) == movingPlayerIsWhite) continue;
+                    if (PieceHelper.GetPieceType(p0) == PieceType.King) continue;
+                    oppNonKingPieces.Add((r0, c0, p0));
+                }
+
             for (int r = 0; r < 8; r++)
             {
                 for (int c = 0; c < 8; c++)
@@ -958,17 +981,14 @@ namespace ChessDroid.Services
                             bool canBlock = ChessUtilities.CanBlockSlidingAttack(testBoard, kingRow, kingCol, !movingPlayerIsWhite);
                             if (canBlock) continue;
 
+                            // Check if any opponent non-king piece can recapture — use pre-built list (~8 pieces vs 64 squares)
                             bool canCapture = false;
-                            for (int dr = 0; dr < 8 && !canCapture; dr++)
-                                for (int dc = 0; dc < 8 && !canCapture; dc++)
-                                {
-                                    char defender = testBoard.GetPiece(dr, dc);
-                                    if (defender == '.') continue;
-                                    if (char.IsUpper(defender) == movingPlayerIsWhite) continue;
-                                    if (PieceHelper.GetPieceType(defender) == PieceType.King) continue;
-                                    if (ChessUtilities.CanAttackSquare(testBoard, dr, dc, defender, tr, tc))
-                                        canCapture = true;
-                                }
+                            foreach (var (dr, dc, def) in oppNonKingPieces)
+                            {
+                                if (dr == tr && dc == tc) continue; // captured by our move
+                                if (ChessUtilities.CanAttackSquare(testBoard, dr, dc, def, tr, tc))
+                                { canCapture = true; break; }
+                            }
 
                             if (!canCapture)
                             {
@@ -1458,18 +1478,26 @@ namespace ChessDroid.Services
             if (tr < 0 || tr > 7 || tc < 0 || tc > 7) return;
 
             var attackers = ChessUtilities.FindAttackers(board, tr, tc, attackerIsWhite);
-            var best = attackers
-                .Where(a =>
-                {
-                    using var pooledPin = BoardPool.Rent(board);
-                    ChessBoard testPin = pooledPin.Board;
-                    testPin.SetPiece(tr, tc, a.piece);
-                    testPin.SetPiece(a.row, a.col, '.');
-                    var (kr, kc) = testPin.GetKingPosition(attackerIsWhite);
-                    return kr < 0 || !ChessUtilities.IsSquareAttackedBy(testPin, kr, kc, !attackerIsWhite);
-                })
-                .OrderBy(a => ChessUtilities.GetPieceValue(PieceHelper.GetPieceType(a.piece)))
-                .FirstOrDefault();
+
+            // Find cheapest non-pinned attacker without LINQ allocations
+            (int row, int col, char piece) best = default;
+            int bestValue = int.MaxValue;
+            foreach (var a in attackers)
+            {
+                int v = ChessUtilities.GetPieceValue(PieceHelper.GetPieceType(a.piece));
+                if (v >= bestValue) continue; // already have a cheaper piece, skip pin check
+
+                using var pooledPin = BoardPool.Rent(board);
+                ChessBoard testPin = pooledPin.Board;
+                testPin.SetPiece(tr, tc, a.piece);
+                testPin.SetPiece(a.row, a.col, '.');
+                var (kr, kc) = testPin.GetKingPosition(attackerIsWhite);
+                if (kr >= 0 && ChessUtilities.IsSquareAttackedBy(testPin, kr, kc, !attackerIsWhite))
+                    continue; // pinned
+
+                best = a;
+                bestValue = v;
+            }
 
             if (best.piece != default)
                 arrows.Add((best.row, best.col, tr, tc));
