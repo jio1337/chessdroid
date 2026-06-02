@@ -71,6 +71,10 @@ namespace ChessDroid.Controls
 
         // Visual FX
         private bool _gradientBoard    = false;
+        private Bitmap? _gradientLightBitmap;
+        private Bitmap? _gradientDarkBitmap;
+        private Bitmap? _glowWhiteBitmap;
+        private Bitmap? _glowBlackBitmap;
         private bool _vignetteEnabled  = false;
         private int  _vignetteAlpha    = 110;
         private bool _pieceGlowEnabled = false;
@@ -154,6 +158,8 @@ namespace ChessDroid.Controls
         // Cached GDI+ objects for OnPaint — reused every frame, color updated before each use
         private readonly SolidBrush _paintBrush = new SolidBrush(Color.Black);
         private readonly Pen _legalMovePen = new Pen(Color.Black, 3);
+        private readonly Pen _arrowPen = new Pen(Color.Black, 1f) { EndCap = System.Drawing.Drawing2D.LineCap.ArrowAnchor };
+        private readonly Pen _gridPen  = new Pen(Color.FromArgb(160, 160, 160), 1f);
 
         /// <summary>
         /// When false, disables mouse interaction (for engine-vs-engine matches).
@@ -188,10 +194,28 @@ namespace ChessDroid.Controls
             else { _rainbowTimer.Stop(); Invalidate(); }
         }
 
-        public bool GradientBoard    { get => _gradientBoard;    set { _gradientBoard    = value; Invalidate(); } }
+        public bool GradientBoard
+        {
+            get => _gradientBoard;
+            set
+            {
+                _gradientBoard = value;
+                if (value && _lastScaledSquareSize > 0) RegenerateGradientBitmaps(_lastScaledSquareSize);
+                Invalidate();
+            }
+        }
         public bool VignetteEnabled  { get => _vignetteEnabled;  set { _vignetteEnabled  = value; Invalidate(); } }
         public int  VignetteAlpha    { get => _vignetteAlpha;    set { _vignetteAlpha    = Math.Clamp(value, 0, 255); Invalidate(); } }
-        public bool PieceGlowEnabled { get => _pieceGlowEnabled; set { _pieceGlowEnabled = value; Invalidate(); } }
+        public bool PieceGlowEnabled
+        {
+            get => _pieceGlowEnabled;
+            set
+            {
+                _pieceGlowEnabled = value;
+                if (value && _lastScaledSquareSize > 0) RegenerateGlowBitmaps(_lastScaledSquareSize);
+                Invalidate();
+            }
+        }
 
         public bool  BoardFrameEnabled { get => _boardFrameEnabled; set { _boardFrameEnabled = value; Invalidate(); } }
         public int   BoardFrameWidth   { get => _boardFrameWidth;   set { _boardFrameWidth   = value; Invalidate(); } }
@@ -336,6 +360,51 @@ namespace ChessDroid.Controls
                 _scaledImages[kvp.Key] = bmp;
             }
             _lastScaledSquareSize = squareSize;
+
+            if (_gradientBoard)    RegenerateGradientBitmaps(squareSize);
+            if (_pieceGlowEnabled) RegenerateGlowBitmaps(squareSize);
+        }
+
+        private void RegenerateGradientBitmaps(int squareSize)
+        {
+            _gradientLightBitmap?.Dispose();
+            _gradientDarkBitmap?.Dispose();
+            _gradientLightBitmap = RenderGradientSquare(squareSize, lightSquareColor);
+            _gradientDarkBitmap  = RenderGradientSquare(squareSize, darkSquareColor);
+        }
+
+        private static Bitmap RenderGradientSquare(int size, Color color)
+        {
+            var bmp = new Bitmap(size, size, System.Drawing.Imaging.PixelFormat.Format32bppPArgb);
+            using var gfx = Graphics.FromImage(bmp);
+            var rect = new Rectangle(0, 0, size, size);
+            using var lgb = new System.Drawing.Drawing2D.LinearGradientBrush(
+                rect, LightenColor(color, 0.12f), DarkenColor(color, 0.12f), 45f);
+            gfx.FillRectangle(lgb, rect);
+            return bmp;
+        }
+
+        private void RegenerateGlowBitmaps(int squareSize)
+        {
+            _glowWhiteBitmap?.Dispose();
+            _glowBlackBitmap?.Dispose();
+            _glowWhiteBitmap = RenderGlowBitmap(squareSize, Color.FromArgb(255, 215, 0));
+            _glowBlackBitmap = RenderGlowBitmap(squareSize, Color.FromArgb(64, 144, 255));
+        }
+
+        private static Bitmap RenderGlowBitmap(int size, Color glowColor)
+        {
+            var bmp = new Bitmap(size, size, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+            using var gfx = Graphics.FromImage(bmp);
+            gfx.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+            var rect = new Rectangle(0, 0, size, size);
+            using var path = new System.Drawing.Drawing2D.GraphicsPath();
+            path.AddEllipse(rect);
+            using var pgb = new System.Drawing.Drawing2D.PathGradientBrush(path);
+            pgb.CenterColor    = Color.FromArgb(80, glowColor);
+            pgb.SurroundColors = new[] { Color.FromArgb(0, glowColor) };
+            gfx.FillEllipse(pgb, rect);
+            return bmp;
         }
 
         #region Public Properties
@@ -426,6 +495,7 @@ namespace ChessDroid.Controls
         {
             lightSquareColor = light;
             darkSquareColor = dark;
+            if (_gradientBoard && _lastScaledSquareSize > 0) RegenerateGradientBitmaps(_lastScaledSquareSize);
             Invalidate();
         }
 
@@ -874,9 +944,17 @@ namespace ChessDroid.Controls
                     // Draw square (gradient or flat)
                     if (_gradientBoard)
                     {
-                        using var lgb = new System.Drawing.Drawing2D.LinearGradientBrush(
-                            rect, LightenColor(squareColor, 0.12f), DarkenColor(squareColor, 0.12f), 45f);
-                        g.FillRectangle(lgb, rect);
+                        bool isBase = squareColor == (isLightSquare ? lightSquareColor : darkSquareColor);
+                        if (isBase && _gradientLightBitmap != null)
+                        {
+                            g.DrawImage(isLightSquare ? _gradientLightBitmap : _gradientDarkBitmap!, rect);
+                        }
+                        else
+                        {
+                            using var lgb = new System.Drawing.Drawing2D.LinearGradientBrush(
+                                rect, LightenColor(squareColor, 0.12f), DarkenColor(squareColor, 0.12f), 45f);
+                            g.FillRectangle(lgb, rect);
+                        }
                     }
                     else
                     {
@@ -914,15 +992,8 @@ namespace ChessDroid.Controls
                     {
                         if (_pieceGlowEnabled)
                         {
-                            Color glowColor = char.IsUpper(piece)
-                                ? Color.FromArgb(255, 215, 0)   // gold — white pieces
-                                : Color.FromArgb(64, 144, 255); // blue — black pieces
-                            using var path = new System.Drawing.Drawing2D.GraphicsPath();
-                            path.AddEllipse(rect);
-                            using var pgb = new System.Drawing.Drawing2D.PathGradientBrush(path);
-                            pgb.CenterColor    = Color.FromArgb(80, glowColor);
-                            pgb.SurroundColors = new[] { Color.FromArgb(0, glowColor) };
-                            g.FillEllipse(pgb, rect);
+                            var glowBmp = char.IsUpper(piece) ? _glowWhiteBitmap : _glowBlackBitmap;
+                            if (glowBmp != null) g.DrawImage(glowBmp, rect);
                         }
                         DrawPiece(g, piece, rect, squareSize);
                     }
@@ -979,12 +1050,11 @@ namespace ChessDroid.Controls
             // Monochrome grid lines
             if (_monochromeMode)
             {
-                using var gridPen = new Pen(Color.FromArgb(160, 160, 160), 1f);
                 for (int i = 1; i < 8; i++)
                 {
                     int px = frameOff + i * squareSize;
-                    g.DrawLine(gridPen, px, frameOff, px, frameOff + 8 * squareSize);
-                    g.DrawLine(gridPen, frameOff, px, frameOff + 8 * squareSize, px);
+                    g.DrawLine(_gridPen, px, frameOff, px, frameOff + 8 * squareSize);
+                    g.DrawLine(_gridPen, frameOff, px, frameOff + 8 * squareSize, px);
                 }
             }
 
@@ -1175,9 +1245,9 @@ namespace ChessDroid.Controls
             int y2 = frameOff + (isFlipped ? 7 - toRow   : toRow)   * squareSize + squareSize / 2;
 
             float lineWidth = squareSize * 0.22f;
-            using var pen = new Pen(color, lineWidth);
-            pen.EndCap = System.Drawing.Drawing2D.LineCap.ArrowAnchor;
-            g.DrawLine(pen, x1, y1, x2, y2);
+            _arrowPen.Color = color;
+            _arrowPen.Width = lineWidth;
+            g.DrawLine(_arrowPen, x1, y1, x2, y2);
         }
 
         private void DrawPiece(Graphics g, char piece, Rectangle rect, int squareSize)
@@ -2072,6 +2142,12 @@ namespace ChessDroid.Controls
                 _badgeFont?.Dispose();
                 _paintBrush.Dispose();
                 _legalMovePen.Dispose();
+                _arrowPen.Dispose();
+                _gridPen.Dispose();
+                _gradientLightBitmap?.Dispose();
+                _gradientDarkBitmap?.Dispose();
+                _glowWhiteBitmap?.Dispose();
+                _glowBlackBitmap?.Dispose();
                 foreach (var img in pieceImages.Values) img?.Dispose();
                 pieceImages.Clear();
                 foreach (var bmp in _scaledImages.Values) bmp?.Dispose();

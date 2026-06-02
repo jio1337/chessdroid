@@ -734,7 +734,8 @@ namespace ChessDroid.Services
                 await SafeWriteLineAsync($"{UCI_CMD_SETOPTION} MultiPV value {multiPV}");
                 await SafeWriteLineAsync($"{UCI_CMD_POSITION} {ChessBoard.SanitizeFenForEngine(fen)}");
 
-                bool whiteToMove = fen.Split(' ') is { Length: > 1 } p && p[1] == "w";
+                int _spIdx = fen.IndexOf(' ');
+                bool whiteToMove = _spIdx >= 0 && _spIdx + 1 < fen.Length && fen[_spIdx + 1] == 'w';
 
                 State = EngineState.Analyzing;
                 await SafeWriteLineAsync($"go depth {maxDepth}");

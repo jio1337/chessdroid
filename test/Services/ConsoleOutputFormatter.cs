@@ -1,5 +1,6 @@
 using ChessDroid.Models;
 using System.Linq;
+using System.Runtime.InteropServices;
 
 namespace ChessDroid.Services
 {
@@ -173,8 +174,7 @@ namespace ChessDroid.Services
             if (!string.IsNullOrEmpty(pvUciLine))
             {
                 int markerStart = richTextBox.TextLength;
-                AppendTextWithFormat($"{evaluation}", richTextBox.BackColor, evalColor, FontStyle.Bold | FontStyle.Underline);
-                int markerLength = richTextBox.TextLength - markerStart;
+                int markerLength = AppendTextWithFormat($"{evaluation}", richTextBox.BackColor, evalColor, FontStyle.Bold | FontStyle.Underline);
                 _markers.Add(new ClickMarker { Start = markerStart, Length = markerLength, Action = ClickAction.InsertPv, PvUci = pvUciLine, Fen = completeFen });
             }
             else
@@ -190,7 +190,7 @@ namespace ChessDroid.Services
                 AppendTextWithFormat($" {truncated}{classificationSuffix} ", richTextBox.BackColor, headerForeColor, FontStyle.Bold);
                 int ellipsisStart = richTextBox.TextLength;
                 AppendTextWithFormat("...", richTextBox.BackColor, headerForeColor, FontStyle.Bold);
-                _markers.Add(new ClickMarker { Start = ellipsisStart, Length = richTextBox.TextLength - ellipsisStart, Action = ClickAction.ExpandLine, FullLine = remaining });
+                _markers.Add(new ClickMarker { Start = ellipsisStart, Length = 3, Action = ClickAction.ExpandLine, FullLine = remaining });
             }
             else
             {
@@ -396,16 +396,23 @@ namespace ChessDroid.Services
             return evaluation;
         }
 
+        [DllImport("user32.dll")]
+        private static extern IntPtr SendMessage(IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam);
+
+        private void SuspendDrawing() => SendMessage(richTextBox.Handle, 0x000B, IntPtr.Zero, IntPtr.Zero);
+        private void ResumeDrawing()  { SendMessage(richTextBox.Handle, 0x000B, new IntPtr(1), IntPtr.Zero); richTextBox.Refresh(); }
+
         /// <summary>
-        /// Appends text with specific formatting
+        /// Appends text with specific formatting. Returns the number of characters appended.
         /// </summary>
-        private void AppendTextWithFormat(string text, Color backColor, Color foreColor, FontStyle fontStyle)
+        private int AppendTextWithFormat(string text, Color backColor, Color foreColor, FontStyle fontStyle)
         {
             richTextBox.SelectionBackColor = backColor;
             richTextBox.SelectionColor = foreColor;
             richTextBox.SelectionFont = new Font(richTextBox.Font, fontStyle);
             richTextBox.AppendText(text);
             richTextBox.SelectionFont = new Font(richTextBox.Font, FontStyle.Regular);
+            return text.Length;
         }
 
         /// <summary>
@@ -1969,6 +1976,9 @@ namespace ChessDroid.Services
         /// </summary>
         public void DisplayClassificationSummary(MoveClassificationResult classification)
         {
+            SuspendDrawing();
+            try
+            {
             richTextBox.Clear();
             _markers.Clear();
             ResetBackground();
@@ -2025,18 +2035,18 @@ namespace ChessDroid.Services
                 // White count — right-aligned in 5 chars, underlined if clickable, dash if zero
                 string wDisplay = w > 0 ? w.ToString() : "—";
                 int wStart = richTextBox.TextLength;
-                AppendTextWithFormat($"{wDisplay,5}", back, w > 0 ? qColor : subtext, FontStyle.Regular);
+                int wLen = AppendTextWithFormat($"{wDisplay,5}", back, w > 0 ? qColor : subtext, FontStyle.Regular);
                 if (w > 0 && firstWhite?.Node != null)
-                    _markers.Add(new ClickMarker { Start = wStart, Length = richTextBox.TextLength - wStart, Action = ClickAction.NavigateToNode, Node = firstWhite.Node });
+                    _markers.Add(new ClickMarker { Start = wStart, Length = wLen, Action = ClickAction.NavigateToNode, Node = firstWhite.Node });
 
                 AppendTextWithFormat("  ", back, back, FontStyle.Regular);
 
                 // Black count — right-aligned in 5 chars, underlined if clickable, dash if zero
                 string bDisplay = b > 0 ? b.ToString() : "—";
                 int bStart = richTextBox.TextLength;
-                AppendTextWithFormat($"{bDisplay,5}", back, b > 0 ? qColor : subtext, FontStyle.Regular);
+                int bLen = AppendTextWithFormat($"{bDisplay,5}", back, b > 0 ? qColor : subtext, FontStyle.Regular);
                 if (b > 0 && firstBlack?.Node != null)
-                    _markers.Add(new ClickMarker { Start = bStart, Length = richTextBox.TextLength - bStart, Action = ClickAction.NavigateToNode, Node = firstBlack.Node });
+                    _markers.Add(new ClickMarker { Start = bStart, Length = bLen, Action = ClickAction.NavigateToNode, Node = firstBlack.Node });
 
                 richTextBox.AppendText("\n");
             }
@@ -2045,6 +2055,8 @@ namespace ChessDroid.Services
 
             richTextBox.SelectionStart = richTextBox.TextLength;
             richTextBox.ScrollToCaret();
+            }
+            finally { ResumeDrawing(); }
         }
 
         /// <summary>
@@ -2212,6 +2224,9 @@ namespace ChessDroid.Services
             // Validate required parameter - store in local var for null-state tracking
             string fen = completeFen ?? throw new ArgumentNullException(nameof(completeFen));
 
+            SuspendDrawing();
+            try
+            {
             Clear();
             _markers.Clear();
 
@@ -2220,8 +2235,8 @@ namespace ChessDroid.Services
             {
                 Color linkClr = GetThemeColor(Color.Cyan, Color.Blue);
                 int rStart = richTextBox.TextLength;
-                AppendTextWithFormat("[← Game Review]", richTextBox.BackColor, linkClr, FontStyle.Underline);
-                _markers.Add(new ClickMarker { Start = rStart, Length = richTextBox.TextLength - rStart, Action = ClickAction.ShowGameReview });
+                int rLen = AppendTextWithFormat("[← Game Review]", richTextBox.BackColor, linkClr, FontStyle.Underline);
+                _markers.Add(new ClickMarker { Start = rStart, Length = rLen, Action = ClickAction.ShowGameReview });
                 richTextBox.AppendText("\n");
             }
 
@@ -2529,6 +2544,8 @@ namespace ChessDroid.Services
             }
 
             ResetFormatting();
+            }
+            finally { ResumeDrawing(); }
         }
 
 
@@ -2566,11 +2583,15 @@ namespace ChessDroid.Services
         /// </summary>
         public void DisplayLiveLines(string fen, string evaluation, List<string> pvs, List<string> evals, WDLInfo? wdl, int depth)
         {
+            SuspendDrawing();
+            try
+            {
             Clear();
             _markers.Clear();
 
             bool isDark = ThemeService.IsDarkTheme(config?.Theme);
-            bool whiteToMove = fen.Split(' ') is { Length: > 1 } p && p[1] == "w";
+            int _si = fen.IndexOf(' ');
+            bool whiteToMove = _si >= 0 && _si + 1 < fen.Length && fen[_si + 1] == 'w';
             string side = whiteToMove ? "White" : "Black";
 
             // [← Game Review] link if a review is active
@@ -2578,8 +2599,8 @@ namespace ChessDroid.Services
             {
                 Color linkClr = GetThemeColor(Color.Cyan, Color.Blue);
                 int rStart = richTextBox.TextLength;
-                AppendTextWithFormat("[← Game Review]", richTextBox.BackColor, linkClr, FontStyle.Underline);
-                _markers.Add(new ClickMarker { Start = rStart, Length = richTextBox.TextLength - rStart, Action = ClickAction.ShowGameReview });
+                int rLen = AppendTextWithFormat("[← Game Review]", richTextBox.BackColor, linkClr, FontStyle.Underline);
+                _markers.Add(new ClickMarker { Start = rStart, Length = rLen, Action = ClickAction.ShowGameReview });
                 richTextBox.AppendText("\n");
             }
 
@@ -2620,6 +2641,8 @@ namespace ChessDroid.Services
 
             if (config?.ShowThreats == true)
                 DisplayOpponentThreats(fen);
+            }
+            finally { ResumeDrawing(); }
         }
 
         /// <summary>
