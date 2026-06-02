@@ -2552,6 +2552,40 @@ namespace ChessDroid
             return $"{minutes}:{seconds:D2}.{tenths}";
         }
 
+        private void SetClassifyControlsEnabled(bool classifying)
+        {
+            btnNewGame.Enabled        = !classifying;
+            btnLoadFen.Enabled        = !classifying;
+            btnEditPosition.Enabled   = !classifying;
+            btnImportPgn.Enabled      = !classifying;
+            btnExportPgn.Enabled      = !classifying;
+            btnSaveToLibrary.Enabled  = !classifying;
+            btnOpenLibrary.Enabled    = !classifying;
+            btnOpenings.Enabled       = !classifying;
+            btnSettings.Enabled       = !classifying;
+            btnTraining.Enabled       = !classifying;
+            btnTournament.Enabled     = !classifying;
+            btnPlayBot.Enabled        = !classifying;
+            btnStartMatch.Enabled     = !classifying;
+        }
+
+        private void SetBotControlsEnabled(bool active)
+        {
+            btnNewGame.Enabled        = !active;
+            btnLoadFen.Enabled        = !active;
+            btnEditPosition.Enabled   = !active;
+            btnImportPgn.Enabled      = !active;
+            btnExportPgn.Enabled      = !active;
+            btnSaveToLibrary.Enabled  = !active;
+            btnOpenLibrary.Enabled    = !active;
+            btnOpenings.Enabled       = !active;
+            btnClassifyMoves.Enabled  = !active;
+            btnSettings.Enabled       = !active;
+            btnTraining.Enabled       = !active;
+            btnTournament.Enabled     = !active;
+            btnStartMatch.Enabled     = !active;
+        }
+
         private void SetMatchControlsEnabled(bool running)
         {
             matchRunning = running;
@@ -2560,6 +2594,7 @@ namespace ChessDroid
             btnNewGame.Enabled        = !running;
             btnTakeBack.Enabled       = !running;
             btnLoadFen.Enabled        = !running;
+            btnEditPosition.Enabled   = !running;
             btnPlayBot.Enabled        = !running;
             btnImportPgn.Enabled      = !running;
             btnExportPgn.Enabled      = !running;
@@ -2634,6 +2669,8 @@ namespace ChessDroid
 
             // Reset the board for a new game
             CancelClassification();
+            _botModeActive = true;       // block TriggerAutoAnalysis before any await
+            SetBotControlsEnabled(true); // lock sidebar buttons immediately
             boardControl.ClearEngineArrows();
             boardControl.ClearBookArrows();
             _bookArrowsActive = false;
@@ -2674,6 +2711,8 @@ namespace ChessDroid
                     lblStatus.Text = "Failed to start bot engine";
                     _botEngine.Dispose();
                     _botEngine = null;
+                    _botModeActive = false;
+                    SetBotControlsEnabled(false);
                     return;
                 }
 
@@ -2685,10 +2724,11 @@ namespace ChessDroid
                 lblStatus.Text = $"Bot engine error: {ex.Message}";
                 _botEngine?.Dispose();
                 _botEngine = null;
+                _botModeActive = false;
+                SetBotControlsEnabled(false);
                 return;
             }
 
-            _botModeActive = true;
             _botMoveCts = new CancellationTokenSource();
             btnPlayBot.Text = "⏹";
             toolTip.SetToolTip(btnPlayBot, "Stop Bot");
@@ -2703,9 +2743,6 @@ namespace ChessDroid
             analysisOutput.AppendText($"Bot Mode: You play {colorLabel}\n");
             analysisOutput.AppendText($"Difficulty: {diffLabel}  |  {typeLabel}\n\n");
             lblStatus.Text = $"Bot mode — {diffLabel}";
-
-            // Disable engine match controls during bot mode
-            btnStartMatch.Enabled = false;
 
             // If bot plays White, make the first move
             if (_botSettings.BotPlaysWhite)
@@ -3080,7 +3117,7 @@ namespace ChessDroid
 
             btnPlayBot.Text = "♞";
             toolTip.SetToolTip(btnPlayBot, "Play vs Bot");
-            btnStartMatch.Enabled = true;
+            SetBotControlsEnabled(false);
             boardControl.InteractionEnabled = true;
 
             if (_drillBotActive)
@@ -4641,7 +4678,7 @@ namespace ChessDroid
             var ct = _classifyCts.Token;
 
             btnClassifyMoves.Enabled = false;
-
+            SetClassifyControlsEnabled(true);
 
             // Clear analysis cache to ensure fresh evaluations with correct perspective
             _analysisCache.Clear();
@@ -4929,6 +4966,7 @@ namespace ChessDroid
             }
 
             btnClassifyMoves.Enabled = true;
+            SetClassifyControlsEnabled(false);
             _classifyCts?.Dispose();
             _classifyCts = null;
 
