@@ -27,7 +27,6 @@ namespace ChessDroid.Services
         private readonly object stateLock = new object();
         private readonly SemaphoreSlim _analysisSemaphore = new SemaphoreSlim(1, 1);
 
-        private static readonly char[] _spaceSep = { ' ' };
 
         // UCI Protocol Commands
         private const string UCI_CMD_UCI = "uci";
@@ -320,8 +319,8 @@ namespace ChessDroid.Services
 
             // Determine whose turn it is from FEN (for evaluation perspective)
             // UCI evaluations are always from White's perspective
-            string[] fenParts = fen.Split(' ');
-            bool whiteToMove = fenParts.Length > 1 && fenParts[1] == "w";
+            int _fenSpIdx = fen.IndexOf(' ');
+            bool whiteToMove = _fenSpIdx >= 0 && _fenSpIdx + 1 < fen.Length && fen[_fenSpIdx + 1] == 'w';
 
             // Tell any running analysis to stop so the semaphore holder exits fast
             if (State == EngineState.Analyzing && IsEngineAlive())
@@ -423,7 +422,7 @@ namespace ChessDroid.Services
                             // Parse info lines containing PV
                             if (line.StartsWith(UCI_RESPONSE_INFO) && line.Contains(UCI_TOKEN_PV))
                             {
-                                var tokens = line.Split(_spaceSep, StringSplitOptions.RemoveEmptyEntries);
+                                var tokens = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
                                 int mpvIndex = 1;
                                 string evalStr = "";
                                 var pvList = new List<string>();
@@ -437,30 +436,18 @@ namespace ChessDroid.Services
                                     {
                                         if (tokens[i + 1] == UCI_TOKEN_CP && double.TryParse(tokens[i + 2], out double cp))
                                         {
-                                            // UCI scores are from SIDE-TO-MOVE's perspective:
-                                            // Positive = good for side to move, Negative = bad for side to move
-                                            // We convert to WHITE's perspective for display (chess standard):
-                                            // Positive = good for White, Negative = good for Black
-                                            // So when Black is to move, we NEGATE the score
                                             double displayCp = whiteToMove ? cp : -cp;
-                                            // Use InvariantCulture to ensure consistent decimal formatting (period not comma)
                                             evalStr = (displayCp / 100.0 >= 0 ? "+" : "") + (displayCp / 100.0).ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
                                         }
-                                        else if (tokens[i + 1] == UCI_TOKEN_MATE)
+                                        else if (tokens[i + 1] == UCI_TOKEN_MATE && int.TryParse(tokens[i + 2], out int mateIn))
                                         {
-                                            int mateIn = int.Parse(tokens[i + 2]);
-                                            // UCI mate scores are from SIDE-TO-MOVE's perspective:
-                                            // Positive = side to move delivers mate (good for them)
-                                            // Negative = side to move gets mated (bad for them)
-                                            // Convert to WHITE's perspective:
-                                            // When Black to move, negate the sign
                                             int displayMate = whiteToMove ? mateIn : -mateIn;
                                             if (displayMate > 0)
                                                 evalStr = $"Mate in +{displayMate}";
                                             else if (displayMate < 0)
-                                                evalStr = $"Mate in {displayMate}"; // Keep negative sign
+                                                evalStr = $"Mate in {displayMate}";
                                             else
-                                                evalStr = "Mate in 0"; // Edge case
+                                                evalStr = "Mate in 0";
                                         }
                                     }
 
@@ -471,7 +458,6 @@ namespace ChessDroid.Services
                                             int.TryParse(tokens[i + 2], out int d) &&
                                             int.TryParse(tokens[i + 3], out int l))
                                         {
-                                            // Only store WDL for best line (multipv 1)
                                             if (mpvIndex == 1)
                                             {
                                                 wdlInfo = new WDLInfo(w, d, l);
@@ -505,10 +491,11 @@ namespace ChessDroid.Services
                             }
                             else if (line.StartsWith(UCI_RESPONSE_BESTMOVE))
                             {
-                                var parts = line.Split(' ');
-                                if (parts.Length >= 2)
+                                int _bm1 = line.IndexOf(' ');
+                                if (_bm1 >= 0)
                                 {
-                                    bestMove = parts[1];
+                                    int _bm2 = line.IndexOf(' ', _bm1 + 1);
+                                    bestMove = _bm2 >= 0 ? line.Substring(_bm1 + 1, _bm2 - _bm1 - 1) : line.Substring(_bm1 + 1);
                                 }
                                 break;
                             }
@@ -613,7 +600,8 @@ namespace ChessDroid.Services
                 if (pvs.Count > 0 && !string.IsNullOrEmpty(pvs[0]))
                 {
                     // Extract the first move from the best PV line
-                    string firstMove = pvs[0].Split(' ')[0];
+                    int _pvSp = pvs[0].IndexOf(' ');
+                    string firstMove = _pvSp >= 0 ? pvs[0].Substring(0, _pvSp) : pvs[0];
                     if (!string.IsNullOrEmpty(firstMove))
                     {
                         bestMove = firstMove;
@@ -874,9 +862,9 @@ namespace ChessDroid.Services
 
             // Determine side to move from FEN for eval perspective conversion
             bool whiteToMove = true;
-            var fenParts = fen.Split(' ');
-            if (fenParts.Length >= 2)
-                whiteToMove = fenParts[1] == "w";
+            int _fenSpIdx = fen.IndexOf(' ');
+            if (_fenSpIdx >= 0 && _fenSpIdx + 1 < fen.Length)
+                whiteToMove = fen[_fenSpIdx + 1] == 'w';
 
             try
             {
@@ -908,21 +896,25 @@ namespace ChessDroid.Services
                     // Parse info lines to capture evaluation
                     if (line.StartsWith(UCI_RESPONSE_INFO) && line.Contains(UCI_TOKEN_SCORE))
                     {
-                        var tokens = line.Split(_spaceSep, StringSplitOptions.RemoveEmptyEntries);
-                        for (int i = 0; i < tokens.Length; i++)
+                        int _scp = line.IndexOf(" score cp ", StringComparison.Ordinal);
+                        if (_scp >= 0)
                         {
-                            if (tokens[i] == UCI_TOKEN_SCORE && i + 2 < tokens.Length)
+                            int _vs = _scp + 10, _ve = line.IndexOf(' ', _scp + 10);
+                            if (double.TryParse(_ve >= 0 ? line.AsSpan(_vs, _ve - _vs) : line.AsSpan(_vs), out double cp))
                             {
-                                if (tokens[i + 1] == UCI_TOKEN_CP && double.TryParse(tokens[i + 2], out double cp))
+                                double displayCp = whiteToMove ? cp : -cp;
+                                lastEval = (displayCp / 100.0 >= 0 ? "+" : "") +
+                                           (displayCp / 100.0).ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
+                            }
+                        }
+                        else
+                        {
+                            int _smt = line.IndexOf(" score mate ", StringComparison.Ordinal);
+                            if (_smt >= 0)
+                            {
+                                int _vs = _smt + 12, _ve = line.IndexOf(' ', _smt + 12);
+                                if (int.TryParse(_ve >= 0 ? line.AsSpan(_vs, _ve - _vs) : line.AsSpan(_vs), out int mateIn))
                                 {
-                                    // Convert to White's perspective
-                                    double displayCp = whiteToMove ? cp : -cp;
-                                    lastEval = (displayCp / 100.0 >= 0 ? "+" : "") +
-                                               (displayCp / 100.0).ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
-                                }
-                                else if (tokens[i + 1] == UCI_TOKEN_MATE && int.TryParse(tokens[i + 2], out int mateIn))
-                                {
-                                    // Convert to White's perspective
                                     int displayMate = whiteToMove ? mateIn : -mateIn;
                                     if (displayMate > 0)
                                         lastEval = $"Mate in +{displayMate}";
@@ -931,15 +923,15 @@ namespace ChessDroid.Services
                                     else
                                         lastEval = "Mate in 0";
                                 }
-                                break;
                             }
                         }
                     }
                     else if (line.StartsWith(UCI_RESPONSE_BESTMOVE))
                     {
                         State = EngineState.Ready;
-                        var parts = line.Split(' ');
-                        string move = parts.Length >= 2 ? parts[1] : "";
+                        int _bm1 = line.IndexOf(' ');
+                        int _bm2 = _bm1 >= 0 ? line.IndexOf(' ', _bm1 + 1) : -1;
+                        string move = _bm1 >= 0 ? (_bm2 >= 0 ? line.Substring(_bm1 + 1, _bm2 - _bm1 - 1) : line.Substring(_bm1 + 1)) : "";
                         // "(none)" and "0000" mean no legal moves (different engines use different conventions)
                         if (string.IsNullOrEmpty(move) || move == "(none)" || move == "0000")
                             return (null, lastEval);
@@ -981,9 +973,9 @@ namespace ChessDroid.Services
                 return null;
 
             bool whiteToMove = true;
-            var fenParts = fen.Split(_spaceSep, StringSplitOptions.RemoveEmptyEntries);
-            if (fenParts.Length >= 2)
-                whiteToMove = fenParts[1] == "w";
+            int _fenSpIdx = fen.IndexOf(' ');
+            if (_fenSpIdx >= 0 && _fenSpIdx + 1 < fen.Length)
+                whiteToMove = fen[_fenSpIdx + 1] == 'w';
 
             string? lastEval = null;
 
@@ -1008,24 +1000,29 @@ namespace ChessDroid.Services
 
                     if (line.StartsWith(UCI_RESPONSE_INFO) && line.Contains(UCI_TOKEN_SCORE))
                     {
-                        var tokens = line.Split(_spaceSep, StringSplitOptions.RemoveEmptyEntries);
-                        for (int i = 0; i < tokens.Length; i++)
+                        int _scp = line.IndexOf(" score cp ", StringComparison.Ordinal);
+                        if (_scp >= 0)
                         {
-                            if (tokens[i] == UCI_TOKEN_SCORE && i + 2 < tokens.Length)
+                            int _vs = _scp + 10, _ve = line.IndexOf(' ', _scp + 10);
+                            if (double.TryParse(_ve >= 0 ? line.AsSpan(_vs, _ve - _vs) : line.AsSpan(_vs), out double cp))
                             {
-                                if (tokens[i + 1] == UCI_TOKEN_CP && double.TryParse(tokens[i + 2], out double cp))
-                                {
-                                    double displayCp = whiteToMove ? cp : -cp;
-                                    lastEval = (displayCp / 100.0 >= 0 ? "+" : "") +
-                                               (displayCp / 100.0).ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
-                                }
-                                else if (tokens[i + 1] == UCI_TOKEN_MATE && int.TryParse(tokens[i + 2], out int mateIn))
+                                double displayCp = whiteToMove ? cp : -cp;
+                                lastEval = (displayCp / 100.0 >= 0 ? "+" : "") +
+                                           (displayCp / 100.0).ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
+                            }
+                        }
+                        else
+                        {
+                            int _smt = line.IndexOf(" score mate ", StringComparison.Ordinal);
+                            if (_smt >= 0)
+                            {
+                                int _vs = _smt + 12, _ve = line.IndexOf(' ', _smt + 12);
+                                if (int.TryParse(_ve >= 0 ? line.AsSpan(_vs, _ve - _vs) : line.AsSpan(_vs), out int mateIn))
                                 {
                                     int displayMate = whiteToMove ? mateIn : -mateIn;
                                     lastEval = displayMate > 0 ? $"Mate in +{displayMate}" :
                                                displayMate < 0 ? $"Mate in {displayMate}" : "Mate in 0";
                                 }
-                                break;
                             }
                         }
                     }
@@ -1069,9 +1066,9 @@ namespace ChessDroid.Services
                 return null;
 
             bool whiteToMove = true;
-            var fenParts = fen.Split(_spaceSep, StringSplitOptions.RemoveEmptyEntries);
-            if (fenParts.Length >= 2)
-                whiteToMove = fenParts[1] == "w";
+            int _fenSpIdx = fen.IndexOf(' ');
+            if (_fenSpIdx >= 0 && _fenSpIdx + 1 < fen.Length)
+                whiteToMove = fen[_fenSpIdx + 1] == 'w';
 
             string? lastEval = null;
 
@@ -1097,24 +1094,29 @@ namespace ChessDroid.Services
 
                     if (line.StartsWith(UCI_RESPONSE_INFO) && line.Contains(UCI_TOKEN_SCORE))
                     {
-                        var tokens = line.Split(_spaceSep, StringSplitOptions.RemoveEmptyEntries);
-                        for (int i = 0; i < tokens.Length; i++)
+                        int _scp = line.IndexOf(" score cp ", StringComparison.Ordinal);
+                        if (_scp >= 0)
                         {
-                            if (tokens[i] == UCI_TOKEN_SCORE && i + 2 < tokens.Length)
+                            int _vs = _scp + 10, _ve = line.IndexOf(' ', _scp + 10);
+                            if (double.TryParse(_ve >= 0 ? line.AsSpan(_vs, _ve - _vs) : line.AsSpan(_vs), out double cp))
                             {
-                                if (tokens[i + 1] == UCI_TOKEN_CP && double.TryParse(tokens[i + 2], out double cp))
-                                {
-                                    double displayCp = whiteToMove ? cp : -cp;
-                                    lastEval = (displayCp / 100.0 >= 0 ? "+" : "") +
-                                               (displayCp / 100.0).ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
-                                }
-                                else if (tokens[i + 1] == UCI_TOKEN_MATE && int.TryParse(tokens[i + 2], out int mateIn))
+                                double displayCp = whiteToMove ? cp : -cp;
+                                lastEval = (displayCp / 100.0 >= 0 ? "+" : "") +
+                                           (displayCp / 100.0).ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
+                            }
+                        }
+                        else
+                        {
+                            int _smt = line.IndexOf(" score mate ", StringComparison.Ordinal);
+                            if (_smt >= 0)
+                            {
+                                int _vs = _smt + 12, _ve = line.IndexOf(' ', _smt + 12);
+                                if (int.TryParse(_ve >= 0 ? line.AsSpan(_vs, _ve - _vs) : line.AsSpan(_vs), out int mateIn))
                                 {
                                     int displayMate = whiteToMove ? mateIn : -mateIn;
                                     lastEval = displayMate > 0 ? $"Mate in +{displayMate}" :
                                                displayMate < 0 ? $"Mate in {displayMate}" : "Mate in 0";
                                 }
-                                break;
                             }
                         }
                     }
@@ -1158,9 +1160,9 @@ namespace ChessDroid.Services
                 return null;
 
             bool whiteToMove = true;
-            var fenParts = fen.Split(_spaceSep, StringSplitOptions.RemoveEmptyEntries);
-            if (fenParts.Length >= 2)
-                whiteToMove = fenParts[1] == "w";
+            int _fenSpIdx = fen.IndexOf(' ');
+            if (_fenSpIdx >= 0 && _fenSpIdx + 1 < fen.Length)
+                whiteToMove = fen[_fenSpIdx + 1] == 'w';
 
             string? lastEval = null;
 
@@ -1182,26 +1184,31 @@ namespace ChessDroid.Services
 
                     if (line.StartsWith(UCI_RESPONSE_INFO) && line.Contains(UCI_TOKEN_SCORE))
                     {
-                        var tokens = line.Split(_spaceSep, StringSplitOptions.RemoveEmptyEntries);
-                        for (int i = 0; i < tokens.Length; i++)
+                        int _scp = line.IndexOf(" score cp ", StringComparison.Ordinal);
+                        if (_scp >= 0)
                         {
-                            if (tokens[i] == UCI_TOKEN_SCORE && i + 2 < tokens.Length)
+                            int _vs = _scp + 10, _ve = line.IndexOf(' ', _scp + 10);
+                            if (double.TryParse(_ve >= 0 ? line.AsSpan(_vs, _ve - _vs) : line.AsSpan(_vs), out double cp))
                             {
-                                if (tokens[i + 1] == UCI_TOKEN_CP && double.TryParse(tokens[i + 2], out double cp))
-                                {
-                                    double displayCp = whiteToMove ? cp : -cp;
-                                    lastEval = (displayCp / 100.0 >= 0 ? "+" : "") +
-                                               (displayCp / 100.0).ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
-                                    onEvalUpdate(lastEval);
-                                }
-                                else if (tokens[i + 1] == UCI_TOKEN_MATE && int.TryParse(tokens[i + 2], out int mateIn))
+                                double displayCp = whiteToMove ? cp : -cp;
+                                lastEval = (displayCp / 100.0 >= 0 ? "+" : "") +
+                                           (displayCp / 100.0).ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
+                                onEvalUpdate(lastEval);
+                            }
+                        }
+                        else
+                        {
+                            int _smt = line.IndexOf(" score mate ", StringComparison.Ordinal);
+                            if (_smt >= 0)
+                            {
+                                int _vs = _smt + 12, _ve = line.IndexOf(' ', _smt + 12);
+                                if (int.TryParse(_ve >= 0 ? line.AsSpan(_vs, _ve - _vs) : line.AsSpan(_vs), out int mateIn))
                                 {
                                     int displayMate = whiteToMove ? mateIn : -mateIn;
                                     lastEval = displayMate > 0 ? $"Mate in +{displayMate}" :
                                                displayMate < 0 ? $"Mate in {displayMate}" : "Mate in 0";
                                     onEvalUpdate(lastEval);
                                 }
-                                break;
                             }
                         }
                     }
