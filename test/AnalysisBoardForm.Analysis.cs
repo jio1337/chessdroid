@@ -46,6 +46,7 @@ namespace ChessDroid
                 lblStatus.Text = "Analyzing...";
                 int maxDepth = config?.ContinuousAnalysisMaxDepth ?? 50;
 
+                consoleFormatter?.ResetLiveExpand();
                 ShowBookInfoImmediate(fen);
 
                 string lastBestMove = "", lastEval = "";

@@ -15,7 +15,7 @@ namespace ChessDroid.Services
         private readonly Func<string, string, List<string>, string, string> generateExplanation;
 
         // Clickable marker infrastructure — supports eval click (PV), count navigation, game review, line expand
-        private enum ClickAction { InsertPv, NavigateToNode, ShowGameReview, ExpandLine }
+        private enum ClickAction { InsertPv, NavigateToNode, ShowGameReview, ExpandLine, ExpandLiveLine, CollapseLines }
         private sealed class ClickMarker
         {
             public int Start;
@@ -40,6 +40,10 @@ namespace ChessDroid.Services
         // Book context stored before engine starts — lets live updates prepend opening/book info
         private string? _activeBookFen;
         private List<BookMove>? _activeBookMoves;
+
+        private bool _liveLineExpanded;
+        private (string fen, string evaluation, List<string> pvs, List<string> evals, WDLInfo? wdl, int depth) _lastLiveData
+            = ("", "", new List<string>(), new List<string>(), null, 0);
 
         public ConsoleOutputFormatter(
             RichTextBox richTextBox,
@@ -129,6 +133,14 @@ namespace ChessDroid.Services
                             foreach (var m in _markers)
                                 if (m.Start > marker.Start) m.Start += delta;
                             _markers.Remove(marker);
+                            break;
+                        case ClickAction.ExpandLiveLine:
+                            _liveLineExpanded = true;
+                            DisplayLiveLines(_lastLiveData.fen, _lastLiveData.evaluation, _lastLiveData.pvs, _lastLiveData.evals, _lastLiveData.wdl, _lastLiveData.depth);
+                            break;
+                        case ClickAction.CollapseLines:
+                            _liveLineExpanded = false;
+                            DisplayLiveLines(_lastLiveData.fen, _lastLiveData.evaluation, _lastLiveData.pvs, _lastLiveData.evals, _lastLiveData.wdl, _lastLiveData.depth);
                             break;
                     }
                     return;
@@ -2523,12 +2535,15 @@ namespace ChessDroid.Services
             }
         }
 
+        public void ResetLiveExpand() => _liveLineExpanded = false;
+
         /// <summary>
         /// Compact live display for continuous analysis — PV lines only, no explanation text.
         /// Shows depth header, optional WDL bar, and up to 3 lines with eval + SAN + [See line].
         /// </summary>
         public void DisplayLiveLines(string fen, string evaluation, List<string> pvs, List<string> evals, WDLInfo? wdl, int depth)
         {
+            _lastLiveData = (fen, evaluation, new List<string>(pvs), new List<string>(evals), wdl, depth);
             SuspendDrawing();
             try
             {
@@ -2569,6 +2584,7 @@ namespace ChessDroid.Services
                 ? new[] { Color.PaleGreen, Color.Khaki, Color.LightCoral }
                 : new[] { Color.DarkGreen, Color.SaddleBrown, Color.Maroon };
 
+            const int MaxLivePly = 10;
             int count = Math.Min(Math.Min(pvs.Count, evals.Count), 3);
             for (int i = 0; i < count; i++)
             {
@@ -2576,13 +2592,34 @@ namespace ChessDroid.Services
 
                 string san = ConvertPvToSan(pvs, i, pvs[i].Split(' ')[0], fen);
                 string prefix = i == 0 ? "►" : " ";
+                var tokens = san.Split(' ');
 
                 richTextBox.SelectionColor = lineColors[i];
                 richTextBox.AppendText($" {prefix} {FormatEvaluation(evals[i])}  ");
                 richTextBox.SelectionColor = GetThemeColor(Color.LightGray, Color.Black);
-                richTextBox.AppendText(san);
+
+                if (!_liveLineExpanded && tokens.Length > MaxLivePly)
+                {
+                    richTextBox.AppendText(string.Join(" ", tokens.Take(MaxLivePly)));
+                    int ellipsisStart = richTextBox.TextLength;
+                    AppendTextWithFormat("...", richTextBox.BackColor, lineColors[i], FontStyle.Bold | FontStyle.Underline);
+                    _markers.Add(new ClickMarker { Start = ellipsisStart, Length = 3, Action = ClickAction.ExpandLiveLine });
+                }
+                else
+                {
+                    richTextBox.AppendText(san);
+                }
                 richTextBox.AppendText(Environment.NewLine);
                 ResetFormatting();
+            }
+
+            if (_liveLineExpanded)
+            {
+                Color collapseClr = GetThemeColor(Color.Silver, Color.DimGray);
+                int cStart = richTextBox.TextLength;
+                int cLen = AppendTextWithFormat("[▲ collapse]", richTextBox.BackColor, collapseClr, FontStyle.Underline);
+                _markers.Add(new ClickMarker { Start = cStart, Length = cLen, Action = ClickAction.CollapseLines });
+                richTextBox.AppendText(Environment.NewLine);
             }
 
             if (config?.ShowThreats == true)
