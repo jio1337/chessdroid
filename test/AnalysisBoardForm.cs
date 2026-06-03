@@ -23,6 +23,11 @@ namespace ChessDroid
         private static readonly Regex PgnMoveNumberRegex = new(@"^\d+\.?$", RegexOptions.Compiled);
         private static readonly Regex PgnAttachedMoveRegex = new(@"^\d+\.(.+)$", RegexOptions.Compiled);
         private static readonly Regex PgnEvalCommentRegex = new(@"\[([+\-]?\d+[.,]?\d*)\]", RegexOptions.Compiled);
+        private static readonly Regex PgnOpeningHeaderRegex = new(@"\[Opening ""([^""]+)""\]", RegexOptions.Compiled);
+        private static readonly Regex PgnMoveTokenPrefixRegex = new(@"^\d+\.", RegexOptions.Compiled);
+        private static readonly MoveQualityAnalyzer.MoveQuality[] _allMoveQualities =
+            (MoveQualityAnalyzer.MoveQuality[])Enum.GetValues(typeof(MoveQualityAnalyzer.MoveQuality));
+        private static readonly Regex StripMovesRegex = new(@",?\s*\d+\.", RegexOptions.Compiled);
 
         /// <summary>
         /// Cached engine analysis result for a position.
@@ -741,7 +746,7 @@ namespace ChessDroid
             if (idx < 0 || idx >= _cmbDrillChapter.Items.Count || idx == _drillHoverLastIdx) return;
             _drillHoverLastIdx = idx;
             string study = _cmbDrillStudy?.SelectedItem?.ToString() ?? "";
-            var chapters = _drillChapters.Where(c => c.StudyName == study).ToList();
+            var chapters = GetChaptersForStudy(study);
             var ch = idx < chapters.Count ? chapters[idx] : null;
             if (ch == null) return;
             SetDrillDescription(ch.Description);
@@ -798,8 +803,6 @@ namespace ChessDroid
             _autoPlayTimer.Interval = 400;
             _autoPlayTimer.Tick += AutoPlayTimer_Tick;
 
-            // Trigger initial layout for responsive checkbox positioning
-            GrpEngineMatch_Resize(grpEngineMatch, EventArgs.Empty);
         }
 
         #region Event Handlers
@@ -938,12 +941,6 @@ namespace ChessDroid
             // Row 4 (Y=88): Status text
             lblStatus.Location = new Point(pad, 88);
             lblStatus.Width    = w - 2 * pad;
-        }
-
-        private void GrpEngineMatch_Resize(object? sender, EventArgs e)
-        {
-            // Checkbox is now at fixed position below buttons - no dynamic repositioning needed
-            // This handler is kept for potential future responsive adjustments
         }
 
         private void BoardControl_MoveMade(object? sender, MoveEventArgs e)
@@ -2021,7 +2018,7 @@ namespace ChessDroid
 
             using var dlg = new OpeningExplorerDialog(entries, pgn =>
             {
-                var m = System.Text.RegularExpressions.Regex.Match(pgn, @"\[Opening ""([^""]+)""\]");
+                var m = PgnOpeningHeaderRegex.Match(pgn);
                 if (!m.Success) return;
                 string tag = m.Groups[1].Value;
                 int dash = tag.IndexOf(" — ", StringComparison.Ordinal);
@@ -2155,7 +2152,7 @@ namespace ChessDroid
                 // Threefold repetition check for Watch Engines mode
                 if (_drillWatchActive)
                 {
-                    string posKey = GetFenPositionKey(newFen);
+                    string posKey = GetPositionKey(newFen);
                     _watchPositionCounts.TryGetValue(posKey, out int posCount);
                     _watchPositionCounts[posKey] = posCount + 1;
                     if (_watchPositionCounts[posKey] >= 3)
@@ -2475,10 +2472,7 @@ namespace ChessDroid
             isNavigating = true;
             try
             {
-                var tokens = sanMoves.Split(new[] { ' ', '\t', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
-                    .Where(t => !System.Text.RegularExpressions.Regex.IsMatch(t, @"^\d+\.") &&
-                                 t != "1-0" && t != "0-1" && t != "1/2-1/2" && t != "*")
-                    .ToList();
+                var tokens = FilterSanTokens(sanMoves);
                 foreach (var san in tokens)
                 {
                     string? uci = ConvertSanToUci(san, currentFen);
@@ -2677,7 +2671,7 @@ namespace ChessDroid
             boardControl.ResetBoard();
             moveTree.Clear(boardControl.GetFEN());
             _botPositionCounts.Clear();
-            _botPositionCounts[GetFenPositionKey(boardControl.GetFEN())] = 1;
+            _botPositionCounts[GetPositionKey(boardControl.GetFEN())] = 1;
             moveListBox.Items.Clear();
             displayedNodes.Clear();
             _analysisCache.Clear();
@@ -2842,14 +2836,6 @@ namespace ChessDroid
             }
         }
 
-        private static string GetFenPositionKey(string fen)
-        {
-            var parts = fen.Split(' ');
-            return parts.Length >= 4
-                ? $"{parts[0]} {parts[1]} {parts[2]} {parts[3]}"
-                : fen;
-        }
-
         private static bool IsInsufficientMaterial(string fenPosition)
         {
             var pieces = fenPosition.Where(char.IsLetter).ToList();
@@ -2865,7 +2851,7 @@ namespace ChessDroid
                 return "Draw — insufficient material";
             if (parts.Length >= 5 && int.TryParse(parts[4], out int halfMoves) && halfMoves >= 100)
                 return "Draw — 50-move rule";
-            string posKey = GetFenPositionKey(fen);
+            string posKey = GetPositionKey(fen);
             _botPositionCounts.TryGetValue(posKey, out int count);
             _botPositionCounts[posKey] = count + 1;
             if (_botPositionCounts[posKey] >= 3)
@@ -3257,7 +3243,7 @@ namespace ChessDroid
                     if (!ct.IsCancellationRequested && (lastBestMove == "(none)" || lastBestMove == "0000" || string.IsNullOrEmpty(lastBestMove)))
                     {
                         var board = ChessBoard.FromFEN(fen);
-                        bool stmIsWhite = fen.Split(' ').ElementAtOrDefault(1) == "w";
+                        bool stmIsWhite = IsWhiteToMove(fen);
                         if (ChessUtilities.IsKingInCheck(board, stmIsWhite))
                         {
                             string winner = stmIsWhite ? "Black" : "White";
@@ -3335,7 +3321,7 @@ namespace ChessDroid
                 {
                     // No legal moves — checkmate or stalemate
                     var board = ChessBoard.FromFEN(fen);
-                    bool sideToMoveIsWhite = fen.Split(' ').ElementAtOrDefault(1) == "w";
+                    bool sideToMoveIsWhite = IsWhiteToMove(fen);
                     bool inCheck = ChessUtilities.IsKingInCheck(board, sideToMoveIsWhite);
                     if (inCheck)
                     {
@@ -3383,6 +3369,18 @@ namespace ChessDroid
                     Debug.WriteLine($"Analysis error: {ex}");
                 }
             }
+        }
+
+        private static List<string> FilterSanTokens(string sanMoves)
+            => sanMoves.Split(new[] { ' ', '\t', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+                       .Where(t => !PgnMoveTokenPrefixRegex.IsMatch(t) &&
+                                    t != "1-0" && t != "0-1" && t != "1/2-1/2" && t != "*")
+                       .ToList();
+
+        private static bool IsWhiteToMove(string fen)
+        {
+            int sp = fen.IndexOf(' ');
+            return sp >= 0 && sp + 1 < fen.Length && fen[sp + 1] == 'w';
         }
 
         /// <summary>
@@ -4693,7 +4691,7 @@ namespace ChessDroid
             };
 
             // Initialize classification counts
-            foreach (MoveQualityAnalyzer.MoveQuality q in Enum.GetValues(typeof(MoveQualityAnalyzer.MoveQuality)))
+            foreach (MoveQualityAnalyzer.MoveQuality q in _allMoveQualities)
             {
                 classification.WhiteCounts[q] = 0;
                 classification.BlackCounts[q] = 0;
@@ -5164,7 +5162,7 @@ namespace ChessDroid
         // "Sicilian: Najdorf, 6.Be3 e5 7.Nb3" → "Sicilian: Najdorf" (hides moves during recreate)
         private static string StripMovesFromOpeningName(string name)
         {
-            var m = System.Text.RegularExpressions.Regex.Match(name, @",?\s*\d+\.");
+            var m = StripMovesRegex.Match(name);
             return m.Success ? name[..m.Index].TrimEnd(',', ' ') : name;
         }
 
@@ -6504,10 +6502,7 @@ namespace ChessDroid
                 _lblTrainingPB.Text = _puzzleStreakBest > 0 ? $"Best streak: {_puzzleStreakBest}" : "";
             if (_lblOpMissedMoves != null) _lblOpMissedMoves.Visible = false;
 
-            boardControl.IsFlipped = _trainingPreFlipped;
-            if (_trainingPreFen != null) boardControl.LoadFEN(_trainingPreFen);
-            _trainingPreFen     = null;
-            _trainingGameActive = false;
+            RestoreBoardAfterTraining();
 
             _pnlPuzzleGame!.Visible     = false;
             _pnlTrainingResult!.Visible = true;
@@ -6574,11 +6569,7 @@ namespace ChessDroid
             {
                 boardControl.ClearTrainingHighlight();
                 boardControl.TrainingMode = false;
-                boardControl.IsFlipped = _trainingPreFlipped;
-                if (_trainingPreFen != null)
-                    boardControl.LoadFEN(_trainingPreFen);
-                _trainingPreFen = null;
-                _trainingGameActive = false;
+                RestoreBoardAfterTraining();
             }
 
             _trainingUiVisible = false;
@@ -6596,6 +6587,14 @@ namespace ChessDroid
             SetTrainingButtonsEnabled(true);
 
             _ = TriggerAutoAnalysis();
+        }
+
+        private void RestoreBoardAfterTraining()
+        {
+            boardControl.IsFlipped = _trainingPreFlipped;
+            if (_trainingPreFen != null) boardControl.LoadFEN(_trainingPreFen);
+            _trainingPreFen     = null;
+            _trainingGameActive = false;
         }
 
         private void SetTrainingButtonsEnabled(bool enabled)
@@ -6624,11 +6623,7 @@ namespace ChessDroid
                 boardControl.ClearTrainingHighlight();
                 boardControl.TrainingMode = false;
                 boardControl.MonochromeMode = false;
-                boardControl.IsFlipped = _trainingPreFlipped;
-                if (_trainingPreFen != null)
-                    boardControl.LoadFEN(_trainingPreFen);
-                _trainingPreFen = null;
-                _trainingGameActive = false;
+                RestoreBoardAfterTraining();
             }
 
             if (_lblOpGameStatus != null) _lblOpGameStatus.Visible = false;
@@ -6804,11 +6799,7 @@ namespace ChessDroid
 
             boardControl.ClearTrainingHighlight();
             boardControl.TrainingMode = false;
-            boardControl.IsFlipped = _trainingPreFlipped;
-            if (_trainingPreFen != null)
-                boardControl.LoadFEN(_trainingPreFen);
-            _trainingPreFen = null;
-            _trainingGameActive = false;
+            RestoreBoardAfterTraining();
 
             if (_lblTrainingFinalScore != null)
                 _lblTrainingFinalScore.Text = $"{_trainingCorrect} / {_trainingQuestions} correct  ·  {elapsed:F1}s";
@@ -6954,7 +6945,7 @@ namespace ChessDroid
             using var selDialog = new OpeningExplorerDialog(entries, pgn =>
             {
                 // Parse ECO+name from PGN [Opening] tag: "[Opening "ECO — Name"]"
-                var match = System.Text.RegularExpressions.Regex.Match(pgn, @"\[Opening ""([^""]+)""\]");
+                var match = PgnOpeningHeaderRegex.Match(pgn);
                 if (match.Success)
                 {
                     string openingTag = match.Groups[1].Value;
@@ -6987,10 +6978,7 @@ namespace ChessDroid
             isNavigating = true;
 
             string currentFen = startFen;
-            var tokens = sanMoves.Split(new[] { ' ', '\t', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
-                .Where(t => !System.Text.RegularExpressions.Regex.IsMatch(t, @"^\d+\.") &&
-                             t != "1-0" && t != "0-1" && t != "1/2-1/2" && t != "*")
-                .ToList();
+            var tokens = FilterSanTokens(sanMoves);
 
             foreach (var san in tokens)
             {
@@ -7306,6 +7294,9 @@ namespace ChessDroid
             _pnlDrillSettings.Height = baseHeight + _lblDrillDesc.Height;
         }
 
+        private List<EndgameChapter> GetChaptersForStudy(string? study)
+            => _drillChapters.Where(c => c.StudyName == study).ToList();
+
         private void PopulateDrillStudies()
         {
             if (_cmbDrillStudy == null) return;
@@ -7321,7 +7312,7 @@ namespace ChessDroid
             string? study = _cmbDrillStudy.SelectedItem?.ToString();
             _cmbDrillChapter.Items.Clear();
             int n = 1;
-            foreach (var ch in _drillChapters.Where(c => c.StudyName == study))
+            foreach (var ch in GetChaptersForStudy(study))
                 _cmbDrillChapter.Items.Add($"Ch.{n++}: {ch.ChapterName}");
             if (_cmbDrillChapter.Items.Count > 0) _cmbDrillChapter.SelectedIndex = 0;
         }
@@ -7332,7 +7323,7 @@ namespace ChessDroid
             string? study = _cmbDrillStudy.SelectedItem?.ToString();
             int idx = _cmbDrillChapter.SelectedIndex;
             if (idx < 0) return null;
-            var chapters = _drillChapters.Where(c => c.StudyName == study).ToList();
+            var chapters = GetChaptersForStudy(study);
             return idx < chapters.Count ? chapters[idx] : null;
         }
 
@@ -7392,7 +7383,7 @@ namespace ChessDroid
             boardControl.LoadFEN(chapter.Fen);
             moveTree.Clear(chapter.Fen);
             _botPositionCounts.Clear();
-            _botPositionCounts[GetFenPositionKey(chapter.Fen)] = 1;
+            _botPositionCounts[GetPositionKey(chapter.Fen)] = 1;
             moveListBox.Items.Clear();
             displayedNodes.Clear();
             _analysisCache.Clear();
@@ -7534,7 +7525,7 @@ namespace ChessDroid
 
             // Seed position counts for threefold detection
             _watchPositionCounts.Clear();
-            _watchPositionCounts[GetFenPositionKey(chapter.Fen)] = 1;
+            _watchPositionCounts[GetPositionKey(chapter.Fen)] = 1;
 
             // Output header
             analysisOutput.AppendText($"Engine Watch — {chapter.ChapterName}\n");
@@ -7612,16 +7603,21 @@ namespace ChessDroid
             ("Indian Defense",          "Indian_Defense"),
         };
 
-        private void PuzzleTrainingStart()
+        private void ResetPuzzleCounters()
         {
-            if (string.IsNullOrEmpty(_puzzlesFolder)) return;
             _puzzlesClean     = 0;
             _puzzlesStruggled = 0;
             _puzzlesAttempted = 0;
             _puzzleHintsUsed  = 0;
-            _puzzleStreak     = 0;
-            _puzzleStreakBest  = config?.PuzzleTrainingBestStreak ?? 0;
             _puzzleQueue.Clear();
+        }
+
+        private void PuzzleTrainingStart()
+        {
+            if (string.IsNullOrEmpty(_puzzlesFolder)) return;
+            ResetPuzzleCounters();
+            _puzzleStreak    = 0;
+            _puzzleStreakBest = config?.PuzzleTrainingBestStreak ?? 0;
             _puzzleQueue.AddRange(LichessPuzzleService.GetRandomBatch(_puzzlesFolder, 200, _puzzleThemeFilter, _puzzleRatingMin, _puzzleRatingMax, _puzzleOpeningFilter));
 
             _trainingPreFen     = boardControl.GetFEN();
@@ -7641,13 +7637,9 @@ namespace ChessDroid
             var daily = LichessPuzzleService.GetDailyPuzzle(_puzzlesFolder);
             if (daily == null) { lblStatus.Text = "No puzzles found."; return; }
 
-            _puzzlesClean     = 0;
-            _puzzlesStruggled = 0;
-            _puzzlesAttempted = 0;
-            _puzzleHintsUsed  = 0;
-            _puzzleStreak     = 0;
-            _puzzleStreakBest  = 0;
-            _puzzleQueue.Clear();
+            ResetPuzzleCounters();
+            _puzzleStreak    = 0;
+            _puzzleStreakBest = 0;
             _puzzleQueue.Add(daily);
 
             _trainingPreFen     = boardControl.GetFEN();
@@ -7950,11 +7942,7 @@ namespace ChessDroid
         private void PuzzleRushStart()
         {
             if (string.IsNullOrEmpty(_puzzlesFolder)) return;
-            _puzzlesClean     = 0;
-            _puzzlesStruggled = 0;
-            _puzzlesAttempted = 0;
-            _puzzleHintsUsed  = 0;
-            _puzzleQueue.Clear();
+            ResetPuzzleCounters();
             _puzzleQueue.AddRange(LichessPuzzleService.GetRandomBatch(_puzzlesFolder, 300, _puzzleThemeFilter, _puzzleRatingMin, _puzzleRatingMax, _puzzleOpeningFilter));
 
             _trainingPreFen     = boardControl.GetFEN();
@@ -8038,10 +8026,7 @@ namespace ChessDroid
         private void PuzzleGauntletStart()
         {
             if (string.IsNullOrEmpty(_puzzlesFolder)) return;
-            _puzzlesClean     = 0;
-            _puzzlesStruggled = 0;
-            _puzzlesAttempted = 0;
-            _puzzleHintsUsed  = 0;
+            ResetPuzzleCounters();
             _gauntletStreak     = 0;
             _gauntletBestStreak = config?.GauntletBestStreak ?? 0;
             _puzzleQueue.Clear();
@@ -8382,7 +8367,6 @@ namespace ChessDroid
         }
 
         private static void SetText(Label? lbl, string text)  { if (lbl != null) lbl.Text = text; }
-        private static void SetText(Button? btn, string text) { if (btn != null) btn.Text = text; }
 
         private void ShowTrainingHint(string uci, Button? hintButton, Action? onExpire = null)
         {

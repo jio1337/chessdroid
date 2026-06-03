@@ -631,8 +631,7 @@ namespace ChessDroid
             grpEngineMatch.TabIndex = 2;
             grpEngineMatch.TabStop = false;
             grpEngineMatch.Text = "Engine Match";
-            grpEngineMatch.Resize += GrpEngineMatch_Resize;
-            // 
+            //
             // lblWhiteEngine
             // 
             lblWhiteEngine.Font = new Font("Courier New", 9F);
