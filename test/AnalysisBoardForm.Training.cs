@@ -1607,7 +1607,7 @@ namespace ChessDroid
 
             foreach (var san in tokens)
             {
-                string? uci = ConvertSanToUci(san, currentFen);
+                string? uci = PgnImportService.ConvertSanToUci(san, currentFen);
                 if (uci == null) break;
 
                 boardControl.LoadFEN(currentFen);
@@ -1723,7 +1723,7 @@ namespace ChessDroid
         {
             int watchNum = _selectedWatches - _openingWatchesLeft + 1;
             SetText(_lblTrainingRound, $"Watch  {watchNum} / {_selectedWatches}");
-            SetText(_lblTrainingScore, $"{_selectedTrainingOpening?.Eco}  {StripMovesFromOpeningName(_selectedTrainingOpening?.Name ?? "")}");
+            SetText(_lblTrainingScore, $"{_selectedTrainingOpening?.Eco}  {PgnImportService.StripMovesFromOpeningName(_selectedTrainingOpening?.Name ?? "")}");
             SetText(_lblOpGameStatus,  $"Move  {_openingPlayIndex} / {_openingUciMoves.Count}");
             if (_openingPlayIndex == 0) SetText(_lblTrainingTarget, "…");
         }
@@ -1744,7 +1744,7 @@ namespace ChessDroid
 
             SetText(_lblTrainingRound,  "Recreate");
             SetText(_lblTrainingTarget, "?");
-            SetText(_lblTrainingScore,  $"{_selectedTrainingOpening?.Eco}  {StripMovesFromOpeningName(_selectedTrainingOpening?.Name ?? "")}");
+            SetText(_lblTrainingScore,  $"{_selectedTrainingOpening?.Eco}  {PgnImportService.StripMovesFromOpeningName(_selectedTrainingOpening?.Name ?? "")}");
             SetText(_lblOpGameStatus,   $"Move  1 / {_openingUciMoves.Count}");
         }
 

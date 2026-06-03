@@ -280,7 +280,7 @@ namespace ChessDroid
                 foreach (var node in mainLine)
                 {
                     // Strip inline symbols from SanMove — annotations are encoded as NAG + comment
-                    string cleanSan = StripAnnotationSymbols(node.SanMove);
+                    string cleanSan = PgnImportService.StripAnnotationSymbols(node.SanMove);
                     string moveStr = node.IsWhiteMove
                         ? $"{node.MoveNumber}. {cleanSan}"
                         : cleanSan;
@@ -291,12 +291,12 @@ namespace ChessDroid
                     if (_classificationLookup != null &&
                         _classificationLookup.TryGetValue(node, out var result))
                     {
-                        nag = GetNagForSymbol(result.Symbol);
-                        comment = BuildPgnComment(result);
+                        nag = PgnImportService.GetNagForSymbol(result.Symbol);
+                        comment = PgnImportService.BuildPgnComment(result);
                     }
                     else
                     {
-                        nag = GetNagForSymbol(GetInlineSymbol(node.SanMove));
+                        nag = PgnImportService.GetNagForSymbol(PgnImportService.GetInlineSymbol(node.SanMove));
                     }
 
                     string fullToken = moveStr;
@@ -306,7 +306,7 @@ namespace ChessDroid
                     // Embed engine cache data so analysis is restored on re-import
                     string posKey = GetPositionKey(node.FEN);
                     if (_analysisCache.TryGetValue(posKey, out var cachedEntry) && cachedEntry.Depth > 0)
-                        fullToken += " " + SerializeCachedAnalysis(cachedEntry);
+                        fullToken += " " + PgnImportService.SerializeCachedAnalysis(cachedEntry);
 
                     // Word wrap at ~80 characters
                     if (lineLength + fullToken.Length + 1 > 80)
@@ -393,7 +393,7 @@ namespace ChessDroid
                 string moveText = string.Join(" ", lines.Skip(moveTextStart))
                     .Replace("\r", " ").Replace("\n", " ");
 
-                var tokens = TokenizePgnMoveText(moveText);
+                var tokens = PgnImportService.TokenizeMoveText(moveText);
 
                 string currentFen = startFen;
                 int skippedMoves = 0;
@@ -409,7 +409,7 @@ namespace ChessDroid
                 {
                     if (type == 'M')
                     {
-                        string? uciMove = ConvertSanToUci(value, currentFen);
+                        string? uciMove = PgnImportService.ConvertSanToUci(value, currentFen);
                         if (uciMove == null)
                         {
                             Debug.WriteLine($"Failed to parse move: {value} in position {currentFen}");
@@ -440,7 +440,7 @@ namespace ChessDroid
                     {
                         if (value.StartsWith("[%cda "))
                         {
-                            var ca = DeserializeCachedAnalysis(value);
+                            var ca = PgnImportService.DeserializeCachedAnalysis(value);
                             if (ca != null)
                                 _analysisCache[GetPositionKey(lastAppliedNode.FEN)] = ca;
                         }
@@ -464,8 +464,8 @@ namespace ChessDroid
 
                     foreach (var (node, nag, comment) in annotationList)
                     {
-                        string symbol = !string.IsNullOrEmpty(nag) ? GetSymbolForNag(nag) : "";
-                        double? evalAfter = !string.IsNullOrEmpty(comment) ? ParseEvalFromComment(comment) : null;
+                        string symbol = !string.IsNullOrEmpty(nag) ? PgnImportService.GetSymbolForNag(nag) : "";
+                        double? evalAfter = !string.IsNullOrEmpty(comment) ? PgnImportService.ParseEvalFromComment(comment) : null;
                         if (evalAfter.HasValue) node.Evaluation = evalAfter.Value;
                         // Skip moves with no annotation — they have no classification and must not
                         // default to Best, which would color every unannotated move green.
@@ -473,8 +473,8 @@ namespace ChessDroid
                             continue;
 
                         var quality = !string.IsNullOrEmpty(symbol)
-                            ? GetQualityForSymbol(symbol)
-                            : ParseQualityFromComment(comment);
+                            ? PgnImportService.GetQualityForSymbol(symbol)
+                            : PgnImportService.ParseQualityFromComment(comment);
 
                         moveResults.Add(new MoveReviewResult
                         {
@@ -542,131 +542,6 @@ namespace ChessDroid
                 isNavigating = false;
                 lblStatus.Text = $"Import error: {ex.Message}";
                 Debug.WriteLine($"PGN import error: {ex}");
-            }
-        }
-
-        private string? ConvertSanToUci(string san, string fen)
-        {
-            try
-            {
-                // Clean up the SAN
-                san = san.Replace("+", "").Replace("#", "").Replace("!", "").Replace("?", "");
-
-                string[] fenParts = fen.Split(' ');
-                bool isWhiteToMove = fenParts.Length > 1 && fenParts[1] == "w";
-                string enPassantSquare = fenParts.Length > 3 ? fenParts[3] : "-";
-
-                // Handle castling
-                if (san == "O-O" || san == "0-0")
-                {
-                    return isWhiteToMove ? "e1g1" : "e8g8";
-                }
-                if (san == "O-O-O" || san == "0-0-0")
-                {
-                    return isWhiteToMove ? "e1c1" : "e8c8";
-                }
-
-                // Parse piece type
-                char pieceType = 'P'; // Default to pawn
-                int idx = 0;
-                if (san.Length > 0 && char.IsUpper(san[0]) && san[0] != 'O')
-                {
-                    pieceType = san[0];
-                    idx = 1;
-                }
-
-                // Check for promotion
-                char? promotion = null;
-                if (san.Contains('='))
-                {
-                    int eqIdx = san.IndexOf('=');
-                    if (eqIdx + 1 < san.Length)
-                    {
-                        promotion = char.ToLower(san[eqIdx + 1]);
-                    }
-                    san = san.Substring(0, eqIdx);
-                }
-                else if (san.Length >= 2 && char.IsUpper(san[san.Length - 1]) && san[san.Length - 1] != 'O')
-                {
-                    // Promotion without = (e.g., e8Q)
-                    promotion = char.ToLower(san[san.Length - 1]);
-                    san = san.Substring(0, san.Length - 1);
-                }
-
-                // Find destination square (last two characters that form a valid square)
-                int destIdx = san.Length - 2;
-                while (destIdx >= idx)
-                {
-                    if (destIdx + 1 < san.Length &&
-                        san[destIdx] >= 'a' && san[destIdx] <= 'h' &&
-                        san[destIdx + 1] >= '1' && san[destIdx + 1] <= '8')
-                    {
-                        break;
-                    }
-                    destIdx--;
-                }
-
-                if (destIdx < idx || destIdx + 1 >= san.Length)
-                    return null;
-
-                string destSquare = san.Substring(destIdx, 2);
-                int destCol = destSquare[0] - 'a';
-                int destRow = 7 - (destSquare[1] - '1'); // Convert to internal coordinates
-
-                // Parse disambiguation (file and/or rank)
-                char? disambigFile = null;
-                char? disambigRank = null;
-                if (destIdx > idx)
-                {
-                    string middle = san.Substring(idx, destIdx - idx).Replace("x", "");
-                    foreach (char c in middle)
-                    {
-                        if (c >= 'a' && c <= 'h')
-                            disambigFile = c;
-                        else if (c >= '1' && c <= '8')
-                            disambigRank = c;
-                    }
-                }
-
-                // Build ChessBoard from FEN
-                var board = ChessBoard.FromFEN(fen);
-
-                // Determine piece character
-                char pieceChar = isWhiteToMove ? pieceType : char.ToLower(pieceType);
-                if (pieceType == 'P')
-                    pieceChar = isWhiteToMove ? 'P' : 'p';
-
-                // Find all pieces of this type that can move to destination
-                var candidates = ChessRulesService.FindAllPiecesOfSameTypeWithEnPassant(board, char.ToLower(pieceChar), isWhiteToMove, destRow, destCol, enPassantSquare);
-
-                foreach (var (row, col) in candidates)
-                {
-                    // Check disambiguation
-                    char fileChar = (char)('a' + col);
-                    char rankChar = (char)('1' + (7 - row));
-
-                    if (disambigFile.HasValue && fileChar != disambigFile.Value)
-                        continue;
-                    if (disambigRank.HasValue && rankChar != disambigRank.Value)
-                        continue;
-
-                    // Check if this piece can reach the destination
-                    if (ChessRulesService.CanReachSquareWithEnPassant(board, row, col, pieceChar, destRow, destCol, enPassantSquare))
-                    {
-                        string srcSquare = $"{fileChar}{rankChar}";
-                        string uci = srcSquare + destSquare;
-                        if (promotion.HasValue)
-                            uci += promotion.Value;
-                        return uci;
-                    }
-                }
-
-                return null;
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"ConvertSanToUci error: {ex.Message} for {san}");
-                return null;
             }
         }
 

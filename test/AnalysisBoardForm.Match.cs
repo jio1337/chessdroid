@@ -688,7 +688,7 @@ namespace ChessDroid
                 var tokens = FilterSanTokens(sanMoves);
                 foreach (var san in tokens)
                 {
-                    string? uci = ConvertSanToUci(san, currentFen);
+                    string? uci = PgnImportService.ConvertSanToUci(san, currentFen);
                     if (uci == null) break;
                     boardControl.LoadFEN(currentFen);
                     if (!boardControl.MakeMove(uci)) break;
