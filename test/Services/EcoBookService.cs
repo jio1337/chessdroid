@@ -2,7 +2,7 @@ using System.Text.Json;
 
 namespace ChessDroid.Services
 {
-    public record OpeningEntry(string Eco, string Name, string Moves);
+    public record OpeningEntry(string Eco, string Name, string Moves, string Eval = "");
 
     /// <summary>
     /// Loads and caches the ECO opening database from the ecoA-ecoE JSON files.
@@ -18,6 +18,20 @@ namespace ChessDroid.Services
             lock (_lock)
             {
                 if (_cache != null) return _cache;
+
+                // Load pre-baked SF18 evals (opening_evals.json sits one level above Books/)
+                var evals = new Dictionary<string, string>(StringComparer.Ordinal);
+                string evalsPath = Path.Combine(Path.GetDirectoryName(booksFolder) ?? booksFolder, "opening_evals.json");
+                if (File.Exists(evalsPath))
+                {
+                    try
+                    {
+                        using var evDoc = JsonDocument.Parse(File.ReadAllText(evalsPath));
+                        foreach (var ep in evDoc.RootElement.EnumerateObject())
+                            evals[ep.Name] = ep.Value.GetString() ?? "";
+                    }
+                    catch { /* evals are cosmetic — skip on error */ }
+                }
 
                 var raw = new List<OpeningEntry>();
                 foreach (string file in new[] { "ecoA.json", "ecoB.json", "ecoC.json", "ecoD.json", "ecoE.json" })
@@ -41,7 +55,8 @@ namespace ChessDroid.Services
                             if (string.IsNullOrEmpty(eco) || string.IsNullOrEmpty(name) || string.IsNullOrEmpty(moves))
                                 continue;
 
-                            raw.Add(new OpeningEntry(eco, name, moves));
+                            evals.TryGetValue(prop.Name, out string? eval);
+                            raw.Add(new OpeningEntry(eco, name, moves, eval ?? ""));
                         }
                     }
                     catch { /* skip malformed file */ }

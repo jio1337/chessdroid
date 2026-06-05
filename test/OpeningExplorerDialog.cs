@@ -2,141 +2,44 @@ using ChessDroid.Services;
 
 namespace ChessDroid
 {
-    public class OpeningExplorerDialog : Form
+    public partial class OpeningExplorerDialog : Form
     {
         private readonly List<OpeningEntry> _allEntries;
         private readonly Action<string> _onLoad;
-
-        private TextBox txtSearch = null!;
-        private DataGridView grid = null!;
-        private Label lblMoves = null!;
-        private Button btnLoad = null!;
-        private Button btnClose = null!;
+        private readonly bool _isDark;
 
         private List<OpeningEntry> _filtered = new();
+
+        // Parameterless constructor for VS Designer only
+        public OpeningExplorerDialog() : this(new List<OpeningEntry>(), _ => { }, false) { }
 
         public OpeningExplorerDialog(List<OpeningEntry> entries, Action<string> onLoad, bool isDark)
         {
             _allEntries = entries;
-            _onLoad = onLoad;
-            InitializeControls();
+            _onLoad     = onLoad;
+            _isDark     = isDark;
+
+            InitializeComponent();
+
+            try { Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch { }
+
+            txtSearch.TextChanged     += TxtSearch_TextChanged;
+            grid.SelectionChanged     += Grid_SelectionChanged;
+            grid.CellDoubleClick      += Grid_CellDoubleClick;
+            btnLoad.Click             += BtnLoad_Click;
+            btnClose.Click            += (_, __) => Close();
+            grid.ClientSizeChanged    += (_, __) => AdjustNameColumn();
+            this.Resize               += (_, __) => AdjustNameColumn();
+            this.Load                 += (_, __) => AdjustNameColumn();
+
             ApplyTheme(isDark);
             PopulateGrid(_allEntries);
         }
 
-        private void InitializeControls()
+        private void AdjustNameColumn()
         {
-            Text = "Opening Explorer";
-            Size = new Size(720, 540);
-            MinimumSize = new Size(500, 400);
-            FormBorderStyle = FormBorderStyle.Sizable;
-            StartPosition = FormStartPosition.CenterParent;
-            MaximizeBox = false;
-            try { Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch { }
-
-            // Search bar
-            var lblSearch = new Label
-            {
-                Text = "Search:",
-                Location = new Point(10, 14),
-                Size = new Size(52, 20),
-                Font = new Font("Courier New", 9F)
-            };
-
-            txtSearch = new TextBox
-            {
-                Location = new Point(64, 10),
-                Size = new Size(630, 22),
-                Font = new Font("Courier New", 9F),
-                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
-            };
-            txtSearch.TextChanged += TxtSearch_TextChanged;
-
-            // Grid
-            grid = new DataGridView
-            {
-                Location = new Point(10, 40),
-                Size = new Size(684, 370),
-                Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right,
-                ReadOnly = true,
-                AllowUserToAddRows = false,
-                AllowUserToDeleteRows = false,
-                AllowUserToResizeRows = false,
-                MultiSelect = false,
-                SelectionMode = DataGridViewSelectionMode.FullRowSelect,
-                RowHeadersVisible = false,
-                BackgroundColor = SystemColors.Window,
-                BorderStyle = BorderStyle.Fixed3D,
-                ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing,
-                ColumnHeadersHeight = 24,
-                RowTemplate = { Height = 22 },
-                Font = new Font("Courier New", 9F),
-                TabIndex = 1
-            };
-            grid.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                Name = "Eco",
-                HeaderText = "ECO",
-                Width = 60,
-                Resizable = DataGridViewTriState.False,
-                SortMode = DataGridViewColumnSortMode.NotSortable
-            });
-            grid.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                Name = "Name",
-                HeaderText = "Opening Name",
-                AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill,
-                SortMode = DataGridViewColumnSortMode.NotSortable
-            });
-            grid.SelectionChanged += Grid_SelectionChanged;
-            grid.CellDoubleClick += Grid_CellDoubleClick;
-
-            // Moves preview
-            lblMoves = new Label
-            {
-                Text = "",
-                Location = new Point(10, 418),
-                Size = new Size(684, 40),
-                Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right,
-                Font = new Font("Courier New", 8.25F),
-                AutoEllipsis = true
-            };
-
-            // Buttons
-            btnLoad = new Button
-            {
-                Text = "Load Opening",
-                Size = new Size(120, 28),
-                Anchor = AnchorStyles.Bottom | AnchorStyles.Right,
-                Font = new Font("Courier New", 9F),
-                FlatStyle = FlatStyle.Flat,
-                Enabled = false
-            };
-            btnLoad.Click += BtnLoad_Click;
-
-            btnClose = new Button
-            {
-                Text = "Close",
-                Size = new Size(80, 28),
-                Anchor = AnchorStyles.Bottom | AnchorStyles.Right,
-                Font = new Font("Courier New", 9F),
-                FlatStyle = FlatStyle.Flat,
-                DialogResult = DialogResult.Cancel
-            };
-            btnClose.Click += (_, __) => Close();
-
-            // Layout buttons at bottom-right
-            void PositionButtons()
-            {
-                btnClose.Location = new Point(ClientSize.Width - btnClose.Width - 10, ClientSize.Height - btnClose.Height - 10);
-                btnLoad.Location  = new Point(btnClose.Left - btnLoad.Width - 8, btnClose.Top);
-            }
-            this.Load   += (_, __) => PositionButtons();
-            this.Resize += (_, __) => PositionButtons();
-
-            Controls.AddRange(new Control[] { lblSearch, txtSearch, grid, lblMoves, btnLoad, btnClose });
-            AcceptButton = btnLoad;
-            CancelButton = btnClose;
+            int reserved = colEco.Width + colEval.Width + SystemInformation.VerticalScrollBarWidth + 4;
+            colName.Width = Math.Max(80, grid.ClientSize.Width - reserved);
         }
 
         private void PopulateGrid(List<OpeningEntry> entries)
@@ -145,20 +48,29 @@ namespace ChessDroid
             grid.SuspendLayout();
             grid.Rows.Clear();
             foreach (var e in entries)
-                grid.Rows.Add(e.Eco, e.Name);
+            {
+                int rowIdx = grid.Rows.Add(e.Eco, e.Name, e.Eval);
+                if (!string.IsNullOrEmpty(e.Eval))
+                {
+                    bool positive = e.Eval.StartsWith('+');
+                    grid.Rows[rowIdx].Cells[2].Style.ForeColor = positive
+                        ? (_isDark ? Color.FromArgb(120, 210, 80) : Color.FromArgb(30, 130, 30))
+                        : (_isDark ? Color.FromArgb(220, 90, 90)  : Color.FromArgb(180, 30, 30));
+                }
+            }
             grid.ResumeLayout();
-            lblMoves.Text = "";
-            btnLoad.Enabled = false;
+            lblMoves.Text    = "";
+            btnLoad.Enabled  = false;
         }
 
         private void TxtSearch_TextChanged(object? sender, EventArgs e)
         {
-            string q = txtSearch.Text.Trim().ToLowerInvariant();
+            string q = txtSearch.Text.Trim();
             var filtered = string.IsNullOrEmpty(q)
                 ? _allEntries
                 : _allEntries.Where(e =>
                     e.Name.Contains(q, StringComparison.OrdinalIgnoreCase) ||
-                    e.Eco.Contains(q, StringComparison.OrdinalIgnoreCase)).ToList();
+                    e.Eco.Contains(q,  StringComparison.OrdinalIgnoreCase)).ToList();
             PopulateGrid(filtered);
         }
 
@@ -167,7 +79,7 @@ namespace ChessDroid
             if (grid.SelectedRows.Count == 0) { lblMoves.Text = ""; btnLoad.Enabled = false; return; }
             int idx = grid.SelectedRows[0].Index;
             if (idx < 0 || idx >= _filtered.Count) return;
-            lblMoves.Text = _filtered[idx].Moves;
+            lblMoves.Text   = _filtered[idx].Moves;
             btnLoad.Enabled = true;
         }
 
@@ -191,10 +103,10 @@ namespace ChessDroid
 
         private void ApplyTheme(bool isDark)
         {
-            Color bg     = isDark ? Color.FromArgb(30, 30, 30) : SystemColors.Control;
+            Color bg     = isDark ? Color.FromArgb(30, 30, 30)  : SystemColors.Control;
             Color fg     = isDark ? Color.FromArgb(220, 220, 220) : SystemColors.ControlText;
-            Color btnBg  = isDark ? Color.FromArgb(50, 50, 50) : SystemColors.Control;
-            Color gridBg = isDark ? Color.FromArgb(25, 25, 25) : SystemColors.Window;
+            Color btnBg  = isDark ? Color.FromArgb(50, 50, 50)  : SystemColors.Control;
+            Color gridBg = isDark ? Color.FromArgb(25, 25, 25)  : SystemColors.Window;
             Color selBg  = isDark ? Color.FromArgb(60, 100, 160) : SystemColors.Highlight;
 
             BackColor = bg;
@@ -209,15 +121,15 @@ namespace ChessDroid
             txtSearch.BackColor = gridBg;
             txtSearch.ForeColor = fg;
 
-            grid.BackgroundColor = gridBg;
-            grid.GridColor = isDark ? Color.FromArgb(60, 60, 60) : SystemColors.ActiveBorder;
-            grid.DefaultCellStyle.BackColor = gridBg;
-            grid.DefaultCellStyle.ForeColor = fg;
-            grid.DefaultCellStyle.SelectionBackColor = selBg;
-            grid.DefaultCellStyle.SelectionForeColor = Color.White;
-            grid.ColumnHeadersDefaultCellStyle.BackColor = btnBg;
-            grid.ColumnHeadersDefaultCellStyle.ForeColor = fg;
-            grid.EnableHeadersVisualStyles = false;
+            grid.BackgroundColor                             = gridBg;
+            grid.GridColor                                   = isDark ? Color.FromArgb(60, 60, 60) : SystemColors.ActiveBorder;
+            grid.DefaultCellStyle.BackColor                  = gridBg;
+            grid.DefaultCellStyle.ForeColor                  = fg;
+            grid.DefaultCellStyle.SelectionBackColor         = selBg;
+            grid.DefaultCellStyle.SelectionForeColor         = Color.White;
+            grid.ColumnHeadersDefaultCellStyle.BackColor     = btnBg;
+            grid.ColumnHeadersDefaultCellStyle.ForeColor     = fg;
+            grid.EnableHeadersVisualStyles                   = false;
 
             foreach (Button btn in new[] { btnLoad, btnClose })
             {
