@@ -210,6 +210,7 @@ namespace ChessDroid
             if (!on) lblMatchOpening.Visible = false;
             // Opening book and "start from current position" are mutually exclusive
             chkFromPosition.Enabled = !on;
+            if (on) chkFromPosition.Checked = false;
         }
 
         private void RbBookChoose_CheckedChanged(object? sender, EventArgs e)
