@@ -193,7 +193,7 @@ namespace ChessDroid.Controls
                 return "0.0";
 
             string sign = pawns > 0 ? "+" : "";
-            return $"{sign}{pawns:F1}";
+            return sign + pawns.ToString("F1", System.Globalization.CultureInfo.InvariantCulture);
         }
 
         protected override void Dispose(bool disposing)

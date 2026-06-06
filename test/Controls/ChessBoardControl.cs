@@ -1200,6 +1200,7 @@ namespace ChessDroid.Controls
                     g.DrawString(p.Symbol.ToString(), _particleFont, _paintBrush, p.X, p.Y);
                 }
             }
+
         }
 
         private static void DrawVignetteStrip(Graphics g, int x, int y, int w, int h,
