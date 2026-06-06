@@ -744,13 +744,14 @@ namespace ChessDroid.Services
                     onUpdate(bestMove, bestEval, pvs, evals, wdl, depth);
                 }
 
+                bool completedNaturally = false;
                 try
                 {
                     while (IsEngineAlive())
                     {
                         string? line = await engineOutput!.ReadLineAsync(ct);
                         if (line == null) continue;
-                        if (line.StartsWith(UCI_RESPONSE_BESTMOVE)) break;
+                        if (line.StartsWith(UCI_RESPONSE_BESTMOVE)) { completedNaturally = true; break; }
                         if (!line.StartsWith(UCI_RESPONSE_INFO) || !line.Contains(UCI_TOKEN_PV)) continue;
 
                         var tokens = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
@@ -829,7 +830,10 @@ namespace ChessDroid.Services
                     // Flush final depth on stop
                     if (currentDepth > 0) FireUpdate(currentDepth);
 
-                    if (IsEngineAlive())
+                    // Only stop+drain when cancelled — if bestmove was already consumed
+                    // naturally, sending stop to an idle engine gets no response and the
+                    // 2000ms drain timer runs to completion, stalling the next analysis.
+                    if (IsEngineAlive() && !completedNaturally)
                     {
                         await SafeWriteLineAsync("stop");
                         try
