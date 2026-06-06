@@ -1382,7 +1382,17 @@ namespace ChessDroid
                     g.DrawString(sym, boldFont, symBrush, bounds.Left + 3 + sz.Width - 4, bounds.Top + 1);
                 }
             }
-            catch (Exception ex) when (ex is ArgumentException or ExternalException or ObjectDisposedException) { }
+            catch (Exception ex) when (ex is ArgumentException or ExternalException or ObjectDisposedException)
+            {
+                // GDI resource in a bad state — recreate font from config to guarantee text is visible.
+                try
+                {
+                    using var safeFont = new Font(config?.ConsoleFontFamily ?? "Consolas", config?.ConsoleFontSize ?? 10f);
+                    using var safeBrush = new SolidBrush(isSelected ? (isDark ? Color.White : SystemColors.HighlightText) : (isDark ? Color.White : Color.Black));
+                    g.DrawString(display, safeFont, safeBrush, bounds.Left + 3, bounds.Top + 1);
+                }
+                catch { }
+            }
         }
 
         private void DrawMoveCellBlack(Graphics g, Rectangle bounds, MoveNode? node, string? symbol,
@@ -1408,7 +1418,16 @@ namespace ChessDroid
                     g.DrawString(sym, boldFont, symBrush, bounds.Left + 6 + sz.Width - 4, bounds.Top + 1);
                 }
             }
-            catch (Exception ex) when (ex is ArgumentException or ExternalException or ObjectDisposedException) { }
+            catch (Exception ex) when (ex is ArgumentException or ExternalException or ObjectDisposedException)
+            {
+                try
+                {
+                    using var safeFont = new Font(config?.ConsoleFontFamily ?? "Consolas", config?.ConsoleFontSize ?? 10f);
+                    using var safeBrush = new SolidBrush(isSelected ? (isDark ? Color.White : SystemColors.HighlightText) : (isDark ? Color.White : Color.Black));
+                    g.DrawString(display, safeFont, safeBrush, bounds.Left + 6, bounds.Top + 1);
+                }
+                catch { }
+            }
         }
 
         private static (string text, Color symColor) ExtractSymbol(string moveText, string sym, bool isDark)
