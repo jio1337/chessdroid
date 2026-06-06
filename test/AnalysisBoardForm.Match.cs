@@ -127,7 +127,7 @@ namespace ChessDroid
             if (!chooseMode)
                 moveTree.Clear(startFen);
             moveListBox.Items.Clear();
-            displayedNodes.Clear();
+            _movePairs.Clear();
             _analysisCache.Clear(); // Clear analysis cache for new match
             boardControl.ClearBookArrows();
             _bookArrowsActive = false;
@@ -614,7 +614,7 @@ namespace ChessDroid
             if (!chooseMode)
                 moveTree.Clear(startFen);
             moveListBox.Items.Clear();
-            displayedNodes.Clear();
+            _movePairs.Clear();
             _analysisCache.Clear();
             boardControl.ClearBookArrows();
             _bookArrowsActive = false;

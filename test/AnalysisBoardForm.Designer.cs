@@ -432,6 +432,7 @@ namespace ChessDroid
             moveListBox.Size = new Size(114, 500);
             moveListBox.TabIndex = 1;
             moveListBox.DrawItem += MoveListBox_DrawItem;
+            moveListBox.MouseDown += MoveListBox_MouseDown;
             moveListBox.SelectedIndexChanged += MoveListBox_SelectedIndexChanged;
             // 
             // pnlPgnButtons

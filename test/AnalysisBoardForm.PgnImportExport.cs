@@ -385,7 +385,7 @@ namespace ChessDroid
                 boardControl.LoadFEN(startFen);
                 moveTree.Clear(startFen);
                 moveListBox.Items.Clear();
-                displayedNodes.Clear();
+                _movePairs.Clear();
                 _analysisCache.Clear();
                 _currentClassification = null;
                 _classificationLookup = null;

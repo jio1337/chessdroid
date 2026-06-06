@@ -27,19 +27,76 @@ namespace ChessDroid
                 return;
             }
 
-            // Confirm with user
-            var result = MessageBox.Show(
-                $"This will analyze all {mainLine.Count} moves and add quality symbols.\n" +
-                $"This may take a while depending on engine depth ({config?.EngineDepth ?? 15}).\n\n" +
-                "Continue?",
-                "Classify Moves",
-                MessageBoxButtons.YesNo,
-                MessageBoxIcon.Question);
+            int chosenDepth = ShowAnalyzeDepthDialog(mainLine.Count, config?.EngineDepth ?? 15);
+            if (chosenDepth < 0) return;
 
-            if (result != DialogResult.Yes)
-                return;
+            await ClassifyMoves(mainLine, chosenDepth);
+        }
 
-            await ClassifyMoves(mainLine);
+        private int ShowAnalyzeDepthDialog(int moveCount, int defaultDepth)
+        {
+            bool isDark = ThemeService.IsDarkTheme(config?.Theme);
+            Color bg    = isDark ? Color.FromArgb(30, 30, 30)  : SystemColors.Control;
+            Color fg    = isDark ? Color.White                  : Color.Black;
+            Color btnBg = isDark ? Color.FromArgb(55, 55, 55)  : SystemColors.ButtonFace;
+
+            using var dlg = new Form
+            {
+                Text            = "Analyze Game",
+                FormBorderStyle = FormBorderStyle.FixedDialog,
+                StartPosition   = FormStartPosition.CenterParent,
+                MinimizeBox     = false,
+                MaximizeBox     = false,
+                ShowInTaskbar   = false,
+                ClientSize      = new Size(280, 130),
+                BackColor       = bg,
+                ForeColor       = fg,
+            };
+
+            var lblInfo = new Label
+            {
+                Text      = $"Analyzing {moveCount} moves. Engine depth:",
+                AutoSize  = false,
+                TextAlign = ContentAlignment.MiddleLeft,
+                Bounds    = new Rectangle(12, 14, 256, 22),
+                ForeColor = fg,
+                BackColor = Color.Transparent,
+            };
+
+            var numDepth = new NumericUpDown
+            {
+                Minimum   = 1,
+                Maximum   = 40,
+                Value     = Math.Clamp(defaultDepth, 1, 40),
+                Bounds    = new Rectangle(12, 42, 80, 26),
+                BackColor = isDark ? Color.FromArgb(45, 45, 45) : SystemColors.Window,
+                ForeColor = fg,
+            };
+
+            var btnOk = new Button
+            {
+                Text        = "Analyze",
+                DialogResult= DialogResult.OK,
+                Bounds      = new Rectangle(90, 88, 80, 28),
+                BackColor   = btnBg,
+                ForeColor   = fg,
+                FlatStyle   = FlatStyle.Flat,
+            };
+            var btnCancel = new Button
+            {
+                Text        = "Cancel",
+                DialogResult= DialogResult.Cancel,
+                Bounds      = new Rectangle(180, 88, 80, 28),
+                BackColor   = btnBg,
+                ForeColor   = fg,
+                FlatStyle   = FlatStyle.Flat,
+            };
+
+            dlg.AcceptButton = btnOk;
+            dlg.CancelButton = btnCancel;
+            dlg.Controls.AddRange([lblInfo, numDepth, btnOk, btnCancel]);
+
+            return dlg.ShowDialog(this) == DialogResult.OK ? (int)numDepth.Value : -1;
         }
 
         private void CancelClassification()
@@ -47,7 +104,7 @@ namespace ChessDroid
             _classifyCts?.Cancel();
         }
 
-        private async Task ClassifyMoves(List<MoveNode> mainLine)
+        private async Task ClassifyMoves(List<MoveNode> mainLine, int depth)
         {
             _classifyCts?.Dispose();
             _classifyCts = new CancellationTokenSource();
@@ -56,12 +113,12 @@ namespace ChessDroid
             btnClassifyMoves.Enabled = false;
             SetClassifyControlsEnabled(true);
             _analysisCache.Clear();
-            _cachedDepth = config?.EngineDepth ?? 15;
+            _cachedDepth = depth;
 
             var svc = new MoveClassificationService(engineService!);
             var classification = await svc.ClassifyAsync(
                 mainLine,
-                config?.EngineDepth ?? 15,
+                depth,
                 _analysisCache,
                 status => lblStatus.Text = status,
                 () => RefreshEvalGraph(),
@@ -142,32 +199,16 @@ namespace ChessDroid
             // Cache for DrawItem color lookups
             _classificationLookup = resultLookup;
 
-            // Rebuild the move list items with classification symbols
-            moveListBox.BeginUpdate();
-            try
+            // Store classification symbols on the pairs so DrawItem can render them with colour.
+            for (int i = 0; i < _movePairs.Count; i++)
             {
-                for (int i = 0; i < displayedNodes.Count && i < moveListBox.Items.Count; i++)
-                {
-                    var node = displayedNodes[i];
-                    if (resultLookup.TryGetValue(node, out var result) && !string.IsNullOrEmpty(result.Symbol))
-                    {
-                        // Strip any existing annotation symbols from SanMove (e.g., from real-time detection)
-                        // to avoid duplicates like "Nxd4!!!!" or "Bc5!!?!"
-                        string cleanSan = PgnImportService.StripAnnotationSymbols(node.SanMove);
-
-                        // Update the item text to include the symbol
-                        string moveText = node.IsWhiteMove
-                            ? $"{node.MoveNumber}. {cleanSan}"
-                            : $"{node.MoveNumber}...{cleanSan}";
-
-                        moveListBox.Items[i] = $"{moveText} {result.Symbol}";
-                    }
-                }
+                var pair = _movePairs[i];
+                if (pair.White != null && resultLookup.TryGetValue(pair.White, out var wRes) && !string.IsNullOrEmpty(wRes.Symbol))
+                    pair.WhiteSymbol = wRes.Symbol;
+                if (pair.Black != null && resultLookup.TryGetValue(pair.Black, out var bRes) && !string.IsNullOrEmpty(bRes.Symbol))
+                    pair.BlackSymbol = bRes.Symbol;
             }
-            finally
-            {
-                moveListBox.EndUpdate();
-            }
+            moveListBox.Invalidate();
         }
 
         #endregion

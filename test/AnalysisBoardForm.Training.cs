@@ -2010,7 +2010,7 @@ namespace ChessDroid
             _botPositionCounts.Clear();
             _botPositionCounts[GetPositionKey(chapter.Fen)] = 1;
             moveListBox.Items.Clear();
-            displayedNodes.Clear();
+            _movePairs.Clear();
             _analysisCache.Clear();
             _currentClassification = null;
             _classificationLookup = null;
@@ -2116,7 +2116,7 @@ namespace ChessDroid
             boardControl.LoadFEN(chapter.Fen);
             moveTree.Clear(chapter.Fen);
             moveListBox.Items.Clear();
-            displayedNodes.Clear();
+            _movePairs.Clear();
             _analysisCache.Clear();
             analysisOutput.Clear();
             evalBar?.Reset();

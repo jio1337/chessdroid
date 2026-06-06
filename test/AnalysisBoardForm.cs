@@ -42,8 +42,17 @@ namespace ChessDroid
         private MoveTree moveTree = null!;
         private bool isNavigating = false;
 
-        // Track nodes for listbox mapping
-        private List<MoveNode> displayedNodes = new List<MoveNode>();
+        // Move list grid — one MovePair per ListBox row
+        private sealed class MovePair
+        {
+            public MoveNode? White;
+            public MoveNode? Black;
+            public bool IsVariation;   // full-width row; node stored in White
+            public string? WhiteSymbol;
+            public string? BlackSymbol;
+        }
+        private List<MovePair> _movePairs = new();
+        private MoveNode? _activeNode;  // which half is highlighted in the current row
 
         // Engine match
         private EngineMatchService? matchService;
@@ -395,8 +404,8 @@ namespace ChessDroid
             consoleFormatter.OnSeeLineClicked  += InsertPvIntoMoveTree;
             consoleFormatter.OnNavigateToNode  += node =>
             {
-                int idx = displayedNodes.IndexOf(node);
-                if (idx >= 0) moveListBox.SelectedIndex = idx;
+                int idx = _movePairs.FindIndex(p => p.White == node || p.Black == node);
+                if (idx >= 0) { _activeNode = node; moveListBox.SelectedIndex = idx; }
             };
             consoleFormatter.OnShowGameReview  += () =>
             {
@@ -956,7 +965,7 @@ namespace ChessDroid
             boardControl.ResetBoard();
             moveTree.Clear(boardControl.GetFEN());
             moveListBox.Items.Clear();
-            displayedNodes.Clear();
+            _movePairs.Clear();
             analysisOutput.Clear();
             evalBar?.Reset();
             _analysisCache.Clear(); // Clear analysis cache for new game
@@ -1197,7 +1206,7 @@ namespace ChessDroid
                     boardControl.LoadFEN(fen);
                     moveTree.Clear(fen);
                     moveListBox.Items.Clear();
-                    displayedNodes.Clear();
+                    _movePairs.Clear();
                     analysisOutput.Clear();
                     evalBar?.Reset();
                     _analysisCache.Clear(); // Clear analysis cache for new position
@@ -1220,7 +1229,7 @@ namespace ChessDroid
                 boardControl.LoadFEN(fen);
                 moveTree.Clear(fen);
                 moveListBox.Items.Clear();
-                displayedNodes.Clear();
+                _movePairs.Clear();
                 analysisOutput.Clear();
                 evalBar?.Reset();
                 _analysisCache.Clear();
@@ -1277,147 +1286,154 @@ namespace ChessDroid
 
         private void MoveListBox_DrawItem(object? sender, DrawItemEventArgs e)
         {
-            if (e.Index < 0 || e.Index >= moveListBox.Items.Count) return;
+            if (e.Index < 0 || e.Index >= _movePairs.Count) return;
             if (e.Bounds.Width <= 0 || e.Bounds.Height <= 0) return;
 
-            // Draw background manually so the color is always our theme color,
-            // not whatever the system might have cached.
-            bool isSelected = (e.State & DrawItemState.Selected) == DrawItemState.Selected;
-            using (var bgBrush = new SolidBrush(isSelected ? SystemColors.Highlight : moveListBox.BackColor))
-                e.Graphics.FillRectangle(bgBrush, e.Bounds);
-
-            // Always use the control's live Font property — e.Font can be a stale
-            // reference to a previously-disposed font object.
             Font drawFont = moveListBox.Font;
-            string text = moveListBox.Items[e.Index]?.ToString() ?? "";
             bool isDark = ThemeService.IsDarkTheme(config?.Theme);
+            bool rowSelected = (e.State & DrawItemState.Selected) == DrawItemState.Selected;
+            var pair = _movePairs[e.Index];
 
-            // Check if text contains a classification symbol
-            string moveText = text;
-            string symbol = "";
-            Color symbolColor = e.ForeColor;
-
-            // Extract symbol from the end of the text (using centralized theme colors)
-            if (text.EndsWith("!!"))
+            if (pair.IsVariation || pair.Black == null)
             {
-                symbol = "!!";
-                moveText = text[..^2].TrimEnd();
-                symbolColor = ColorScheme.BrilliantColor;
-            }
-            else if (text.EndsWith("??"))
-            {
-                symbol = "??";
-                moveText = text[..^2].TrimEnd();
-                symbolColor = ColorScheme.BlunderColor;
-            }
-            else if (text.EndsWith("?!"))
-            {
-                symbol = "?!";
-                moveText = text[..^2].TrimEnd();
-                symbolColor = isDark ? ColorScheme.InaccuracyColor : Color.DarkGoldenrod;
-            }
-            else if (text.EndsWith("?") && !text.EndsWith("??") && !text.EndsWith("?!"))
-            {
-                symbol = "?";
-                moveText = text[..^1].TrimEnd();
-                symbolColor = isDark ? ColorScheme.MistakeColor : Color.Chocolate;
-            }
-            else if (text.EndsWith("!") && !text.EndsWith("!!"))
-            {
-                symbol = "!";
-                moveText = text[..^1].TrimEnd();
-                symbolColor = ColorScheme.OnlyMoveColor;
+                // Full-width row (variation or incomplete pair).
+                var node = pair.White!;
+                bool sel = rowSelected;
+                DrawMoveCell(e.Graphics, e.Bounds, node, pair.WhiteSymbol, sel, drawFont, isDark, isFullWidth: true);
+                e.DrawFocusRectangle();
+                return;
             }
 
-            // Determine text color based on selection and theme
-            Color textColor = isSelected
-                ? (isDark ? Color.White : SystemColors.HighlightText)
-                : (isDark ? Color.White : Color.Black);
+            // --- Paired row: split into left (white) and right (black) halves ---
+            int mid = e.Bounds.Left + e.Bounds.Width / 2;
+            var leftBounds  = new Rectangle(e.Bounds.Left, e.Bounds.Top, e.Bounds.Width / 2, e.Bounds.Height);
+            var rightBounds = new Rectangle(mid,           e.Bounds.Top, e.Bounds.Width / 2, e.Bounds.Height);
 
-            // Color the whole move text to match the symbol for annotated moves
-            if (!isSelected && !string.IsNullOrEmpty(symbol))
+            bool leftActive  = _activeNode == pair.White;
+            bool rightActive = _activeNode == pair.Black;
+
+            // Alternating row tint on unselected rows for readability.
+            Color rowTint = e.Index % 2 == 1
+                ? (isDark ? Color.FromArgb(18, 255, 255, 255) : Color.FromArgb(12, 0, 0, 0))
+                : Color.Transparent;
+
+            // Left half background.
+            Color leftBg = (rowSelected && leftActive) || (rowSelected && !rightActive)
+                ? SystemColors.Highlight
+                : moveListBox.BackColor;
+            using (var lb = new SolidBrush(leftBg))
+                e.Graphics.FillRectangle(lb, leftBounds);
+            if (leftBg != SystemColors.Highlight && rowTint != Color.Transparent)
+                using (var tb = new SolidBrush(rowTint))
+                    e.Graphics.FillRectangle(tb, leftBounds);
+
+            // Right half background.
+            Color rightBg = rowSelected && rightActive ? SystemColors.Highlight : moveListBox.BackColor;
+            using (var rb = new SolidBrush(rightBg))
+                e.Graphics.FillRectangle(rb, rightBounds);
+            if (rightBg != SystemColors.Highlight && rowTint != Color.Transparent)
+                using (var tb = new SolidBrush(rowTint))
+                    e.Graphics.FillRectangle(tb, rightBounds);
+
+            // White half — "N. SAN"
+            bool leftSel = (rowSelected && leftActive) || (rowSelected && !rightActive);
+            DrawMoveCell(e.Graphics, leftBounds, pair.White!, pair.WhiteSymbol, leftSel, drawFont, isDark, isFullWidth: false);
+
+            // Black half — "SAN" only (no move number prefix).
+            bool rightSel = rowSelected && rightActive;
+            DrawMoveCellBlack(e.Graphics, rightBounds, pair.Black, pair.BlackSymbol, rightSel, drawFont, isDark);
+
+            // Subtle column divider.
+            using var sepPen = new Pen(isDark ? Color.FromArgb(50, 255, 255, 255) : Color.FromArgb(50, 0, 0, 0));
+            e.Graphics.DrawLine(sepPen, mid, e.Bounds.Top + 2, mid, e.Bounds.Bottom - 2);
+
+            e.DrawFocusRectangle();
+        }
+
+        private void DrawMoveCell(Graphics g, Rectangle bounds, MoveNode node, string? symbol,
+                                  bool isSelected, Font drawFont, bool isDark, bool isFullWidth)
+        {
+            if (isFullWidth)
             {
-                textColor = symbolColor;
+                bool sel = isSelected;
+                using var bg = new SolidBrush(sel ? SystemColors.Highlight : moveListBox.BackColor);
+                g.FillRectangle(bg, bounds);
             }
 
-            // Color move text based on classification quality (Best/Excellent/Good)
-            if (!isSelected && string.IsNullOrEmpty(symbol) &&
-                _classificationLookup != null && e.Index < displayedNodes.Count &&
-                _classificationLookup.TryGetValue(displayedNodes[e.Index], out var classResult))
-            {
-                switch (classResult.Quality)
-                {
-                    case MoveQualityAnalyzer.MoveQuality.Best:
-                        textColor = isDark ? ColorScheme.BestMoveColor : Color.ForestGreen;
-                        break;
-                    case MoveQualityAnalyzer.MoveQuality.Excellent:
-                        textColor = isDark ? ColorScheme.ExcellentMoveColor : Color.SeaGreen;
-                        break;
-                    case MoveQualityAnalyzer.MoveQuality.Good:
-                        textColor = isDark ? ColorScheme.GoodMoveColor : Color.OliveDrab;
-                        break;
-                }
-            }
+            string san = node.SanMove;
+            string moveText = node.IsWhiteMove
+                ? $"{node.MoveNumber}. {san}"
+                : $"{node.MoveNumber}...{san}";
+
+            string sym = symbol ?? "";
+            (string display, Color symColor) = ExtractSymbol(moveText, sym, isDark);
+            Color textColor = ResolveTextColor(node, isSelected, sym, symColor, isDark);
 
             try
             {
-                // Draw move text
-                using (var brush = new SolidBrush(textColor))
+                using var brush = new SolidBrush(textColor);
+                g.DrawString(display, drawFont, brush, bounds.Left + 3, bounds.Top + 1);
+
+                if (!string.IsNullOrEmpty(sym))
                 {
-                    e.Graphics.DrawString(moveText, drawFont, brush, e.Bounds.Left + 2, e.Bounds.Top + 1);
+                    var sz = g.MeasureString(display + " ", drawFont);
+                    using var symBrush = new SolidBrush(symColor);
+                    using var boldFont = new Font(drawFont.FontFamily, drawFont.Size, FontStyle.Bold);
+                    g.DrawString(sym, boldFont, symBrush, bounds.Left + 3 + sz.Width - 4, bounds.Top + 1);
                 }
-
-                // Draw symbol in color if present
-                if (!string.IsNullOrEmpty(symbol))
-                {
-                    var moveSize = e.Graphics.MeasureString(moveText + " ", drawFont);
-
-                    using (var symbolBrush = new SolidBrush(symbolColor))
-                    using (var boldFont = new Font(drawFont.FontFamily, drawFont.Size, FontStyle.Bold))
-                    {
-                        e.Graphics.DrawString(symbol, boldFont, symbolBrush,
-                            e.Bounds.Left + 2 + moveSize.Width - 4, e.Bounds.Top + 1);
-                    }
-                }
-
-                // Draw focus rectangle if focused
-                e.DrawFocusRectangle();
             }
-            catch (Exception ex) when (ex is ArgumentException or ExternalException or ObjectDisposedException)
-            {
-                // GDI resource in a bad state — recreate font from config strings (cannot be
-                // externally disposed), preserve symbol colors, and draw symbol separately.
-                try
-                {
-                    string safeFamily = config?.ConsoleFontFamily ?? "Consolas";
-                    float safeSize = config?.ConsoleFontSize ?? 10f;
-                    using var safeFont = new Font(safeFamily, safeSize);
-                    Color safeTextColor = isSelected
-                        ? (isDark ? Color.White : SystemColors.HighlightText)
-                        : (!string.IsNullOrEmpty(symbol) ? symbolColor : GetQualityColor(e.Index, isDark));
-
-                    using (var safeBrush = new SolidBrush(safeTextColor))
-                        e.Graphics.DrawString(moveText, safeFont, safeBrush,
-                            e.Bounds.Left + 2, e.Bounds.Top + 1);
-                    if (!string.IsNullOrEmpty(symbol))
-                    {
-                        var sz = e.Graphics.MeasureString(moveText + " ", safeFont);
-                        using var symBrush = new SolidBrush(symbolColor);
-                        using var boldFont = new Font(safeFont.FontFamily, safeSize, FontStyle.Bold);
-                        e.Graphics.DrawString(symbol, boldFont, symBrush,
-                            e.Bounds.Left + 2 + sz.Width - 4, e.Bounds.Top + 1);
-                    }
-                }
-                catch { }
-            }
+            catch (Exception ex) when (ex is ArgumentException or ExternalException or ObjectDisposedException) { }
         }
 
-        private Color GetQualityColor(int index, bool isDark)
+        private void DrawMoveCellBlack(Graphics g, Rectangle bounds, MoveNode? node, string? symbol,
+                                       bool isSelected, Font drawFont, bool isDark)
         {
-            if (_classificationLookup != null && index < displayedNodes.Count &&
-                _classificationLookup.TryGetValue(displayedNodes[index], out var classResult))
+            if (node == null) return;
+
+            string sym = symbol ?? "";
+            string san = node.SanMove;
+            (string display, Color symColor) = ExtractSymbol(san, sym, isDark);
+            Color textColor = ResolveTextColor(node, isSelected, sym, symColor, isDark);
+
+            try
             {
-                return classResult.Quality switch
+                using var brush = new SolidBrush(textColor);
+                g.DrawString(display, drawFont, brush, bounds.Left + 6, bounds.Top + 1);
+
+                if (!string.IsNullOrEmpty(sym))
+                {
+                    var sz = g.MeasureString(display + " ", drawFont);
+                    using var symBrush = new SolidBrush(symColor);
+                    using var boldFont = new Font(drawFont.FontFamily, drawFont.Size, FontStyle.Bold);
+                    g.DrawString(sym, boldFont, symBrush, bounds.Left + 6 + sz.Width - 4, bounds.Top + 1);
+                }
+            }
+            catch (Exception ex) when (ex is ArgumentException or ExternalException or ObjectDisposedException) { }
+        }
+
+        private static (string text, Color symColor) ExtractSymbol(string moveText, string sym, bool isDark)
+        {
+            if (string.IsNullOrEmpty(sym)) return (moveText, Color.Empty);
+            Color c = sym switch
+            {
+                "!!"  => ColorScheme.BrilliantColor,
+                "??"  => ColorScheme.BlunderColor,
+                "?!"  => isDark ? ColorScheme.InaccuracyColor : Color.DarkGoldenrod,
+                "?"   => isDark ? ColorScheme.MistakeColor : Color.Chocolate,
+                "!"   => ColorScheme.OnlyMoveColor,
+                _     => Color.Empty
+            };
+            return (moveText, c);
+        }
+
+        private Color ResolveTextColor(MoveNode node, bool isSelected, string sym, Color symColor, bool isDark)
+        {
+            if (isSelected) return isDark ? Color.White : SystemColors.HighlightText;
+            if (!string.IsNullOrEmpty(sym) && symColor != Color.Empty) return symColor;
+
+            if (_classificationLookup != null && _classificationLookup.TryGetValue(node, out var cr))
+            {
+                return cr.Quality switch
                 {
                     MoveQualityAnalyzer.MoveQuality.Precise   => isDark ? Color.FromArgb(89, 153, 191) : Color.SteelBlue,
                     MoveQualityAnalyzer.MoveQuality.Best      => isDark ? ColorScheme.BestMoveColor : Color.ForestGreen,
@@ -1429,41 +1445,78 @@ namespace ChessDroid
             return isDark ? Color.White : Color.Black;
         }
 
+        private Color GetQualityColor(int index, bool isDark)
+        {
+            if (index < 0 || index >= _movePairs.Count) return isDark ? Color.White : Color.Black;
+            var pair = _movePairs[index];
+            var node = _activeNode == pair.Black ? pair.Black : pair.White;
+            if (node == null) return isDark ? Color.White : Color.Black;
+            return ResolveTextColor(node, false, "", Color.Empty, isDark);
+        }
+
+        private void MoveListBox_MouseDown(object? sender, MouseEventArgs e)
+        {
+            int idx = moveListBox.IndexFromPoint(e.Location);
+            if (idx < 0 || idx >= _movePairs.Count) return;
+
+            var pair = _movePairs[idx];
+            if (pair.IsVariation || pair.Black == null)
+            {
+                // Full-width row — just let SelectedIndexChanged handle it.
+                _activeNode = pair.White;
+                return;
+            }
+
+            // Determine which half was clicked.
+            bool clickedLeft = e.X < moveListBox.Width / 2;
+            _activeNode = clickedLeft ? pair.White : pair.Black;
+
+            // If the row was already selected, SelectedIndexChanged won't re-fire — navigate directly.
+            if (moveListBox.SelectedIndex == idx)
+            {
+                NavigateToNode(_activeNode!);
+                moveListBox.Invalidate(moveListBox.GetItemRectangle(idx));
+            }
+        }
+
         private void MoveListBox_SelectedIndexChanged(object? sender, EventArgs e)
         {
             if (isNavigating) return;
             if (matchService?.IsRunning == true) return;
 
             int selected = moveListBox.SelectedIndex;
-            if (selected >= 0 && selected < displayedNodes.Count)
+            if (selected < 0 || selected >= _movePairs.Count) return;
+
+            var pair = _movePairs[selected];
+
+            // Use _activeNode if it belongs to this row; otherwise default to white (left).
+            if (_activeNode != pair.White && _activeNode != pair.Black)
+                _activeNode = pair.White ?? pair.Black;
+
+            if (_activeNode == null) return;
+            NavigateToNode(_activeNode);
+        }
+
+        private void NavigateToNode(MoveNode node)
+        {
+            if (isNavigating || matchRunning) return;
+            isNavigating = true;
+            try
             {
-                isNavigating = true;
-                try
-                {
-                    var node = displayedNodes[selected];
-                    moveTree.GoToNode(node);
-                    boardControl.LoadFEN(node.FEN);
-                    SetLastMoveHighlight();
-                    UpdateMoveAnnotation(node);
-                    UpdateFenDisplay();
-                    UpdateTurnLabel();
+                moveTree.GoToNode(node);
+                boardControl.LoadFEN(node.FEN);
+                SetLastMoveHighlight();
+                UpdateMoveAnnotation(node);
+                UpdateFenDisplay();
+                UpdateTurnLabel();
 
-                    string statusText = $"Move {node.MoveNumber}";
-                    if (node.VariationDepth > 0)
-                        statusText += $" (variation)";
-                    lblStatus.Text = statusText;
+                string statusText = $"Move {node.MoveNumber}";
+                if (node.VariationDepth > 0) statusText += " (variation)";
+                lblStatus.Text = statusText;
 
-                    // Auto-analyze if enabled
-                    if (!matchRunning)
-                    {
-                        _ = TriggerAutoAnalysis();
-                    }
-                }
-                finally
-                {
-                    isNavigating = false;
-                }
+                if (!matchRunning) _ = TriggerAutoAnalysis();
             }
+            finally { isNavigating = false; }
         }
 
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)

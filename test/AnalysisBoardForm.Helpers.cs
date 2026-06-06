@@ -14,119 +14,118 @@ namespace ChessDroid
             try
             {
                 moveListBox.Items.Clear();
-                displayedNodes.Clear();
+                _movePairs.Clear();
 
-                // Build the display list with variations
-                BuildMoveListRecursive(moveTree.Root, 0);
+                BuildPairedMainLine(moveTree.Root, 0);
             }
             finally
             {
                 moveListBox.EndUpdate();
-                // Re-assert font and item height — WinForms OwnerDrawFixed can reset these
-                // after Items.Clear() + EndUpdate in some scenarios.
                 moveListBox.Font = _consoleFont;
                 moveListBox.ItemHeight = Math.Max(14, (int)Math.Ceiling(_consoleFont.GetHeight()));
             }
 
-            // Scroll to current position
             UpdateMoveListSelection();
         }
 
-        private void BuildMoveListRecursive(MoveNode node, int indentLevel)
+        // Builds the main-line move grid (paired white+black rows) plus variation rows.
+        // parentNode.Children[0] is the main line; Children[1..] are variations at this node.
+        private void BuildPairedMainLine(MoveNode parentNode, int indentLevel)
         {
-            // Process main line first
-            foreach (var child in node.Children)
-            {
-                // Add the move to display
-                string indent = new string(' ', indentLevel * 2);
-                string moveText;
+            if (parentNode.Children.Count == 0) return;
 
-                if (child.IsWhiteMove)
+            var mainChild = parentNode.Children[0];
+
+            if (mainChild.IsWhiteMove)
+            {
+                // Try to pair white with its black response.
+                // Only pair if the white node's first child is a black move (no white variation kids).
+                MoveNode? blackNode = (mainChild.Children.Count > 0 && !mainChild.Children[0].IsWhiteMove)
+                    ? mainChild.Children[0] : null;
+
+                if (blackNode != null)
                 {
-                    moveText = $"{indent}{child.MoveNumber}. {child.SanMove}";
+                    AddPairedRow(mainChild, blackNode);
+                    BuildPairedMainLine(blackNode, indentLevel);
+
+                    // Variations from the black node (alternative white continuations).
+                    for (int i = 1; i < blackNode.Children.Count; i++)
+                        AddVariationRows(blackNode.Children[i], indentLevel + 1);
+
+                    // Variations from the white node (alternative black responses).
+                    for (int i = 1; i < mainChild.Children.Count; i++)
+                        AddVariationRows(mainChild.Children[i], indentLevel + 1);
                 }
                 else
                 {
-                    moveText = $"{indent}{child.MoveNumber}...{child.SanMove}";
+                    // White move with no black response yet (game ends on white's turn or
+                    // white has child variations but no clean black response).
+                    AddSingleRow(mainChild, indentLevel, isVariation: false);
+                    BuildPairedMainLine(mainChild, indentLevel);
+
+                    for (int i = 1; i < mainChild.Children.Count; i++)
+                        AddVariationRows(mainChild.Children[i], indentLevel + 1);
                 }
-
-                // Mark variations
-                if (child.VariationDepth > 0 || child.GetVariationIndex() > 0)
-                {
-                    moveText = $"{indent}({child.SanMove})";
-                }
-
-                moveListBox.Items.Add(moveText);
-                displayedNodes.Add(child);
-
-                // Process this node's children (continue main line at same indent)
-                if (child.Children.Count > 0)
-                {
-                    // First child continues the main line
-                    BuildMoveListRecursive(child, indentLevel);
-                }
-
-                // Process variations (children after the first one were already handled)
-                // Variations are added when their parent is processed
-                break; // Only process first child as main line continuation
             }
-
-            // Now process variations (non-first children)
-            if (node.Children.Count > 1)
+            else
             {
-                for (int i = 1; i < node.Children.Count; i++)
-                {
-                    var variation = node.Children[i];
-                    string indent = new string(' ', (indentLevel + 1) * 2);
+                // Game started with black to move — single row for black.
+                AddSingleRow(mainChild, indentLevel, isVariation: false);
+                BuildPairedMainLine(mainChild, indentLevel);
 
-                    string varText;
-                    if (variation.IsWhiteMove)
-                    {
-                        varText = $"{indent}({variation.MoveNumber}. {variation.SanMove}";
-                    }
-                    else
-                    {
-                        varText = $"{indent}({variation.MoveNumber}...{variation.SanMove}";
-                    }
-
-                    moveListBox.Items.Add(varText);
-                    displayedNodes.Add(variation);
-
-                    // Continue the variation line
-                    BuildVariationLine(variation, indentLevel + 1);
-                }
+                for (int i = 1; i < mainChild.Children.Count; i++)
+                    AddVariationRows(mainChild.Children[i], indentLevel + 1);
             }
+
+            // Variations on the parent (alternatives to the main child).
+            for (int i = 1; i < parentNode.Children.Count; i++)
+                AddVariationRows(parentNode.Children[i], indentLevel + 1);
         }
 
-        private void BuildVariationLine(MoveNode node, int indentLevel)
+        private void AddPairedRow(MoveNode white, MoveNode black)
         {
-            var current = node;
+            var pair = new MovePair { White = white, Black = black };
+            moveListBox.Items.Add($"{white.MoveNumber}. {white.SanMove} | {black.SanMove}");
+            _movePairs.Add(pair);
+        }
+
+        private void AddSingleRow(MoveNode node, int indentLevel, bool isVariation)
+        {
+            string indent = new string(' ', indentLevel * 2);
+            string text = node.IsWhiteMove
+                ? $"{indent}{node.MoveNumber}. {node.SanMove}"
+                : $"{indent}{node.MoveNumber}...{node.SanMove}";
+
+            var pair = new MovePair { White = node, IsVariation = isVariation };
+            moveListBox.Items.Add(text);
+            _movePairs.Add(pair);
+        }
+
+        // Emits a variation branch as full-width indented rows.
+        private void AddVariationRows(MoveNode startNode, int indentLevel)
+        {
+            string indent = new string(' ', indentLevel * 2);
+            string firstText = startNode.IsWhiteMove
+                ? $"{indent}({startNode.MoveNumber}. {startNode.SanMove}"
+                : $"{indent}({startNode.MoveNumber}...{startNode.SanMove}";
+
+            moveListBox.Items.Add(firstText);
+            _movePairs.Add(new MovePair { White = startNode, IsVariation = true });
+
+            var current = startNode;
             while (current.Children.Count > 0)
             {
                 var next = current.Children[0];
-                string indent = new string(' ', indentLevel * 2);
-
-                string moveText = $"{indent}{next.SanMove}";
-                if (next.IsWhiteMove)
-                {
-                    moveText = $"{indent}{next.MoveNumber}. {next.SanMove}";
-                }
+                string moveText = next.IsWhiteMove
+                    ? $"{indent}  {next.MoveNumber}. {next.SanMove}"
+                    : $"{indent}  {next.SanMove}";
 
                 moveListBox.Items.Add(moveText);
-                displayedNodes.Add(next);
+                _movePairs.Add(new MovePair { White = next, IsVariation = true });
 
-                // Handle nested variations in this line
-                if (current.Children.Count > 1)
-                {
-                    for (int i = 1; i < current.Children.Count; i++)
-                    {
-                        var nestedVar = current.Children[i];
-                        string nestedIndent = new string(' ', (indentLevel + 1) * 2);
-                        moveListBox.Items.Add($"{nestedIndent}({nestedVar.SanMove}");
-                        displayedNodes.Add(nestedVar);
-                        BuildVariationLine(nestedVar, indentLevel + 2);
-                    }
-                }
+                // Nested variations within this branch.
+                for (int i = 1; i < current.Children.Count; i++)
+                    AddVariationRows(current.Children[i], indentLevel + 2);
 
                 current = next;
             }
@@ -150,14 +149,19 @@ namespace ChessDroid
             var current = moveTree.CurrentNode;
             if (current == moveTree.Root)
             {
+                _activeNode = null;
                 moveListBox.ClearSelected();
                 RefreshEvalGraph();
                 return;
             }
 
-            int idx = displayedNodes.IndexOf(current);
+            int idx = _movePairs.FindIndex(p => p.White == current || p.Black == current);
             if (idx >= 0 && idx < moveListBox.Items.Count)
+            {
+                _activeNode = current;
                 moveListBox.SelectedIndex = idx;
+                moveListBox.Invalidate(moveListBox.GetItemRectangle(idx));
+            }
 
             RefreshEvalGraph();
         }

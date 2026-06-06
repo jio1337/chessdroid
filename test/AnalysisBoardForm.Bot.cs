@@ -50,7 +50,7 @@ namespace ChessDroid
             _botPositionCounts.Clear();
             _botPositionCounts[GetPositionKey(boardControl.GetFEN())] = 1;
             moveListBox.Items.Clear();
-            displayedNodes.Clear();
+            _movePairs.Clear();
             _analysisCache.Clear();
             _currentClassification = null;
             _classificationLookup = null;
