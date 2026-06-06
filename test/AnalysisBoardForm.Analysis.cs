@@ -158,6 +158,11 @@ namespace ChessDroid
             {
                 var result = await engineService.GetBestMoveAsync(fen, depth, multiPV, ct: ct);
 
+                // Guard: if cancelled or navigated away, discard result — an empty bestMove
+                // from a cancelled search must not be misread as checkmate/stalemate.
+                if (ct.IsCancellationRequested || GetPositionKey(boardControl.GetFEN()) != cacheKey)
+                    return;
+
                 if (string.IsNullOrEmpty(result.bestMove) || result.bestMove == "(none)" || result.bestMove == "0000")
                 {
                     // No legal moves — checkmate or stalemate
