@@ -277,37 +277,37 @@ namespace ChessDroid.Services
             BlackClockForeColor     = Color.FromArgb(108, 113, 196)  // violet
         };
 
-        // Miami — neon beach noir: hot pink + electric teal on near-black velvet
+        // Miami — GTA Vice City: deep violet night, neon magenta everywhere, gold + teal as accents
         private static readonly ColorScheme MiamiScheme = new ColorScheme
         {
-            BackgroundColor         = Color.FromArgb( 10,   6,  20), // near-black, purple tint
-            LabelBackColor          = Color.FromArgb( 22,  12,  40),
-            LabelForeColor          = Color.FromArgb(255,  20, 147), // hot pink
-            Button1BackColor        = Color.FromArgb( 22,  12,  40),
-            Button1ForeColor        = Color.FromArgb(  0, 220, 190), // electric teal
-            ButtonResetBackColor    = Color.FromArgb( 22,  12,  40),
-            ButtonResetForeColor    = Color.FromArgb(255,  70,  70),
-            ButtonSettingsBackColor = Color.FromArgb( 22,  12,  40),
-            ButtonSettingsForeColor = Color.FromArgb(255, 165,   0), // orange
-            ConsoleBackColor        = Color.FromArgb(  6,   3,  14), // deepest dark
-            ConsoleForeColor        = Color.FromArgb(  0, 220, 190), // teal
-            CheckboxBackColor       = Color.FromArgb( 10,   6,  20),
-            CheckboxForeColor       = Color.FromArgb(255,  20, 147), // hot pink
+            BackgroundColor         = Color.FromArgb( 28,   6,  50), // rich dark violet — NOT black
+            LabelBackColor          = Color.FromArgb( 55,  14,  88), // deep violet panel
+            LabelForeColor          = Color.FromArgb(255,   0, 160), // neon magenta — the star
+            Button1BackColor        = Color.FromArgb( 55,  14,  88),
+            Button1ForeColor        = Color.FromArgb(255, 210,   0), // warm gold
+            ButtonResetBackColor    = Color.FromArgb( 55,  14,  88),
+            ButtonResetForeColor    = Color.FromArgb(255,  80,  30), // hot orange
+            ButtonSettingsBackColor = Color.FromArgb( 55,  14,  88),
+            ButtonSettingsForeColor = Color.FromArgb(  0, 210, 210), // teal pop (tertiary)
+            ConsoleBackColor        = Color.FromArgb( 16,   3,  30), // deepest violet-black
+            ConsoleForeColor        = Color.FromArgb(255,  80, 200), // pink console text
+            CheckboxBackColor       = Color.FromArgb( 28,   6,  50),
+            CheckboxForeColor       = Color.FromArgb(255,   0, 160), // neon magenta
 
-            FormBackColor           = Color.FromArgb( 10,   6,  20),
-            PanelColor              = Color.FromArgb( 20,  12,  38),
-            TextColor               = Color.FromArgb(  0, 220, 190), // teal as primary text
-            StatusColor             = Color.FromArgb(120,  50, 160), // muted violet
-            ButtonBackColor         = Color.FromArgb( 25,  15,  48),
-            ButtonForeColor         = Color.FromArgb(210, 180, 255), // soft lavender
-            AnalyzeButtonBackColor  = Color.FromArgb(140,   0, 200), // vivid purple
-            GroupBoxBackColor       = Color.FromArgb( 16,   9,  30),
-            ClockBackColor          = Color.FromArgb( 25,  15,  48),
-            ClockActiveBackColor    = Color.FromArgb(  0,  70,  90), // teal glow
-            StartMatchButtonBackColor = Color.FromArgb(  0, 130,  90),
-            StopMatchButtonBackColor  = Color.FromArgb(180,  10,  90), // hot pink-magenta
-            WhiteClockForeColor     = Color.FromArgb(  0, 220, 190), // teal
-            BlackClockForeColor     = Color.FromArgb(255,  20, 147)  // hot pink
+            FormBackColor           = Color.FromArgb( 28,   6,  50),
+            PanelColor              = Color.FromArgb( 48,  10,  80),
+            TextColor               = Color.FromArgb(255,  80, 200), // vivid pink as main UI text
+            StatusColor             = Color.FromArgb(160,  60, 200), // muted violet
+            ButtonBackColor         = Color.FromArgb( 60,  15, 100),
+            ButtonForeColor         = Color.FromArgb(255, 160, 240), // soft pink
+            AnalyzeButtonBackColor  = Color.FromArgb(210,   0, 140), // deep hot-pink button
+            GroupBoxBackColor       = Color.FromArgb( 38,   8,  65),
+            ClockBackColor          = Color.FromArgb( 60,  15, 100),
+            ClockActiveBackColor    = Color.FromArgb(120,  20, 160), // vivid purple active glow
+            StartMatchButtonBackColor = Color.FromArgb(  0, 160, 130), // teal contrast pop
+            StopMatchButtonBackColor  = Color.FromArgb(210,   0, 100), // deep magenta stop
+            WhiteClockForeColor     = Color.FromArgb(255, 220,   0), // gold for white
+            BlackClockForeColor     = Color.FromArgb(255,   0, 160)  // neon magenta for black
         };
 
         public static ColorScheme GetColorScheme(string theme) => theme switch
