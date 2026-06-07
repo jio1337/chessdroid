@@ -880,8 +880,14 @@ namespace ChessDroid.Controls
             g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.HighQuality;
 
             int frameOff   = _boardFrameEnabled ? _boardFrameWidth : 0;
+            if (frameOff * 2 >= Math.Min(Width, Height)) return;   // control too small to draw
             int squareSize = Math.Min(Width - 2 * frameOff, Height - 2 * frameOff) / 8;
             if (squareSize < 1) squareSize = 1;
+            int boardPx  = 8 * squareSize;
+            // Center board within the control — integer truncation of squareSize leaves up to 7 extra
+            // pixels; distributing them evenly makes the four frame strips visually equal.
+            int topOff   = (Height - boardPx) / 2;
+            int leftOff  = (Width  - boardPx) / 2;
 
             // Draw board frame background + coordinate labels
             if (_boardFrameEnabled)
@@ -889,42 +895,51 @@ namespace ChessDroid.Controls
                 _paintBrush.Color = _boardFrameColor;
                 g.FillRectangle(_paintBrush, 0, 0, Width, Height);
 
-                // Rebuild coord font only when frame size changes
-                float frameLabelSize = Math.Max(8f, frameOff * 0.50f);
-                if (_coordFont == null || Math.Abs(_coordFont.Size - frameLabelSize) > 0.1f)
+                if (!_hideCoordinates)
                 {
-                    _coordFont?.Dispose();
-                    _coordFont = new Font("Century Gothic", frameLabelSize, FontStyle.Bold);
-                }
+                    // Rebuild coord font only when strip size changes
+                    float frameLabelSize = Math.Max(8f, frameOff * 0.50f);
+                    if (_coordFont == null || Math.Abs(_coordFont.Size - frameLabelSize) > 0.1f)
+                    {
+                        _coordFont?.Dispose();
+                        _coordFont = new Font("Bahnschrift", frameLabelSize, FontStyle.Bold);
+                    }
 
-                // Contrast-aware label color: warm cream on dark frames, dark brown on light
-                float lum = (_boardFrameColor.R * 0.299f + _boardFrameColor.G * 0.587f + _boardFrameColor.B * 0.114f) / 255f;
-                _paintBrush.Color = lum < 0.5f
-                    ? Color.FromArgb(200, 220, 195, 145)
-                    : Color.FromArgb(185,  55,  30,   5);
+                    // Contrast-aware label color (opaque — TextRenderer does not support alpha)
+                    float lum = (_boardFrameColor.R * 0.299f + _boardFrameColor.G * 0.587f + _boardFrameColor.B * 0.114f) / 255f;
+                    Color labelColor = lum < 0.5f
+                        ? Color.FromArgb(220, 195, 145)   // warm cream on dark frame
+                        : Color.FromArgb( 55,  30,   5);  // dark brown on light frame
 
-                // Files A–H — centered in the top and bottom strips
-                for (int col = 0; col < 8; col++)
-                {
-                    int dc = isFlipped ? 7 - col : col;
-                    string label = ((char)('A' + col)).ToString();
-                    SizeF sz = g.MeasureString(label, _coordFont);
-                    float cx = frameOff + dc * squareSize + squareSize / 2f - sz.Width / 2f;
+                    int botStrip   = Height - topOff - boardPx;
+                    int rightStrip = Width  - leftOff - boardPx;
 
-                    g.DrawString(label, _coordFont, _paintBrush, cx, (frameOff - sz.Height) / 2f);                          // top
-                    g.DrawString(label, _coordFont, _paintBrush, cx, frameOff + 8 * squareSize + (frameOff - sz.Height) / 2f); // bottom
-                }
+                    // TextRenderer (GDI) + NoPadding centers on the actual glyph bounds, not the
+                    // typographic line box — eliminating the visible bias that GDI+ DrawString causes.
+                    const TextFormatFlags coordFlags =
+                        TextFormatFlags.HorizontalCenter |
+                        TextFormatFlags.VerticalCenter   |
+                        TextFormatFlags.NoPadding;
 
-                // Ranks 1–8 — centered in the left and right strips
-                for (int row = 0; row < 8; row++)
-                {
-                    int dr = isFlipped ? 7 - row : row;
-                    string label = (8 - row).ToString();
-                    SizeF sz = g.MeasureString(label, _coordFont);
-                    float cy = frameOff + dr * squareSize + squareSize / 2f - sz.Height / 2f;
+                    // Files A–H (top and bottom strips)
+                    for (int col = 0; col < 8; col++)
+                    {
+                        int dc = isFlipped ? 7 - col : col;
+                        string label = ((char)('A' + col)).ToString();
+                        int x = leftOff + dc * squareSize;
+                        TextRenderer.DrawText(g, label, _coordFont, new Rectangle(x, 0,                squareSize, topOff),   labelColor, coordFlags);
+                        TextRenderer.DrawText(g, label, _coordFont, new Rectangle(x, topOff + boardPx, squareSize, botStrip), labelColor, coordFlags);
+                    }
 
-                    g.DrawString(label, _coordFont, _paintBrush, (frameOff - sz.Width) / 2f,                          cy); // left
-                    g.DrawString(label, _coordFont, _paintBrush, frameOff + 8 * squareSize + (frameOff - sz.Width) / 2f, cy); // right
+                    // Ranks 1–8 (left and right strips)
+                    for (int row = 0; row < 8; row++)
+                    {
+                        int dr = isFlipped ? 7 - row : row;
+                        string label = (8 - row).ToString();
+                        int y = topOff + dr * squareSize;
+                        TextRenderer.DrawText(g, label, _coordFont, new Rectangle(0,                y, leftOff,    squareSize), labelColor, coordFlags);
+                        TextRenderer.DrawText(g, label, _coordFont, new Rectangle(leftOff + boardPx, y, rightStrip, squareSize), labelColor, coordFlags);
+                    }
                 }
             }
 
@@ -937,8 +952,8 @@ namespace ChessDroid.Controls
                     int displayCol = isFlipped ? 7 - col : col;
 
                     Rectangle rect = new Rectangle(
-                        frameOff + displayCol * squareSize,
-                        frameOff + displayRow * squareSize,
+                        leftOff + displayCol * squareSize,
+                        topOff  + displayRow * squareSize,
                         squareSize, squareSize);
 
                     // Determine square color
@@ -1046,20 +1061,20 @@ namespace ChessDroid.Controls
                 int displayCol = isFlipped ? 7 - _trainingHighlightCol : _trainingHighlightCol;
                 _paintBrush.Color = _trainingHighlightColor;
                 g.FillRectangle(_paintBrush,
-                    frameOff + displayCol * squareSize, frameOff + displayRow * squareSize,
+                    leftOff + displayCol * squareSize, topOff + displayRow * squareSize,
                     squareSize, squareSize);
             }
 
             // Draw user arrows
-            DrawArrows(g, squareSize, frameOff);
+            DrawArrows(g, squareSize, topOff);
 
             // Draw the animating piece floating above the board
             if (_animating)
             {
-                float fx = frameOff + (isFlipped ? 7 - _animFromCol : _animFromCol) * squareSize;
-                float fy = frameOff + (isFlipped ? 7 - _animFromRow : _animFromRow) * squareSize;
-                float tx = frameOff + (isFlipped ? 7 - _animToCol   : _animToCol)   * squareSize;
-                float ty = frameOff + (isFlipped ? 7 - _animToRow   : _animToRow)   * squareSize;
+                float fx = leftOff + (isFlipped ? 7 - _animFromCol : _animFromCol) * squareSize;
+                float fy = topOff  + (isFlipped ? 7 - _animFromRow : _animFromRow) * squareSize;
+                float tx = leftOff + (isFlipped ? 7 - _animToCol   : _animToCol)   * squareSize;
+                float ty = topOff  + (isFlipped ? 7 - _animToRow   : _animToRow)   * squareSize;
                 float cx = fx + (tx - fx) * _animProgress;
                 float cy = fy + (ty - fy) * _animProgress;
                 DrawPiece(g, _animPiece, new Rectangle((int)cx, (int)cy, squareSize, squareSize), squareSize);
@@ -1091,9 +1106,10 @@ namespace ChessDroid.Controls
             {
                 for (int i = 1; i < 8; i++)
                 {
-                    int px = frameOff + i * squareSize;
-                    g.DrawLine(_gridPen, px, frameOff, px, frameOff + 8 * squareSize);
-                    g.DrawLine(_gridPen, frameOff, px, frameOff + 8 * squareSize, px);
+                    int vx = leftOff + i * squareSize;
+                    int vy = topOff  + i * squareSize;
+                    g.DrawLine(_gridPen, vx, topOff,   vx, topOff  + boardPx);
+                    g.DrawLine(_gridPen, leftOff, vy,  leftOff + boardPx, vy);
                 }
             }
 
@@ -1113,8 +1129,8 @@ namespace ChessDroid.Controls
                         : (_boardFrameEnabled ? LightenColor(_boardFrameColor, 0.45f)
                                              : (isLight ? darkSquareColor : lightSquareColor));
                     g.DrawString(file, coordFont, _paintBrush,
-                        frameOff + i * squareSize + 2,
-                        frameOff + 8 * squareSize - coordFont.Height - 2);
+                        leftOff + i * squareSize + 2,
+                        topOff  + boardPx - coordFont.Height - 2);
 
                     // Rank numbers (1-8)
                     int rankIndex = isFlipped ? i : 7 - i;
@@ -1127,7 +1143,7 @@ namespace ChessDroid.Controls
                                    isLight ? 0.58f : 0.88f)
                         : (_boardFrameEnabled ? LightenColor(_boardFrameColor, 0.45f)
                                              : (isLight ? darkSquareColor : lightSquareColor));
-                    g.DrawString(rank, coordFont, _paintBrush, frameOff + 2, frameOff + i * squareSize + 2);
+                    g.DrawString(rank, coordFont, _paintBrush, leftOff + 2, topOff + i * squareSize + 2);
                 }
             }
 
@@ -1150,8 +1166,8 @@ namespace ChessDroid.Controls
                         Color baseColor = isLightSq ? darkSquareColor : lightSquareColor;
                         string squareName = $"{(char)('a' + col)}{8 - row}";
                         SizeF textSize = g.MeasureString(squareName, _labelFont);
-                        float x = frameOff + displayCol * squareSize + (squareSize - textSize.Width) / 2f;
-                        float y = frameOff + displayRow * squareSize + (squareSize - textSize.Height) / 2f;
+                        float x = leftOff + displayCol * squareSize + (squareSize - textSize.Width) / 2f;
+                        float y = topOff  + displayRow * squareSize + (squareSize - textSize.Height) / 2f;
                         _paintBrush.Color = Color.FromArgb(140, baseColor);
                         g.DrawString(squareName, _labelFont, _paintBrush, x, y);
                     }
@@ -1171,8 +1187,8 @@ namespace ChessDroid.Controls
                 int displayCol = isFlipped ? 7 - _hoverCol : _hoverCol;
                 string squareName = $"{(char)('a' + _hoverCol)}{8 - _hoverRow}";
                 SizeF textSize = g.MeasureString(squareName, _hoverLabelFont);
-                float x = frameOff + displayCol * squareSize + (squareSize - textSize.Width) / 2f;
-                float y = frameOff + displayRow * squareSize + (squareSize - textSize.Height) / 2f;
+                float x = leftOff + displayCol * squareSize + (squareSize - textSize.Width) / 2f;
+                float y = topOff  + displayRow * squareSize + (squareSize - textSize.Height) / 2f;
                 bool hoverLightSq = (_hoverRow + _hoverCol) % 2 == 0;
                 _paintBrush.Color = hoverLightSq
                     ? Color.FromArgb(210, 40, 40, 40)
@@ -1197,8 +1213,8 @@ namespace ChessDroid.Controls
                 };
 
                 int badgeSize = Math.Max(14, squareSize / 3);
-                int badgeX = frameOff + (displayCol + 1) * squareSize - badgeSize - 2;
-                int badgeY = frameOff + displayRow * squareSize + 2;
+                int badgeX = leftOff + (displayCol + 1) * squareSize - badgeSize - 2;
+                int badgeY = topOff  + displayRow * squareSize + 2;
 
                 _paintBrush.Color = badgeColor;
                 g.FillEllipse(_paintBrush, badgeX, badgeY, badgeSize, badgeSize);
@@ -1217,16 +1233,15 @@ namespace ChessDroid.Controls
             // Vignette — four gradient strips fading inward from each edge
             if (_vignetteEnabled)
             {
-                int boardPx = squareSize * 8;
                 int vw = Math.Max(1, boardPx / 5);
                 var dark = Color.FromArgb(_vignetteAlpha, 0, 0, 0);
-                DrawVignetteStrip(g, frameOff, frameOff, boardPx, vw,
+                DrawVignetteStrip(g, leftOff, topOff, boardPx, vw,
                     System.Drawing.Drawing2D.LinearGradientMode.Vertical, dark, Color.Transparent);           // top
-                DrawVignetteStrip(g, frameOff, frameOff + boardPx - vw, boardPx, vw,
+                DrawVignetteStrip(g, leftOff, topOff + boardPx - vw, boardPx, vw,
                     System.Drawing.Drawing2D.LinearGradientMode.Vertical, Color.Transparent, dark);           // bottom
-                DrawVignetteStrip(g, frameOff, frameOff, vw, boardPx,
+                DrawVignetteStrip(g, leftOff, topOff, vw, boardPx,
                     System.Drawing.Drawing2D.LinearGradientMode.Horizontal, dark, Color.Transparent);         // left
-                DrawVignetteStrip(g, frameOff + boardPx - vw, frameOff, vw, boardPx,
+                DrawVignetteStrip(g, leftOff + boardPx - vw, topOff, vw, boardPx,
                     System.Drawing.Drawing2D.LinearGradientMode.Horizontal, Color.Transparent, dark);         // right
             }
 
@@ -1411,10 +1426,12 @@ namespace ChessDroid.Controls
             if (!InteractionEnabled) return;
             if (e.Button != MouseButtons.Left) return;
 
-            int fo2 = GetFrameOff();
+            int fo2        = GetFrameOff();
             int squareSize = Math.Max(1, Math.Min(Width - 2 * fo2, Height - 2 * fo2) / 8);
-            int clickCol = (e.X - fo2) / squareSize;
-            int clickRow = (e.Y - fo2) / squareSize;
+            int topOff2    = (Height - squareSize * 8) / 2;
+            int leftOff2   = (Width  - squareSize * 8) / 2;
+            int clickCol   = (e.X - leftOff2) / squareSize;
+            int clickRow   = (e.Y - topOff2)  / squareSize;
 
             int boardRow = isFlipped ? 7 - clickRow : clickRow;
             int boardCol = isFlipped ? 7 - clickCol : clickCol;
@@ -1458,10 +1475,12 @@ namespace ChessDroid.Controls
             {
                 if (_hoverSquareLabelEnabled)
                 {
-                    int fo = GetFrameOff();
+                    int fo         = GetFrameOff();
                     int squareSize = Math.Max(1, Math.Min(Width - 2 * fo, Height - 2 * fo) / 8);
-                    int bRow = isFlipped ? 7 - (e.Y - fo) / squareSize : (e.Y - fo) / squareSize;
-                    int bCol = isFlipped ? 7 - (e.X - fo) / squareSize : (e.X - fo) / squareSize;
+                    int topOffM    = (Height - squareSize * 8) / 2;
+                    int leftOffM   = (Width  - squareSize * 8) / 2;
+                    int bRow = isFlipped ? 7 - (e.Y - topOffM)  / squareSize : (e.Y - topOffM)  / squareSize;
+                    int bCol = isFlipped ? 7 - (e.X - leftOffM) / squareSize : (e.X - leftOffM) / squareSize;
                     if (bRow >= 0 && bRow <= 7 && bCol >= 0 && bCol <= 7)
                     {
                         if (bRow != _hoverRow || bCol != _hoverCol)
@@ -1516,10 +1535,12 @@ namespace ChessDroid.Controls
             if (!InteractionEnabled) return;
             if (e.Button != MouseButtons.Left) return;
 
-            int fo3 = GetFrameOff();
+            int fo3        = GetFrameOff();
             int squareSize = Math.Max(1, Math.Min(Width - 2 * fo3, Height - 2 * fo3) / 8);
-            int clickCol = (e.X - fo3) / squareSize;
-            int clickRow = (e.Y - fo3) / squareSize;
+            int topOff3    = (Height - squareSize * 8) / 2;
+            int leftOff3   = (Width  - squareSize * 8) / 2;
+            int clickCol   = (e.X - leftOff3) / squareSize;
+            int clickRow   = (e.Y - topOff3)  / squareSize;
 
             int boardRow = isFlipped ? 7 - clickRow : clickRow;
             int boardCol = isFlipped ? 7 - clickCol : clickCol;
@@ -1587,13 +1608,15 @@ namespace ChessDroid.Controls
 
         private (int row, int col) GetBoardSquare(MouseEventArgs e)
         {
-            int fo = GetFrameOff();
+            int fo         = GetFrameOff();
             int squareSize = Math.Min(Width - 2 * fo, Height - 2 * fo) / 8;
             if (squareSize < 1) squareSize = 1;
-            int clickCol = (e.X - fo) / squareSize;
-            int clickRow = (e.Y - fo) / squareSize;
-            int boardRow = isFlipped ? 7 - clickRow : clickRow;
-            int boardCol = isFlipped ? 7 - clickCol : clickCol;
+            int topOffG    = (Height - squareSize * 8) / 2;
+            int leftOffG   = (Width  - squareSize * 8) / 2;
+            int clickCol   = (e.X - leftOffG) / squareSize;
+            int clickRow   = (e.Y - topOffG)  / squareSize;
+            int boardRow   = isFlipped ? 7 - clickRow : clickRow;
+            int boardCol   = isFlipped ? 7 - clickCol : clickCol;
             return (boardRow, boardCol);
         }
 

@@ -44,6 +44,7 @@ namespace ChessDroid
         public string DarkSquareColor { get; set; } = "#B58863";
         public bool MonochromeBoard { get; set; } = false;
         public bool ShowSquareLabels { get; set; } = false;
+        public bool ShowCoordinates { get; set; } = true;
 
         // Visual aids
         public bool ShowThreatArrows { get; set; } = false;
@@ -223,6 +224,7 @@ namespace ChessDroid
             DarkSquareColor = other.DarkSquareColor;
             MonochromeBoard = other.MonochromeBoard;
             ShowSquareLabels = other.ShowSquareLabels;
+            ShowCoordinates = other.ShowCoordinates;
             ShowThreatArrows = other.ShowThreatArrows;
             ShowBookArrows = other.ShowBookArrows;
             ShowEvalGraph = other.ShowEvalGraph;

@@ -180,6 +180,7 @@ namespace ChessDroid
                 ColorTranslator.FromHtml(config.DarkSquareColor));
             boardControl.MonochromeMode  = config.MonochromeBoard;
             boardControl.ShowSquareLabels = config.ShowSquareLabels;
+            boardControl.HideCoordinates  = !config.ShowCoordinates;
             boardControl.ShowLastMoveHighlight = config.ShowLastMoveHighlight;
             boardControl.AnimationDurationMs = config.AnimationDurationMs;
             ApplyBoardFxFromConfig();
@@ -1027,6 +1028,7 @@ namespace ChessDroid
                     ColorTranslator.FromHtml(config.DarkSquareColor));
                 PopulateBoardColorComboBox(); // re-sync preset selector after custom color edits
                 boardControl.ShowSquareLabels = config.ShowSquareLabels;
+                boardControl.HideCoordinates  = !config.ShowCoordinates;
                 boardControl.ShowLastMoveHighlight = config.ShowLastMoveHighlight;
                 if (!config.ShowThreatArrows) boardControl.ClearThreatArrows();
                 if (_evalGraph != null) _evalGraph.Visible = config.ShowEvalGraph;

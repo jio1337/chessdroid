@@ -70,6 +70,8 @@ namespace ChessDroid
             btnDarkColor = new Button();
             lblSquareLabels = new Label();
             chkSquareLabels = new CheckBox();
+            lblCoordinates = new Label();
+            chkCoordinates = new CheckBox();
             lblThreatArrows = new Label();
             chkThreatArrows = new CheckBox();
             lblLastMoveHighlight = new Label();
@@ -150,7 +152,7 @@ namespace ChessDroid
             grpEngine.Controls.Add(lblMaxRetries);
             grpEngine.Controls.Add(lblEngineTimeout);
             grpEngine.ForeColor = Color.White;
-            grpEngine.Location = new Point(13, 12);
+            grpEngine.Location = new Point(13, 11);
             grpEngine.Name = "grpEngine";
             grpEngine.Size = new Size(298, 230);
             grpEngine.TabIndex = 1;
@@ -328,7 +330,7 @@ namespace ChessDroid
             grpDisplay.Controls.Add(lblConsoleFont);
             grpDisplay.Controls.Add(btnChooseFont);
             grpDisplay.ForeColor = Color.White;
-            grpDisplay.Location = new Point(13, 248);
+            grpDisplay.Location = new Point(13, 247);
             grpDisplay.Name = "grpDisplay";
             grpDisplay.Size = new Size(298, 199);
             grpDisplay.TabIndex = 2;
@@ -495,6 +497,8 @@ namespace ChessDroid
             grpBoardColors.Controls.Add(btnDarkColor);
             grpBoardColors.Controls.Add(lblSquareLabels);
             grpBoardColors.Controls.Add(chkSquareLabels);
+            grpBoardColors.Controls.Add(lblCoordinates);
+            grpBoardColors.Controls.Add(chkCoordinates);
             grpBoardColors.Controls.Add(lblThreatArrows);
             grpBoardColors.Controls.Add(chkThreatArrows);
             grpBoardColors.Controls.Add(lblLastMoveHighlight);
@@ -508,9 +512,9 @@ namespace ChessDroid
             grpBoardColors.Controls.Add(lblMaterialStrips);
             grpBoardColors.Controls.Add(chkMaterialStrips);
             grpBoardColors.ForeColor = Color.White;
-            grpBoardColors.Location = new Point(13, 453);
+            grpBoardColors.Location = new Point(13, 452);
             grpBoardColors.Name = "grpBoardColors";
-            grpBoardColors.Size = new Size(298, 224);
+            grpBoardColors.Size = new Size(298, 240);
             grpBoardColors.TabIndex = 12;
             grpBoardColors.TabStop = false;
             grpBoardColors.Text = "Board Colors";
@@ -561,7 +565,7 @@ namespace ChessDroid
             // 
             // lblSquareLabels
             // 
-            lblSquareLabels.Location = new Point(12, 76);
+            lblSquareLabels.Location = new Point(10, 76);
             lblSquareLabels.Name = "lblSquareLabels";
             lblSquareLabels.Size = new Size(116, 19);
             lblSquareLabels.TabIndex = 7;
@@ -578,9 +582,30 @@ namespace ChessDroid
             toolTip1.SetToolTip(chkSquareLabels, "Show square names (e4, d5...) in the center of each square");
             chkSquareLabels.UseVisualStyleBackColor = true;
             // 
+            // lblCoordinates
+            // 
+            lblCoordinates.Location = new Point(10, 215);
+            lblCoordinates.Name = "lblCoordinates";
+            lblCoordinates.Size = new Size(116, 19);
+            lblCoordinates.TabIndex = 30;
+            lblCoordinates.Text = "Coordinates:";
+            toolTip1.SetToolTip(lblCoordinates, "Show board coordinates (A-H / 1-8)");
+            // 
+            // chkCoordinates
+            // 
+            chkCoordinates.AutoSize = true;
+            chkCoordinates.Checked = true;
+            chkCoordinates.CheckState = CheckState.Checked;
+            chkCoordinates.Location = new Point(166, 217);
+            chkCoordinates.Name = "chkCoordinates";
+            chkCoordinates.Size = new Size(15, 14);
+            chkCoordinates.TabIndex = 31;
+            toolTip1.SetToolTip(chkCoordinates, "Show board coordinates (A-H / 1-8)");
+            chkCoordinates.UseVisualStyleBackColor = true;
+            // 
             // lblThreatArrows
             // 
-            lblThreatArrows.Location = new Point(12, 95);
+            lblThreatArrows.Location = new Point(10, 95);
             lblThreatArrows.Name = "lblThreatArrows";
             lblThreatArrows.Size = new Size(116, 19);
             lblThreatArrows.TabIndex = 9;
@@ -599,7 +624,7 @@ namespace ChessDroid
             // 
             // lblLastMoveHighlight
             // 
-            lblLastMoveHighlight.Location = new Point(12, 114);
+            lblLastMoveHighlight.Location = new Point(11, 114);
             lblLastMoveHighlight.Name = "lblLastMoveHighlight";
             lblLastMoveHighlight.Size = new Size(116, 19);
             lblLastMoveHighlight.TabIndex = 19;
@@ -618,7 +643,7 @@ namespace ChessDroid
             // 
             // lblEvalGraph
             // 
-            lblEvalGraph.Location = new Point(12, 134);
+            lblEvalGraph.Location = new Point(11, 133);
             lblEvalGraph.Name = "lblEvalGraph";
             lblEvalGraph.Size = new Size(104, 19);
             lblEvalGraph.TabIndex = 11;
@@ -637,7 +662,7 @@ namespace ChessDroid
             // 
             // lblAnimations
             // 
-            lblAnimations.Location = new Point(12, 154);
+            lblAnimations.Location = new Point(11, 152);
             lblAnimations.Name = "lblAnimations";
             lblAnimations.Size = new Size(86, 19);
             lblAnimations.TabIndex = 13;
@@ -656,7 +681,7 @@ namespace ChessDroid
             // 
             // lblAnimationSpeed
             // 
-            lblAnimationSpeed.Location = new Point(12, 175);
+            lblAnimationSpeed.Location = new Point(10, 173);
             lblAnimationSpeed.Name = "lblAnimationSpeed";
             lblAnimationSpeed.Size = new Size(104, 19);
             lblAnimationSpeed.TabIndex = 15;
@@ -677,9 +702,9 @@ namespace ChessDroid
             // 
             // lblMaterialStrips
             // 
-            lblMaterialStrips.Location = new Point(12, 195);
+            lblMaterialStrips.Location = new Point(11, 196);
             lblMaterialStrips.Name = "lblMaterialStrips";
-            lblMaterialStrips.Size = new Size(116, 19);
+            lblMaterialStrips.Size = new Size(143, 19);
             lblMaterialStrips.TabIndex = 21;
             lblMaterialStrips.Text = "Material Strips:";
             toolTip1.SetToolTip(lblMaterialStrips, "Show captured pieces and material advantage above/below the board");
@@ -687,7 +712,7 @@ namespace ChessDroid
             // chkMaterialStrips
             // 
             chkMaterialStrips.AutoSize = true;
-            chkMaterialStrips.Location = new Point(166, 197);
+            chkMaterialStrips.Location = new Point(166, 199);
             chkMaterialStrips.Name = "chkMaterialStrips";
             chkMaterialStrips.Size = new Size(15, 14);
             chkMaterialStrips.TabIndex = 22;
@@ -706,7 +731,7 @@ namespace ChessDroid
             grpExplanations.Controls.Add(chkMoveQuality);
             grpExplanations.Controls.Add(chkBookMoves);
             grpExplanations.ForeColor = Color.White;
-            grpExplanations.Location = new Point(317, 12);
+            grpExplanations.Location = new Point(317, 11);
             grpExplanations.Name = "grpExplanations";
             grpExplanations.Size = new Size(255, 248);
             grpExplanations.TabIndex = 3;
@@ -846,7 +871,7 @@ namespace ChessDroid
             grpLc0Features.Controls.Add(trkAggressiveness);
             grpLc0Features.Controls.Add(lblAggressivenessValue);
             grpLc0Features.ForeColor = Color.White;
-            grpLc0Features.Location = new Point(317, 265);
+            grpLc0Features.Location = new Point(317, 264);
             grpLc0Features.Name = "grpLc0Features";
             grpLc0Features.Size = new Size(255, 146);
             grpLc0Features.TabIndex = 9;
@@ -903,7 +928,7 @@ namespace ChessDroid
             grpBoardEffects.Controls.Add(chkBoardFrame);
             grpBoardEffects.Controls.Add(btnFrameColor);
             grpBoardEffects.ForeColor = Color.White;
-            grpBoardEffects.Location = new Point(317, 416);
+            grpBoardEffects.Location = new Point(317, 415);
             grpBoardEffects.Name = "grpBoardEffects";
             grpBoardEffects.Size = new Size(255, 108);
             grpBoardEffects.TabIndex = 14;
@@ -989,7 +1014,7 @@ namespace ChessDroid
             // 
             grpSounds.Controls.Add(chkSoundEffects);
             grpSounds.ForeColor = Color.White;
-            grpSounds.Location = new Point(317, 529);
+            grpSounds.Location = new Point(317, 528);
             grpSounds.Name = "grpSounds";
             grpSounds.Size = new Size(255, 45);
             grpSounds.TabIndex = 15;
@@ -1013,9 +1038,9 @@ namespace ChessDroid
             btnSave.FlatStyle = FlatStyle.Popup;
             btnSave.Font = new Font("Courier New", 14.25F);
             btnSave.ForeColor = SystemColors.ControlLightLight;
-            btnSave.Location = new Point(317, 581);
+            btnSave.Location = new Point(317, 579);
             btnSave.Name = "btnSave";
-            btnSave.Size = new Size(255, 28);
+            btnSave.Size = new Size(255, 43);
             btnSave.TabIndex = 4;
             btnSave.Text = "Save && Apply";
             btnSave.UseVisualStyleBackColor = true;
@@ -1026,7 +1051,7 @@ namespace ChessDroid
             btnReset.FlatStyle = FlatStyle.Popup;
             btnReset.Font = new Font("Courier New", 14.25F);
             btnReset.ForeColor = SystemColors.ControlLightLight;
-            btnReset.Location = new Point(317, 615);
+            btnReset.Location = new Point(317, 628);
             btnReset.Name = "btnReset";
             btnReset.Size = new Size(255, 28);
             btnReset.TabIndex = 5;
@@ -1039,7 +1064,7 @@ namespace ChessDroid
             btnHelp.FlatStyle = FlatStyle.Popup;
             btnHelp.Font = new Font("Courier New", 14.25F);
             btnHelp.ForeColor = SystemColors.ControlLightLight;
-            btnHelp.Location = new Point(317, 649);
+            btnHelp.Location = new Point(317, 662);
             btnHelp.Name = "btnHelp";
             btnHelp.Size = new Size(255, 28);
             btnHelp.TabIndex = 6;
@@ -1053,7 +1078,7 @@ namespace ChessDroid
             btnCancel.FlatStyle = FlatStyle.Popup;
             btnCancel.Font = new Font("Courier New", 14.25F);
             btnCancel.ForeColor = SystemColors.ControlLightLight;
-            btnCancel.Location = new Point(317, 683);
+            btnCancel.Location = new Point(317, 696);
             btnCancel.Name = "btnCancel";
             btnCancel.Size = new Size(255, 28);
             btnCancel.TabIndex = 7;
@@ -1065,7 +1090,7 @@ namespace ChessDroid
             // 
             lblTheme.Font = new Font("Courier New", 10F);
             lblTheme.ForeColor = Color.White;
-            lblTheme.Location = new Point(23, 685);
+            lblTheme.Location = new Point(18, 699);
             lblTheme.Name = "lblTheme";
             lblTheme.Size = new Size(150, 20);
             lblTheme.TabIndex = 0;
@@ -1078,9 +1103,9 @@ namespace ChessDroid
             cmbTheme.DropDownStyle = ComboBoxStyle.DropDownList;
             cmbTheme.Font = new Font("Courier New", 10F);
             cmbTheme.ForeColor = Color.White;
-            cmbTheme.Location = new Point(179, 684);
+            cmbTheme.Location = new Point(174, 698);
             cmbTheme.Name = "cmbTheme";
-            cmbTheme.Size = new Size(128, 24);
+            cmbTheme.Size = new Size(137, 24);
             cmbTheme.TabIndex = 8;
             cmbTheme.SelectedIndexChanged += CmbTheme_SelectedIndexChanged;
             // 
@@ -1092,7 +1117,7 @@ namespace ChessDroid
             AutoSizeMode = AutoSizeMode.GrowAndShrink;
             BackColor = Color.FromArgb(45, 45, 48);
             CancelButton = btnCancel;
-            ClientSize = new Size(585, 723);
+            ClientSize = new Size(585, 734);
             Controls.Add(lblTheme);
             Controls.Add(cmbTheme);
             Controls.Add(btnCancel);
@@ -1176,6 +1201,8 @@ namespace ChessDroid
         private System.Windows.Forms.Button btnDarkColor;
         private System.Windows.Forms.Label lblSquareLabels;
         private System.Windows.Forms.CheckBox chkSquareLabels;
+        private System.Windows.Forms.Label lblCoordinates;
+        private System.Windows.Forms.CheckBox chkCoordinates;
         private System.Windows.Forms.Label lblThreatArrows;
         private System.Windows.Forms.CheckBox chkThreatArrows;
         private System.Windows.Forms.Label lblLastMoveHighlight;

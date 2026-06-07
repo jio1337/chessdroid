@@ -100,6 +100,7 @@ namespace ChessDroid
             try { btnLightColor.BackColor = ColorTranslator.FromHtml(config.LightSquareColor); } catch { btnLightColor.BackColor = Color.FromArgb(240, 217, 181); }
             try { btnDarkColor.BackColor = ColorTranslator.FromHtml(config.DarkSquareColor); } catch { btnDarkColor.BackColor = Color.FromArgb(181, 136, 99); }
             chkSquareLabels.Checked = config.ShowSquareLabels;
+            chkCoordinates.Checked = config.ShowCoordinates;
             chkThreatArrows.Checked = config.ShowThreatArrows;
             chkLastMoveHighlight.Checked = config.ShowLastMoveHighlight;
             chkBookArrows.Checked = config.ShowBookArrows;
@@ -176,6 +177,7 @@ namespace ChessDroid
             config.LightSquareColor = ColorTranslator.ToHtml(btnLightColor.BackColor);
             config.DarkSquareColor = ColorTranslator.ToHtml(btnDarkColor.BackColor);
             config.ShowSquareLabels = chkSquareLabels.Checked;
+            config.ShowCoordinates = chkCoordinates.Checked;
             config.ShowThreatArrows = chkThreatArrows.Checked;
             config.ShowLastMoveHighlight = chkLastMoveHighlight.Checked;
             config.ShowBookArrows = chkBookArrows.Checked;
