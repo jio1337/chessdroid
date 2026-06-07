@@ -1255,6 +1255,12 @@ namespace ChessDroid.Services
             }
         }
 
+        public async Task SetChess960Async(bool enabled)
+        {
+            if (!IsEngineAlive() || State != EngineState.Ready) return;
+            await SafeWriteLineAsync($"{UCI_CMD_SETOPTION} UCI_Chess960 value {(enabled ? "true" : "false")}");
+        }
+
         public async Task SetSkillLevelAsync(int level)
         {
             if (!IsEngineAlive() || State != EngineState.Ready) return;

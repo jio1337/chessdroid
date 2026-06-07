@@ -12,21 +12,31 @@ namespace ChessDroid.Services
         /// </summary>
         public static void RemoveKingCastlingRights(ref string castlingRights, char kingPiece)
         {
+            // Remove all rights for that color — works for both KQkq and Shredder file-letter FEN.
             if (char.IsUpper(kingPiece))
-                castlingRights = castlingRights.Replace("K", "").Replace("Q", "");
+                castlingRights = new string(castlingRights.Where(c => !char.IsUpper(c)).ToArray());
             else
-                castlingRights = castlingRights.Replace("k", "").Replace("q", "");
+                castlingRights = new string(castlingRights.Where(c => !char.IsLower(c)).ToArray());
         }
 
         /// <summary>
-        /// Removes castling rights when rook moves or is captured
+        /// Removes castling rights when rook moves or is captured.
+        /// Handles both standard FEN (K/Q/k/q) and Shredder FEN (file letters A–H / a–h).
         /// </summary>
         public static void RemoveRookCastlingRights(ref string castlingRights, int rank, int file)
         {
-            if (rank == 7 && file == 0) castlingRights = castlingRights.Replace("Q", "");
-            if (rank == 7 && file == 7) castlingRights = castlingRights.Replace("K", "");
-            if (rank == 0 && file == 0) castlingRights = castlingRights.Replace("q", "");
-            if (rank == 0 && file == 7) castlingRights = castlingRights.Replace("k", "");
+            if (rank == 7)
+            {
+                if (file == 7) castlingRights = castlingRights.Replace("K", "");
+                if (file == 0) castlingRights = castlingRights.Replace("Q", "");
+                castlingRights = castlingRights.Replace(((char)('A' + file)).ToString(), "");
+            }
+            else if (rank == 0)
+            {
+                if (file == 7) castlingRights = castlingRights.Replace("k", "");
+                if (file == 0) castlingRights = castlingRights.Replace("q", "");
+                castlingRights = castlingRights.Replace(((char)('a' + file)).ToString(), "");
+            }
         }
 
         /// <summary>
@@ -142,6 +152,25 @@ namespace ChessDroid.Services
             char moving = board[srcRank, srcFile];
             if (moving == '.') return; // source is empty — engine move doesn't match board state
             char target = board[dstRank, dstFile];
+
+            // Chess960 castling: engine sends king-captures-own-rook (e.g. "e1h1").
+            // Detect it here and resolve to king→g/c + rook→f/d before the normal move path.
+            if (PieceHelper.GetPieceType(moving) == PieceType.King)
+            {
+                bool isOwnRook = (moving == 'K' && target == 'R') || (moving == 'k' && target == 'r');
+                if (isOwnRook)
+                {
+                    bool kingside = dstFile > srcFile;
+                    board[srcRank, srcFile] = '.';
+                    board[dstRank, dstFile] = '.';
+                    board[srcRank, kingside ? 6 : 2] = moving;
+                    board[srcRank, kingside ? 5 : 3] = char.IsUpper(moving) ? 'R' : 'r';
+                    RemoveKingCastlingRights(ref castlingRights, moving);
+                    enPassant = "-";
+                    if (string.IsNullOrEmpty(castlingRights)) castlingRights = "-";
+                    return;
+                }
+            }
 
             // Handle en-passant capture
             if (PieceHelper.GetPieceType(moving) == PieceType.Pawn && target == '.' && srcFile != dstFile)

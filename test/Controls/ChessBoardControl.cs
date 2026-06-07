@@ -22,6 +22,13 @@ namespace ChessDroid.Controls
         private bool blackKingsideCastle = true;
         private bool blackQueensideCastle = true;
 
+        // Chess960 mode — uses king-to-rook castling encoding; tracks rook starting files.
+        private bool _chess960Mode = false;
+        private int _wKsRookFile = 7;   // white kingside rook starting file index
+        private int _wQsRookFile = 0;   // white queenside rook starting file index
+        private int _bKsRookFile = 7;   // black kingside rook starting file index
+        private int _bQsRookFile = 0;   // black queenside rook starting file index
+
         // En passant target square (-1, -1 if none)
         private int enPassantRow = -1;
         private int enPassantCol = -1;
@@ -460,6 +467,12 @@ namespace ChessDroid.Controls
             set { if (_hideCoordinates != value) { _hideCoordinates = value; Invalidate(); } }
         }
 
+        public bool Chess960Mode
+        {
+            get => _chess960Mode;
+            set => _chess960Mode = value;
+        }
+
         public ChessBoard GetBoardState() => board;
 
         /// <summary>
@@ -556,12 +569,46 @@ namespace ChessDroid.Controls
                 string[] parts = fen.Split(' ');
                 whiteToMove = parts.Length > 1 ? parts[1] == "w" : true;
 
-                // Parse castling rights
+                // Parse castling rights — handles both KQkq (standard) and Shredder file-letter FEN (Chess960).
                 string castling = parts.Length > 2 ? parts[2] : "KQkq";
-                whiteKingsideCastle = castling.Contains('K');
-                whiteQueensideCastle = castling.Contains('Q');
-                blackKingsideCastle = castling.Contains('k');
-                blackQueensideCastle = castling.Contains('q');
+                whiteKingsideCastle  = false; whiteQueensideCastle = false;
+                blackKingsideCastle  = false; blackQueensideCastle = false;
+                _wKsRookFile = 7; _wQsRookFile = 0;
+                _bKsRookFile = 7; _bQsRookFile = 0;
+
+                // Find king files for Shredder FEN resolution
+                int wKingFile = -1, bKingFile = -1;
+                for (int f = 0; f < 8; f++)
+                {
+                    if (board.GetPiece(7, f) == 'K') wKingFile = f;
+                    if (board.GetPiece(0, f) == 'k') bKingFile = f;
+                }
+
+                foreach (char c in castling)
+                {
+                    switch (c)
+                    {
+                        case 'K': whiteKingsideCastle  = true; break;
+                        case 'Q': whiteQueensideCastle = true; break;
+                        case 'k': blackKingsideCastle  = true; break;
+                        case 'q': blackQueensideCastle = true; break;
+                        default:
+                            // Shredder FEN file letter
+                            if (c >= 'A' && c <= 'H')
+                            {
+                                int rf = c - 'A';
+                                if (wKingFile >= 0 && rf > wKingFile) { whiteKingsideCastle  = true; _wKsRookFile = rf; }
+                                else                                   { whiteQueensideCastle = true; _wQsRookFile = rf; }
+                            }
+                            else if (c >= 'a' && c <= 'h')
+                            {
+                                int rf = c - 'a';
+                                if (bKingFile >= 0 && rf > bKingFile) { blackKingsideCastle  = true; _bKsRookFile = rf; }
+                                else                                   { blackQueensideCastle = true; _bQsRookFile = rf; }
+                            }
+                            break;
+                    }
+                }
 
                 // Parse en passant square
                 string epSquare = parts.Length > 3 ? parts[3] : "-";
@@ -598,10 +645,21 @@ namespace ChessDroid.Controls
 
             // Build castling rights string
             string castling = "";
-            if (whiteKingsideCastle) castling += "K";
-            if (whiteQueensideCastle) castling += "Q";
-            if (blackKingsideCastle) castling += "k";
-            if (blackQueensideCastle) castling += "q";
+            if (_chess960Mode)
+            {
+                // Shredder FEN: file letter of each rook, queenside first (ascending file order)
+                if (whiteQueensideCastle) castling += (char)('A' + _wQsRookFile);
+                if (whiteKingsideCastle)  castling += (char)('A' + _wKsRookFile);
+                if (blackQueensideCastle) castling += (char)('a' + _bQsRookFile);
+                if (blackKingsideCastle)  castling += (char)('a' + _bKsRookFile);
+            }
+            else
+            {
+                if (whiteKingsideCastle)  castling += "K";
+                if (whiteQueensideCastle) castling += "Q";
+                if (blackKingsideCastle)  castling += "k";
+                if (blackQueensideCastle) castling += "q";
+            }
             if (string.IsNullOrEmpty(castling)) castling = "-";
 
             // Build en passant square string
@@ -1750,20 +1808,25 @@ namespace ChessDroid.Controls
             // Quick check: can't capture own pieces
             char targetPiece = board.GetPiece(toRow, toCol);
             char movingPiece = board.GetPiece(fromRow, fromCol);
-            if (targetPiece != '.' &&
+            bool isSameColor = targetPiece != '.' &&
                 ((char.IsUpper(movingPiece) && char.IsUpper(targetPiece)) ||
-                 (char.IsLower(movingPiece) && char.IsLower(targetPiece))))
-            {
-                return false;
-            }
+                 (char.IsLower(movingPiece) && char.IsLower(targetPiece)));
 
-            // Special castling validation
-            if (char.ToLower(movingPiece) == 'k' && Math.Abs(toCol - fromCol) == 2 && fromRow == toRow)
+            // Chess960 exception: king moving to its own rook = castling (not a capture)
+            bool isChess960Castle = _chess960Mode && isSameColor &&
+                char.ToLower(movingPiece) == 'k' && char.ToLower(targetPiece) == 'r' &&
+                fromRow == toRow && (fromRow == 7 || fromRow == 0);
+
+            if (isSameColor && !isChess960Castle) return false;
+
+            // Castling validation
+            if (isChess960Castle)
             {
-                if (!IsValidCastling(fromRow, fromCol, toCol))
-                {
-                    return false;
-                }
+                if (!IsValidCastling960(fromRow, fromCol, toCol)) return false;
+            }
+            else if (!_chess960Mode && char.ToLower(movingPiece) == 'k' && Math.Abs(toCol - fromCol) == 2 && fromRow == toRow)
+            {
+                if (!IsValidCastling(fromRow, fromCol, toCol)) return false;
             }
             // Special pawn move validation
             else if (char.ToLower(movingPiece) == 'p')
@@ -1920,6 +1983,59 @@ namespace ChessDroid.Controls
             return true;
         }
 
+        // Chess960 castling: king moves to the rook's starting square.
+        // King ends on g-file (kingside) or c-file (queenside); rook ends on f/d file.
+        private bool IsValidCastling960(int kingRow, int kingCol, int rookCol)
+        {
+            bool isWhiteKing = whiteToMove;
+            bool kingside = rookCol > kingCol;
+            int kingDest = kingside ? 6 : 2;
+            int rookDest = kingside ? 5 : 3;
+
+            // Check castling rights — must match recorded rook starting file
+            if (isWhiteKing)
+            {
+                if (kingside  && (!whiteKingsideCastle  || rookCol != _wKsRookFile)) return false;
+                if (!kingside && (!whiteQueensideCastle || rookCol != _wQsRookFile)) return false;
+            }
+            else
+            {
+                if (kingside  && (!blackKingsideCastle  || rookCol != _bKsRookFile)) return false;
+                if (!kingside && (!blackQueensideCastle || rookCol != _bQsRookFile)) return false;
+            }
+
+            // Rook must be present
+            char expectedRook = isWhiteKing ? 'R' : 'r';
+            if (board.GetPiece(kingRow, rookCol) != expectedRook) return false;
+
+            // All squares between king's start and king's destination, and between rook's start
+            // and rook's destination, must be empty — excluding the king and rook start squares.
+            int minF = Math.Min(Math.Min(kingCol, rookCol), Math.Min(kingDest, rookDest));
+            int maxF = Math.Max(Math.Max(kingCol, rookCol), Math.Max(kingDest, rookDest));
+            for (int f = minF; f <= maxF; f++)
+            {
+                if (f == kingCol || f == rookCol) continue;
+                if (board.GetPiece(kingRow, f) != '.') return false;
+            }
+
+            // King cannot start in check
+            if (IsKingInCheck(board, isWhiteKing)) return false;
+
+            // King cannot pass through or land on a checked square
+            int step = kingside ? 1 : -1;
+            for (int f = kingCol + step; f != kingDest + step; f += step)
+            {
+                using var pooled = BoardPool.Rent(board);
+                ChessBoard testBoard = pooled.Board;
+                char king = isWhiteKing ? 'K' : 'k';
+                testBoard.SetPiece(kingRow, kingCol, '.');
+                testBoard.SetPiece(kingRow, f, king);
+                if (IsKingInCheck(testBoard, isWhiteKing)) return false;
+            }
+
+            return true;
+        }
+
         private bool IsKingInCheck(ChessBoard testBoard, bool whiteKing)
         {
             // Find king position
@@ -2053,6 +2169,30 @@ namespace ChessDroid.Controls
             // Build UCI move
             string uciMove = ToUciMove(fromRow, fromCol, toRow, toCol, promotion);
 
+            // Chess960 castling: king moves to own rook's starting square → resolve before standard path
+            if (_chess960Mode && char.ToLower(movingPiece) == 'k' && fromRow == toRow &&
+                board.GetPiece(toRow, toCol) == (char.IsUpper(movingPiece) ? 'R' : 'r'))
+            {
+                bool kingside = toCol > fromCol;
+                int kingDest = kingside ? 6 : 2;
+                int rookDest = kingside ? 5 : 3;
+
+                board.SetPiece(fromRow, fromCol, '.');
+                board.SetPiece(toRow,   toCol,   '.');
+                board.SetPiece(fromRow, kingDest, movingPiece);
+                board.SetPiece(fromRow, rookDest, char.IsUpper(movingPiece) ? 'R' : 'r');
+
+                lastMove = (fromRow, fromCol, fromRow, kingDest);
+                UpdateCastlingRights(movingPiece, fromRow, fromCol, fromRow, kingDest);
+                enPassantRow = -1; enPassantCol = -1;
+                whiteToMove = !whiteToMove;
+                ClearSelection();
+                Invalidate();
+                MoveMade?.Invoke(this, new MoveEventArgs(uciMove, GetFEN(), false));
+                BoardChanged?.Invoke(this, EventArgs.Empty);
+                return true;
+            }
+
             // Store move for highlighting
             lastMove = (fromRow, fromCol, toRow, toCol);
 
@@ -2062,9 +2202,9 @@ namespace ChessDroid.Controls
                 (char.ToLower(movingPiece) == 'p' && fromCol != toCol && captured == '.'); // en passant
 
             // Handle special moves
-            if (char.ToLower(movingPiece) == 'k' && Math.Abs(fromCol - toCol) == 2)
+            if (!_chess960Mode && char.ToLower(movingPiece) == 'k' && Math.Abs(fromCol - toCol) == 2)
             {
-                // Castling
+                // Standard castling (king moves 2 squares)
                 if (toCol > fromCol) // Kingside
                 {
                     board.SetPiece(fromRow, 5, board.GetPiece(fromRow, 7));
@@ -2123,34 +2263,32 @@ namespace ChessDroid.Controls
         private void UpdateCastlingRights(char movingPiece, int fromRow, int fromCol, int toRow, int toCol)
         {
             // King moves - lose all castling rights for that color
-            if (movingPiece == 'K')
-            {
-                whiteKingsideCastle = false;
-                whiteQueensideCastle = false;
-            }
-            else if (movingPiece == 'k')
-            {
-                blackKingsideCastle = false;
-                blackQueensideCastle = false;
-            }
+            if (movingPiece == 'K') { whiteKingsideCastle = false; whiteQueensideCastle = false; }
+            else if (movingPiece == 'k') { blackKingsideCastle = false; blackQueensideCastle = false; }
 
             // Rook moves from starting square - lose that side's castling right
+            // In Chess960 the starting files are tracked per-side; in standard chess they are always 0/7.
+            int wKs = _chess960Mode ? _wKsRookFile : 7;
+            int wQs = _chess960Mode ? _wQsRookFile : 0;
+            int bKs = _chess960Mode ? _bKsRookFile : 7;
+            int bQs = _chess960Mode ? _bQsRookFile : 0;
+
             if (movingPiece == 'R')
             {
-                if (fromRow == 7 && fromCol == 7) whiteKingsideCastle = false;
-                if (fromRow == 7 && fromCol == 0) whiteQueensideCastle = false;
+                if (fromRow == 7 && fromCol == wKs) whiteKingsideCastle  = false;
+                if (fromRow == 7 && fromCol == wQs) whiteQueensideCastle = false;
             }
             else if (movingPiece == 'r')
             {
-                if (fromRow == 0 && fromCol == 7) blackKingsideCastle = false;
-                if (fromRow == 0 && fromCol == 0) blackQueensideCastle = false;
+                if (fromRow == 0 && fromCol == bKs) blackKingsideCastle  = false;
+                if (fromRow == 0 && fromCol == bQs) blackQueensideCastle = false;
             }
 
-            // Rook captured - lose that side's castling right
-            if (toRow == 7 && toCol == 7) whiteKingsideCastle = false;
-            if (toRow == 7 && toCol == 0) whiteQueensideCastle = false;
-            if (toRow == 0 && toCol == 7) blackKingsideCastle = false;
-            if (toRow == 0 && toCol == 0) blackQueensideCastle = false;
+            // Rook captured on its starting square - remove its castling right
+            if (toRow == 7 && toCol == wKs) whiteKingsideCastle  = false;
+            if (toRow == 7 && toCol == wQs) whiteQueensideCastle = false;
+            if (toRow == 0 && toCol == bKs) blackKingsideCastle  = false;
+            if (toRow == 0 && toCol == bQs) blackQueensideCastle = false;
         }
 
         private char? ShowPromotionDialog(bool isWhite)

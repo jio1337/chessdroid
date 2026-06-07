@@ -161,40 +161,18 @@ namespace ChessDroid.Services
 
             bool isCapture = board[destRank, destFile] != '.';
 
-            // Check for castling - king moves 2+ squares from the e-file
-            // Standard UCI: e1g1 (O-O), e1c1 (O-O-O), e8g8 (O-O), e8c8 (O-O-O)
-            // Some edge cases may produce e1h1 or e1a1 if board detection gets confused
-            if (PieceHelper.GetPieceType(piece) == PieceType.King)
+            if (PieceHelper.GetPieceType(piece) == PieceType.King && srcRank == destRank)
             {
-                // King must be on starting file (e-file = 4) for castling
-                if (srcFile == 4)
-                {
-                    // Standard castling: king moves 2 squares
-                    if (Math.Abs(destFile - srcFile) == 2 && !isCapture)
-                    {
-                        return destFile > srcFile ? "O-O" : "O-O-O";
-                    }
+                char ownRook = char.IsUpper(piece) ? 'R' : 'r';
 
-                    // Non-standard edge case: king "moves" to rook square (e1a1 or e1h1)
-                    // This can happen with board state detection issues - treat as castling
-                    // White: e1 (rank 1 = row 7), Black: e8 (rank 8 = row 0)
-                    bool isWhiteKingStartRow = (srcRank == 7);
-                    bool isBlackKingStartRow = (srcRank == 0);
+                // Chess960 castling: king-captures-own-rook encoding (any king starting file).
+                // Must be detected before the generic isCapture path — it is NOT a real capture.
+                if (board[destRank, destFile] == ownRook)
+                    return destFile > srcFile ? "O-O" : "O-O-O";
 
-                    if (isWhiteKingStartRow || isBlackKingStartRow)
-                    {
-                        // Kingside: king appears to move to h-file (h1/h8, destFile = 7)
-                        if (destFile == 7)
-                        {
-                            return "O-O";
-                        }
-                        // Queenside: king appears to move to a-file (a1/a8, destFile = 0)
-                        if (destFile == 0)
-                        {
-                            return "O-O-O";
-                        }
-                    }
-                }
+                // Standard castling: king moves exactly 2 squares to an empty square.
+                if (Math.Abs(destFile - srcFile) == 2 && !isCapture)
+                    return destFile > srcFile ? "O-O" : "O-O-O";
             }
 
             // For pawn captures, we need to show source file
