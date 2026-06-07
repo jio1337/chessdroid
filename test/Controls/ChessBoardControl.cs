@@ -890,11 +890,11 @@ namespace ChessDroid.Controls
                 g.FillRectangle(_paintBrush, 0, 0, Width, Height);
 
                 // Rebuild coord font only when frame size changes
-                float frameLabelSize = Math.Max(6f, frameOff * 0.35f);
+                float frameLabelSize = Math.Max(8f, frameOff * 0.50f);
                 if (_coordFont == null || Math.Abs(_coordFont.Size - frameLabelSize) > 0.1f)
                 {
                     _coordFont?.Dispose();
-                    _coordFont = new Font("Times New Roman", frameLabelSize, FontStyle.Regular);
+                    _coordFont = new Font("Century Gothic", frameLabelSize, FontStyle.Bold);
                 }
 
                 // Contrast-aware label color: warm cream on dark frames, dark brown on light
