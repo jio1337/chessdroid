@@ -253,11 +253,28 @@ namespace ChessDroid.Services
                 // Build the explanation line
                 if (!string.IsNullOrEmpty(cleanedExplanation))
                 {
-                    // Add "only winning/saving move" indicator if applicable
+                    // Add "only winning/saving/good move" indicator if applicable
                     string criticalPrefix = "";
                     if (isOnlyWinningMove)
                     {
-                        criticalPrefix = isSavingMove ? "⚡ only saving move, " : "⚡ only winning move, ";
+                        if (isSavingMove)
+                        {
+                            criticalPrefix = "⚡ only saving move, ";
+                        }
+                        else
+                        {
+                            // "only winning move" only when the position is already decisive (>= 1.50).
+                            // For slight/clear advantages, "only good move" is more accurate.
+                            double? bestParsed = MovesExplanation.ParseEvaluation(evaluation);
+                            double sideEval = 0.0;
+                            if (bestParsed.HasValue)
+                            {
+                                var fenPts = completeFen.Split(' ');
+                                bool wtm = fenPts.Length > 1 && fenPts[1] == "w";
+                                sideEval = wtm ? bestParsed.Value : -bestParsed.Value;
+                            }
+                            criticalPrefix = sideEval >= 1.50 ? "⚡ only winning move, " : "⚡ only good move, ";
+                        }
                     }
 
                     // Add classification label if provided (e.g., "BLUNDER" for second/third best when only winning move)
@@ -2237,24 +2254,24 @@ namespace ChessDroid.Services
                     if (whiteToMove)
                     {
                         // White to move: positive eval = White winning
-                        // Basic: best has clear+ advantage (>= 0.70) AND second-best is equal or worse (<= 0.27)
+                        // Basic: meaningful gap (>= 0.50) where best keeps edge (>= 0.40) and second drops to equal (<=0.20)
                         // Swing: huge swing (>= 2.0) where best has slight+ advantage (>= 0.27) and second doesn't
                         // Disaster: best keeps any edge (>= 0) but second is losing badly (<= -1.50)
-                        bool basicTrigger = bestEval.Value >= 0.70 && secondEval.Value <= 0.50;
+                        // Only saving move: best barely draws (~0) but alternatives clearly lose
+                        bool basicTrigger = evalSwing >= 0.50 && bestEval.Value >= 0.40 && secondEval.Value <= 0.20;
                         bool swingTrigger = evalSwing >= 2.0 && bestEval.Value >= 0.27 && secondEval.Value <= 0.70;
                         bool disasterTrigger = bestEval.Value >= 0.0 && secondEval.Value <= -1.50;
-                        // Only saving move: best barely draws (~0) but alternatives clearly lose
                         bool nearDrawTrigger = Math.Abs(bestEval.Value) <= 0.50 && secondEval.Value <= -2.0;
                         isOnlyWinningMove = basicTrigger || swingTrigger || disasterTrigger || nearDrawTrigger;
                     }
                     else
                     {
                         // Black to move: negative eval = Black winning
-                        // Basic: best has clear+ advantage (<= -0.70) AND second-best is equal or worse (>= -0.50)
+                        // Basic: meaningful gap (>= 0.50) where best keeps edge (<= -0.40) and second drops to equal (>=-0.20)
                         // Swing: huge swing (>= 2.0) AND second-best lost most of the advantage (>= -0.70)
                         // Disaster: best keeps any edge (<= 0) but second is losing badly (>= +1.50)
                         // Only saving move: best barely draws (~0) but alternatives clearly lose
-                        bool basicTrigger = bestEval.Value <= -0.70 && secondEval.Value >= -0.50;
+                        bool basicTrigger = evalSwing >= 0.50 && bestEval.Value <= -0.40 && secondEval.Value >= -0.20;
                         bool swingTrigger = evalSwing >= 2.0 && bestEval.Value <= -0.27 && secondEval.Value >= -0.70;
                         bool disasterTrigger = bestEval.Value <= 0.0 && secondEval.Value >= 1.50;
                         bool nearDrawTrigger = Math.Abs(bestEval.Value) <= 0.50 && secondEval.Value >= 2.0;
