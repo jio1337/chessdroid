@@ -1136,8 +1136,15 @@ namespace ChessDroid
         private void BtnTakeBack_Click(object? sender, EventArgs e)
         {
             StopAutoPlay();
-            // Cancel any pending bot move
+
+            // No takebacks in challenge mode
+            if (_botModeActive && _botSettings?.ChallengeMode == true) return;
+
+            // Cancel any pending bot move, then issue a fresh CTS so the next
+            // MakeBotMoveAsync call doesn't immediately see a cancelled token.
             _botMoveCts?.Cancel();
+            if (_botModeActive)
+                _botMoveCts = new CancellationTokenSource();
 
             // In bot mode, take back 2 moves (bot's move + user's move)
             int movesToTakeBack = _botModeActive ? 2 : 1;

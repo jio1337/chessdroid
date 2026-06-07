@@ -247,6 +247,7 @@ namespace ChessDroid
             btnPlayBot.Text = "♞";
             toolTip.SetToolTip(btnPlayBot, "Play vs Bot");
             btnStartMatch.Enabled = true;
+            btnTakeBack.Enabled   = true;
 
             _botEngine?.Dispose();
             _botEngine = null;

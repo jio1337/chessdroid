@@ -792,6 +792,8 @@ namespace ChessDroid
             btnTraining.Enabled       = !active;
             btnTournament.Enabled     = !active;
             btnStartMatch.Enabled     = !active;
+            // Takebacks disabled during challenge mode; always re-enabled when bot stops.
+            btnTakeBack.Enabled       = !active || _botSettings?.ChallengeMode != true;
         }
 
         private void SetMatchControlsEnabled(bool running)
