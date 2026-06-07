@@ -76,7 +76,7 @@ namespace ChessDroid
                 Minimum   = 1,
                 Maximum   = 40,
                 Value     = Math.Clamp(defaultDepth, 1, 40),
-                Bounds    = new Rectangle(pad, 32, 68, 22),
+                Bounds    = new Rectangle((w - 68) / 2, 32, 68, 22),
                 BackColor = isDark ? Color.FromArgb(45, 45, 45) : SystemColors.Window,
                 ForeColor = fg,
             };
