@@ -1,4 +1,4 @@
-## chessdroid v3.17.0 — User Guide
+## chessdroid v3.18.0 — User Guide
 
 ### Welcome to chessdroid!
 
@@ -46,23 +46,38 @@ The Analysis Board is the heart of chessdroid — a complete interactive workspa
 
 ### **2. Play vs Bot**
 
-Challenge a Stockfish engine directly on the Analysis Board.
+Challenge any UCI engine directly on the Analysis Board.
 
 **Starting a game:**
-1. Click the **vs Bot** button on the Analysis Board
-2. Choose your difficulty: drag the slider to pick any level from 1 (weakest) to 20 (strongest)
-3. Pick your color (White or Black)
-4. Click Start — the board auto-flips if you play Black
+1. Click the **♞ vs Bot** button on the Analysis Board
+2. Set your target Elo (1320–3190) or pick a preset: Beginner (1350) / Club (1700) / Advanced (2100) / Expert (2500)
+3. Choose **Friendly** or **Challenge** mode — Challenge hides engine arrows, eval bar, and analysis output
+4. Pick your engine, color (White or Black), then click Start — the board auto-flips if you play Black
 
 **During the game:**
-- Analysis keeps running in the background so you can see engine recommendations for your own moves
-- Engine arrows only appear for **your** turn — not the bot's
-- Click **Take Back** to undo your last move and the bot's response (goes back 2 moves)
-- Click **Stop Bot** to exit bot mode at any time
+- In Friendly mode, analysis keeps running so you can see engine recommendations for your own moves
+- Click **Take Back** (or Backspace) to undo your last move and the bot's response — only available in Friendly mode
+- Click **⏹ Stop Bot** to exit bot mode at any time
 
-**Game end:** chessdroid correctly identifies checkmate vs stalemate and shows the result.
+**Draw detection:** chessdroid automatically detects threefold repetition, insufficient material, and the 50-move rule.
 
-**Note:** Bot mode and engine match mode are mutually exclusive — starting one stops the other.
+**Note:** Bot mode and engine match mode are mutually exclusive.
+
+---
+
+### **2b. Chess 960 (Fischer Random)**
+
+Play chess with randomized starting positions for the back rank.
+
+**Starting a Chess 960 game:**
+1. Click the **♞960** button in the toolbar to open the position browser
+2. Browse all 960 starting positions (each has an SP number and FEN)
+3. Click **Load** to set up the position on the board, or **Play vs Bot** to start immediately
+4. Click **Random** to jump to a random position
+
+**Rules:** Chess 960 uses standard chess rules except for castling — the king and rook move to the same destination squares as in standard chess (g1/c1 for White, g8/c8 for Black), regardless of where they start. The path between king and rook must be clear of other pieces.
+
+**Note:** When playing Chess 960 vs Bot, the engine is automatically configured for Chess960 mode.
 
 ---
 
@@ -99,11 +114,17 @@ chessdroid uses Chess.com-inspired move classification based on win probability 
 **Blunder Explanations:**
 chessdroid explains WHY moves are bad — not just that they are blunders, but what tactical or positional consequences they create.
 
-**"Only Winning Move" Detection:**
-When the best move maintains a winning position but alternatives throw away the advantage, chessdroid highlights this:
+**Move Quality Labels:**
+When the best move is the only good continuation, chessdroid highlights it:
+- **⚡ only good move** — Best move keeps a slight/clear advantage; alternatives drop to equal or worse
+- **⚡ only winning move** — Best move keeps a decisive advantage (≥1.50); alternatives lose it
+- **⚡ only saving move** — Best move barely holds a difficult position; alternatives lose
+
 ```
-Best line: Nf6+ Kh8 Qg8 +5.20
-  → only winning move, fork on king and queen
++0.74 exd5 Qxd5 Nc3 ...
+  → ⚡ only good move, captures pawn
++0.06 d3 dxe4 ...
+  → INACCURACY equal position
 ```
 
 ---

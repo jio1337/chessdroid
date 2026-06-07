@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [3.18.0] - 2026-06-07
+
+### Added
+- **Chess 960 (Fischer Random)** — Full implementation: legal position generator (512 valid starting positions), Shredder FEN encoding, legal Chess960 castling rules. Toggle via dedicated ♞960 toolbar button. Position browser shows all 960 positions with SP number, FEN, and Load / Play vs Bot / Random / Cancel controls.
+- **Chess 960 vs Bot** — Load any Chess960 position and play directly against the bot; board and engine both configured for Chess960 rules automatically.
+- **Show Coordinates toggle** — Hides/shows board rank/file labels globally via Settings.
+- **Solarized and Miami themes** — Two new UI themes (8 total: Dark, Light, Cyberpunk, Dracula, Nord, Sepia, Solarized, Miami).
+- **Move list paired grid** — White and Black moves shown side-by-side (`1. e4 | e5`) in the same row. Variations rendered with indentation, silver text, and `(` prefix for clear visual distinction from main line.
+- **PV variation insertion** — Clicking the colored eval number in the analysis output inserts the engine PV as a variation branch (not main-line moves). Animated playback through the inserted line. Subsequent real moves correctly promoted back to main line via `PromoteToMainLine`.
+- **Opening Explorer eval column** — Pre-baked Stockfish 18 depth-20 evaluations (12,377 positions) shown as a colored column in the Opening Explorer dialog (green = White edge, red = Black edge).
+- **Continuous analysis live truncation** — Live PV lines truncated to 10 ply during search; `...` suffix is clickable to expand all lines inline. `[▲ collapse]` to revert. Final result at max depth always shown in full.
+
+### Changed
+- **Move quality label** — "only winning move" now reserved for truly decisive positions (≥1.50 eval from side's perspective). Slight/clear advantages (< 1.50) use the more accurate "⚡ only good move" label. "only saving move" unchanged.
+- **Move quality threshold** — `basicTrigger` for Precise (!) detection changed from absolutist (`bestEval ≥ 0.70`) to gap-based (`evalSwing ≥ 0.50 AND best ≥ 0.40 AND second ≤ 0.20`) in both live analysis and game review. Eliminates intermittent detection when eval hovers near the old hard threshold.
+- **Inaccuracy threshold** raised from 30cp to 50cp in game review (aligns with Lichess/community standard). Mistake (100cp) and Blunder (300cp) unchanged.
+- **Takebacks in bot mode** — Take Back button and Backspace disabled in Challenge mode. CTS lifecycle fix prevents bot freeze after takeback in Friendly mode.
+
+### Fixed
+- **Bot takeback freeze** — `CancellationTokenSource` was cancelled but never replaced; `MakeBotMoveAsync` grabbed the dead token and silently exited. Fresh CTS now created after each cancel in bot mode.
+- **PV click adding main-line moves** — Clicking eval in analysis was appending PV moves as regular game moves instead of a variation. Fixed via `forceVariation: true` + `IsFromPv` flag + `PromoteToMainLine` helper ensuring real played moves always win `Children[0]`.
+- **2-second stall between continuous analysis cycles** — `completedNaturally` flag eliminates the unnecessary delay when analysis finishes before the next trigger.
+- **Eval bar decimal separator** — `GetEvalText` now uses `InvariantCulture`; fixes comma-instead-of-period display on Spanish/European system locales.
+- **Engine match "Start from current position"** — Unchecked automatically when "Use opening book" is enabled (the two options are mutually exclusive).
+- Code quality: `_animTimer` dispose in `ChessBoardControl`, font caching in `MatchBoardPanel`, `ResetPositionState(fen)` helper replacing 5 duplicated sequences, null guard on `GameState.Board`.
+
+---
+
 ## [3.17.0] - 2026-06-01
 
 ### Added

@@ -3,7 +3,7 @@
 [![.NET](https://img.shields.io/badge/.NET-8.0-blue.svg)](https://dotnet.microsoft.com/download/dotnet/8.0)
 [![Platform](https://img.shields.io/badge/platform-Windows-lightgrey.svg)](https://www.microsoft.com/windows)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-3.17.0-brightgreen.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-3.18.0-brightgreen.svg)](CHANGELOG.md)
 
 **Offline chess analysis & training for Windows**
 
@@ -30,7 +30,8 @@ chessdroid is a desktop application built for focused chess study. Analyze posit
 
 ### Engine Matches & Bot Mode
 - **Engine vs Engine** — Watch engines battle head-to-head on the analysis board
-- **Play vs Bot** — Challenge Stockfish at any skill level (1–20). Board auto-flips for Black, analysis keeps running, take back undoes both moves
+- **Play vs Bot** — Challenge any engine at a specific Elo (1320–3190) or preset (Beginner/Club/Advanced/Expert). Friendly or Challenge mode. Board auto-flips for Black; analysis keeps running.
+- **Chess 960 (Fischer Random)** — Full Fischer Random support with position browser (960 positions), legal Chess960 castling, and Play vs Bot from any starting position
 - **Configurable Time Controls** — Fixed Depth, Time per Move, or Classical time controls
 - **Start from Any Position** — Set up openings manually and have engines continue from there
 - **Live Clock Display** — Real-time clock with active side highlighting
@@ -56,10 +57,12 @@ chessdroid is a desktop application built for focused chess study. Analyze posit
 - **Drawing Patterns** — Wrong color bishop, insufficient material, and more
 
 ### Customization
-- **Dark/Light Themes** — Fully-featured dark mode with automatic theme persistence
+- **8 UI Themes** — Dark, Light, Cyberpunk, Dracula, Nord, Sepia, Solarized, Miami
 - **Custom Board Colors** — Full RGB color picker for light and dark squares; colors persist across sessions
+- **Board Effects** — Gradient fill, vignette overlay, piece glow, board frame with coordinate labels
+- **Show Coordinates toggle** — Rank/file labels on or off globally
 - **Feature Toggles** — Customize analysis display (Tactical, Positional, Endgame, Opening, Win%, WDL, Engine Arrows, Eval Graph, Animations, etc.)
-- **Multiple Piece Sets** — Switch between Chess.com, Lichess, or custom piece templates
+- **22 Piece Sets** — Switch between Chess.com, Lichess, Staunty, Merida, and many more
 
 ## Requirements
 

@@ -2,11 +2,11 @@
 
 ## Overview
 
-chessdroid is a pure offline chess analysis application that combines tactical pattern recognition with deep positional understanding inspired by world-class chess engines (Ethereal and Stockfish). As of v3.17.0, the application is centered around the Analysis Board — an interactive workspace for deep chess analysis with visual engine arrows, threat arrows, eval graph, PV line exploration, piece animations, free-draw annotation, bot mode (Elo targeting 1320–3190, draw detection), continuous analysis, annotated PGN round-trips, square highlighting, auto-play, game accuracy scoring, interactive game review, game library, material strips, SVG piece sets, smooth eval bar animation, neutral engine match arbiter, engine match series with adjudication and opening book, Tournament mode (simultaneous 2×2 board grid), full board customization, 6 UI themes, 22 piece sets, resizable panels, a persistent chessdroid engine rating ladder, sound effects, Endgame & Tactics Drills (10 PGN files), and a full Training suite (Puzzle Training with 5.94M Lichess puzzles, Puzzle Rush, Puzzle Gauntlet, Daily Puzzle, Board Vision, Opening Training, and Square Training).
+chessdroid is a pure offline chess analysis application that combines tactical pattern recognition with deep positional understanding inspired by world-class chess engines (Ethereal and Stockfish). As of v3.18.0, the application is centered around the Analysis Board — an interactive workspace for deep chess analysis with visual engine arrows, threat arrows, eval graph, PV line exploration, piece animations, free-draw annotation, bot mode (Elo targeting 1320–3190, Friendly/Challenge, draw detection), Chess 960 (Fischer Random with position browser and legal castling), continuous analysis, annotated PGN round-trips, square highlighting, auto-play, game accuracy scoring, interactive game review, game library, material strips, SVG piece sets, smooth eval bar animation, neutral engine match arbiter, engine match series with adjudication and opening book, Tournament mode (simultaneous 2×2 board grid), full board customization, 8 UI themes, 22 piece sets, resizable panels, a persistent chessdroid engine rating ladder, sound effects, Endgame & Tactics Drills (10 PGN files), and a full Training suite (Puzzle Training with 5.94M Lichess puzzles, Puzzle Rush, Puzzle Gauntlet, Daily Puzzle, Board Vision, Opening Training, and Square Training).
 
 ---
 
-## System Architecture (v3.17.0)
+## System Architecture (v3.18.0)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -579,7 +579,7 @@ Create a folder in `Templates/` with 12 PNG files named: wK, wQ, wR, wB, wN, wP,
 
 ## Version History
 
-**v3.17.0** — The Arena (Current)
+**v3.18.0** — The Arena (Current)
 - Tournament Mode — simultaneous engine matches on a 2×2 live board grid; round-robin and manual pairing; live standings; full PGN auto-saved
 - Engine Match series — N games per match with color swap, auto-adjudication, opening book (Random/Choose), PGN auto-save with eval annotations
 - Endgame & Tactics Drills — 10 PGN files (5 tactics + 4 endgame series + rook database); all chapters with researched descriptions; Practice vs Bot; Watch Engines
