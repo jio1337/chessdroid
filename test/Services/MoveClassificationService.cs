@@ -189,16 +189,16 @@ namespace ChessDroid.Services
                                 bool isOnlyWinningMove;
                                 if (whiteToMove)
                                 {
-                                    bool basicTrigger   = bestPvEval.Value >= 0.70 && secondPvEval.Value <= 0.50;
-                                    bool swingTrigger   = evalSwing >= 2.0 && bestPvEval.Value >= 0.27 && secondPvEval.Value <= 0.70;
+                                    bool basicTrigger    = evalSwing >= 0.50 && bestPvEval.Value >= 0.40 && secondPvEval.Value <= 0.20;
+                                    bool swingTrigger    = evalSwing >= 2.0 && bestPvEval.Value >= 0.27 && secondPvEval.Value <= 0.70;
                                     bool disasterTrigger = bestPvEval.Value >= 0.0 && secondPvEval.Value <= -1.50;
                                     bool nearDrawTrigger = Math.Abs(bestPvEval.Value) <= 0.50 && secondPvEval.Value <= -2.0;
                                     isOnlyWinningMove = basicTrigger || swingTrigger || disasterTrigger || nearDrawTrigger;
                                 }
                                 else
                                 {
-                                    bool basicTrigger   = bestPvEval.Value <= -0.70 && secondPvEval.Value >= -0.50;
-                                    bool swingTrigger   = evalSwing >= 2.0 && bestPvEval.Value <= -0.27 && secondPvEval.Value >= -0.70;
+                                    bool basicTrigger    = evalSwing >= 0.50 && bestPvEval.Value <= -0.40 && secondPvEval.Value >= -0.20;
+                                    bool swingTrigger    = evalSwing >= 2.0 && bestPvEval.Value <= -0.27 && secondPvEval.Value >= -0.70;
                                     bool disasterTrigger = bestPvEval.Value <= 0.0 && secondPvEval.Value >= 1.50;
                                     bool nearDrawTrigger = Math.Abs(bestPvEval.Value) <= 0.50 && secondPvEval.Value >= 2.0;
                                     isOnlyWinningMove = basicTrigger || swingTrigger || disasterTrigger || nearDrawTrigger;

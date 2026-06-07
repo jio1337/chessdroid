@@ -156,10 +156,10 @@ namespace ChessDroid.Services
             }
 
             // Standard quality classification based on centipawn loss (non-best moves only)
-            double blunderThreshold = 300 * aggressivenessMultiplier;
-            double mistakeThreshold = 100 * aggressivenessMultiplier;
-            double inaccuracyThreshold = 30 * aggressivenessMultiplier;
-            double excellentThreshold = 10;
+            double blunderThreshold    = 300 * aggressivenessMultiplier;
+            double mistakeThreshold    = 100 * aggressivenessMultiplier;
+            double inaccuracyThreshold =  50 * aggressivenessMultiplier;
+            double excellentThreshold  =  10;
 
             if (cpLoss >= blunderThreshold)
             {
