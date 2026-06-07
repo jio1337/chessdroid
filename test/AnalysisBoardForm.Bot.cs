@@ -44,15 +44,10 @@ namespace ChessDroid
             if (resetBoard)
             {
                 boardControl.ResetBoard();
-                moveTree.Clear(boardControl.GetFEN());
-                moveListBox.Items.Clear();
-                _movePairs.Clear();
-                _analysisCache.Clear();
+                ResetPositionState(boardControl.GetFEN());
                 _currentClassification = null;
                 _classificationLookup = null;
                 consoleFormatter?.SetActiveClassification(null);
-                analysisOutput.Clear();
-                evalBar?.Reset();
             }
 
             _botPositionCounts.Clear();

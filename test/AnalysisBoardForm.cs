@@ -963,6 +963,16 @@ namespace ChessDroid
             UpdateMaterialStrips();
         }
 
+        private void ResetPositionState(string fen)
+        {
+            moveTree.Clear(fen);
+            moveListBox.Items.Clear();
+            _movePairs.Clear();
+            analysisOutput.Clear();
+            evalBar?.Reset();
+            _analysisCache.Clear();
+        }
+
         private void BtnNewGame_Click(object? sender, EventArgs e)
         {
             CancelClassification();
@@ -980,12 +990,7 @@ namespace ChessDroid
             }
 
             boardControl.ResetBoard();
-            moveTree.Clear(boardControl.GetFEN());
-            moveListBox.Items.Clear();
-            _movePairs.Clear();
-            analysisOutput.Clear();
-            evalBar?.Reset();
-            _analysisCache.Clear();
+            ResetPositionState(boardControl.GetFEN());
             _currentClassification = null;
             _classificationLookup = null;
             consoleFormatter?.SetActiveClassification(null);
@@ -1044,12 +1049,7 @@ namespace ChessDroid
             boardControl.LoadFEN(fen);
 
             _chess960Active = true;
-            moveTree.Clear(fen);
-            moveListBox.Items.Clear();
-            _movePairs.Clear();
-            analysisOutput.Clear();
-            evalBar?.Reset();
-            _analysisCache.Clear();
+            ResetPositionState(fen);
             _currentClassification = null;
             _classificationLookup = null;
             consoleFormatter?.SetActiveClassification(null);
@@ -1289,12 +1289,7 @@ namespace ChessDroid
                 try
                 {
                     boardControl.LoadFEN(fen);
-                    moveTree.Clear(fen);
-                    moveListBox.Items.Clear();
-                    _movePairs.Clear();
-                    analysisOutput.Clear();
-                    evalBar?.Reset();
-                    _analysisCache.Clear(); // Clear analysis cache for new position
+                    ResetPositionState(fen);
                     UpdateTurnLabel();
                     lblStatus.Text = "Position loaded from FEN";
                     _ = TriggerAutoAnalysis();
@@ -1312,12 +1307,7 @@ namespace ChessDroid
             try
             {
                 boardControl.LoadFEN(fen);
-                moveTree.Clear(fen);
-                moveListBox.Items.Clear();
-                _movePairs.Clear();
-                analysisOutput.Clear();
-                evalBar?.Reset();
-                _analysisCache.Clear();
+                ResetPositionState(fen);
                 UpdateTurnLabel();
                 UpdateFenDisplay();
                 lblStatus.Text = "Position loaded";

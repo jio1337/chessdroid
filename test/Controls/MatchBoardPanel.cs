@@ -23,6 +23,8 @@ namespace ChessDroid.Controls
         private readonly Label              _lblBlackClock;
         private readonly Label              _lblWhiteClock;
         private readonly Label              _lblScore;
+        private readonly Font               _fontBold;
+        private readonly Font               _fontRegular;
         private readonly RichTextBox        _log;
         private readonly Panel              _pnlDetail;
         private readonly System.Windows.Forms.Timer _clockTimer;
@@ -105,6 +107,9 @@ namespace ChessDroid.Controls
             BackColor = Color.FromArgb(30, 30, 30);
             Cursor = Cursors.Hand;
 
+            _fontBold    = new Font("Courier New", 8.5f, FontStyle.Bold);
+            _fontRegular = new Font("Courier New", 8f,   FontStyle.Regular);
+
             _board = new ChessBoardControl
             {
                 InteractionEnabled    = false,
@@ -112,11 +117,11 @@ namespace ChessDroid.Controls
                 ShowSquareLabels      = false
             };
 
-            _lblBlack      = MakeLbl("", ContentAlignment.MiddleLeft,  bold: true);
-            _lblWhite      = MakeLbl("", ContentAlignment.MiddleLeft,  bold: true);
-            _lblBlackClock = MakeLbl("", ContentAlignment.MiddleRight, bold: false);
-            _lblWhiteClock = MakeLbl("", ContentAlignment.MiddleRight, bold: false);
-            _lblScore      = MakeLbl("", ContentAlignment.MiddleCenter, bold: false);
+            _lblBlack      = MakeLbl("", ContentAlignment.MiddleLeft,   _fontBold);
+            _lblWhite      = MakeLbl("", ContentAlignment.MiddleLeft,   _fontBold);
+            _lblBlackClock = MakeLbl("", ContentAlignment.MiddleRight,  _fontRegular);
+            _lblWhiteClock = MakeLbl("", ContentAlignment.MiddleRight,  _fontRegular);
+            _lblScore      = MakeLbl("", ContentAlignment.MiddleCenter, _fontRegular);
             _lblScore.ForeColor = Color.FromArgb(170, 170, 170);
 
             _evalBar = new EvalBarControl { Width = 18 };
@@ -540,15 +545,14 @@ namespace ChessDroid.Controls
             _lblScore.SetBounds(Pad, wy + LH + 1, boardAreaW - Pad * 2, SH);
         }
 
-        private static Label MakeLbl(string text, ContentAlignment align, bool bold)
+        private static Label MakeLbl(string text, ContentAlignment align, Font font)
             => new Label
             {
                 Text      = text,
                 TextAlign = align,
                 ForeColor = Color.FromArgb(200, 200, 200),
                 BackColor = Color.Transparent,
-                Font      = new Font("Courier New", bold ? 8.5f : 8f,
-                                     bold ? FontStyle.Bold : FontStyle.Regular),
+                Font      = font,
                 AutoSize  = false
             };
 
@@ -558,6 +562,8 @@ namespace ChessDroid.Controls
             {
                 _clockTimer.Stop();
                 _clockTimer.Dispose();
+                _fontBold.Dispose();
+                _fontRegular.Dispose();
                 _service?.Dispose();
             }
             base.Dispose(disposing);

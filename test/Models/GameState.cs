@@ -2,7 +2,8 @@ namespace ChessDroid.Models
 {
     public class GameState
     {
-        public ChessBoard Board { get; set; }
+        private ChessBoard _board = new();
+        public ChessBoard Board { get => _board; set => _board = value ?? new ChessBoard(); }
         public bool WhiteToMove { get; set; }
         public string CastlingRights { get; set; }
         public string EnPassantTarget { get; set; }
@@ -12,7 +13,7 @@ namespace ChessDroid.Models
 
         public GameState()
         {
-            Board = new ChessBoard();
+            _board = new ChessBoard();
             WhiteToMove = true;
             CastlingRights = "KQkq";
             EnPassantTarget = "-";

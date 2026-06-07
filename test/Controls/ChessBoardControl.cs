@@ -2354,6 +2354,8 @@ namespace ChessDroid.Controls
                 pieceImages.Clear();
                 foreach (var bmp in _scaledImages.Values) bmp?.Dispose();
                 _scaledImages.Clear();
+                _animTimer.Stop();
+                _animTimer.Dispose();
                 _rainbowTimer.Stop();
                 _rainbowTimer.Dispose();
                 _particleTimer.Stop();
