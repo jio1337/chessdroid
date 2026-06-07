@@ -227,12 +227,8 @@ namespace ChessDroid
                 this.MinimumSize = this.Size;
                 InitTrainingPanel();
 
-                // Chess 960 context menu on right-click of New Game button
-                var chess960Menu = new ContextMenuStrip();
-                chess960Menu.Items.Add("Standard Chess", null, (s2, e2) => BtnNewGame_Click(s2, e2));
-                chess960Menu.Items.Add("Chess 960…", null, (s2, e2) => ShowChess960Dialog());
-                btnNewGame.ContextMenuStrip = chess960Menu;
-                toolTip.SetToolTip(btnNewGame, "New Game  (right-click for Chess 960)");
+                toolTip.SetToolTip(btnNewGame, "New Game");
+                toolTip.SetToolTip(btnChess960, "Chess 960 — Position Browser");
 
                 await InitializeEngineAsync();
             };
@@ -287,7 +283,7 @@ namespace ChessDroid
 
             // Standard buttons
             foreach (var btn in new[] { btnSettings, btnNewGame, btnFlipBoard, btnTakeBack, btnPrevMove,
-                                        btnNextMove, btnAutoPlay, btnPlayBot, btnEditPosition, btnTraining, btnMatch, btnTournament, btnLoadFen, btnCopyFen, btnClassifyMoves,
+                                        btnNextMove, btnAutoPlay, btnPlayBot, btnEditPosition, btnTraining, btnMatch, btnTournament, btnChess960, btnLoadFen, btnCopyFen, btnClassifyMoves,
                                         btnExportPgn, btnImportPgn, btnSaveToLibrary, btnOpenLibrary, btnOpenings })
             {
                 btn.BackColor = scheme.ButtonBackColor;
@@ -850,6 +846,8 @@ namespace ChessDroid
             btnTraining.Location    = new Point(btnEditPosition.Right + gap, buttonY);
             btnMatch.Location       = new Point(btnTraining.Right    + gap, buttonY);
             btnTournament.Location  = new Point(btnMatch.Right       + gap, buttonY);
+            btnChess960.Width       = 36;
+            btnChess960.Location    = new Point(btnTournament.Right  + gap, buttonY);
 
             // Row 3 (Y=60): FEN row — label | input | Load | Copy | ⚙
             const int fenY     = 60;
