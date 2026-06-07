@@ -10,18 +10,8 @@ namespace ChessDroid
 
         private async void BtnPlayBot_Click(object? sender, EventArgs e)
         {
-            if (_botModeActive)
-            {
-                StopBotMode();
-                return;
-            }
-
-            if (matchRunning)
-            {
-                lblStatus.Text = "Stop the engine match first";
-                return;
-            }
-
+            if (_botModeActive) { StopBotMode(); return; }
+            if (matchRunning) { lblStatus.Text = "Stop the engine match first"; return; }
             if (string.IsNullOrEmpty(config?.SelectedEngine))
             {
                 lblStatus.Text = "No engine configured — click ⚙ to set up";
@@ -33,70 +23,75 @@ namespace ChessDroid
                 : Array.Empty<string>();
             using var dialog = new BotSettingsDialog(ThemeService.IsDarkTheme(config?.Theme),
                 availableEngines, config?.EngineProfiles ?? new(), config?.SelectedEngine ?? "");
-            if (dialog.ShowDialog() != DialogResult.OK)
-                return;
+            if (dialog.ShowDialog() != DialogResult.OK) return;
 
-            _botSettings = dialog.Settings;
+            await StartBotEngineAsync(dialog.Settings, resetBoard: true);
+        }
 
-            // Reset the board for a new game
+        // Called by BtnPlayBot_Click (resetBoard=true) and Chess960 browser (resetBoard=false).
+        internal async Task StartBotEngineAsync(BotSettings settings, bool resetBoard)
+        {
+            _botSettings = settings;
             CancelClassification();
-            _botModeActive = true;       // block TriggerAutoAnalysis before any await
-            SetBotControlsEnabled(true); // lock sidebar buttons immediately
+            autoAnalysisCts?.Cancel();
+
+            _botModeActive = true;
+            SetBotControlsEnabled(true);
             boardControl.ClearEngineArrows();
             boardControl.ClearBookArrows();
             _bookArrowsActive = false;
-            boardControl.ResetBoard();
-            moveTree.Clear(boardControl.GetFEN());
+
+            if (resetBoard)
+            {
+                boardControl.ResetBoard();
+                moveTree.Clear(boardControl.GetFEN());
+                moveListBox.Items.Clear();
+                _movePairs.Clear();
+                _analysisCache.Clear();
+                _currentClassification = null;
+                _classificationLookup = null;
+                consoleFormatter?.SetActiveClassification(null);
+                analysisOutput.Clear();
+                evalBar?.Reset();
+            }
+
             _botPositionCounts.Clear();
             _botPositionCounts[GetPositionKey(boardControl.GetFEN())] = 1;
-            moveListBox.Items.Clear();
-            _movePairs.Clear();
-            _analysisCache.Clear();
-            _currentClassification = null;
-            _classificationLookup = null;
-            consoleFormatter?.SetActiveClassification(null);
-            analysisOutput.Clear();
-            evalBar?.Reset();
 
-            // Flip board if user plays Black
-            bool userPlaysBlack = _botSettings.BotPlaysWhite;
+            bool userPlaysBlack = settings.BotPlaysWhite;
             if (userPlaysBlack && !boardControl.IsFlipped)
                 boardControl.FlipBoard();
             else if (!userPlaysBlack && boardControl.IsFlipped)
                 boardControl.FlipBoard();
 
-            // Initialize bot engine
             try
             {
                 lblStatus.Text = "Starting bot engine...";
                 string enginesPath = config!.GetEnginesPath();
-                string engineFile = !string.IsNullOrEmpty(_botSettings.EngineFileName)
-                    ? _botSettings.EngineFileName : config.SelectedEngine;
-                string enginePath = Path.Combine(enginesPath, engineFile);
+                string engineFile = !string.IsNullOrEmpty(settings.EngineFileName)
+                    ? settings.EngineFileName : config.SelectedEngine;
 
                 _botEngine = new ChessEngineService(config);
-                await _botEngine.InitializeAsync(enginePath);
+                await _botEngine.InitializeAsync(Path.Combine(enginesPath, engineFile));
 
                 if (_botEngine.State != EngineState.Ready)
                 {
                     lblStatus.Text = "Failed to start bot engine";
-                    _botEngine.Dispose();
-                    _botEngine = null;
-                    _botModeActive = false;
-                    SetBotControlsEnabled(false);
+                    _botEngine.Dispose(); _botEngine = null;
+                    _botModeActive = false; SetBotControlsEnabled(false);
                     return;
                 }
 
-                // Set skill level
-                await _botEngine.SetEloTargetAsync(_botSettings.EloTarget, _botSettings.GetSkillLevel());
+                await _botEngine.SetEloTargetAsync(settings.EloTarget, settings.GetSkillLevel());
+
+                if (_chess960Active)
+                    await _botEngine.SetChess960Async(true);
             }
             catch (Exception ex)
             {
                 lblStatus.Text = $"Bot engine error: {ex.Message}";
-                _botEngine?.Dispose();
-                _botEngine = null;
-                _botModeActive = false;
-                SetBotControlsEnabled(false);
+                _botEngine?.Dispose(); _botEngine = null;
+                _botModeActive = false; SetBotControlsEnabled(false);
                 return;
             }
 
@@ -105,26 +100,19 @@ namespace ChessDroid
             toolTip.SetToolTip(btnPlayBot, "Stop Bot");
             boardControl.InteractionEnabled = true;
 
-            if (_botSettings.ChallengeMode)
-                ApplyChallengeMode();
+            if (settings.ChallengeMode) ApplyChallengeMode();
 
-            string diffLabel = _botSettings.GetDifficultyLabel();
+            string diffLabel  = settings.GetDifficultyLabel();
             string colorLabel = userPlaysBlack ? "Black" : "White";
-            string typeLabel = _botSettings.ChallengeMode ? "Challenge" : "Friendly";
+            string typeLabel  = settings.ChallengeMode ? "Challenge" : "Friendly";
             analysisOutput.AppendText($"Bot Mode: You play {colorLabel}\n");
             analysisOutput.AppendText($"Difficulty: {diffLabel}  |  {typeLabel}\n\n");
             lblStatus.Text = $"Bot mode — {diffLabel}";
 
-            // If bot plays White, make the first move
-            if (_botSettings.BotPlaysWhite)
-            {
+            if (settings.BotPlaysWhite)
                 _ = MakeBotMoveAsync();
-            }
             else
-            {
-                // Trigger analysis for the starting position
                 _ = TriggerAutoAnalysis();
-            }
         }
 
         private async Task MakeBotMoveAsync()

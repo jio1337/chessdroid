@@ -1007,65 +1007,29 @@ namespace ChessDroid
             _ = TriggerAutoAnalysis();
         }
 
-        private void ShowChess960Dialog()
+        private async void ShowChess960Dialog()
         {
-            bool isDark = ThemeService.IsDarkTheme(config?.Theme);
-            Color bg    = isDark ? Color.FromArgb(30, 30, 30) : SystemColors.Control;
-            Color fg    = isDark ? Color.White                 : Color.Black;
-            Color btnBg = isDark ? Color.FromArgb(55, 55, 55) : SystemColors.ButtonFace;
+            using var browser = new Chess960BrowserDialog(ThemeService.IsDarkTheme(config?.Theme));
+            if (browser.ShowDialog(this) != DialogResult.OK) return;
 
-            using var fnt = new Font("Courier New", 9f);
-            const int w = 260, h = 110, pad = 10, btnH = 24;
+            int position = browser.SelectedPosition;
+            await StartChess960GameAsync(position);
 
-            using var dlg = new Form
+            if (browser.StartBot)
             {
-                Text = "Chess 960", FormBorderStyle = FormBorderStyle.FixedDialog,
-                StartPosition = FormStartPosition.CenterParent, MinimizeBox = false,
-                MaximizeBox = false, ShowInTaskbar = false, ClientSize = new Size(w, h),
-                BackColor = bg, ForeColor = fg, Font = fnt,
-            };
-
-            var lblPos = new Label
-            {
-                Text = "Position (0 – 959):", AutoSize = false,
-                TextAlign = ContentAlignment.MiddleLeft,
-                Bounds = new Rectangle(pad, 10, w - pad * 2, 18), ForeColor = fg, BackColor = Color.Transparent,
-            };
-
-            var numPos = new NumericUpDown
-            {
-                Minimum = 0, Maximum = 959, Value = Chess960Service.GetRandomPosition(),
-                Bounds = new Rectangle((w - 80) / 2, 32, 80, 22),
-                BackColor = isDark ? Color.FromArgb(45, 45, 45) : SystemColors.Window, ForeColor = fg,
-            };
-
-            int btnW = (w - pad * 2 - 8) / 2;
-            var btnRandom = new Button
-            {
-                Text = "Random", Bounds = new Rectangle(pad, 62, btnW, btnH),
-                BackColor = btnBg, ForeColor = fg, FlatStyle = FlatStyle.Flat,
-            };
-            btnRandom.Click += (s, e) => numPos.Value = Chess960Service.GetRandomPosition();
-
-            var btnStart = new Button
-            {
-                Text = "Start Game", DialogResult = DialogResult.OK,
-                Bounds = new Rectangle(pad + btnW + 8, 62, btnW, btnH),
-                BackColor = btnBg, ForeColor = fg, FlatStyle = FlatStyle.Flat,
-            };
-            var btnCancel = new Button
-            {
-                Text = "Cancel", DialogResult = DialogResult.Cancel,
-                Bounds = new Rectangle(pad, h - pad - btnH, w - pad * 2, btnH),
-                BackColor = btnBg, ForeColor = fg, FlatStyle = FlatStyle.Flat, Visible = false,
-            };
-
-            dlg.AcceptButton = btnStart;
-            dlg.CancelButton = btnCancel;
-            dlg.Controls.AddRange([lblPos, numPos, btnRandom, btnStart, btnCancel]);
-
-            if (dlg.ShowDialog(this) == DialogResult.OK)
-                _ = StartChess960GameAsync((int)numPos.Value);
+                if (string.IsNullOrEmpty(config?.SelectedEngine))
+                {
+                    lblStatus.Text = "No engine configured — click ⚙ to set up";
+                    return;
+                }
+                string[] engines = Directory.Exists(config.GetEnginesPath())
+                    ? Directory.GetFiles(config.GetEnginesPath(), "*.exe").Select(Path.GetFileName).Where(f => f != null).Cast<string>().ToArray()
+                    : Array.Empty<string>();
+                using var botDlg = new BotSettingsDialog(ThemeService.IsDarkTheme(config?.Theme),
+                    engines, config?.EngineProfiles ?? new(), config?.SelectedEngine ?? "");
+                if (botDlg.ShowDialog(this) != DialogResult.OK) return;
+                await StartBotEngineAsync(botDlg.Settings, resetBoard: false);
+            }
         }
 
         private async Task StartChess960GameAsync(int position)
