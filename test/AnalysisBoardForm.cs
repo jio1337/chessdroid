@@ -47,7 +47,9 @@ namespace ChessDroid
         {
             public MoveNode? White;
             public MoveNode? Black;
-            public bool IsVariation;   // full-width row; node stored in White
+            public bool IsVariation;
+            public int  IndentLevel;       // pixels = IndentLevel * 14
+            public bool IsVariationStart;  // show "(" prefix on first row of a variation
             public string? WhiteSymbol;
             public string? BlackSymbol;
         }
@@ -1293,27 +1295,36 @@ namespace ChessDroid
             bool isDark = ThemeService.IsDarkTheme(config?.Theme);
             bool rowSelected = (e.State & DrawItemState.Selected) == DrawItemState.Selected;
             var pair = _movePairs[e.Index];
+            int indentPx = pair.IndentLevel * 14;
 
-            if (pair.IsVariation || pair.Black == null)
+            if (pair.Black == null)
             {
-                // Full-width row (variation or incomplete pair).
-                var node = pair.White!;
-                bool sel = rowSelected;
-                DrawMoveCell(e.Graphics, e.Bounds, node, pair.WhiteSymbol, sel, drawFont, isDark, isFullWidth: true);
+                // Full-width row (unpaired or variation starting with a black move).
+                DrawMoveCell(e.Graphics, e.Bounds, pair.White!, pair.WhiteSymbol, rowSelected, drawFont, isDark,
+                             isFullWidth: true, pair.IsVariation, indentPx, pair.IsVariationStart);
                 e.DrawFocusRectangle();
                 return;
             }
 
-            // --- Paired row: split into left (white) and right (black) halves ---
-            int mid = e.Bounds.Left + e.Bounds.Width / 2;
-            var leftBounds  = new Rectangle(e.Bounds.Left, e.Bounds.Top, e.Bounds.Width / 2, e.Bounds.Height);
-            var rightBounds = new Rectangle(mid,           e.Bounds.Top, e.Bounds.Width / 2, e.Bounds.Height);
+            // --- Paired row (main line or paired variation): split into halves ---
+            int indentedLeft = e.Bounds.Left + indentPx;
+            int usableWidth  = e.Bounds.Width - indentPx;
+            int mid          = indentedLeft + usableWidth / 2;
+            var leftBounds   = new Rectangle(indentedLeft, e.Bounds.Top, usableWidth / 2, e.Bounds.Height);
+            var rightBounds  = new Rectangle(mid,          e.Bounds.Top, usableWidth / 2, e.Bounds.Height);
 
             bool leftActive  = _activeNode == pair.White;
             bool rightActive = _activeNode == pair.Black;
 
-            // Alternating row tint on unselected rows for readability.
-            Color rowTint = e.Index % 2 == 1
+            // Clear the indent gutter.
+            if (indentPx > 0)
+            {
+                using var gutter = new SolidBrush(moveListBox.BackColor);
+                e.Graphics.FillRectangle(gutter, new Rectangle(e.Bounds.Left, e.Bounds.Top, indentPx, e.Bounds.Height));
+            }
+
+            // Alternating row tint on unselected main-line rows for readability.
+            Color rowTint = !pair.IsVariation && e.Index % 2 == 1
                 ? (isDark ? Color.FromArgb(18, 255, 255, 255) : Color.FromArgb(12, 0, 0, 0))
                 : Color.Transparent;
 
@@ -1335,13 +1346,14 @@ namespace ChessDroid
                 using (var tb = new SolidBrush(rowTint))
                     e.Graphics.FillRectangle(tb, rightBounds);
 
-            // White half — "N. SAN"
+            // White/left half.
             bool leftSel = (rowSelected && leftActive) || (rowSelected && !rightActive);
-            DrawMoveCell(e.Graphics, leftBounds, pair.White!, pair.WhiteSymbol, leftSel, drawFont, isDark, isFullWidth: false);
+            DrawMoveCell(e.Graphics, leftBounds, pair.White!, pair.WhiteSymbol, leftSel, drawFont, isDark,
+                         isFullWidth: false, pair.IsVariation, 0, pair.IsVariationStart);
 
-            // Black half — "SAN" only (no move number prefix).
+            // Black/right half.
             bool rightSel = rowSelected && rightActive;
-            DrawMoveCellBlack(e.Graphics, rightBounds, pair.Black, pair.BlackSymbol, rightSel, drawFont, isDark);
+            DrawMoveCellBlack(e.Graphics, rightBounds, pair.Black, pair.BlackSymbol, rightSel, drawFont, isDark, pair.IsVariation);
 
             // Subtle column divider.
             using var sepPen = new Pen(isDark ? Color.FromArgb(50, 255, 255, 255) : Color.FromArgb(50, 0, 0, 0));
@@ -1351,35 +1363,41 @@ namespace ChessDroid
         }
 
         private void DrawMoveCell(Graphics g, Rectangle bounds, MoveNode node, string? symbol,
-                                  bool isSelected, Font drawFont, bool isDark, bool isFullWidth)
+                                  bool isSelected, Font drawFont, bool isDark, bool isFullWidth,
+                                  bool isVariation = false, int indentPx = 0, bool isVariationStart = false)
         {
             if (isFullWidth)
             {
-                bool sel = isSelected;
-                using var bg = new SolidBrush(sel ? SystemColors.Highlight : moveListBox.BackColor);
+                using var bg = new SolidBrush(isSelected ? SystemColors.Highlight : moveListBox.BackColor);
                 g.FillRectangle(bg, bounds);
             }
 
             string san = node.SanMove;
+            // Variation rows get "(" on the first line and " " (alignment spacer) on continuations.
+            string prefix = isVariation ? (isVariationStart ? "(" : " ") : "";
             string moveText = node.IsWhiteMove
-                ? $"{node.MoveNumber}. {san}"
-                : $"{node.MoveNumber}...{san}";
+                ? $"{prefix}{node.MoveNumber}. {san}"
+                : $"{prefix}{node.MoveNumber}...{san}";
 
             string sym = symbol ?? "";
             (string display, Color symColor) = ExtractSymbol(moveText, sym, isDark);
-            Color textColor = ResolveTextColor(node, isSelected, sym, symColor, isDark);
+            Color textColor = isVariation && !isSelected
+                ? (isDark ? Color.Silver : Color.DimGray)
+                : ResolveTextColor(node, isSelected, sym, symColor, isDark);
+
+            float textX = bounds.Left + 3 + indentPx;
 
             try
             {
                 using var brush = new SolidBrush(textColor);
-                g.DrawString(display, drawFont, brush, bounds.Left + 3, bounds.Top + 1);
+                g.DrawString(display, drawFont, brush, textX, bounds.Top + 1);
 
                 if (!string.IsNullOrEmpty(sym))
                 {
                     var sz = g.MeasureString(display + " ", drawFont);
                     using var symBrush = new SolidBrush(symColor);
                     using var boldFont = new Font(drawFont.FontFamily, drawFont.Size, FontStyle.Bold);
-                    g.DrawString(sym, boldFont, symBrush, bounds.Left + 3 + sz.Width - 4, bounds.Top + 1);
+                    g.DrawString(sym, boldFont, symBrush, textX + sz.Width - 4, bounds.Top + 1);
                 }
             }
             catch (Exception ex) when (ex is ArgumentException or ExternalException or ObjectDisposedException)
@@ -1389,21 +1407,23 @@ namespace ChessDroid
                 {
                     using var safeFont = new Font(config?.ConsoleFontFamily ?? "Consolas", config?.ConsoleFontSize ?? 10f);
                     using var safeBrush = new SolidBrush(isSelected ? (isDark ? Color.White : SystemColors.HighlightText) : (isDark ? Color.White : Color.Black));
-                    g.DrawString(display, safeFont, safeBrush, bounds.Left + 3, bounds.Top + 1);
+                    g.DrawString(display, safeFont, safeBrush, textX, bounds.Top + 1);
                 }
                 catch { }
             }
         }
 
         private void DrawMoveCellBlack(Graphics g, Rectangle bounds, MoveNode? node, string? symbol,
-                                       bool isSelected, Font drawFont, bool isDark)
+                                       bool isSelected, Font drawFont, bool isDark, bool isVariation = false)
         {
             if (node == null) return;
 
             string sym = symbol ?? "";
             string san = node.SanMove;
             (string display, Color symColor) = ExtractSymbol(san, sym, isDark);
-            Color textColor = ResolveTextColor(node, isSelected, sym, symColor, isDark);
+            Color textColor = isVariation && !isSelected
+                ? (isDark ? Color.Silver : Color.DimGray)
+                : ResolveTextColor(node, isSelected, sym, symColor, isDark);
 
             try
             {
@@ -1479,15 +1499,17 @@ namespace ChessDroid
             if (idx < 0 || idx >= _movePairs.Count) return;
 
             var pair = _movePairs[idx];
-            if (pair.IsVariation || pair.Black == null)
+            if (pair.Black == null)
             {
                 // Full-width row — just let SelectedIndexChanged handle it.
                 _activeNode = pair.White;
                 return;
             }
 
-            // Determine which half was clicked.
-            bool clickedLeft = e.X < moveListBox.Width / 2;
+            // Determine which half was clicked, accounting for variation indent.
+            int indentPx = pair.IndentLevel * 14;
+            int mid = indentPx + (moveListBox.Width - indentPx) / 2;
+            bool clickedLeft = e.X < mid;
             _activeNode = clickedLeft ? pair.White : pair.Black;
 
             // If the row was already selected, SelectedIndexChanged won't re-fire — navigate directly.

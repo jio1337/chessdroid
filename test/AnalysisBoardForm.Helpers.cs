@@ -39,32 +39,26 @@ namespace ChessDroid
             if (mainChild.IsWhiteMove)
             {
                 // Try to pair white with its black response.
-                // Only pair if the white node's first child is a black move (no white variation kids).
                 MoveNode? blackNode = (mainChild.Children.Count > 0 && !mainChild.Children[0].IsWhiteMove)
                     ? mainChild.Children[0] : null;
 
                 if (blackNode != null)
                 {
                     AddPairedRow(mainChild, blackNode);
+                    // Continue main line from the black node.
+                    // BuildPairedMainLine(blackNode) handles blackNode.Children[1..] at its own tail —
+                    // do NOT iterate them here or they are emitted twice.
                     BuildPairedMainLine(blackNode, indentLevel);
 
-                    // Variations from the black node (alternative white continuations).
-                    for (int i = 1; i < blackNode.Children.Count; i++)
-                        AddVariationRows(blackNode.Children[i], indentLevel + 1);
-
-                    // Variations from the white node (alternative black responses).
+                    // Alternative black responses to mainChild (e.g. 3...Qd8 instead of 3...Qa5).
                     for (int i = 1; i < mainChild.Children.Count; i++)
                         AddVariationRows(mainChild.Children[i], indentLevel + 1);
                 }
                 else
                 {
-                    // White move with no black response yet (game ends on white's turn or
-                    // white has child variations but no clean black response).
+                    // White move with no black response (game ends on white's turn).
                     AddSingleRow(mainChild, indentLevel, isVariation: false);
                     BuildPairedMainLine(mainChild, indentLevel);
-
-                    for (int i = 1; i < mainChild.Children.Count; i++)
-                        AddVariationRows(mainChild.Children[i], indentLevel + 1);
                 }
             }
             else
@@ -72,12 +66,9 @@ namespace ChessDroid
                 // Game started with black to move — single row for black.
                 AddSingleRow(mainChild, indentLevel, isVariation: false);
                 BuildPairedMainLine(mainChild, indentLevel);
-
-                for (int i = 1; i < mainChild.Children.Count; i++)
-                    AddVariationRows(mainChild.Children[i], indentLevel + 1);
             }
 
-            // Variations on the parent (alternatives to the main child).
+            // Alternative continuations at this node (siblings of the main child).
             for (int i = 1; i < parentNode.Children.Count; i++)
                 AddVariationRows(parentNode.Children[i], indentLevel + 1);
         }
@@ -101,33 +92,59 @@ namespace ChessDroid
             _movePairs.Add(pair);
         }
 
-        // Emits a variation branch as full-width indented rows.
+        // Emits a variation branch with white+black pairing, matching the main-line grid style.
         private void AddVariationRows(MoveNode startNode, int indentLevel)
         {
-            string indent = new string(' ', indentLevel * 2);
-            string firstText = startNode.IsWhiteMove
-                ? $"{indent}({startNode.MoveNumber}. {startNode.SanMove}"
-                : $"{indent}({startNode.MoveNumber}...{startNode.SanMove}";
+            bool isStart = true;
+            MoveNode? node = startNode;
 
-            moveListBox.Items.Add(firstText);
-            _movePairs.Add(new MovePair { White = startNode, IsVariation = true });
-
-            var current = startNode;
-            while (current.Children.Count > 0)
+            while (node != null)
             {
-                var next = current.Children[0];
-                string moveText = next.IsWhiteMove
-                    ? $"{indent}  {next.MoveNumber}. {next.SanMove}"
-                    : $"{indent}  {next.SanMove}";
+                MoveNode? next;
 
-                moveListBox.Items.Add(moveText);
-                _movePairs.Add(new MovePair { White = next, IsVariation = true });
+                if (!node.IsWhiteMove)
+                {
+                    // Variation begins with a black move (alternative to main black response).
+                    moveListBox.Items.Add($"({node.MoveNumber}...{node.SanMove}");
+                    _movePairs.Add(new MovePair { White = node, IsVariation = true, IndentLevel = indentLevel, IsVariationStart = isStart });
+                    isStart = false;
 
-                // Nested variations within this branch.
-                for (int i = 1; i < current.Children.Count; i++)
-                    AddVariationRows(current.Children[i], indentLevel + 2);
+                    for (int i = 1; i < node.Children.Count; i++)
+                        AddVariationRows(node.Children[i], indentLevel + 1);
 
-                current = next;
+                    next = node.Children.Count > 0 ? node.Children[0] : null;
+                }
+                else
+                {
+                    // White move — pair with black response if one follows.
+                    MoveNode? blackNode = (node.Children.Count > 0 && !node.Children[0].IsWhiteMove)
+                        ? node.Children[0] : null;
+
+                    moveListBox.Items.Add(blackNode != null
+                        ? $"{node.MoveNumber}. {node.SanMove} | {blackNode.SanMove}"
+                        : $"{node.MoveNumber}. {node.SanMove}");
+                    _movePairs.Add(new MovePair { White = node, Black = blackNode, IsVariation = true, IndentLevel = indentLevel, IsVariationStart = isStart });
+                    isStart = false;
+
+                    // Alternative black responses to this white move.
+                    for (int i = 1; i < node.Children.Count; i++)
+                        AddVariationRows(node.Children[i], indentLevel + 1);
+
+                    if (blackNode != null)
+                    {
+                        // Alternative white continuations after the black response.
+                        for (int i = 1; i < blackNode.Children.Count; i++)
+                            AddVariationRows(blackNode.Children[i], indentLevel + 1);
+
+                        next = blackNode.Children.Count > 0 ? blackNode.Children[0] : null;
+                    }
+                    else
+                    {
+                        next = null;
+                    }
+                }
+
+                node = next;
             }
         }
 
