@@ -33,6 +33,9 @@ namespace ChessDroid.Models
         /// <summary>Whether this is the main line (first child of parent)</summary>
         public bool IsMainLine => Parent == null || Parent.Children.Count == 0 || Parent.Children[0] == this;
 
+        /// <summary>True when this node was inserted by the PV engine line, not played by the user.</summary>
+        public bool IsFromPv { get; set; }
+
         /// <summary>Variation depth (0 for main line, increments for each branch)</summary>
         public int VariationDepth { get; set; }
 

@@ -36,6 +36,15 @@ namespace ChessDroid
 
             var mainChild = parentNode.Children[0];
 
+            // If the first child is a PV-only line (no real move played from here yet),
+            // display all children as variations so they render with variation styling.
+            if (mainChild.IsFromPv)
+            {
+                for (int i = 0; i < parentNode.Children.Count; i++)
+                    AddVariationRows(parentNode.Children[i], indentLevel + 1);
+                return;
+            }
+
             if (mainChild.IsWhiteMove)
             {
                 // Try to pair white with its black response.
@@ -145,6 +154,24 @@ namespace ChessDroid
                 }
 
                 node = next;
+            }
+        }
+
+        // Ensures a real played move is always the main-line child (Children[0]).
+        // When a PV was inserted first and the user later plays a move, that move lands
+        // at Children[1+]. This promotes it to Children[0] so BuildPairedMainLine sees it
+        // as the main continuation and the PV falls back to a variation.
+        private void PromoteToMainLine(MoveNode node)
+        {
+            if (node.Parent == null) return;
+            node.IsFromPv = false;
+            node.VariationDepth = node.Parent.VariationDepth;
+            var siblings = node.Parent.Children;
+            int idx = siblings.IndexOf(node);
+            if (idx > 0)
+            {
+                siblings.RemoveAt(idx);
+                siblings.Insert(0, node);
             }
         }
 
@@ -291,12 +318,14 @@ namespace ChessDroid
                         else
                         {
                             node = moveTree.CurrentNode.AddChild(uciMove, san, newFen, forceVariation: true);
+                            node.IsFromPv = true;
                             moveTree.GoToNode(node);
                         }
                     }
                     else
                     {
                         node = moveTree.AddMove(uciMove, san, newFen);
+                        node.IsFromPv = true;
                     }
                     insertedNodes.Add(node);
                     currentFen = newFen;

@@ -906,8 +906,9 @@ namespace ChessDroid
             // Sound: checkmate (#) → game over, check (+) → check, capture → take, else → move
             PlayMoveSound(e.IsCapture, san);
 
-            // Add move to tree (handles variations automatically)
+            // Add move to tree; if a PV was sitting at Children[0], promote the real move to front.
             moveTree.AddMove(e.UciMove, san, e.FEN);
+            PromoteToMainLine(moveTree.CurrentNode);
 
             UpdateMoveAnnotation(moveTree.CurrentNode);
 
