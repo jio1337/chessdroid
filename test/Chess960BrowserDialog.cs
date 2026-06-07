@@ -28,12 +28,14 @@ namespace ChessDroid
 
             Text = "Chess 960 — Position Browser";
             StartPosition = FormStartPosition.CenterParent;
-            Size = new Size(400, 540);
-            MinimumSize = new Size(340, 400);
+            Size = new Size(428, 533);
+            MinimumSize = new Size(428, 400);
             FormBorderStyle = FormBorderStyle.Sizable;
             MinimizeBox = false; MaximizeBox = false; ShowInTaskbar = false;
             BackColor = bg; ForeColor = fg;
             Font = new Font("Segoe UI", 9f);
+
+            try { Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch { }
 
             // --- Top panel (filter) ---
             var pnlTop = new Panel { Dock = DockStyle.Top, Height = 38, BackColor = bg };
@@ -55,22 +57,23 @@ namespace ChessDroid
             pnlTop.Controls.AddRange([lblFilter, _filter]);
 
             // --- Bottom panel (buttons) ---
-            var pnlBottom = new Panel { Dock = DockStyle.Bottom, Height = 46, BackColor = bg };
+            var pnlBottom = new Panel { Dock = DockStyle.Bottom, Height = 70, BackColor = bg };
 
             var btnLoad   = new Button { Text = "Load Position", FlatStyle = FlatStyle.Flat, BackColor = btnBg, ForeColor = fg };
-            var btnBot    = new Button { Text = "Play vs Bot",   FlatStyle = FlatStyle.Flat, BackColor = btnBg, ForeColor = fg };
+            var btnBot    = new Button { Text = "vs Bot",        FlatStyle = FlatStyle.Flat, BackColor = btnBg, ForeColor = fg };
             var btnRandom = new Button { Text = "Random",        FlatStyle = FlatStyle.Flat, BackColor = btnBg, ForeColor = fg };
             var btnCancel = new Button { Text = "Cancel",        FlatStyle = FlatStyle.Flat, BackColor = btnBg, ForeColor = fg, DialogResult = DialogResult.Cancel };
 
             void LayoutButtons()
             {
-                const int bh = 28, pad = 10, gap = 6;
-                int by = (pnlBottom.Height - bh) / 2;
-                int w = pnlBottom.Width;
-                btnLoad.Bounds   = new Rectangle(pad,                  by, 120, bh);
-                btnBot.Bounds    = new Rectangle(pad + 120 + gap,      by, 110, bh);
-                btnRandom.Bounds = new Rectangle(w - pad - 75 - gap - 75, by, 75, bh);
-                btnCancel.Bounds = new Rectangle(w - pad - 75,         by, 75, bh);
+                const int bh = 26, pad = 8, gap = 6;
+                int bw   = (pnlBottom.Width - 2 * pad - gap) / 2;
+                int row1 = pad;
+                int row2 = pad + bh + gap;
+                btnLoad.Bounds   = new Rectangle(pad,          row1, bw, bh);
+                btnBot.Bounds    = new Rectangle(pad + bw + gap, row1, bw, bh);
+                btnRandom.Bounds = new Rectangle(pad,          row2, bw, bh);
+                btnCancel.Bounds = new Rectangle(pad + bw + gap, row2, bw, bh);
             }
             LayoutButtons();
             pnlBottom.Resize += (_, _) => LayoutButtons();
@@ -105,7 +108,7 @@ namespace ChessDroid
 
             _grid.Columns.Add(new DataGridViewTextBoxColumn
             {
-                HeaderText = "Position", Width = 80,
+                HeaderText = "SP", Width = 60,
                 SortMode = DataGridViewColumnSortMode.NotSortable,
                 DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter },
             });
@@ -124,11 +127,11 @@ namespace ChessDroid
             PopulateGrid(_allRows);
 
             // Wire events
-            _filter.TextChanged              += (_, _) => ApplyFilter();
-            _grid.CellDoubleClick            += (_, e) => { if (e.RowIndex >= 0) Confirm(startBot: false); };
-            btnLoad.Click                    += (_, _) => Confirm(startBot: false);
-            btnBot.Click                     += (_, _) => Confirm(startBot: true);
-            btnRandom.Click                  += (_, _) => SelectRandom();
+            _filter.TextChanged   += (_, _) => ApplyFilter();
+            _grid.CellDoubleClick += (_, e) => { if (e.RowIndex >= 0) Confirm(startBot: false); };
+            btnLoad.Click         += (_, _) => Confirm(startBot: false);
+            btnBot.Click          += (_, _) => Confirm(startBot: true);
+            btnRandom.Click       += (_, _) => SelectRandom();
 
             // Docking order: Fill first, then Top/Bottom claim their edges
             Controls.Add(_grid);
