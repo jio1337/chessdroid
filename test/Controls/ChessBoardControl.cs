@@ -149,6 +149,7 @@ namespace ChessDroid.Controls
         // Cached fonts for OnPaint — recreated only when squareSize changes
         private Font? _labelFont;
         private Font? _badgeFont;
+        private Font? _coordFont;   // frame coordinate labels (A-H / 1-8)
         private static readonly System.Drawing.StringFormat _badgeSf = new System.Drawing.StringFormat
         {
             Alignment = System.Drawing.StringAlignment.Center,
@@ -882,11 +883,49 @@ namespace ChessDroid.Controls
             int squareSize = Math.Min(Width - 2 * frameOff, Height - 2 * frameOff) / 8;
             if (squareSize < 1) squareSize = 1;
 
-            // Draw board frame background
+            // Draw board frame background + coordinate labels
             if (_boardFrameEnabled)
             {
                 _paintBrush.Color = _boardFrameColor;
                 g.FillRectangle(_paintBrush, 0, 0, Width, Height);
+
+                // Rebuild coord font only when frame size changes
+                float frameLabelSize = Math.Max(6f, frameOff * 0.35f);
+                if (_coordFont == null || Math.Abs(_coordFont.Size - frameLabelSize) > 0.1f)
+                {
+                    _coordFont?.Dispose();
+                    _coordFont = new Font("Times New Roman", frameLabelSize, FontStyle.Regular);
+                }
+
+                // Contrast-aware label color: warm cream on dark frames, dark brown on light
+                float lum = (_boardFrameColor.R * 0.299f + _boardFrameColor.G * 0.587f + _boardFrameColor.B * 0.114f) / 255f;
+                _paintBrush.Color = lum < 0.5f
+                    ? Color.FromArgb(200, 220, 195, 145)
+                    : Color.FromArgb(185,  55,  30,   5);
+
+                // Files A–H — centered in the top and bottom strips
+                for (int col = 0; col < 8; col++)
+                {
+                    int dc = isFlipped ? 7 - col : col;
+                    string label = ((char)('A' + col)).ToString();
+                    SizeF sz = g.MeasureString(label, _coordFont);
+                    float cx = frameOff + dc * squareSize + squareSize / 2f - sz.Width / 2f;
+
+                    g.DrawString(label, _coordFont, _paintBrush, cx, (frameOff - sz.Height) / 2f);                          // top
+                    g.DrawString(label, _coordFont, _paintBrush, cx, frameOff + 8 * squareSize + (frameOff - sz.Height) / 2f); // bottom
+                }
+
+                // Ranks 1–8 — centered in the left and right strips
+                for (int row = 0; row < 8; row++)
+                {
+                    int dr = isFlipped ? 7 - row : row;
+                    string label = (8 - row).ToString();
+                    SizeF sz = g.MeasureString(label, _coordFont);
+                    float cy = frameOff + dr * squareSize + squareSize / 2f - sz.Height / 2f;
+
+                    g.DrawString(label, _coordFont, _paintBrush, (frameOff - sz.Width) / 2f,                          cy); // left
+                    g.DrawString(label, _coordFont, _paintBrush, frameOff + 8 * squareSize + (frameOff - sz.Width) / 2f, cy); // right
+                }
             }
 
             // Draw squares and pieces
@@ -2139,6 +2178,7 @@ namespace ChessDroid.Controls
                 coordFont?.Dispose();
                 pieceFallbackFont?.Dispose();
                 _labelFont?.Dispose();
+                _coordFont?.Dispose();
                 _hoverLabelFont?.Dispose();
                 _badgeFont?.Dispose();
                 _paintBrush.Dispose();
