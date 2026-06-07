@@ -222,6 +222,7 @@ namespace ChessDroid
                 splitRightPanels.Panel2MinSize = 200;
                 splitRightPanels.SplitterDistance = config!.SplitterDistance > 0 ? config.SplitterDistance : 130;
 
+                pnlBoardControls.Height = 148;
                 LeftPanel_Resize(leftPanel, EventArgs.Empty);
                 PnlBoardControls_Resize(pnlBoardControls, EventArgs.Empty);
                 this.MinimumSize = this.Size;
@@ -817,40 +818,37 @@ namespace ChessDroid
             cmbBoardColor.Location = new Point(lblPieces.Left - cmbBoardColor.Width - gap, 0);
             lblTurn.Visible = (pad + lblTurn.Width + gap) < cmbBoardColor.Left;
 
-            // Row 2 (Y=28): icon buttons — all fixed widths, no dynamic scaling
-            const int buttonY = 28;
-            const int iconW  = 30;  // ⊕ ⇅ ↩ ♞
-            const int navW   = 35;  // ◀ ▶
-            const int autoW  = 38;  // >>
-            const int editW  = 28;  // ✏
+            // Row 2a (Y=28): board controls — New / Flip / TakeBack / Prev / Next / AutoPlay / Bot
+            const int btnW = 40;
+            const int btnH = 28;
+            const int row2a = 28;
 
-            btnNewGame.Width    = iconW;
-            btnFlipBoard.Width  = iconW;
-            btnTakeBack.Width   = iconW;
-            btnPrevMove.Width   = navW;
-            btnNextMove.Width   = navW;
-            btnAutoPlay.Width   = autoW;
-            btnPlayBot.Width    = iconW;
-            btnEditPosition.Width = editW;
-            btnTraining.Width   = iconW;
-            btnMatch.Width      = iconW;
+            foreach (var b in new[] { btnNewGame, btnFlipBoard, btnTakeBack, btnPrevMove,
+                                      btnNextMove, btnAutoPlay, btnPlayBot })
+                b.Size = new Size(btnW, btnH);
 
-            btnNewGame.Location    = new Point(pad, buttonY);
-            btnFlipBoard.Location  = new Point(btnNewGame.Right   + gap, buttonY);
-            btnTakeBack.Location   = new Point(btnFlipBoard.Right + gap, buttonY);
-            btnPrevMove.Location   = new Point(btnTakeBack.Right  + gap, buttonY);
-            btnNextMove.Location   = new Point(btnPrevMove.Right  + 2,   buttonY);
-            btnAutoPlay.Location   = new Point(btnNextMove.Right  + 2,   buttonY);
-            btnPlayBot.Location    = new Point(btnAutoPlay.Right  + gap, buttonY);
-            btnEditPosition.Location = new Point(btnPlayBot.Right + gap, buttonY);
-            btnTraining.Location    = new Point(btnEditPosition.Right + gap, buttonY);
-            btnMatch.Location       = new Point(btnTraining.Right    + gap, buttonY);
-            btnTournament.Location  = new Point(btnMatch.Right       + gap, buttonY);
-            btnChess960.Width       = 36;
-            btnChess960.Location    = new Point(btnTournament.Right  + gap, buttonY);
+            btnNewGame.Location   = new Point(pad, row2a);
+            btnFlipBoard.Location = new Point(btnNewGame.Right  + gap, row2a);
+            btnTakeBack.Location  = new Point(btnFlipBoard.Right + gap, row2a);
+            btnPrevMove.Location  = new Point(btnTakeBack.Right  + gap, row2a);
+            btnNextMove.Location  = new Point(btnPrevMove.Right  + 2,   row2a);
+            btnAutoPlay.Location  = new Point(btnNextMove.Right  + 2,   row2a);
+            btnPlayBot.Location   = new Point(btnAutoPlay.Right  + gap, row2a);
 
-            // Row 3 (Y=60): FEN row — label | input | Load | Copy | ⚙
-            const int fenY     = 60;
+            // Row 2b (Y=58): feature launchers — Edit / Training / Match / Tournament / 960
+            const int row2b = 60;
+
+            foreach (var b in new[] { btnEditPosition, btnTraining, btnMatch, btnTournament, btnChess960 })
+                b.Size = new Size(btnW, btnH);
+
+            btnEditPosition.Location = new Point(pad, row2b);
+            btnTraining.Location     = new Point(btnEditPosition.Right + gap, row2b);
+            btnMatch.Location        = new Point(btnTraining.Right     + gap, row2b);
+            btnTournament.Location   = new Point(btnMatch.Right        + gap, row2b);
+            btnChess960.Location     = new Point(btnTournament.Right   + gap, row2b);
+
+            // Row 3 (Y=90): FEN row — label | input | Load | Copy | ⚙
+            const int fenY     = 91;
             const int fenLblW  = 35;
             const int fenBtnW  = 50;
             const int settingsW = 28;
@@ -865,8 +863,8 @@ namespace ChessDroid
             btnCopyFen.Width     = fenBtnW;
             btnSettings.Location = new Point(btnCopyFen.Right + gap, fenY);
 
-            // Row 4 (Y=88): Status text
-            lblStatus.Location = new Point(pad, 88);
+            // Row 4 (Y=118): Status text
+            lblStatus.Location = new Point(pad, 121);
             lblStatus.Width    = w - 2 * pad;
         }
 
@@ -1004,6 +1002,8 @@ namespace ChessDroid
             lblStatus.Text = "New game started";
             _ = TriggerAutoAnalysis();
         }
+
+        private void BtnChess960_Click(object? sender, EventArgs e) => ShowChess960Dialog();
 
         private async void ShowChess960Dialog()
         {

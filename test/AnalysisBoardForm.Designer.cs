@@ -238,7 +238,7 @@ namespace ChessDroid
             btnNewGame.Name = "btnNewGame";
             btnNewGame.Size = new Size(30, 28);
             btnNewGame.TabIndex = 2;
-            btnNewGame.Text = "↺";
+            btnNewGame.Text = "✚";
             btnNewGame.Click += BtnNewGame_Click;
             //
             // btnFlipBoard
@@ -360,7 +360,7 @@ namespace ChessDroid
             btnChess960.Size = new Size(36, 28);
             btnChess960.TabIndex = 29;
             btnChess960.Text = "960";
-            btnChess960.Click += (s, e) => ShowChess960Dialog();
+            btnChess960.Click += BtnChess960_Click;
             //
             // lblFen
             // 
