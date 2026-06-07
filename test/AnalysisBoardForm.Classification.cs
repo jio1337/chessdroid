@@ -36,9 +36,16 @@ namespace ChessDroid
         private int ShowAnalyzeDepthDialog(int moveCount, int defaultDepth)
         {
             bool isDark = ThemeService.IsDarkTheme(config?.Theme);
-            Color bg    = isDark ? Color.FromArgb(30, 30, 30)  : SystemColors.Control;
-            Color fg    = isDark ? Color.White                  : Color.Black;
-            Color btnBg = isDark ? Color.FromArgb(55, 55, 55)  : SystemColors.ButtonFace;
+            Color bg    = isDark ? Color.FromArgb(30, 30, 30) : SystemColors.Control;
+            Color fg    = isDark ? Color.White                 : Color.Black;
+            Color btnBg = isDark ? Color.FromArgb(55, 55, 55) : SystemColors.ButtonFace;
+
+            using var fnt = new Font("Courier New", 9f);
+
+            // Layout constants
+            const int pad  = 10;
+            const int btnH = 24;
+            const int w    = 258;
 
             using var dlg = new Form
             {
@@ -48,9 +55,10 @@ namespace ChessDroid
                 MinimizeBox     = false,
                 MaximizeBox     = false,
                 ShowInTaskbar   = false,
-                ClientSize      = new Size(280, 130),
+                ClientSize      = new Size(w, 95),
                 BackColor       = bg,
                 ForeColor       = fg,
+                Font            = fnt,
             };
 
             var lblInfo = new Label
@@ -58,7 +66,7 @@ namespace ChessDroid
                 Text      = $"Analyzing {moveCount} moves. Engine depth:",
                 AutoSize  = false,
                 TextAlign = ContentAlignment.MiddleLeft,
-                Bounds    = new Rectangle(12, 14, 256, 22),
+                Bounds    = new Rectangle(pad, 10, w - pad * 2, 18),
                 ForeColor = fg,
                 BackColor = Color.Transparent,
             };
@@ -68,28 +76,29 @@ namespace ChessDroid
                 Minimum   = 1,
                 Maximum   = 40,
                 Value     = Math.Clamp(defaultDepth, 1, 40),
-                Bounds    = new Rectangle(12, 42, 80, 26),
+                Bounds    = new Rectangle(pad, 32, 68, 22),
                 BackColor = isDark ? Color.FromArgb(45, 45, 45) : SystemColors.Window,
                 ForeColor = fg,
             };
 
+            int btnW = (w - pad * 2 - 8) / 2;  // two equal buttons with a small gap
             var btnOk = new Button
             {
-                Text        = "Analyze",
-                DialogResult= DialogResult.OK,
-                Bounds      = new Rectangle(90, 88, 80, 28),
-                BackColor   = btnBg,
-                ForeColor   = fg,
-                FlatStyle   = FlatStyle.Flat,
+                Text         = "Analyze",
+                DialogResult = DialogResult.OK,
+                Bounds       = new Rectangle(pad, 95 - pad - btnH, btnW, btnH),
+                BackColor    = btnBg,
+                ForeColor    = fg,
+                FlatStyle    = FlatStyle.Flat,
             };
             var btnCancel = new Button
             {
-                Text        = "Cancel",
-                DialogResult= DialogResult.Cancel,
-                Bounds      = new Rectangle(180, 88, 80, 28),
-                BackColor   = btnBg,
-                ForeColor   = fg,
-                FlatStyle   = FlatStyle.Flat,
+                Text         = "Cancel",
+                DialogResult = DialogResult.Cancel,
+                Bounds       = new Rectangle(pad + btnW + 8, 95 - pad - btnH, btnW, btnH),
+                BackColor    = btnBg,
+                ForeColor    = fg,
+                FlatStyle    = FlatStyle.Flat,
             };
 
             dlg.AcceptButton = btnOk;
