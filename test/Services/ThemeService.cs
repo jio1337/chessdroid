@@ -46,7 +46,7 @@ namespace ChessDroid.Services
 
     public class ThemeService
     {
-        public static readonly string[] ThemeNames = { "Dark", "Light", "Cyberpunk", "Dracula", "Nord", "Sepia" };
+        public static readonly string[] ThemeNames = { "Dark", "Light", "Cyberpunk", "Dracula", "Nord", "Sepia", "Solarized", "Miami" };
 
         private static readonly ColorScheme DarkScheme = new ColorScheme
         {
@@ -244,6 +244,72 @@ namespace ChessDroid.Services
             BlackClockForeColor = Color.FromArgb(90, 50, 15)
         };
 
+        // Solarized Light — warm parchment base, dusty blue-gray ink, accent palette from Ethan Schoonover
+        private static readonly ColorScheme SolarizedScheme = new ColorScheme
+        {
+            BackgroundColor         = Color.FromArgb(253, 246, 227), // base3  — main background
+            LabelBackColor          = Color.FromArgb(238, 232, 213), // base2  — elevated surfaces
+            LabelForeColor          = Color.FromArgb(88,  110, 117), // base01 — body text
+            Button1BackColor        = Color.FromArgb(238, 232, 213),
+            Button1ForeColor        = Color.FromArgb(108, 113, 196), // violet
+            ButtonResetBackColor    = Color.FromArgb(238, 232, 213),
+            ButtonResetForeColor    = Color.FromArgb(220,  50,  47), // red
+            ButtonSettingsBackColor = Color.FromArgb(238, 232, 213),
+            ButtonSettingsForeColor = Color.FromArgb(181, 137,   0), // yellow
+            ConsoleBackColor        = Color.FromArgb(253, 246, 227),
+            ConsoleForeColor        = Color.FromArgb(88,  110, 117),
+            CheckboxBackColor       = Color.FromArgb(253, 246, 227),
+            CheckboxForeColor       = Color.FromArgb(88,  110, 117),
+
+            FormBackColor           = Color.FromArgb(253, 246, 227),
+            PanelColor              = Color.FromArgb(238, 232, 213),
+            TextColor               = Color.FromArgb(101, 123, 131), // base00
+            StatusColor             = Color.FromArgb(147, 161, 161), // base1
+            ButtonBackColor         = Color.FromArgb(238, 232, 213),
+            ButtonForeColor         = Color.FromArgb(88,  110, 117),
+            AnalyzeButtonBackColor  = Color.FromArgb( 38, 139, 210), // blue
+            GroupBoxBackColor       = Color.FromArgb(246, 240, 222),
+            ClockBackColor          = Color.FromArgb(238, 232, 213),
+            ClockActiveBackColor    = Color.FromArgb(195, 225, 185),
+            StartMatchButtonBackColor = Color.FromArgb(133, 153,  0), // green
+            StopMatchButtonBackColor  = Color.FromArgb(220,  50, 47), // red
+            WhiteClockForeColor     = Color.FromArgb(88,  110, 117),
+            BlackClockForeColor     = Color.FromArgb(108, 113, 196)  // violet
+        };
+
+        // Miami — neon beach noir: hot pink + electric teal on near-black velvet
+        private static readonly ColorScheme MiamiScheme = new ColorScheme
+        {
+            BackgroundColor         = Color.FromArgb( 10,   6,  20), // near-black, purple tint
+            LabelBackColor          = Color.FromArgb( 22,  12,  40),
+            LabelForeColor          = Color.FromArgb(255,  20, 147), // hot pink
+            Button1BackColor        = Color.FromArgb( 22,  12,  40),
+            Button1ForeColor        = Color.FromArgb(  0, 220, 190), // electric teal
+            ButtonResetBackColor    = Color.FromArgb( 22,  12,  40),
+            ButtonResetForeColor    = Color.FromArgb(255,  70,  70),
+            ButtonSettingsBackColor = Color.FromArgb( 22,  12,  40),
+            ButtonSettingsForeColor = Color.FromArgb(255, 165,   0), // orange
+            ConsoleBackColor        = Color.FromArgb(  6,   3,  14), // deepest dark
+            ConsoleForeColor        = Color.FromArgb(  0, 220, 190), // teal
+            CheckboxBackColor       = Color.FromArgb( 10,   6,  20),
+            CheckboxForeColor       = Color.FromArgb(255,  20, 147), // hot pink
+
+            FormBackColor           = Color.FromArgb( 10,   6,  20),
+            PanelColor              = Color.FromArgb( 20,  12,  38),
+            TextColor               = Color.FromArgb(  0, 220, 190), // teal as primary text
+            StatusColor             = Color.FromArgb(120,  50, 160), // muted violet
+            ButtonBackColor         = Color.FromArgb( 25,  15,  48),
+            ButtonForeColor         = Color.FromArgb(210, 180, 255), // soft lavender
+            AnalyzeButtonBackColor  = Color.FromArgb(140,   0, 200), // vivid purple
+            GroupBoxBackColor       = Color.FromArgb( 16,   9,  30),
+            ClockBackColor          = Color.FromArgb( 25,  15,  48),
+            ClockActiveBackColor    = Color.FromArgb(  0,  70,  90), // teal glow
+            StartMatchButtonBackColor = Color.FromArgb(  0, 130,  90),
+            StopMatchButtonBackColor  = Color.FromArgb(180,  10,  90), // hot pink-magenta
+            WhiteClockForeColor     = Color.FromArgb(  0, 220, 190), // teal
+            BlackClockForeColor     = Color.FromArgb(255,  20, 147)  // hot pink
+        };
+
         public static ColorScheme GetColorScheme(string theme) => theme switch
         {
             "Cyberpunk" => CyberpunkScheme,
@@ -251,13 +317,15 @@ namespace ChessDroid.Services
             "Nord"      => NordScheme,
             "Sepia"     => SepiaScheme,
             "Light"     => LightScheme,
+            "Solarized" => SolarizedScheme,
+            "Miami"     => MiamiScheme,
             _           => DarkScheme
         };
 
         public static bool IsDarkTheme(string? theme) => theme switch
         {
-            "Light" or "Sepia" => false,
-            _                  => true
+            "Light" or "Sepia" or "Solarized" => false,
+            _                                  => true
         };
     }
 }
