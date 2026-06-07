@@ -1097,7 +1097,7 @@ namespace ChessDroid.Controls
                 }
             }
 
-            if (!_hideCoordinates)
+            if (!_hideCoordinates && !_boardFrameEnabled)
             {
                 for (int i = 0; i < 8; i++)
                 {
