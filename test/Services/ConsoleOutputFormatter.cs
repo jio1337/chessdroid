@@ -25,6 +25,7 @@ namespace ChessDroid.Services
             public string? Fen;       // InsertPv
             public MoveNode? Node;    // NavigateToNode
             public string? FullLine;  // ExpandLine — text to replace "..." with
+            public int LineIndex;     // ExpandLiveLine — which PV line (0/1/2)
         }
         private readonly List<ClickMarker> _markers = new();
 
@@ -41,7 +42,7 @@ namespace ChessDroid.Services
         private string? _activeBookFen;
         private List<BookMove>? _activeBookMoves;
 
-        private bool _liveLineExpanded;
+        private bool[] _liveLineExpanded = new bool[3];
         private (string fen, string evaluation, List<string> pvs, List<string> evals, WDLInfo? wdl, int depth) _lastLiveData
             = ("", "", new List<string>(), new List<string>(), null, 0);
 
@@ -135,11 +136,11 @@ namespace ChessDroid.Services
                             _markers.Remove(marker);
                             break;
                         case ClickAction.ExpandLiveLine:
-                            _liveLineExpanded = true;
+                            _liveLineExpanded[marker.LineIndex] = true;
                             DisplayLiveLines(_lastLiveData.fen, _lastLiveData.evaluation, _lastLiveData.pvs, _lastLiveData.evals, _lastLiveData.wdl, _lastLiveData.depth);
                             break;
                         case ClickAction.CollapseLines:
-                            _liveLineExpanded = false;
+                            _liveLineExpanded = new bool[3];
                             DisplayLiveLines(_lastLiveData.fen, _lastLiveData.evaluation, _lastLiveData.pvs, _lastLiveData.evals, _lastLiveData.wdl, _lastLiveData.depth);
                             break;
                     }
@@ -2554,7 +2555,7 @@ namespace ChessDroid.Services
             }
         }
 
-        public void ResetLiveExpand() => _liveLineExpanded = false;
+        public void ResetLiveExpand() => _liveLineExpanded = new bool[3];
 
         /// <summary>
         /// Fixed-depth display with no explanation text — same visual style as live lines but
@@ -2707,12 +2708,12 @@ namespace ChessDroid.Services
                 richTextBox.AppendText($" {prefix} {FormatEvaluation(evals[i])}  ");
                 richTextBox.SelectionColor = GetThemeColor(Color.LightGray, Color.Black);
 
-                if (!_liveLineExpanded && tokens.Length > MaxLivePly)
+                if (!_liveLineExpanded[i] && tokens.Length > MaxLivePly)
                 {
                     richTextBox.AppendText(string.Join(" ", tokens.Take(MaxLivePly)));
                     int ellipsisStart = richTextBox.TextLength;
                     AppendTextWithFormat("...", richTextBox.BackColor, lineColors[i], FontStyle.Bold | FontStyle.Underline);
-                    _markers.Add(new ClickMarker { Start = ellipsisStart, Length = 3, Action = ClickAction.ExpandLiveLine });
+                    _markers.Add(new ClickMarker { Start = ellipsisStart, Length = 3, Action = ClickAction.ExpandLiveLine, LineIndex = i });
                 }
                 else
                 {
@@ -2722,7 +2723,7 @@ namespace ChessDroid.Services
                 ResetFormatting();
             }
 
-            if (_liveLineExpanded)
+            if (_liveLineExpanded[0] || _liveLineExpanded[1] || _liveLineExpanded[2])
             {
                 Color collapseClr = GetThemeColor(Color.Silver, Color.DimGray);
                 int cStart = richTextBox.TextLength;
