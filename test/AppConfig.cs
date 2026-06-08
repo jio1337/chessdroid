@@ -102,6 +102,9 @@ namespace ChessDroid
         public string ConsoleFontFamily { get; set; } = "Consolas";
         public float ConsoleFontSize { get; set; } = 10.0f;
 
+        // Syzygy endgame tablebases (offline — Stockfish probes these files directly)
+        public string SyzygyPath { get; set; } = ""; // Path to folder containing .rtbw/.rtbz files
+
         // Opening book settings (Polyglot .bin format)
         public string OpeningBooksFolder { get; set; } = "Books"; // Folder containing Polyglot .bin files (loads all)
         public bool UseOpeningBook { get; set; } = true; // Enable opening book move suggestions
@@ -266,6 +269,7 @@ namespace ChessDroid
             DailyPuzzleStreak          = other.DailyPuzzleStreak;
             DailyPuzzleBestStreak      = other.DailyPuzzleBestStreak;
 
+            SyzygyPath = other.SyzygyPath;
             OpeningBooksFolder = other.OpeningBooksFolder;
             UseOpeningBook = other.UseOpeningBook;
             ShowBookMoves = other.ShowBookMoves;

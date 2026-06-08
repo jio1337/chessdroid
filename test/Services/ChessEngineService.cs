@@ -258,6 +258,13 @@ namespace ChessDroid.Services
                 await SafeWriteLineAsync($"{UCI_CMD_SETOPTION} UCI_ShowWDL value true");
                 Debug.WriteLine("Engine: enabled UCI_ShowWDL for WDL output");
 
+                // Step 1.6: Configure Syzygy tablebases if path is set and exists
+                if (!string.IsNullOrWhiteSpace(config?.SyzygyPath) && Directory.Exists(config.SyzygyPath))
+                {
+                    await SafeWriteLineAsync($"{UCI_CMD_SETOPTION} SyzygyPath value {config.SyzygyPath}");
+                    Debug.WriteLine($"Engine: set SyzygyPath to {config.SyzygyPath}");
+                }
+
                 // Step 2: Send 'isready' and wait for 'readyok'
                 if (!await SafeWriteLineAsync("isready"))
                 {

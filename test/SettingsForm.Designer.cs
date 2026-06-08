@@ -31,6 +31,9 @@ namespace ChessDroid
             components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(SettingsForm));
             grpEngine = new GroupBox();
+            lblSyzygy = new Label();
+            txtSyzygyPath = new TextBox();
+            btnBrowseSyzygy = new Button();
             numEngineDepth = new NumericUpDown();
             numMinAnalysisTime = new NumericUpDown();
             lblMinAnalysisTime = new Label();
@@ -147,10 +150,13 @@ namespace ChessDroid
             grpEngine.Controls.Add(lblMoveTimeout);
             grpEngine.Controls.Add(lblMaxRetries);
             grpEngine.Controls.Add(lblEngineTimeout);
+            grpEngine.Controls.Add(lblSyzygy);
+            grpEngine.Controls.Add(txtSyzygyPath);
+            grpEngine.Controls.Add(btnBrowseSyzygy);
             grpEngine.ForeColor = Color.White;
             grpEngine.Location = new Point(12, 9);
             grpEngine.Name = "grpEngine";
-            grpEngine.Size = new Size(298, 230);
+            grpEngine.Size = new Size(298, 288);
             grpEngine.TabIndex = 1;
             grpEngine.TabStop = false;
             grpEngine.Text = "Chess Engine";
@@ -215,7 +221,33 @@ namespace ChessDroid
             numAutoPlayInterval.TabIndex = 13;
             toolTip1.SetToolTip(numAutoPlayInterval, "Time between moves during auto-play (200-2000ms).");
             numAutoPlayInterval.Value = new decimal(new int[] { 600, 0, 0, 0 });
-            // 
+            //
+            // lblSyzygy
+            //
+            lblSyzygy.Location = new Point(10, 232);
+            lblSyzygy.Name = "lblSyzygy";
+            lblSyzygy.Size = new Size(278, 16);
+            lblSyzygy.TabIndex = 14;
+            lblSyzygy.Text = "Syzygy tablebase path (optional):";
+            toolTip1.SetToolTip(lblSyzygy, "Folder containing Syzygy .rtbw/.rtbz files. Stockfish uses these for perfect endgame play. Leave blank to disable.");
+            //
+            // txtSyzygyPath
+            //
+            txtSyzygyPath.Location = new Point(10, 251);
+            txtSyzygyPath.Name = "txtSyzygyPath";
+            txtSyzygyPath.Size = new Size(200, 20);
+            txtSyzygyPath.TabIndex = 15;
+            toolTip1.SetToolTip(txtSyzygyPath, "Path to your Syzygy tablebase folder. Download .rtbw/.rtbz files from online sources and point here.");
+            //
+            // btnBrowseSyzygy
+            //
+            btnBrowseSyzygy.Location = new Point(215, 249);
+            btnBrowseSyzygy.Name = "btnBrowseSyzygy";
+            btnBrowseSyzygy.Size = new Size(72, 24);
+            btnBrowseSyzygy.TabIndex = 16;
+            btnBrowseSyzygy.Text = "Browse...";
+            btnBrowseSyzygy.Click += BtnBrowseSyzygy_Click;
+            //
             // numMoveTimeout
             // 
             numMoveTimeout.Increment = new decimal(new int[] { 5000, 0, 0, 0 });
@@ -1159,6 +1191,9 @@ namespace ChessDroid
         #endregion
 
         private System.Windows.Forms.GroupBox grpEngine;
+        private System.Windows.Forms.Label lblSyzygy;
+        private System.Windows.Forms.TextBox txtSyzygyPath;
+        private System.Windows.Forms.Button btnBrowseSyzygy;
         private System.Windows.Forms.NumericUpDown numEngineDepth;
         private System.Windows.Forms.NumericUpDown numMinAnalysisTime;
         private System.Windows.Forms.Label lblMinAnalysisTime;

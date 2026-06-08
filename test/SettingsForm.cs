@@ -140,6 +140,8 @@ namespace ChessDroid
             chkMoveQuality.Checked = config.ShowMoveQuality;
             chkBookMoves.Checked = config.ShowBookMoves;
 
+            txtSyzygyPath.Text = config.SyzygyPath;
+
             chkContinuousAnalysis.Checked = config.ContinuousAnalysis;
             chkShowExplanations.Checked = config.ShowExplanations;
             UpdateExplanationSubControls(config.ShowExplanations);
@@ -209,6 +211,7 @@ namespace ChessDroid
             config.ShowOpeningName = chkOpeningName.Checked;
             config.ShowMoveQuality = chkMoveQuality.Checked;
             config.ShowBookMoves = chkBookMoves.Checked;
+            config.SyzygyPath = txtSyzygyPath.Text.Trim();
             config.ContinuousAnalysis = chkContinuousAnalysis.Checked;
             config.ShowExplanations = chkShowExplanations.Checked;
             config.AutoPlayInterval = (int)numAutoPlayInterval.Value;
@@ -251,6 +254,19 @@ namespace ChessDroid
         private void BtnCancel_Click(object? sender, EventArgs e)
         {
             this.Close();
+        }
+
+        private void BtnBrowseSyzygy_Click(object? sender, EventArgs e)
+        {
+            using var dlg = new FolderBrowserDialog
+            {
+                Description = "Select Syzygy tablebase folder (.rtbw / .rtbz files)",
+                UseDescriptionForTitle = true
+            };
+            if (!string.IsNullOrEmpty(txtSyzygyPath.Text) && Directory.Exists(txtSyzygyPath.Text))
+                dlg.SelectedPath = txtSyzygyPath.Text;
+            if (dlg.ShowDialog() == DialogResult.OK)
+                txtSyzygyPath.Text = dlg.SelectedPath;
         }
 
         private void BtnChooseFont_Click(object? sender, EventArgs e)
