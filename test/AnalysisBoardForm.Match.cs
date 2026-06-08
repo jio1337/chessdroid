@@ -146,7 +146,7 @@ namespace ChessDroid
                 analysisOutput.AppendText($"Series: {_seriesTotal} games\n");
             analysisOutput.AppendText($"Time Control: {tc}\n");
             string arbiterFile = Path.GetFileName(config.SelectedEngine ?? "");
-            analysisOutput.AppendText($"Arbiter: {GetEngineLabel(arbiterFile, false)} (depth 18)\n");
+            analysisOutput.AppendText($"Arbiter: {GetEngineLabel(arbiterFile, false)} (depth {config.EngineDepth})\n");
             if (chkFromPosition.Checked)
                 analysisOutput.AppendText("Starting from custom position\n");
             if (bookReady)

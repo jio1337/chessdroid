@@ -1233,7 +1233,7 @@ namespace ChessDroid.Services
                     await SafeWriteLineAsync("stop");
                     try
                     {
-                        using var drainCts = new CancellationTokenSource(2000);
+                        using var drainCts = new CancellationTokenSource(300);
                         while (IsEngineAlive())
                         {
                             string? line = await engineOutput!.ReadLineAsync(drainCts.Token);
