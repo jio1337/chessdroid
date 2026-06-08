@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [3.18.1] - 2026-06-08
+
+### Fixed
+- **Bot game-end buttons frozen** — After checkmate, stalemate, or draw, 12 of 14 bot-mode buttons (New Game, Settings, Training, Openings, etc.) remained permanently disabled. `HandleBotGameEnd` now calls `SetBotControlsEnabled(false)`, matching the cleanup that `StopBotMode` already performed correctly.
+- **Eval graph static during engine matches** — Arbiter evaluations were updating the eval bar but not writing to `moveTree.CurrentNode.Evaluation`, so the graph never moved. Now updated after every annotated move.
+- **Continuous analysis rapid-move freeze** — UI `BeginInvoke` flood at low depths (150ms throttle) combined with 2s semaphore hold (drain timeout reduced to 300ms) caused the board to freeze during fast navigation.
+- **Per-line `...` expand in continuous mode** — Clicking `...` on any PV line was expanding all three lines simultaneously. Each line now tracks its own expand state independently.
+- **Arbiter live eval streaming** — Engine match arbiter now streams depth-by-depth evaluations up to `EngineDepth` (was previously not streaming at all), giving smooth eval bar animation between moves.
+
+### Changed
+- **Continuous analysis** — Replaced bounded `go depth N` loop with true `go infinite`; removed the now-dead `ContinuousAnalysisMaxDepth` setting. Output is raw (no explanation text, no clickable eval).
+- **Show Explanations toggle** — Fixed-depth analysis can now run in raw mode (depth header + clickable PVs only, no explanation text). Tactical/Positional/Endgame/Opening/MoveQuality sub-checkboxes auto-disable when off.
+
+### Performance
+- **Vignette rendering** — Was allocating 4 `LinearGradientBrush` GDI objects every frame (every 16ms). Now pre-rendered to a cached bitmap; rebuilt only when board size or alpha changes.
+- **Monochrome mode** — `Color.FromArgb(108,108,108)` allocated 64× per frame in monochrome mode; replaced with a static readonly field.
+- **Arrow rendering** — Pen width (`squareSize × 0.22`) was recomputed and set per arrow; now computed once per draw call.
+- **Animation tick** — Progress delta (`16f / durationMs`) was divided every 16ms timer tick; precomputed in `StartAnimation`.
+
+---
+
 ## [3.18.0] - 2026-06-07
 
 ### Added
