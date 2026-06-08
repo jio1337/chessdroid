@@ -69,6 +69,7 @@ namespace ChessDroid.Controls
         // Threat arrows (attacker → hanging piece, drawn in red under engine arrows)
         private List<(int fromRow, int fromCol, int toRow, int toCol, Color color)> _threatArrows = new();
         private static readonly Color ThreatArrowColor = Color.FromArgb(170, 200, 45, 45);
+        private static readonly Color _monochromeGray  = Color.FromArgb(108, 108, 108);
 
         // Rainbow / Wave mode (share one hue-advance timer)
         private bool _rainbowMode = false;
@@ -85,6 +86,9 @@ namespace ChessDroid.Controls
         private bool _vignetteEnabled  = false;
         private int  _vignetteAlpha    = 110;
         private bool _pieceGlowEnabled = false;
+        private Bitmap? _vignetteBitmap;
+        private int _lastVignetteBoardPx = 0;
+        private int _lastVignetteAlpha   = -1;
 
         // Board frame
         private bool  _boardFrameEnabled = false;
@@ -127,6 +131,7 @@ namespace ChessDroid.Controls
         private char _animPiece = '.';
         private int _animFromRow, _animFromCol, _animToRow, _animToCol;
         private float _animProgress = 0f;
+        private float _animProgressPerTick = 0f;
         private float _animDurationMs = 150f;
         public int AnimationDurationMs
         {
@@ -791,6 +796,7 @@ namespace ChessDroid.Controls
         /// </summary>
         public void StartAnimation(string uciMove)
         {
+            if (_animating) return;
             if (uciMove.Length < 4) return;
             int fromCol = uciMove[0] - 'a';
             int fromRow = 7 - (uciMove[1] - '1');
@@ -824,13 +830,14 @@ namespace ChessDroid.Controls
 
             if (_animPiece == '.') return;
             _animProgress = 0f;
+            _animProgressPerTick = 16f / _animDurationMs;
             _animating = true;
             _animTimer.Start();
         }
 
         private void AnimTimer_Tick(object? sender, EventArgs e)
         {
-            _animProgress += 16f / _animDurationMs;
+            _animProgress += _animProgressPerTick;
             if (_animProgress >= 1f)
             {
                 _animProgress = 1f;
@@ -1019,7 +1026,7 @@ namespace ChessDroid.Controls
                     Color squareColor;
                     if (_monochromeMode)
                     {
-                        squareColor = Color.FromArgb(108, 108, 108);
+                        squareColor = _monochromeGray;
                     }
                     else if (_rainbowMode || _waveMode)
                     {
@@ -1288,19 +1295,18 @@ namespace ChessDroid.Controls
                     new RectangleF(badgeX, badgeY, badgeSize, badgeSize), _badgeSf);
             }
 
-            // Vignette — four gradient strips fading inward from each edge
+            // Vignette — cached bitmap: rebuilt only when boardPx or alpha changes
             if (_vignetteEnabled)
             {
                 int vw = Math.Max(1, boardPx / 5);
-                var dark = Color.FromArgb(_vignetteAlpha, 0, 0, 0);
-                DrawVignetteStrip(g, leftOff, topOff, boardPx, vw,
-                    System.Drawing.Drawing2D.LinearGradientMode.Vertical, dark, Color.Transparent);           // top
-                DrawVignetteStrip(g, leftOff, topOff + boardPx - vw, boardPx, vw,
-                    System.Drawing.Drawing2D.LinearGradientMode.Vertical, Color.Transparent, dark);           // bottom
-                DrawVignetteStrip(g, leftOff, topOff, vw, boardPx,
-                    System.Drawing.Drawing2D.LinearGradientMode.Horizontal, dark, Color.Transparent);         // left
-                DrawVignetteStrip(g, leftOff + boardPx - vw, topOff, vw, boardPx,
-                    System.Drawing.Drawing2D.LinearGradientMode.Horizontal, Color.Transparent, dark);         // right
+                if (_vignetteBitmap == null || _lastVignetteBoardPx != boardPx || _lastVignetteAlpha != _vignetteAlpha)
+                {
+                    _vignetteBitmap?.Dispose();
+                    _vignetteBitmap = RenderVignetteBitmap(boardPx, vw, _vignetteAlpha);
+                    _lastVignetteBoardPx = boardPx;
+                    _lastVignetteAlpha   = _vignetteAlpha;
+                }
+                g.DrawImage(_vignetteBitmap, leftOff, topOff);
             }
 
             // Particles — game-end celebration
@@ -1315,17 +1321,34 @@ namespace ChessDroid.Controls
 
         }
 
-        private static void DrawVignetteStrip(Graphics g, int x, int y, int w, int h,
-            System.Drawing.Drawing2D.LinearGradientMode mode, Color c1, Color c2)
+        private static Bitmap RenderVignetteBitmap(int boardPx, int vw, int alpha)
         {
-            using var lgb = new System.Drawing.Drawing2D.LinearGradientBrush(
-                new Rectangle(x, y, w, h), c1, c2, mode);
-            g.FillRectangle(lgb, x, y, w, h);
+            var dark = Color.FromArgb(alpha, 0, 0, 0);
+            var bmp  = new Bitmap(boardPx, boardPx, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+            using var gfx = Graphics.FromImage(bmp);
+            using (var lgb = new System.Drawing.Drawing2D.LinearGradientBrush(
+                new Rectangle(0, 0, boardPx, vw), dark, Color.Transparent,
+                System.Drawing.Drawing2D.LinearGradientMode.Vertical))
+                gfx.FillRectangle(lgb, 0, 0, boardPx, vw);
+            using (var lgb = new System.Drawing.Drawing2D.LinearGradientBrush(
+                new Rectangle(0, boardPx - vw, boardPx, vw), Color.Transparent, dark,
+                System.Drawing.Drawing2D.LinearGradientMode.Vertical))
+                gfx.FillRectangle(lgb, 0, boardPx - vw, boardPx, vw);
+            using (var lgb = new System.Drawing.Drawing2D.LinearGradientBrush(
+                new Rectangle(0, 0, vw, boardPx), dark, Color.Transparent,
+                System.Drawing.Drawing2D.LinearGradientMode.Horizontal))
+                gfx.FillRectangle(lgb, 0, 0, vw, boardPx);
+            using (var lgb = new System.Drawing.Drawing2D.LinearGradientBrush(
+                new Rectangle(boardPx - vw, 0, vw, boardPx), Color.Transparent, dark,
+                System.Drawing.Drawing2D.LinearGradientMode.Horizontal))
+                gfx.FillRectangle(lgb, boardPx - vw, 0, vw, boardPx);
+            return bmp;
         }
 
         private void DrawArrows(Graphics g, int squareSize, int frameOff)
         {
             g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+            _arrowPen.Width = squareSize * 0.22f;
 
             foreach (var arrow in _bookArrows)
                 DrawArrow(g, squareSize, frameOff, arrow.fromRow, arrow.fromCol, arrow.toRow, arrow.toCol, arrow.color);
@@ -1357,9 +1380,7 @@ namespace ChessDroid.Controls
             int x2 = frameOff + (isFlipped ? 7 - toCol   : toCol)   * squareSize + squareSize / 2;
             int y2 = frameOff + (isFlipped ? 7 - toRow   : toRow)   * squareSize + squareSize / 2;
 
-            float lineWidth = squareSize * 0.22f;
             _arrowPen.Color = color;
-            _arrowPen.Width = lineWidth;
             g.DrawLine(_arrowPen, x1, y1, x2, y2);
         }
 
@@ -2348,6 +2369,7 @@ namespace ChessDroid.Controls
                 _gridPen.Dispose();
                 _gradientLightBitmap?.Dispose();
                 _gradientDarkBitmap?.Dispose();
+                _vignetteBitmap?.Dispose();
                 _glowWhiteBitmap?.Dispose();
                 _glowBlackBitmap?.Dispose();
                 foreach (var img in pieceImages.Values) img?.Dispose();
