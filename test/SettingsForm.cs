@@ -141,9 +141,9 @@ namespace ChessDroid
             chkBookMoves.Checked = config.ShowBookMoves;
 
             chkContinuousAnalysis.Checked = config.ContinuousAnalysis;
-            numContinuousMaxDepth.Value = Math.Clamp(config.ContinuousAnalysisMaxDepth, 10, 100);
-            numContinuousMaxDepth.Enabled = config.ContinuousAnalysis;
-            chkContinuousAnalysis.CheckedChanged += (s, e) => numContinuousMaxDepth.Enabled = chkContinuousAnalysis.Checked;
+            chkShowExplanations.Checked = config.ShowExplanations;
+            UpdateExplanationSubControls(config.ShowExplanations);
+            chkShowExplanations.CheckedChanged += (s, e) => UpdateExplanationSubControls(chkShowExplanations.Checked);
             numAutoPlayInterval.Value = Math.Clamp(config.AutoPlayInterval, 200, 2000);
 
             // Load theme preference
@@ -210,7 +210,7 @@ namespace ChessDroid
             config.ShowMoveQuality = chkMoveQuality.Checked;
             config.ShowBookMoves = chkBookMoves.Checked;
             config.ContinuousAnalysis = chkContinuousAnalysis.Checked;
-            config.ContinuousAnalysisMaxDepth = (int)numContinuousMaxDepth.Value;
+            config.ShowExplanations = chkShowExplanations.Checked;
             config.AutoPlayInterval = (int)numAutoPlayInterval.Value;
 
             config.Save();
@@ -663,6 +663,15 @@ namespace ChessDroid
         private void TrkAggressiveness_Scroll(object? sender, EventArgs e)
         {
             UpdateAggressivenessLabel();
+        }
+
+        private void UpdateExplanationSubControls(bool enabled)
+        {
+            chkTactical.Enabled   = enabled;
+            chkPositional.Enabled = enabled;
+            chkEndgame.Enabled    = enabled;
+            chkOpening.Enabled    = enabled;
+            chkMoveQuality.Enabled = enabled;
         }
 
         private void UpdateAggressivenessLabel()

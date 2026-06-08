@@ -94,8 +94,8 @@ namespace ChessDroid
 
 
         // Analysis mode
-        public bool ContinuousAnalysis { get; set; } = false; // true = live depth updates, false = fixed depth
-        public int ContinuousAnalysisMaxDepth { get; set; } = 50; // Max depth when continuous analysis is enabled
+        public bool ContinuousAnalysis { get; set; } = false; // true = go infinite live updates, false = fixed depth
+        public bool ShowExplanations { get; set; } = true;    // false = raw depth header + clickable PVs only
         public int AutoPlayInterval { get; set; } = 600; // ms between moves during auto-play (200-2000)
 
         // Console font settings
@@ -244,7 +244,7 @@ namespace ChessDroid
             ShowOpeningName = other.ShowOpeningName;
             ShowMoveQuality = other.ShowMoveQuality;
             ContinuousAnalysis = other.ContinuousAnalysis;
-            ContinuousAnalysisMaxDepth = other.ContinuousAnalysisMaxDepth;
+            ShowExplanations = other.ShowExplanations;
             AutoPlayInterval = other.AutoPlayInterval;
             ConsoleFontFamily = other.ConsoleFontFamily;
             ConsoleFontSize = other.ConsoleFontSize;

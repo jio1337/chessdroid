@@ -46,6 +46,7 @@ namespace ChessDroid
                 lblStatus.Text = "Analyzing...";
                 consoleFormatter?.ResetLiveExpand();
                 ShowBookInfoImmediate(fen);
+                _lastLiveUpdate = DateTime.MinValue; // always show first depth update immediately
 
                 string lastBestMove = "";
                 int lastDepth = 0;
@@ -58,6 +59,14 @@ namespace ChessDroid
                             if (ct.IsCancellationRequested) return;
                             lastBestMove = bestMove;
                             lastDepth = currentDepth;
+
+                            // Throttle UI updates — go infinite fires updates at every depth,
+                            // which can be dozens/sec at low depths. Without throttling, rapid
+                            // moves or piece dragging floods the BeginInvoke queue and causes
+                            // visible stuttering. 150ms cap matches the debounce delay.
+                            var now = DateTime.UtcNow;
+                            if ((now - _lastLiveUpdate).TotalMilliseconds < 150) return;
+                            _lastLiveUpdate = now;
 
                             void Update()
                             {
@@ -247,18 +256,22 @@ namespace ChessDroid
 
             var bookMoves = FetchBookMoves(fen);
 
-            // Display results (respect user's line visibility settings)
-            consoleFormatter?.DisplayAnalysisResults(
-                recommendedMove,
-                evaluation,
-                pvs,
-                evals,
-                fen,
-                config?.ShowBestLine ?? true,
-                config?.ShowSecondLine ?? true,
-                config?.ShowThirdLine ?? true,
-                wdl,
-                bookMoves);
+            bool showBest   = config?.ShowBestLine   ?? true;
+            bool showSecond = config?.ShowSecondLine ?? true;
+            bool showThird  = config?.ShowThirdLine  ?? true;
+
+            if (config?.ShowExplanations == false)
+            {
+                consoleFormatter?.DisplayAnalysisResultsRaw(
+                    recommendedMove, evaluation, pvs, evals, fen,
+                    showBest, showSecond, showThird, depth, wdl, bookMoves);
+            }
+            else
+            {
+                consoleFormatter?.DisplayAnalysisResults(
+                    recommendedMove, evaluation, pvs, evals, fen,
+                    showBest, showSecond, showThird, wdl, bookMoves);
+            }
 
             // Update engine arrows (book arrows already set upfront in UpdateBookArrowsForPosition)
             if (!isNavigating && !_bookArrowsActive)

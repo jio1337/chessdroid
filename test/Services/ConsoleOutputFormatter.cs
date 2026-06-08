@@ -172,7 +172,8 @@ namespace ChessDroid.Services
             bool isSavingMove = false,
             (string label, string symbol, Color color)? classification = null,
             string? overrideExplanation = null,
-            string? pvUciLine = null)
+            string? pvUciLine = null,
+            bool showExplanation = true)
         {
             // Display header with foreground color only (no background highlight)
             // Include classification symbol if provided (e.g., "??" for Blunder)
@@ -212,10 +213,11 @@ namespace ChessDroid.Services
             AppendTextWithFormat(Environment.NewLine, richTextBox.BackColor, headerForeColor, FontStyle.Regular);
 
             // Generate and display explanation
-            // Use override explanation (e.g., for Brilliant moves) if provided, otherwise generate normally
-            string explanation = !string.IsNullOrEmpty(overrideExplanation)
-                ? overrideExplanation
-                : generateExplanation(firstMove, completeFen, pvs, evaluation);
+            string explanation = showExplanation
+                ? (!string.IsNullOrEmpty(overrideExplanation)
+                    ? overrideExplanation
+                    : generateExplanation(firstMove, completeFen, pvs, evaluation))
+                : "";
 
             // Get threats for this specific move if enabled
             // Skip threats/defenses when WE have forced mate - they don't matter
@@ -2553,6 +2555,96 @@ namespace ChessDroid.Services
         }
 
         public void ResetLiveExpand() => _liveLineExpanded = false;
+
+        /// <summary>
+        /// Fixed-depth display with no explanation text — same visual style as live lines but
+        /// with a clickable eval on each PV that inserts the variation into the move tree.
+        /// Used when ShowExplanations is off in fixed-depth mode.
+        /// </summary>
+        public void DisplayAnalysisResultsRaw(
+            string bestMove,
+            string evaluation,
+            List<string> pvs,
+            List<string> evaluations,
+            string completeFen,
+            bool showBestLine,
+            bool showSecondLine,
+            bool showThirdLine,
+            int depth,
+            WDLInfo? wdl = null,
+            List<BookMove>? bookMoves = null)
+        {
+            string fen = completeFen ?? throw new ArgumentNullException(nameof(completeFen));
+            SuspendDrawing();
+            try
+            {
+                Clear();
+                _markers.Clear();
+
+                // [← Game Review] link
+                if (_activeClassification != null)
+                {
+                    Color linkClr = GetThemeColor(Color.Cyan, Color.Blue);
+                    int rStart = richTextBox.TextLength;
+                    int rLen = AppendTextWithFormat("[← Game Review]", richTextBox.BackColor, linkClr, FontStyle.Underline);
+                    _markers.Add(new ClickMarker { Start = rStart, Length = rLen, Action = ClickAction.ShowGameReview });
+                    richTextBox.AppendText("\n");
+                }
+
+                string[] fenParts = fen.Split(' ');
+                bool whiteToMove = fenParts.Length > 1 && fenParts[1] == "w";
+                string side = whiteToMove ? "White" : "Black";
+
+                richTextBox.SelectionColor = GetThemeColor(Color.Silver, Color.DimGray);
+                richTextBox.AppendText($" depth {depth}  │  {FormatEvaluation(evaluation)}  │  {side}{Environment.NewLine}");
+                richTextBox.SelectionColor = GetThemeColor(Color.FromArgb(75, 75, 75), Color.Gray);
+                richTextBox.AppendText(new string('─', 38) + Environment.NewLine);
+                ResetFormatting();
+
+                if (config?.ShowWDL == true && wdl != null)
+                    DisplayWDLInfo(wdl, whiteToMove);
+
+                AppendOpeningAndBook(fen, bookMoves);
+
+                bool isDark = ThemeService.IsDarkTheme(config?.Theme);
+                Color[] lineColors = isDark
+                    ? new[] { Color.FromArgb(214, 202, 182), Color.FromArgb(196, 186, 168), Color.FromArgb(176, 172, 160) }
+                    : new[] { Color.FromArgb(22, 14, 4), Color.FromArgb(44, 34, 20), Color.FromArgb(68, 64, 76) };
+                Color expColor = isDark ? Color.FromArgb(158, 178, 200) : Color.FromArgb(60, 82, 108);
+
+                string firstMove = pvs.Count > 0 ? pvs[0].Split(' ')[0] : bestMove;
+
+                if (showBestLine && pvs.Count >= 1)
+                {
+                    string san = ConvertPvToSan(pvs, 0, firstMove, fen);
+                    DisplayMoveLine("", san, FormatEvaluation(evaluation), fen, pvs, firstMove,
+                        lineColors[0], expColor, showThreats: false, showExplanation: false,
+                        pvUciLine: pvs[0]);
+                }
+                if (showSecondLine && pvs.Count >= 2)
+                {
+                    string mv2 = pvs[1].Split(' ')[0];
+                    string san = ConvertPvToSan(pvs, 1, mv2, fen);
+                    string ev2 = evaluations.Count >= 2 ? evaluations[1] : "";
+                    DisplayMoveLine("", san, FormatEvaluation(ev2), fen, pvs, mv2,
+                        lineColors[1], expColor, showThreats: false, showExplanation: false,
+                        pvUciLine: pvs[1]);
+                }
+                if (showThirdLine && pvs.Count >= 3)
+                {
+                    string mv3 = pvs[2].Split(' ')[0];
+                    string san = ConvertPvToSan(pvs, 2, mv3, fen);
+                    string ev3 = evaluations.Count >= 3 ? evaluations[2] : "";
+                    DisplayMoveLine("", san, FormatEvaluation(ev3), fen, pvs, mv3,
+                        lineColors[2], expColor, showThreats: false, showExplanation: false,
+                        pvUciLine: pvs[2]);
+                }
+
+                if (config?.ShowThreats == true)
+                    DisplayOpponentThreats(fen);
+            }
+            finally { ResumeDrawing(); }
+        }
 
         /// <summary>
         /// Compact live display for continuous analysis — PV lines only, no explanation text.
