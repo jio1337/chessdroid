@@ -44,30 +44,25 @@ namespace ChessDroid
             if (config?.ContinuousAnalysis == true)
             {
                 lblStatus.Text = "Analyzing...";
-                int maxDepth = config?.ContinuousAnalysisMaxDepth ?? 50;
-
                 consoleFormatter?.ResetLiveExpand();
                 ShowBookInfoImmediate(fen);
 
-                string lastBestMove = "", lastEval = "";
-                List<string> lastPvs = new(), lastEvals = new();
-                WDLInfo? lastWdl = null;
+                string lastBestMove = "";
                 int lastDepth = 0;
 
                 try
                 {
-                    await engineService.RunContinuousAnalysisAsync(fen, multiPV, maxDepth,
+                    await engineService.RunContinuousAnalysisAsync(fen, multiPV,
                         (bestMove, eval, pvs, evals, wdl, currentDepth) =>
                         {
                             if (ct.IsCancellationRequested) return;
-                            lastBestMove = bestMove; lastEval = eval;
-                            lastPvs = pvs; lastEvals = evals;
-                            lastWdl = wdl; lastDepth = currentDepth;
+                            lastBestMove = bestMove;
+                            lastDepth = currentDepth;
 
                             void Update()
                             {
                                 if (ct.IsCancellationRequested) return;
-                                lblStatus.Text = $"Analyzing... depth {currentDepth}";
+                                lblStatus.Text = $"depth {currentDepth}";
                                 consoleFormatter?.DisplayLiveLines(fen, eval, pvs, evals, wdl, currentDepth);
                                 if (!isNavigating && !_bookArrowsActive)
                                 {
@@ -79,8 +74,8 @@ namespace ChessDroid
                             if (InvokeRequired) BeginInvoke(Update); else Update();
                         }, ct);
 
-                    // Engine finished at max depth — switch to full analysis display
-                    // If bestMove is still empty the position is terminal (checkmate/stalemate)
+                    // Engine stopped — only act on terminal positions (checkmate / stalemate).
+                    // For normal stops (navigation, new move) the result is simply discarded.
                     if (!ct.IsCancellationRequested && (lastBestMove == "(none)" || lastBestMove == "0000" || string.IsNullOrEmpty(lastBestMove)))
                     {
                         var board = ChessBoard.FromFEN(fen);
@@ -100,26 +95,6 @@ namespace ChessDroid
                             lblStatus.Text = "Stalemate — Draw";
                         }
                         PlayGameEndSound();
-                        return;
-                    }
-                    if (!ct.IsCancellationRequested && !string.IsNullOrEmpty(lastBestMove))
-                    {
-                        _analysisCache[cacheKey] = new CachedAnalysis
-                        {
-                            BestMove = lastBestMove,
-                            Evaluation = lastEval,
-                            PVs = new List<string>(lastPvs),
-                            Evaluations = new List<string>(lastEvals),
-                            WDL = lastWdl,
-                            Depth = lastDepth
-                        };
-
-                        void ShowFull()
-                        {
-                            if (ct.IsCancellationRequested) return;
-                            DisplayAnalysisResult(fen, lastBestMove, lastEval, lastPvs, lastEvals, lastWdl, lastDepth, fromCache: false);
-                        }
-                        if (InvokeRequired) Invoke(ShowFull); else ShowFull();
                     }
                 }
                 catch (Exception ex)
