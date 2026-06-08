@@ -30,6 +30,7 @@ namespace ChessDroid
         // Auto-analysis
         private CancellationTokenSource? autoAnalysisCts;
         private CancellationTokenSource? _pvAnimationCts;
+        private DateTime _lastLiveUpdate = DateTime.MinValue; // throttle for go-infinite update flood
 
         // Services
         private ChessEngineService? engineService;
@@ -1077,9 +1078,9 @@ namespace ChessDroid
             // Snapshot analysis-relevant settings before the dialog modifies config
             string prevEngine = config.SelectedEngine;
             int prevDepth = config.EngineDepth;
-            int prevMaxDepth = config.ContinuousAnalysisMaxDepth;
             bool prevPlayStyle = config.PlayStyleEnabled;
             int prevAggressiveness = config.Aggressiveness;
+            bool prevShowExplanations = config.ShowExplanations;
             string prevTheme = config.Theme;
 
             using var settingsForm = new SettingsForm(config);
@@ -1088,9 +1089,9 @@ namespace ChessDroid
                 bool engineChanged = config.SelectedEngine != prevEngine;
                 bool analysisSettingsChanged = engineChanged
                     || config.EngineDepth != prevDepth
-                    || config.ContinuousAnalysisMaxDepth != prevMaxDepth
                     || config.PlayStyleEnabled != prevPlayStyle
-                    || config.Aggressiveness != prevAggressiveness;
+                    || config.Aggressiveness != prevAggressiveness
+                    || config.ShowExplanations != prevShowExplanations;
 
                 if (engineChanged)
                 {

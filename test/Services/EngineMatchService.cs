@@ -339,7 +339,7 @@ namespace ChessDroid.Services
 
                     _annotTask = AnnotatorEngine.StreamPositionEvalAsync(
                         newFen,
-                        config.ContinuousAnalysisMaxDepth,
+                        config.EngineDepth,
                         eval =>
                         {
                             firstEvalTcs.TrySetResult(eval);
