@@ -350,6 +350,12 @@ namespace ChessDroid
                 string sanWithSymbol = san + brilliantSymbol;
                 moveTree.AddMove(uciMove, sanWithSymbol, newFen);
 
+                if (currentEval.HasValue)
+                {
+                    moveTree.CurrentNode.Evaluation = currentEval.Value;
+                    RefreshEvalGraph();
+                }
+
                 UpdateMoveList();
                 UpdateFenDisplay();
                 UpdateTurnLabel();
