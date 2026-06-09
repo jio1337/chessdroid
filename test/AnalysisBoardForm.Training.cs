@@ -613,9 +613,16 @@ namespace ChessDroid
             lnkResetPBs.LinkClicked += (_, _) =>
             {
                 if (config == null) return;
-                config.PuzzleRushBest           = 0;
-                config.PuzzleTrainingBestStreak = 0;
-                config.GauntletBestStreak       = 0;
+                config.PuzzleRushBest                = 0;
+                config.PuzzleRushBestByMinutes.Clear();
+                config.PuzzleTrainingBestStreak      = 0;
+                config.PuzzleTrainingBestStreakDate   = "";
+                config.PuzzleTrainingTotalAttempted   = 0;
+                config.PuzzleTrainingTotalClean       = 0;
+                config.GauntletBestStreak             = 0;
+                config.GauntletBestStreakDate         = "";
+                config.GauntletRecentScores.Clear();
+                config.VisionBestStreak               = 0;
                 config.Save();
                 _puzzleStreakBest    = 0;
                 _gauntletBestStreak = 0;
@@ -1127,6 +1134,13 @@ namespace ChessDroid
             int total = _puzzlesClean + _puzzlesStruggled;
             int acc   = total > 0 ? _puzzlesClean * 100 / total : 0;
 
+            if (config != null && total > 0)
+            {
+                config.PuzzleTrainingTotalAttempted += total;
+                config.PuzzleTrainingTotalClean     += _puzzlesClean;
+                config.Save();
+            }
+
             if (_lblTrainingFinalScore != null)
                 _lblTrainingFinalScore.Text = $"Solved: {total}   ·   {acc}% clean   ·   {_puzzlesClean} perfect";
             if (_lblTrainingPB != null)
@@ -1449,6 +1463,8 @@ namespace ChessDroid
                     pb.BestCorrect = _trainingCorrect;
                     pb.BestQuestions = _trainingQuestions;
                     pb.BestTime = elapsed;
+                    pb.BestTimePerQuestion = _trainingCorrect > 0 ? elapsed / _trainingCorrect : double.MaxValue;
+                    pb.LastSet = DateTime.Today.ToString("yyyy-MM-dd");
                     config.TrainingPersonalBests[key] = pb;
                     config.Save();
                     newPB = true;
@@ -1859,8 +1875,9 @@ namespace ChessDroid
                 lifetimeStats.TotalRuns++;
                 if (isPerfect) lifetimeStats.PerfectRuns++;
                 lifetimeStats.TotalHintsUsed += _openingHintsUsed;
-                double runAccuracy = total > 0 ? (double)correct / total : 1.0;
-                if (runAccuracy > lifetimeStats.BestAccuracy) lifetimeStats.BestAccuracy = runAccuracy;
+                int runMistakes = _openingPosMistakes.Values.Sum();
+                lifetimeStats.TotalMistakes += runMistakes;
+                if (runMistakes < lifetimeStats.BestRunMistakes) lifetimeStats.BestRunMistakes = runMistakes;
                 lifetimeStats.LastAttempted = DateTime.Today.ToString("yyyy-MM-dd");
 
                 config.OpeningTrainingStats[key] = lifetimeStats;
@@ -1878,7 +1895,7 @@ namespace ChessDroid
                 string sessionStr  = $"Session: {_openingSessionRuns} run{(_openingSessionRuns == 1 ? "" : "s")} · {_openingSessionPerfect} perfect";
                 string lifetimeStr = lifetimeStats != null
                     ? $"All time: {lifetimeStats.TotalRuns} run{(lifetimeStats.TotalRuns == 1 ? "" : "s")} · {lifetimeStats.PerfectRuns} perfect"
-                      + (lifetimeStats.TotalRuns > 1 ? $" · best {lifetimeStats.BestAccuracy:P0}" : "")
+                      + (lifetimeStats.BestRunMistakes == 0 ? " · clean ✓" : lifetimeStats.BestRunMistakes < int.MaxValue ? $" · best run: {lifetimeStats.BestRunMistakes} mistake{(lifetimeStats.BestRunMistakes == 1 ? "" : "s")}" : "")
                     : "";
                 _lblTrainingPB.Text = openingName + Environment.NewLine + sessionStr + "  ·  " + lifetimeStr;
             }
@@ -2325,6 +2342,7 @@ namespace ChessDroid
             }
 
             bool clean = _puzzlesStruggled == 0 && _puzzleHintsUsed == 0;
+            if (clean && config != null) { config.DailyPuzzleCleanSolves++; config.Save(); }
             string streakStr = (config?.DailyPuzzleStreak ?? 0) > 0
                 ? $"  ·  Streak: {config!.DailyPuzzleStreak}" : "";
             string result = clean ? $"Solved clean!{streakStr}" : $"Solved{streakStr}";
@@ -2442,7 +2460,12 @@ namespace ChessDroid
                             if (_puzzleStreak > _puzzleStreakBest)
                             {
                                 _puzzleStreakBest = _puzzleStreak;
-                                if (config != null) { config.PuzzleTrainingBestStreak = _puzzleStreakBest; config.Save(); }
+                                if (config != null)
+                                {
+                                    config.PuzzleTrainingBestStreak     = _puzzleStreakBest;
+                                    config.PuzzleTrainingBestStreakDate = DateTime.Today.ToString("yyyy-MM-dd");
+                                    config.Save();
+                                }
                             }
                         }
                     }
@@ -2661,10 +2684,17 @@ namespace ChessDroid
                 _lblTrainingFinalScore.Text = $"Puzzles solved: {solved}  ({_puzzlesClean} clean)";
             if (_lblTrainingPB != null)
             {
-                int pb = config?.PuzzleRushBest ?? 0;
-                bool newPb = solved > pb;
-                if (newPb && config != null) { config.PuzzleRushBest = solved; config.Save(); }
-                _lblTrainingPB.Text = newPb ? $"New best!  {solved}" : pb > 0 ? $"Best: {pb}" : "";
+                int durationMin = _rushDurationSeconds / 60;
+                int prevBest = 0;
+                config?.PuzzleRushBestByMinutes.TryGetValue(durationMin, out prevBest);
+                bool newPb = solved > prevBest;
+                if (newPb && config != null)
+                {
+                    config.PuzzleRushBestByMinutes[durationMin] = solved;
+                    config.PuzzleRushBest = Math.Max(config.PuzzleRushBest, solved);
+                    config.Save();
+                }
+                _lblTrainingPB.Text = newPb ? $"New best!  {solved}" : prevBest > 0 ? $"Best ({durationMin} min): {prevBest}" : "";
             }
             if (_lblOpMissedMoves != null) _lblOpMissedMoves.Visible = false;
 
@@ -2711,7 +2741,18 @@ namespace ChessDroid
             if (_gauntletStreak > _gauntletBestStreak)
             {
                 _gauntletBestStreak = _gauntletStreak;
-                if (config != null) { config.GauntletBestStreak = _gauntletBestStreak; config.Save(); }
+                if (config != null)
+                {
+                    config.GauntletBestStreak     = _gauntletBestStreak;
+                    config.GauntletBestStreakDate  = DateTime.Today.ToString("yyyy-MM-dd");
+                }
+            }
+            if (config != null)
+            {
+                config.GauntletRecentScores.Add(_gauntletStreak);
+                if (config.GauntletRecentScores.Count > 5)
+                    config.GauntletRecentScores.RemoveAt(0);
+                config.Save();
             }
 
             if (_btnPuzzleHint != null) _btnPuzzleHint.Visible = true;
@@ -2945,9 +2986,12 @@ namespace ChessDroid
                 if (_visionCorrect > pb.BestCorrect)
                 {
                     pb.BestCorrect = _visionCorrect;
+                    pb.LastSet = DateTime.Today.ToString("yyyy-MM-dd");
                     config.TrainingPersonalBests[key] = pb;
-                    config.Save();
                 }
+                if (_visionBestStreak > config.VisionBestStreak)
+                    config.VisionBestStreak = _visionBestStreak;
+                config.Save();
             }
             VisionEnd($"✓ {_visionCorrect} correct   ✗ {_visionWrong} wrong", $"Best streak: {_visionBestStreak}");
         }
@@ -2991,9 +3035,12 @@ namespace ChessDroid
                 if (_visionCorrect > pb.BestCorrect)
                 {
                     pb.BestCorrect = _visionCorrect;
+                    pb.LastSet = DateTime.Today.ToString("yyyy-MM-dd");
                     config.TrainingPersonalBests[key] = pb;
-                    config.Save();
                 }
+                if (_visionBestStreak > config.VisionBestStreak)
+                    config.VisionBestStreak = _visionBestStreak;
+                config.Save();
             }
             VisionEnd($"✓ {_visionCorrect} correct   Best streak: {_visionBestStreak}", "");
         }

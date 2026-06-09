@@ -15,6 +15,8 @@ namespace ChessDroid
         public int BestCorrect { get; set; } = 0;
         public int BestQuestions { get; set; } = 0;
         public double BestTime { get; set; } = double.MaxValue;
+        public double BestTimePerQuestion { get; set; } = double.MaxValue; // BestTime/BestCorrect — comparable across round sizes
+        public string LastSet { get; set; } = ""; // ISO date "yyyy-MM-dd" when this PB was last beaten
     }
 
     public class OpeningStats
@@ -22,7 +24,8 @@ namespace ChessDroid
         public int TotalRuns { get; set; } = 0;
         public int PerfectRuns { get; set; } = 0;
         public int TotalHintsUsed { get; set; } = 0;
-        public double BestAccuracy { get; set; } = 0.0;  // 0.0–1.0, best single-run accuracy
+        public int TotalMistakes { get; set; } = 0;       // cumulative wrong-move attempts across all runs
+        public int BestRunMistakes { get; set; } = int.MaxValue; // min wrong attempts in a single run; 0 = clean run achieved
         public string LastAttempted { get; set; } = "";   // ISO date "yyyy-MM-dd"
     }
 
@@ -81,13 +84,21 @@ namespace ChessDroid
         public bool SoundEffectsEnabled { get; set; } = true;
 
         // Training records
-        public int PuzzleRushBest { get; set; } = 0;
+        public int PuzzleRushBest { get; set; } = 0; // kept for backward compat; prefer PuzzleRushBestByMinutes
+        public Dictionary<int, int> PuzzleRushBestByMinutes { get; set; } = new(); // keyed by duration in minutes (1–5)
         public int PuzzleTrainingBestStreak { get; set; } = 0;
+        public string PuzzleTrainingBestStreakDate { get; set; } = "";
+        public int PuzzleTrainingTotalAttempted { get; set; } = 0;
+        public int PuzzleTrainingTotalClean { get; set; } = 0;
         public int GauntletBestStreak { get; set; } = 0;
+        public string GauntletBestStreakDate { get; set; } = "";
+        public List<int> GauntletRecentScores { get; set; } = new(); // last 5 session scores
+        public int VisionBestStreak { get; set; } = 0;
         public bool PuzzleAutoNext { get; set; } = true;
         public string DailyPuzzleLastSolvedDate { get; set; } = "";
         public int    DailyPuzzleStreak         { get; set; } = 0;
         public int    DailyPuzzleBestStreak     { get; set; } = 0;
+        public int    DailyPuzzleCleanSolves    { get; set; } = 0;
         public bool VisionAutoNext { get; set; } = true;
 
         // Explanation settings
@@ -278,14 +289,22 @@ namespace ChessDroid
             BoardFrameWidth = other.BoardFrameWidth;
             BoardFrameColor = other.BoardFrameColor;
             SoundEffectsEnabled = other.SoundEffectsEnabled;
-            PuzzleRushBest             = other.PuzzleRushBest;
-            PuzzleTrainingBestStreak   = other.PuzzleTrainingBestStreak;
-            GauntletBestStreak         = other.GauntletBestStreak;
-            PuzzleAutoNext             = other.PuzzleAutoNext;
-            VisionAutoNext             = other.VisionAutoNext;
-            DailyPuzzleLastSolvedDate  = other.DailyPuzzleLastSolvedDate;
-            DailyPuzzleStreak          = other.DailyPuzzleStreak;
-            DailyPuzzleBestStreak      = other.DailyPuzzleBestStreak;
+            PuzzleRushBest                 = other.PuzzleRushBest;
+            PuzzleRushBestByMinutes        = new Dictionary<int, int>(other.PuzzleRushBestByMinutes);
+            PuzzleTrainingBestStreak       = other.PuzzleTrainingBestStreak;
+            PuzzleTrainingBestStreakDate   = other.PuzzleTrainingBestStreakDate;
+            PuzzleTrainingTotalAttempted   = other.PuzzleTrainingTotalAttempted;
+            PuzzleTrainingTotalClean       = other.PuzzleTrainingTotalClean;
+            GauntletBestStreak             = other.GauntletBestStreak;
+            GauntletBestStreakDate         = other.GauntletBestStreakDate;
+            GauntletRecentScores           = new List<int>(other.GauntletRecentScores);
+            VisionBestStreak               = other.VisionBestStreak;
+            PuzzleAutoNext                 = other.PuzzleAutoNext;
+            VisionAutoNext                 = other.VisionAutoNext;
+            DailyPuzzleLastSolvedDate      = other.DailyPuzzleLastSolvedDate;
+            DailyPuzzleStreak              = other.DailyPuzzleStreak;
+            DailyPuzzleBestStreak          = other.DailyPuzzleBestStreak;
+            DailyPuzzleCleanSolves         = other.DailyPuzzleCleanSolves;
 
             SyzygyPath = other.SyzygyPath;
             OpeningBooksFolder = other.OpeningBooksFolder;
