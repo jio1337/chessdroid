@@ -110,6 +110,9 @@ namespace ChessDroid
             numAnimationMs.Enabled = config.ShowAnimations;
             chkAnimations.CheckedChanged += (s, e) => numAnimationMs.Enabled = chkAnimations.Checked;
             chkMaterialStrips.Checked = config.ShowMaterialStrips;
+            chkShowLegalMoves.Checked = config.ShowLegalMoves;
+            cmbMovementMode.SelectedItem = config.MovementMode;
+            if (cmbMovementMode.SelectedIndex < 0) cmbMovementMode.SelectedIndex = 0;
 
             // Board effects
             chkGradient.Checked = config.GradientBoard;
@@ -187,6 +190,8 @@ namespace ChessDroid
             config.ShowAnimations = chkAnimations.Checked;
             config.AnimationDurationMs = (int)numAnimationMs.Value;
             config.ShowMaterialStrips = chkMaterialStrips.Checked;
+            config.ShowLegalMoves = chkShowLegalMoves.Checked;
+            config.MovementMode = cmbMovementMode.SelectedItem?.ToString() ?? "Both";
 
             // Board effects
             config.GradientBoard = chkGradient.Checked;

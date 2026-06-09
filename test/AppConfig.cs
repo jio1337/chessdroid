@@ -54,6 +54,10 @@ namespace ChessDroid
         public int AnimationDurationMs { get; set; } = 150;
         public bool ShowLastMoveHighlight { get; set; } = true;
         public bool ShowMaterialStrips { get; set; } = true;
+        public bool ShowLegalMoves { get; set; } = true;
+
+        // Piece movement input mode: "Both", "Drag", "Click"
+        public string MovementMode { get; set; } = "Both";
 
         // Board visual effects
         public bool GradientBoard { get; set; } = false;
@@ -235,6 +239,8 @@ namespace ChessDroid
             AnimationDurationMs = other.AnimationDurationMs;
             ShowLastMoveHighlight = other.ShowLastMoveHighlight;
             ShowMaterialStrips = other.ShowMaterialStrips;
+            ShowLegalMoves = other.ShowLegalMoves;
+            MovementMode = other.MovementMode;
             ShowTacticalAnalysis = other.ShowTacticalAnalysis;
             ShowPositionalAnalysis = other.ShowPositionalAnalysis;
             ShowEndgameAnalysis = other.ShowEndgameAnalysis;

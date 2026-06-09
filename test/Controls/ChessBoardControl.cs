@@ -460,6 +460,11 @@ namespace ChessDroid.Controls
             set { if (showSquareLabels != value) { showSquareLabels = value; Invalidate(); } }
         }
 
+        public bool ShowLegalMoves { get; set; } = true;
+
+        // "Both" (default), "Drag", "Click"
+        public string MovementMode { get; set; } = "Both";
+
         public bool MonochromeMode
         {
             get => _monochromeMode;
@@ -1083,7 +1088,7 @@ namespace ChessDroid.Controls
                     }
 
                     // Draw legal move indicators
-                    if (legalMoveSquares.Contains((row, col)))
+                    if (ShowLegalMoves && legalMoveSquares.Contains((row, col)))
                     {
                         char pieceAtTarget = board.GetPiece(row, col);
                         if (pieceAtTarget != '.')
@@ -1585,8 +1590,8 @@ namespace ChessDroid.Controls
             if (e.Button != MouseButtons.Left || !mouseDownOnPiece)
                 return;
 
-            // Check if we've exceeded the drag threshold
-            if (!isDragging)
+            // Check if we've exceeded the drag threshold (skip if click-only mode)
+            if (!isDragging && MovementMode != "Click")
             {
                 int dx = Math.Abs(e.X - mouseDownPosition.X);
                 int dy = Math.Abs(e.Y - mouseDownPosition.Y);
@@ -1660,7 +1665,7 @@ namespace ChessDroid.Controls
                 dragFromCol = -1;
                 dragPiece = '.';
             }
-            else if (mouseDownOnPiece)
+            else if (mouseDownOnPiece && MovementMode != "Drag")
             {
                 // Click-to-move: if we released on the same square, keep selection
                 // If released on a different square, try to move or select

@@ -184,6 +184,8 @@ namespace ChessDroid
             boardControl.ShowSquareLabels = config.ShowSquareLabels;
             boardControl.HideCoordinates  = !config.ShowCoordinates;
             boardControl.ShowLastMoveHighlight = config.ShowLastMoveHighlight;
+            boardControl.ShowLegalMoves = config.ShowLegalMoves;
+            boardControl.MovementMode = config.MovementMode;
             boardControl.AnimationDurationMs = config.AnimationDurationMs;
             ApplyBoardFxFromConfig();
             InitializeSounds();

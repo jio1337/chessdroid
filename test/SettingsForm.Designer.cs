@@ -85,6 +85,10 @@ namespace ChessDroid
             numAnimationMs = new NumericUpDown();
             lblMaterialStrips = new Label();
             chkMaterialStrips = new CheckBox();
+            lblShowLegalMoves = new Label();
+            chkShowLegalMoves = new CheckBox();
+            lblMovementMode = new Label();
+            cmbMovementMode = new ComboBox();
             grpExplanations = new GroupBox();
             chkTactical = new CheckBox();
             chkPositional = new CheckBox();
@@ -519,10 +523,14 @@ namespace ChessDroid
             grpBoardColors.Controls.Add(numAnimationMs);
             grpBoardColors.Controls.Add(lblMaterialStrips);
             grpBoardColors.Controls.Add(chkMaterialStrips);
+            grpBoardColors.Controls.Add(lblShowLegalMoves);
+            grpBoardColors.Controls.Add(chkShowLegalMoves);
+            grpBoardColors.Controls.Add(lblMovementMode);
+            grpBoardColors.Controls.Add(cmbMovementMode);
             grpBoardColors.ForeColor = Color.White;
             grpBoardColors.Location = new Point(12, 450);
             grpBoardColors.Name = "grpBoardColors";
-            grpBoardColors.Size = new Size(298, 240);
+            grpBoardColors.Size = new Size(298, 298);
             grpBoardColors.TabIndex = 12;
             grpBoardColors.TabStop = false;
             grpBoardColors.Text = "Board Colors";
@@ -726,7 +734,47 @@ namespace ChessDroid
             chkMaterialStrips.TabIndex = 22;
             toolTip1.SetToolTip(chkMaterialStrips, "Show captured pieces and material advantage above/below the board");
             chkMaterialStrips.UseVisualStyleBackColor = true;
-            // 
+            //
+            // lblShowLegalMoves
+            //
+            lblShowLegalMoves.Location = new Point(10, 237);
+            lblShowLegalMoves.Name = "lblShowLegalMoves";
+            lblShowLegalMoves.Size = new Size(143, 19);
+            lblShowLegalMoves.TabIndex = 32;
+            lblShowLegalMoves.Text = "Legal Move Dots:";
+            toolTip1.SetToolTip(lblShowLegalMoves, "Show dots/rings on legal destination squares when a piece is selected");
+            //
+            // chkShowLegalMoves
+            //
+            chkShowLegalMoves.AutoSize = true;
+            chkShowLegalMoves.Checked = true;
+            chkShowLegalMoves.CheckState = CheckState.Checked;
+            chkShowLegalMoves.Location = new Point(166, 239);
+            chkShowLegalMoves.Name = "chkShowLegalMoves";
+            chkShowLegalMoves.Size = new Size(15, 14);
+            chkShowLegalMoves.TabIndex = 33;
+            toolTip1.SetToolTip(chkShowLegalMoves, "Show dots/rings on legal destination squares when a piece is selected");
+            chkShowLegalMoves.UseVisualStyleBackColor = true;
+            //
+            // lblMovementMode
+            //
+            lblMovementMode.Location = new Point(10, 260);
+            lblMovementMode.Name = "lblMovementMode";
+            lblMovementMode.Size = new Size(143, 19);
+            lblMovementMode.TabIndex = 34;
+            lblMovementMode.Text = "Piece Movement:";
+            toolTip1.SetToolTip(lblMovementMode, "How pieces are moved: drag, click origin then destination, or both");
+            //
+            // cmbMovementMode
+            //
+            cmbMovementMode.DropDownStyle = ComboBoxStyle.DropDownList;
+            cmbMovementMode.Location = new Point(166, 257);
+            cmbMovementMode.Name = "cmbMovementMode";
+            cmbMovementMode.Size = new Size(100, 21);
+            cmbMovementMode.TabIndex = 35;
+            cmbMovementMode.Items.AddRange(new object[] { "Both", "Drag", "Click" });
+            toolTip1.SetToolTip(cmbMovementMode, "How pieces are moved: drag, click origin then destination, or both");
+            //
             // grpExplanations
             // 
             grpExplanations.Controls.Add(chkTactical);
@@ -1242,6 +1290,10 @@ namespace ChessDroid
         private System.Windows.Forms.NumericUpDown numAnimationMs;
         private System.Windows.Forms.Label lblMaterialStrips;
         private System.Windows.Forms.CheckBox chkMaterialStrips;
+        private System.Windows.Forms.Label lblShowLegalMoves;
+        private System.Windows.Forms.CheckBox chkShowLegalMoves;
+        private System.Windows.Forms.Label lblMovementMode;
+        private System.Windows.Forms.ComboBox cmbMovementMode;
         private System.Windows.Forms.Button btnSave;
         private System.Windows.Forms.Button btnReset;
         private System.Windows.Forms.Button btnHelp;
