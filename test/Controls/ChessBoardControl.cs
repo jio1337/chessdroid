@@ -1688,6 +1688,12 @@ namespace ChessDroid.Controls
                     {
                         // Selection was just committed on this mouse-down — keep dots visible
                     }
+                    else if (MovementMode == "Click" && mouseDownOnPiece
+                             && (boardRow != dragFromRow || boardCol != dragFromCol))
+                    {
+                        // Click mode: button held and released on a different square (pseudo-drag)
+                        // — ignore; selection from mouse-down stays active
+                    }
                     else
                     {
                         HandleSquareClick(boardRow, boardCol);
