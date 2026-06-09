@@ -1616,7 +1616,21 @@ namespace ChessDroid.Controls
                 int sq2 = Math.Max(1, Math.Min(Width - 2 * fo2, Height - 2 * fo2) / 8);
                 int ps  = (int)(sq2 * 1.1) + 4; // match OnPaint drag size + 4px anti-alias margin
                 var curr = new Rectangle(e.X - ps / 2, e.Y - ps / 2, ps, ps);
-                Invalidate(_prevDragRect.IsEmpty ? curr : Rectangle.Union(_prevDragRect, curr));
+                if (_prevDragRect.IsEmpty)
+                {
+                    // First drag frame — also repaint the origin square so the piece
+                    // disappears there immediately (it was painted before isDragging=true).
+                    int topOff  = (Height - sq2 * 8) / 2 + fo2;
+                    int leftOff = (Width  - sq2 * 8) / 2 + fo2;
+                    int oCol = isFlipped ? 7 - dragFromCol : dragFromCol;
+                    int oRow = isFlipped ? 7 - dragFromRow : dragFromRow;
+                    var originRect = new Rectangle(leftOff + oCol * sq2, topOff + oRow * sq2, sq2, sq2);
+                    Invalidate(Rectangle.Union(curr, originRect));
+                }
+                else
+                {
+                    Invalidate(Rectangle.Union(_prevDragRect, curr));
+                }
                 _prevDragRect = curr;
             }
         }
