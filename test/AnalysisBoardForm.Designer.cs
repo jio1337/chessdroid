@@ -595,6 +595,7 @@ namespace ChessDroid
             toolTip.SetToolTip(btnEditPosition, "Edit Position");
             toolTip.SetToolTip(btnTraining, "Training");
             toolTip.SetToolTip(btnMatch, "Engine Match");
+            toolTip.SetToolTip(btnTournament, "Tournament");
             toolTip.SetToolTip(btnSettings, "Settings");
             toolTip.SetToolTip(btnSaveToLibrary, "Save current game to library");
             toolTip.SetToolTip(btnOpenLibrary, "Open game library");
