@@ -1110,6 +1110,12 @@ namespace ChessDroid
             form.Show(this);
         }
 
+        private void BtnStats_Click(object? sender, EventArgs e)
+        {
+            using var dlg = new StatsDialog(config, config.Theme);
+            dlg.ShowDialog(this);
+        }
+
         private void PuzzleTrainingShowResults()
         {
             _puzzleActive = false;

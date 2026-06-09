@@ -287,7 +287,7 @@ namespace ChessDroid
 
             // Standard buttons
             foreach (var btn in new[] { btnSettings, btnNewGame, btnFlipBoard, btnTakeBack, btnPrevMove,
-                                        btnNextMove, btnAutoPlay, btnPlayBot, btnEditPosition, btnTraining, btnMatch, btnTournament, btnChess960, btnLoadFen, btnCopyFen, btnClassifyMoves,
+                                        btnNextMove, btnAutoPlay, btnPlayBot, btnEditPosition, btnTraining, btnMatch, btnTournament, btnChess960, btnStats, btnLoadFen, btnCopyFen, btnClassifyMoves,
                                         btnExportPgn, btnImportPgn, btnSaveToLibrary, btnOpenLibrary, btnOpenings })
             {
                 btn.BackColor = scheme.ButtonBackColor;
@@ -849,6 +849,8 @@ namespace ChessDroid
             btnMatch.Location        = new Point(btnTraining.Right     + gap, row2b);
             btnTournament.Location   = new Point(btnMatch.Right        + gap, row2b);
             btnChess960.Location     = new Point(btnTournament.Right   + gap, row2b);
+            btnStats.Size            = new Size(btnW, btnH);
+            btnStats.Location        = new Point(btnChess960.Right     + gap, row2b);
 
             // Row 3 (Y=90): FEN row — label | input | Load | Copy | ⚙
             const int fenY     = 91;

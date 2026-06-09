@@ -56,6 +56,7 @@ namespace ChessDroid
             btnMatch = new Button();
             btnTournament = new Button();
             btnChess960 = new Button();
+            btnStats = new Button();
             lblFen = new Label();
             txtFen = new TextBox();
             btnLoadFen = new Button();
@@ -362,6 +363,17 @@ namespace ChessDroid
             btnChess960.Text = "960";
             btnChess960.Click += BtnChess960_Click;
             //
+            // btnStats
+            //
+            btnStats.FlatStyle = FlatStyle.Flat;
+            btnStats.Font = new Font("Segoe UI", 10F);
+            btnStats.Location = new Point(650, 530);
+            btnStats.Name = "btnStats";
+            btnStats.Size = new Size(28, 28);
+            btnStats.TabIndex = 30;
+            btnStats.Text = "📊";
+            btnStats.Click += BtnStats_Click;
+            //
             // lblFen
             // 
             lblFen.Font = new Font("Courier New", 8.25F, FontStyle.Regular, GraphicsUnit.Point, 0);
@@ -574,6 +586,7 @@ namespace ChessDroid
             pnlBoardControls.Controls.Add(btnMatch);
             pnlBoardControls.Controls.Add(btnTournament);
             pnlBoardControls.Controls.Add(btnChess960);
+            pnlBoardControls.Controls.Add(btnStats);
             pnlBoardControls.Controls.Add(lblFen);
             pnlBoardControls.Controls.Add(txtFen);
             pnlBoardControls.Controls.Add(btnLoadFen);
@@ -596,6 +609,7 @@ namespace ChessDroid
             toolTip.SetToolTip(btnTraining, "Training");
             toolTip.SetToolTip(btnMatch, "Engine Match");
             toolTip.SetToolTip(btnTournament, "Tournament");
+            toolTip.SetToolTip(btnStats, "Training Stats");
             toolTip.SetToolTip(btnSettings, "Settings");
             toolTip.SetToolTip(btnSaveToLibrary, "Save current game to library");
             toolTip.SetToolTip(btnOpenLibrary, "Open game library");
@@ -1045,6 +1059,7 @@ namespace ChessDroid
         private Button btnMatch;
         private Button btnTournament;
         private Button btnChess960;
+        private Button btnStats;
 
         private Label lblFen;
         private TextBox txtFen;
