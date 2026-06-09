@@ -1020,7 +1020,7 @@ namespace ChessDroid
             _lblTrainingPB = new Label
             {
                 Font = F(10f),
-                Dock = DockStyle.Top, Height = 22, TextAlign = ContentAlignment.MiddleCenter
+                Dock = DockStyle.Top, Height = 40, TextAlign = ContentAlignment.MiddleCenter
             };
             var btnTryAgain = new Button
             {
@@ -1838,18 +1838,43 @@ namespace ChessDroid
             int wrongPositions = _openingPosMistakes.Count;
             int correct = total - wrongPositions;
 
+            bool isPerfect = wrongPositions == 0 && _openingHintsUsed == 0;
             _openingSessionRuns++;
-            if (wrongPositions == 0 && _openingHintsUsed == 0) _openingSessionPerfect++;
+            if (isPerfect) _openingSessionPerfect++;
+
+            // Persist lifetime stats
+            OpeningStats? lifetimeStats = null;
+            if (_selectedTrainingOpening != null)
+            {
+                string key = $"{_selectedTrainingOpening.Eco}|{_selectedTrainingOpening.Name}";
+                if (!config.OpeningTrainingStats.TryGetValue(key, out lifetimeStats))
+                    lifetimeStats = new OpeningStats();
+
+                lifetimeStats.TotalRuns++;
+                if (isPerfect) lifetimeStats.PerfectRuns++;
+                lifetimeStats.TotalHintsUsed += _openingHintsUsed;
+                double runAccuracy = total > 0 ? (double)correct / total : 1.0;
+                if (runAccuracy > lifetimeStats.BestAccuracy) lifetimeStats.BestAccuracy = runAccuracy;
+                lifetimeStats.LastAttempted = DateTime.Today.ToString("yyyy-MM-dd");
+
+                config.OpeningTrainingStats[key] = lifetimeStats;
+                config.Save();
+            }
 
             if (_lblTrainingFinalScore != null)
                 _lblTrainingFinalScore.Text = $"{correct} / {total} correct"
                     + (wrongPositions == 0 ? "  —  Perfect!" : "")
                     + (_openingHintsUsed > 0 ? $"  ({_openingHintsUsed} hint{(_openingHintsUsed == 1 ? "" : "s")})" : "");
+
             if (_lblTrainingPB != null)
             {
                 string openingName = $"{_selectedTrainingOpening?.Eco}  {_selectedTrainingOpening?.Name}";
-                string sessionStr  = $"  ·  {_openingSessionRuns} run{(_openingSessionRuns == 1 ? "" : "s")}  ·  {_openingSessionPerfect} perfect";
-                _lblTrainingPB.Text = openingName + sessionStr;
+                string sessionStr  = $"Session: {_openingSessionRuns} run{(_openingSessionRuns == 1 ? "" : "s")} · {_openingSessionPerfect} perfect";
+                string lifetimeStr = lifetimeStats != null
+                    ? $"All time: {lifetimeStats.TotalRuns} run{(lifetimeStats.TotalRuns == 1 ? "" : "s")} · {lifetimeStats.PerfectRuns} perfect"
+                      + (lifetimeStats.TotalRuns > 1 ? $" · best {lifetimeStats.BestAccuracy:P0}" : "")
+                    : "";
+                _lblTrainingPB.Text = openingName + Environment.NewLine + sessionStr + "  ·  " + lifetimeStr;
             }
 
             if (_lblOpMissedMoves != null)

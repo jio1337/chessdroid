@@ -17,6 +17,15 @@ namespace ChessDroid
         public double BestTime { get; set; } = double.MaxValue;
     }
 
+    public class OpeningStats
+    {
+        public int TotalRuns { get; set; } = 0;
+        public int PerfectRuns { get; set; } = 0;
+        public int TotalHintsUsed { get; set; } = 0;
+        public double BestAccuracy { get; set; } = 0.0;  // 0.0–1.0, best single-run accuracy
+        public string LastAttempted { get; set; } = "";   // ISO date "yyyy-MM-dd"
+    }
+
     public class AppConfig
     {
         public string TemplatesFolder { get; set; } = "Templates";
@@ -119,6 +128,9 @@ namespace ChessDroid
 
         // Square training personal bests: keyed by mode string e.g. "Challenge-Black"
         public Dictionary<string, TrainingPersonalBest> TrainingPersonalBests { get; set; } = new();
+
+        // Opening training lifetime stats: keyed by "{eco}|{name}"
+        public Dictionary<string, OpeningStats> OpeningTrainingStats { get; set; } = new();
 
         // UI layout
         public int BoardSplitterDistance { get; set; } = -1; // -1 = compute from board height
@@ -281,6 +293,7 @@ namespace ChessDroid
             ShowBookMoves = other.ShowBookMoves;
             EngineProfiles = new Dictionary<string, EngineProfile>(other.EngineProfiles);
             TrainingPersonalBests = new Dictionary<string, TrainingPersonalBest>(other.TrainingPersonalBests);
+            OpeningTrainingStats  = new Dictionary<string, OpeningStats>(other.OpeningTrainingStats);
             BoardSplitterDistance = other.BoardSplitterDistance;
             SplitterDistance = other.SplitterDistance;
         }
