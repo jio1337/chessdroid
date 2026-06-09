@@ -168,6 +168,7 @@ namespace ChessDroid
         private int     _visionWrong;
         private int     _visionStreak;
         private int     _visionBestStreak;
+        private DateTime _visionStartTime;
         private string  _visionCurrentSquare = "a1";
 
         // Board Vision UI refs
@@ -1247,6 +1248,11 @@ namespace ChessDroid
             foreach (var btn in new[] { btnNewGame, btnFlipBoard, btnTakeBack, btnPrevMove,
                                         btnNextMove, btnAutoPlay, btnPlayBot, btnEditPosition })
                 btn.Enabled = enabled;
+            if (_btnSqMode     != null) _btnSqMode.Enabled     = enabled;
+            if (_btnOpMode     != null) _btnOpMode.Enabled     = enabled;
+            if (_btnPuzzleMode != null) _btnPuzzleMode.Enabled = enabled;
+            if (_btnVisionMode != null) _btnVisionMode.Enabled = enabled;
+            if (_btnDrillMode  != null) _btnDrillMode.Enabled  = enabled;
         }
 
         private void TrainingShowStartPanel()
@@ -1314,8 +1320,9 @@ namespace ChessDroid
             bool playAsBlack = _rbTrainingBlack?.Checked == true ||
                                (_rbTrainingRandom?.Checked == true && _trainingRng.Next(2) == 1);
             boardControl.IsFlipped = playAsBlack;
-            boardControl.TrainingMode = true;
+            boardControl.TrainingMode            = true;
             boardControl.HoverSquareLabelEnabled = _rbTrainingEasy?.Checked == true;
+            boardControl.HideCoordinates         = _rbTrainingEasy?.Checked != true;
             boardControl.LoadFEN(TRAINING_EMPTY_FEN);
 
             _trainingCorrect = 0;
@@ -2510,7 +2517,12 @@ namespace ChessDroid
 
                 if (_puzzleSubMode == "gauntlet")
                 {
-                    // Gauntlet: end run after brief flash
+                    // Restore correct position, then end after brief flash
+                    isNavigating = true;
+                    boardControl.LoadFEN(_currentPuzzle.Fen);
+                    for (int i = 0; i < _puzzleMoveIndex; i++)
+                        boardControl.MakeMove(_currentPuzzle.Moves[i]);
+                    isNavigating = false;
                     ScheduleInvoke(900, GauntletEnd);
                     return;
                 }
@@ -2789,10 +2801,12 @@ namespace ChessDroid
 
         private void VisionTrainingStart()
         {
-            _visionCorrect  = 0;
-            _visionWrong    = 0;
-            _visionStreak   = 0;
-            _visionLives    = 3;
+            _visionCorrect    = 0;
+            _visionWrong      = 0;
+            _visionStreak     = 0;
+            _visionBestStreak = 0;
+            _visionLives      = 3;
+            _visionStartTime  = DateTime.Now;
 
             _trainingPreFen     = boardControl.GetFEN();
             _trainingPreFlipped = boardControl.IsFlipped;
@@ -2983,10 +2997,16 @@ namespace ChessDroid
                 string key = $"Vision-Timed-{_visionGlobalDurationSeconds}";
                 if (!config.TrainingPersonalBests.TryGetValue(key, out var pb))
                     pb = new TrainingPersonalBest();
-                if (_visionCorrect > pb.BestCorrect)
+                double elapsed = _visionGlobalDurationSeconds; // timed mode always runs full duration
+                double tpq     = _visionCorrect > 0 ? elapsed / _visionCorrect : double.MaxValue;
+                if (_visionCorrect > pb.BestCorrect ||
+                    (_visionCorrect == pb.BestCorrect && tpq < pb.BestTimePerQuestion))
                 {
-                    pb.BestCorrect = _visionCorrect;
-                    pb.LastSet = DateTime.Today.ToString("yyyy-MM-dd");
+                    pb.BestCorrect         = _visionCorrect;
+                    pb.BestQuestions       = _visionCorrect + _visionWrong;
+                    pb.BestTime            = elapsed;
+                    pb.BestTimePerQuestion = tpq;
+                    pb.LastSet             = DateTime.Today.ToString("yyyy-MM-dd");
                     config.TrainingPersonalBests[key] = pb;
                 }
                 if (_visionBestStreak > config.VisionBestStreak)
@@ -3032,10 +3052,16 @@ namespace ChessDroid
                 string key = "Vision-Survival";
                 if (!config.TrainingPersonalBests.TryGetValue(key, out var pb))
                     pb = new TrainingPersonalBest();
-                if (_visionCorrect > pb.BestCorrect)
+                double elapsed = (DateTime.Now - _visionStartTime).TotalSeconds;
+                double tpq     = _visionCorrect > 0 ? elapsed / _visionCorrect : double.MaxValue;
+                if (_visionCorrect > pb.BestCorrect ||
+                    (_visionCorrect == pb.BestCorrect && tpq < pb.BestTimePerQuestion))
                 {
-                    pb.BestCorrect = _visionCorrect;
-                    pb.LastSet = DateTime.Today.ToString("yyyy-MM-dd");
+                    pb.BestCorrect         = _visionCorrect;
+                    pb.BestQuestions       = _visionCorrect + _visionWrong;
+                    pb.BestTime            = elapsed;
+                    pb.BestTimePerQuestion = tpq;
+                    pb.LastSet             = DateTime.Today.ToString("yyyy-MM-dd");
                     config.TrainingPersonalBests[key] = pb;
                 }
                 if (_visionBestStreak > config.VisionBestStreak)

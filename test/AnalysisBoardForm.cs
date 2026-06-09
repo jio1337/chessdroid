@@ -1650,8 +1650,8 @@ namespace ChessDroid
 
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
         {
-            // Disable navigation during engine match
-            if (matchRunning) return base.ProcessCmdKey(ref msg, keyData);
+            if (matchRunning)        return base.ProcessCmdKey(ref msg, keyData);
+            if (_trainingGameActive) return base.ProcessCmdKey(ref msg, keyData);
 
             // Intercept arrow keys before they're used for control navigation
             switch (keyData)
