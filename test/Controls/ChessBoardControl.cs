@@ -1539,19 +1539,16 @@ namespace ChessDroid.Controls
                 dragFromCol = boardCol;
                 dragPiece = clickedPiece;
 
-                if (MovementMode != "Drag")
+                if (selectedRow != boardRow || selectedCol != boardCol)
                 {
-                    if (selectedRow != boardRow || selectedCol != boardCol)
-                    {
-                        SelectPiece(boardRow, boardCol);
-                        _selectionMadeThisDown = true;
-                    }
-                    else
-                    {
-                        _selectionMadeThisDown = false;
-                    }
-                    Invalidate();
+                    SelectPiece(boardRow, boardCol);
+                    _selectionMadeThisDown = true;
                 }
+                else
+                {
+                    _selectionMadeThisDown = false;
+                }
+                Invalidate();
             }
         }
 
@@ -1655,19 +1652,24 @@ namespace ChessDroid.Controls
 
                 if (boardRow >= 0 && boardRow <= 7 && boardCol >= 0 && boardCol <= 7)
                 {
-                    if (legalMoveSquares.Contains((boardRow, boardCol)))
+                    bool isLegal = legalMoveSquares.Count > 0
+                        ? legalMoveSquares.Contains((boardRow, boardCol))
+                        : IsLegalMove(dragFromRow, dragFromCol, boardRow, boardCol);
+                    if (isLegal)
                     {
                         ExecuteMove(dragFromRow, dragFromCol, boardRow, boardCol, null);
                     }
                     else
                     {
-                        // Invalid drop - just redraw
+                        // Invalid drop or dropped on origin — snap back, deselect
+                        ClearSelection();
                         Invalidate();
                     }
                 }
                 else
                 {
-                    // Dropped outside board
+                    // Dropped outside board — snap back, deselect
+                    ClearSelection();
                     Invalidate();
                 }
 
@@ -1681,7 +1683,9 @@ namespace ChessDroid.Controls
                 {
                     if (MovementMode == "Drag")
                     {
-                        // Drag mode: taps that don't exceed the drag threshold do nothing
+                        // Tap without drag — deselect (no click-click in drag-only mode)
+                        ClearSelection();
+                        Invalidate();
                     }
                     else if (mouseDownOnPiece && _selectionMadeThisDown
                              && boardRow == dragFromRow && boardCol == dragFromCol)

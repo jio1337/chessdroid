@@ -1115,6 +1115,8 @@ namespace ChessDroid
                 boardControl.ShowSquareLabels = config.ShowSquareLabels;
                 boardControl.HideCoordinates  = !config.ShowCoordinates;
                 boardControl.ShowLastMoveHighlight = config.ShowLastMoveHighlight;
+                boardControl.ShowLegalMoves = config.ShowLegalMoves;
+                boardControl.MovementMode = config.MovementMode;
                 if (!config.ShowThreatArrows) boardControl.ClearThreatArrows();
                 if (_evalGraph != null) _evalGraph.Visible = config.ShowEvalGraph;
                 boardControl.AnimationDurationMs = config.AnimationDurationMs;
