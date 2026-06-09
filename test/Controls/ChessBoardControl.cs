@@ -48,6 +48,7 @@ namespace ChessDroid.Controls
         private const int DRAG_THRESHOLD = 5; // Pixels before drag starts
         private Point mouseDownPosition = Point.Empty;
         private bool mouseDownOnPiece = false;
+        private bool _selectionMadeThisDown = false;
 
         // Right-click arrow drawing
         private List<(int fromRow, int fromCol, int toRow, int toCol)> userArrows = new();
@@ -1534,14 +1535,23 @@ namespace ChessDroid.Controls
 
             if (isOwnPiece)
             {
-                // Prepare for potential drag
                 dragFromRow = boardRow;
                 dragFromCol = boardCol;
                 dragPiece = clickedPiece;
 
-                // Also select the piece for click-to-move fallback
-                SelectPiece(boardRow, boardCol);
-                Invalidate();
+                if (MovementMode != "Drag")
+                {
+                    if (selectedRow != boardRow || selectedCol != boardCol)
+                    {
+                        SelectPiece(boardRow, boardCol);
+                        _selectionMadeThisDown = true;
+                    }
+                    else
+                    {
+                        _selectionMadeThisDown = false;
+                    }
+                    Invalidate();
+                }
             }
         }
 
@@ -1665,25 +1675,28 @@ namespace ChessDroid.Controls
                 dragFromCol = -1;
                 dragPiece = '.';
             }
-            else if (mouseDownOnPiece && MovementMode != "Drag")
-            {
-                // Click-to-move: if we released on the same square, keep selection
-                // If released on a different square, try to move or select
-                if (boardRow >= 0 && boardRow <= 7 && boardCol >= 0 && boardCol <= 7)
-                {
-                    HandleSquareClick(boardRow, boardCol);
-                }
-            }
             else
             {
-                // Clicked on empty or opponent piece
                 if (boardRow >= 0 && boardRow <= 7 && boardCol >= 0 && boardCol <= 7)
                 {
-                    HandleSquareClick(boardRow, boardCol);
+                    if (MovementMode == "Drag")
+                    {
+                        // Drag mode: taps that don't exceed the drag threshold do nothing
+                    }
+                    else if (mouseDownOnPiece && _selectionMadeThisDown
+                             && boardRow == dragFromRow && boardCol == dragFromCol)
+                    {
+                        // Selection was just committed on this mouse-down — keep dots visible
+                    }
+                    else
+                    {
+                        HandleSquareClick(boardRow, boardCol);
+                    }
                 }
             }
 
             mouseDownOnPiece = false;
+            _selectionMadeThisDown = false;
         }
 
         protected override void OnMouseLeave(EventArgs e)
