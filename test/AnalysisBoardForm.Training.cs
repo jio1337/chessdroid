@@ -1231,6 +1231,7 @@ namespace ChessDroid
             btnTraining.Text = "♟";
             toolTip.SetToolTip(btnTraining, "Training");
             SetTrainingButtonsEnabled(true);
+            SetModeSwitchersEnabled(true);
 
             _ = TriggerAutoAnalysis();
         }
@@ -1248,6 +1249,10 @@ namespace ChessDroid
             foreach (var btn in new[] { btnNewGame, btnFlipBoard, btnTakeBack, btnPrevMove,
                                         btnNextMove, btnAutoPlay, btnPlayBot, btnEditPosition })
                 btn.Enabled = enabled;
+        }
+
+        private void SetModeSwitchersEnabled(bool enabled)
+        {
             if (_btnSqMode     != null) _btnSqMode.Enabled     = enabled;
             if (_btnOpMode     != null) _btnOpMode.Enabled     = enabled;
             if (_btnPuzzleMode != null) _btnPuzzleMode.Enabled = enabled;
@@ -1276,6 +1281,8 @@ namespace ChessDroid
                 boardControl.MonochromeMode = false;
                 RestoreBoardAfterTraining();
             }
+
+            SetModeSwitchersEnabled(true);
 
             if (_lblOpGameStatus != null) _lblOpGameStatus.Visible = false;
             if (_lblTrainingTimer != null) _lblTrainingTimer.Visible = true;
@@ -1331,6 +1338,7 @@ namespace ChessDroid
             _trainingInWrongFlash = false;
             _trainingInCorrectFlash = false;
             _trainingGameActive = true;
+            SetModeSwitchersEnabled(false);
 
             _pnlTrainingStart!.Visible = false;
             _pnlTrainingResult!.Visible = false;
@@ -1684,6 +1692,7 @@ namespace ChessDroid
 
             autoAnalysisCts?.Cancel();
             _trainingGameActive = true;
+            SetModeSwitchersEnabled(false);
 
             _pnlTrainingStart!.Visible = false;
             _pnlTrainingResult!.Visible = false;
@@ -2303,6 +2312,7 @@ namespace ChessDroid
             _trainingPreFen     = boardControl.GetFEN();
             _trainingPreFlipped = boardControl.IsFlipped;
             _trainingGameActive = true;
+            SetModeSwitchersEnabled(false);
 
             _pnlTrainingStart!.Visible  = false;
             _pnlTrainingResult!.Visible = false;
@@ -2325,6 +2335,7 @@ namespace ChessDroid
             _trainingPreFen     = boardControl.GetFEN();
             _trainingPreFlipped = boardControl.IsFlipped;
             _trainingGameActive = true;
+            SetModeSwitchersEnabled(false);
 
             _pnlTrainingStart!.Visible  = false;
             _pnlTrainingResult!.Visible = false;
@@ -2639,6 +2650,7 @@ namespace ChessDroid
             _trainingPreFen     = boardControl.GetFEN();
             _trainingPreFlipped = boardControl.IsFlipped;
             _trainingGameActive = true;
+            SetModeSwitchersEnabled(false);
 
             _pnlTrainingStart!.Visible  = false;
             _pnlTrainingResult!.Visible = false;
@@ -2733,6 +2745,7 @@ namespace ChessDroid
             _trainingPreFen     = boardControl.GetFEN();
             _trainingPreFlipped = boardControl.IsFlipped;
             _trainingGameActive = true;
+            SetModeSwitchersEnabled(false);
 
             _pnlTrainingStart!.Visible  = false;
             _pnlTrainingResult!.Visible = false;
@@ -2811,6 +2824,7 @@ namespace ChessDroid
             _trainingPreFen     = boardControl.GetFEN();
             _trainingPreFlipped = boardControl.IsFlipped;
             _trainingGameActive = true;
+            SetModeSwitchersEnabled(false);
 
             boardControl.TrainingMode      = false;
             boardControl.MonochromeMode    = true;
