@@ -146,6 +146,7 @@ namespace ChessDroid
         // UI layout
         public int BoardSplitterDistance { get; set; } = -1; // -1 = compute from board height
         public int SplitterDistance { get; set; } = -1; // -1 = use default (130px)
+        public string PanelLayout { get; set; } = "BMA"; // slot order: B=Board M=Moves A=Analysis
 
         private static readonly string ConfigFilePath = Path.Combine(
             Application.StartupPath, "config.json");
@@ -315,6 +316,7 @@ namespace ChessDroid
             OpeningTrainingStats  = new Dictionary<string, OpeningStats>(other.OpeningTrainingStats);
             BoardSplitterDistance = other.BoardSplitterDistance;
             SplitterDistance = other.SplitterDistance;
+            PanelLayout = other.PanelLayout;
         }
 
         public string GetTemplatesPath() => ResolveFolderPath(TemplatesFolder);

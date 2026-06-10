@@ -114,6 +114,10 @@ namespace ChessDroid
             cmbMovementMode.SelectedItem = config.MovementMode;
             if (cmbMovementMode.SelectedIndex < 0) cmbMovementMode.SelectedIndex = 0;
 
+            var layoutCodes = new[] { "BMA", "BAM", "MBA", "MAB", "ABM", "AMB" };
+            int layoutIdx = Array.IndexOf(layoutCodes, config.PanelLayout ?? "BMA");
+            cmbPanelLayout.SelectedIndex = Math.Max(0, layoutIdx);
+
             // Board effects
             chkGradient.Checked = config.GradientBoard;
             chkVignette.Checked = config.BoardVignette;
@@ -192,6 +196,9 @@ namespace ChessDroid
             config.ShowMaterialStrips = chkMaterialStrips.Checked;
             config.ShowLegalMoves = chkShowLegalMoves.Checked;
             config.MovementMode = cmbMovementMode.SelectedItem?.ToString() ?? "Both";
+            config.PanelLayout = cmbPanelLayout.SelectedIndex switch {
+                1 => "BAM", 2 => "MBA", 3 => "MAB", 4 => "ABM", 5 => "AMB", _ => "BMA"
+            };
 
             // Board effects
             config.GradientBoard = chkGradient.Checked;

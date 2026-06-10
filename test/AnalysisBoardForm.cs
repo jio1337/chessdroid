@@ -200,30 +200,11 @@ namespace ChessDroid
             // Shown fires after the form is fully laid out — set splitter positions then
             this.Shown += async (s, e) =>
             {
-                // Outer split: board | (moves + analysis)
                 outerSplit.Panel1MinSize = 200;
                 outerSplit.Panel2MinSize = 280;
-                if (config.BoardSplitterDistance > 0)
-                {
-                    outerSplit.SplitterDistance = Math.Clamp(config.BoardSplitterDistance,
-                        outerSplit.Panel1MinSize, outerSplit.Width - outerSplit.Panel2MinSize);
-                }
-                else
-                {
-                    bool showStrips = config?.ShowMaterialStrips != false;
-                    int sh = showStrips ? 22 : 0;
-                    int sg = showStrips ? 2 : 0;
-                    int evalBarTotal = config?.ShowEvalBar != false ? 32 : 0;
-                    int boardSize = Math.Max(300, outerSplit.Height - 2 * sh - 2 * sg);
-                    int idealLeft = boardSize + evalBarTotal + 10;
-                    outerSplit.SplitterDistance = Math.Clamp(idealLeft,
-                        outerSplit.Panel1MinSize, outerSplit.Width - outerSplit.Panel2MinSize);
-                }
-
-                // Inner split: moves | analysis
                 splitRightPanels.Panel1MinSize = 80;
                 splitRightPanels.Panel2MinSize = 200;
-                splitRightPanels.SplitterDistance = config!.SplitterDistance > 0 ? config.SplitterDistance : 130;
+                ApplyPanelLayout(config?.PanelLayout ?? "BMA");
 
                 pnlBoardControls.Height = 148;
                 LeftPanel_Resize(leftPanel, EventArgs.Empty);
@@ -734,6 +715,65 @@ namespace ChessDroid
 
         }
 
+        private string _currentPanelLayout = "";
+
+        private void ApplyPanelLayout(string layout)
+        {
+            if (string.IsNullOrEmpty(layout) || layout.Length != 3) layout = "BMA";
+
+            Panel PanelFor(char c) => c switch { 'B' => leftPanel, 'M' => middlePanel, _ => rightPanel };
+
+            void SetSlot(Control.ControlCollection slot, Panel panel)
+            {
+                if (slot.Count > 0 && slot[0] == panel) return;
+                slot.Clear();
+                panel.Dock = DockStyle.Fill;
+                slot.Add(panel);
+            }
+
+            SetSlot(outerSplit.Panel1.Controls, PanelFor(layout[0]));
+            SetSlot(splitRightPanels.Panel1.Controls, PanelFor(layout[1]));
+            SetSlot(splitRightPanels.Panel2.Controls, PanelFor(layout[2]));
+
+            bool layoutChanged = layout != _currentPanelLayout;
+            _currentPanelLayout = layout;
+
+            if (layoutChanged)
+            {
+                bool showStrips = config?.ShowMaterialStrips != false;
+                int sh = showStrips ? 22 : 0;
+                int sg = showStrips ? 2 : 0;
+                int evalBarTotal = config?.ShowEvalBar != false ? 32 : 0;
+                int boardIdealW = Math.Max(300, outerSplit.Height - 2 * sh - 2 * sg) + evalBarTotal + 10;
+
+                // Outer split: left slot width
+                int outerDist = layout[0] switch
+                {
+                    'B' when config!.BoardSplitterDistance > 0 => config.BoardSplitterDistance,
+                    'B' => boardIdealW,
+                    'M' => 155,
+                    _   => Math.Max(220, outerSplit.Width / 3)
+                };
+                outerSplit.SplitterDistance = Math.Clamp(outerDist,
+                    outerSplit.Panel1MinSize,
+                    Math.Max(outerSplit.Panel1MinSize + 1, outerSplit.Width - outerSplit.Panel2MinSize));
+
+                // Inner split: middle slot width
+                int innerAvail = Math.Max(1, outerSplit.Width - outerSplit.SplitterDistance - 6);
+                int innerDist = layout[1] switch
+                {
+                    'B' => Math.Min(boardIdealW, Math.Max(300, innerAvail - 220)),
+                    'M' when layout[0] == 'B' && config!.SplitterDistance > 0 => config.SplitterDistance,
+                    'M' => 155,
+                    _   => Math.Max(220, innerAvail - 155)
+                };
+                int innerMax = Math.Max(splitRightPanels.Panel1MinSize + 1, innerAvail - splitRightPanels.Panel2MinSize);
+                splitRightPanels.SplitterDistance = Math.Clamp(innerDist, splitRightPanels.Panel1MinSize, innerMax);
+            }
+
+            LeftPanel_Resize(leftPanel, EventArgs.Empty);
+        }
+
         #region Event Handlers
 
         private void OuterSplit_SplitterMoved(object? sender, SplitterEventArgs e)
@@ -1119,6 +1159,7 @@ namespace ChessDroid
                 boardControl.ShowLastMoveHighlight = config.ShowLastMoveHighlight;
                 boardControl.ShowLegalMoves = config.ShowLegalMoves;
                 boardControl.MovementMode = config.MovementMode;
+                ApplyPanelLayout(config.PanelLayout);
                 if (!config.ShowThreatArrows) boardControl.ClearThreatArrows();
                 if (_evalGraph != null) _evalGraph.Visible = config.ShowEvalGraph;
                 boardControl.AnimationDurationMs = config.AnimationDurationMs;

@@ -81,6 +81,8 @@ namespace ChessDroid
             chkShowLegalMoves = new CheckBox();
             lblMovementMode = new Label();
             cmbMovementMode = new ComboBox();
+            lblPanelLayout = new Label();
+            cmbPanelLayout = new ComboBox();
             lblMaterialStrips = new Label();
             chkMaterialStrips = new CheckBox();
             lblEvalGraph = new Label();
@@ -583,6 +585,8 @@ namespace ChessDroid
             tabBoard.Controls.Add(chkShowLegalMoves);
             tabBoard.Controls.Add(lblMovementMode);
             tabBoard.Controls.Add(cmbMovementMode);
+            tabBoard.Controls.Add(lblPanelLayout);
+            tabBoard.Controls.Add(cmbPanelLayout);
             tabBoard.Controls.Add(lblMaterialStrips);
             tabBoard.Controls.Add(chkMaterialStrips);
             tabBoard.Controls.Add(lblEvalGraph);
@@ -710,33 +714,55 @@ namespace ChessDroid
             cmbMovementMode.TabIndex = 13;
             toolTip1.SetToolTip(cmbMovementMode, "How pieces are moved: drag, click origin then destination, or both");
 
-            lblMaterialStrips.Location = new Point(10, 195);
+            lblPanelLayout.Location = new Point(10, 195);
+            lblPanelLayout.Name = "lblPanelLayout";
+            lblPanelLayout.Size = new Size(160, 19);
+            lblPanelLayout.TabIndex = 14;
+            lblPanelLayout.Text = "Panel Layout:";
+            toolTip1.SetToolTip(lblPanelLayout, "Order of the three main panels left to right");
+
+            cmbPanelLayout.DropDownStyle = ComboBoxStyle.DropDownList;
+            cmbPanelLayout.Items.AddRange(new object[] {
+                "Board | Moves | Analysis",
+                "Board | Analysis | Moves",
+                "Moves | Board | Analysis",
+                "Moves | Analysis | Board",
+                "Analysis | Board | Moves",
+                "Analysis | Moves | Board"
+            });
+            cmbPanelLayout.Location = new Point(175, 193);
+            cmbPanelLayout.Name = "cmbPanelLayout";
+            cmbPanelLayout.Size = new Size(230, 22);
+            cmbPanelLayout.TabIndex = 15;
+            toolTip1.SetToolTip(cmbPanelLayout, "Order of the three main panels left to right");
+
+            lblMaterialStrips.Location = new Point(10, 223);
             lblMaterialStrips.Name = "lblMaterialStrips";
             lblMaterialStrips.Size = new Size(160, 19);
-            lblMaterialStrips.TabIndex = 14;
+            lblMaterialStrips.TabIndex = 16;
             lblMaterialStrips.Text = "Material Strips:";
             toolTip1.SetToolTip(lblMaterialStrips, "Show captured pieces and material advantage above/below the board");
 
             chkMaterialStrips.AutoSize = true;
-            chkMaterialStrips.Location = new Point(210, 197);
+            chkMaterialStrips.Location = new Point(210, 225);
             chkMaterialStrips.Name = "chkMaterialStrips";
             chkMaterialStrips.Size = new Size(15, 14);
-            chkMaterialStrips.TabIndex = 15;
+            chkMaterialStrips.TabIndex = 17;
             toolTip1.SetToolTip(chkMaterialStrips, "Show captured pieces and material advantage above/below the board");
             chkMaterialStrips.UseVisualStyleBackColor = true;
 
-            lblEvalGraph.Location = new Point(10, 219);
+            lblEvalGraph.Location = new Point(10, 251);
             lblEvalGraph.Name = "lblEvalGraph";
             lblEvalGraph.Size = new Size(160, 19);
-            lblEvalGraph.TabIndex = 16;
+            lblEvalGraph.TabIndex = 18;
             lblEvalGraph.Text = "Eval Graph:";
             toolTip1.SetToolTip(lblEvalGraph, "Show the evaluation graph above the analysis output");
 
             chkEvalGraph.AutoSize = true;
-            chkEvalGraph.Location = new Point(210, 221);
+            chkEvalGraph.Location = new Point(210, 253);
             chkEvalGraph.Name = "chkEvalGraph";
             chkEvalGraph.Size = new Size(15, 14);
-            chkEvalGraph.TabIndex = 17;
+            chkEvalGraph.TabIndex = 19;
             toolTip1.SetToolTip(chkEvalGraph, "Show the evaluation graph above the analysis output");
             chkEvalGraph.UseVisualStyleBackColor = true;
 
@@ -1078,6 +1104,8 @@ namespace ChessDroid
         private System.Windows.Forms.CheckBox chkShowLegalMoves;
         private System.Windows.Forms.Label lblMovementMode;
         private System.Windows.Forms.ComboBox cmbMovementMode;
+        private System.Windows.Forms.Label lblPanelLayout;
+        private System.Windows.Forms.ComboBox cmbPanelLayout;
         private System.Windows.Forms.Label lblMaterialStrips;
         private System.Windows.Forms.CheckBox chkMaterialStrips;
         private System.Windows.Forms.Label lblEvalGraph;
