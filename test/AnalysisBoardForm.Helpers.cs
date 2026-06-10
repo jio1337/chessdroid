@@ -173,6 +173,19 @@ namespace ChessDroid
                 siblings.RemoveAt(idx);
                 siblings.Insert(0, node);
             }
+            // Propagate the corrected depth through all descendants so VariationDepth
+            // stays consistent after the promotion (Children[0] inherits, Children[1+] go deeper).
+            PropagateVariationDepth(node);
+        }
+
+        private static void PropagateVariationDepth(MoveNode parent)
+        {
+            for (int i = 0; i < parent.Children.Count; i++)
+            {
+                var child = parent.Children[i];
+                child.VariationDepth = i == 0 ? parent.VariationDepth : parent.VariationDepth + 1;
+                PropagateVariationDepth(child);
+            }
         }
 
         private void UpdateFenDisplay()
@@ -324,8 +337,9 @@ namespace ChessDroid
                     }
                     else
                     {
+                        bool wasNew = moveTree.CurrentNode.FindChild(uciMove) == null;
                         node = moveTree.AddMove(uciMove, san, newFen);
-                        node.IsFromPv = true;
+                        if (wasNew) node.IsFromPv = true;
                     }
                     insertedNodes.Add(node);
                     currentFen = newFen;

@@ -46,13 +46,13 @@ namespace ChessDroid.Services
                 }
                 else if (c == '(')
                 {
-                    int depth = 1; i++;
-                    while (i < len && depth > 0)
-                    {
-                        if (moveText[i] == '(') depth++;
-                        else if (moveText[i] == ')') depth--;
-                        i++;
-                    }
+                    tokens.Add(('(', ""));
+                    i++;
+                }
+                else if (c == ')')
+                {
+                    tokens.Add((')', ""));
+                    i++;
                 }
                 else if (c == ';')
                 {
@@ -72,7 +72,7 @@ namespace ChessDroid.Services
                 {
                     int start = i;
                     while (i < len && !char.IsWhiteSpace(moveText[i]) &&
-                           moveText[i] != '{' && moveText[i] != '(' &&
+                           moveText[i] != '{' && moveText[i] != '(' && moveText[i] != ')' &&
                            moveText[i] != '$' && moveText[i] != ';')
                         i++;
                     string token = moveText.Substring(start, i - start);

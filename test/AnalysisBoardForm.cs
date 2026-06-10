@@ -1679,9 +1679,10 @@ namespace ChessDroid
                 UpdateMoveAnnotation(node);
                 UpdateFenDisplay();
                 UpdateTurnLabel();
+                UpdateMoveListSelection();
 
                 string statusText = $"Move {node.MoveNumber}";
-                if (node.VariationDepth > 0) statusText += " (variation)";
+                if (!node.IsMainLine) statusText += " (variation)";
                 lblStatus.Text = statusText;
 
                 if (!matchRunning) _ = TriggerAutoAnalysis();

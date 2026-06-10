@@ -270,60 +270,12 @@ namespace ChessDroid
 
             sb.AppendLine();
 
-            // Generate move text with annotations
-            var mainLine = moveTree.GetMainLine();
-            if (mainLine.Count > 0)
+            // Generate move text with annotations and variations
+            if (moveTree.Root.Children.Count > 0)
             {
                 var moveText = new System.Text.StringBuilder();
                 int lineLength = 0;
-
-                foreach (var node in mainLine)
-                {
-                    // Strip inline symbols from SanMove — annotations are encoded as NAG + comment
-                    string cleanSan = PgnImportService.StripAnnotationSymbols(node.SanMove);
-                    string moveStr = node.IsWhiteMove
-                        ? $"{node.MoveNumber}. {cleanSan}"
-                        : cleanSan;
-
-                    // NAG + comment: prefer classification result, fall back to inline symbol
-                    string nag = "";
-                    string comment = "";
-                    if (_classificationLookup != null &&
-                        _classificationLookup.TryGetValue(node, out var result))
-                    {
-                        nag = PgnImportService.GetNagForSymbol(result.Symbol);
-                        comment = PgnImportService.BuildPgnComment(result);
-                    }
-                    else
-                    {
-                        nag = PgnImportService.GetNagForSymbol(PgnImportService.GetInlineSymbol(node.SanMove));
-                    }
-
-                    string fullToken = moveStr;
-                    if (!string.IsNullOrEmpty(nag)) fullToken += " " + nag;
-                    if (!string.IsNullOrEmpty(comment)) fullToken += " " + comment;
-
-                    // Embed engine cache data so analysis is restored on re-import
-                    string posKey = GetPositionKey(node.FEN);
-                    if (_analysisCache.TryGetValue(posKey, out var cachedEntry) && cachedEntry.Depth > 0)
-                        fullToken += " " + PgnImportService.SerializeCachedAnalysis(cachedEntry);
-
-                    // Word wrap at ~80 characters
-                    if (lineLength + fullToken.Length + 1 > 80)
-                    {
-                        moveText.AppendLine();
-                        lineLength = 0;
-                    }
-                    else if (moveText.Length > 0)
-                    {
-                        moveText.Append(' ');
-                        lineLength++;
-                    }
-
-                    moveText.Append(fullToken);
-                    lineLength += fullToken.Length;
-                }
-
+                AppendPgnSubtree(moveTree.Root, moveText, ref lineLength, showMoveNum: false);
                 sb.Append(moveText);
                 sb.Append(" *");
             }
@@ -403,10 +355,37 @@ namespace ChessDroid
                 var annotationList = new List<(MoveNode node, string nag, string comment)>();
                 MoveNode? lastAppliedNode = null;
 
+                // Variation stack: save tree position when entering ( ... ) blocks
+                var variationStack = new Stack<(MoveNode node, string fen, MoveNode? lastNode)>();
+
                 isNavigating = true;
 
                 foreach (var (type, value) in tokens)
                 {
+                    if (type == '(')
+                    {
+                        // Variation starts from the position before the last main-line move.
+                        // Save current state and step back to the parent node.
+                        variationStack.Push((moveTree.CurrentNode, currentFen, lastAppliedNode));
+                        if (moveTree.CurrentNode.Parent != null)
+                        {
+                            moveTree.GoToNode(moveTree.CurrentNode.Parent);
+                            currentFen = moveTree.CurrentNode.FEN;
+                        }
+                        lastAppliedNode = null;
+                        continue;
+                    }
+                    if (type == ')')
+                    {
+                        if (variationStack.Count > 0)
+                        {
+                            var (savedNode, savedFen, savedLast) = variationStack.Pop();
+                            moveTree.GoToNode(savedNode);
+                            currentFen = savedFen;
+                            lastAppliedNode = savedLast;
+                        }
+                        continue;
+                    }
                     if (type == 'M')
                     {
                         string? uciMove = PgnImportService.ConvertSanToUci(value, currentFen);
@@ -509,7 +488,6 @@ namespace ChessDroid
                     }
                 }
 
-                boardControl.LoadFEN(moveTree.CurrentNode.FEN);
                 UpdateMoveList();
                 UpdateFenDisplay();
                 UpdateTurnLabel();
@@ -543,6 +521,93 @@ namespace ChessDroid
                 lblStatus.Text = $"Import error: {ex.Message}";
                 Debug.WriteLine($"PGN import error: {ex}");
             }
+        }
+
+        // Builds the full annotation token for a node (move text + NAG + comment + cache).
+        private string BuildPgnMoveToken(MoveNode node, string moveStr)
+        {
+            string fullToken = moveStr;
+            string nag = "";
+            string comment = "";
+            if (_classificationLookup != null && _classificationLookup.TryGetValue(node, out var result))
+            {
+                nag     = PgnImportService.GetNagForSymbol(result.Symbol);
+                comment = PgnImportService.BuildPgnComment(result);
+            }
+            else
+            {
+                nag = PgnImportService.GetNagForSymbol(PgnImportService.GetInlineSymbol(node.SanMove));
+            }
+            if (!string.IsNullOrEmpty(nag))     fullToken += " " + nag;
+            if (!string.IsNullOrEmpty(comment)) fullToken += " " + comment;
+
+            string posKey = GetPositionKey(node.FEN);
+            if (_analysisCache.TryGetValue(posKey, out var cachedEntry) && cachedEntry.Depth > 0)
+                fullToken += " " + PgnImportService.SerializeCachedAnalysis(cachedEntry);
+
+            return fullToken;
+        }
+
+        private static void WritePgnToken(System.Text.StringBuilder sb, ref int lineLength, string token)
+        {
+            if (lineLength > 0 && lineLength + token.Length + 1 > 80)
+            {
+                sb.AppendLine();
+                lineLength = 0;
+            }
+            else if (sb.Length > 0)
+            {
+                sb.Append(' ');
+                lineLength++;
+            }
+            sb.Append(token);
+            lineLength += token.Length;
+        }
+
+        // Emits parentNode.Children[0] (the main move) then any sibling variations as (...) then recurses.
+        private void AppendPgnSubtree(MoveNode parentNode, System.Text.StringBuilder sb, ref int lineLength, bool showMoveNum)
+        {
+            if (parentNode.Children.Count == 0) return;
+            var main = parentNode.Children[0];
+
+            string cleanSan = PgnImportService.StripAnnotationSymbols(main.SanMove);
+            string moveStr = main.IsWhiteMove
+                ? $"{main.MoveNumber}. {cleanSan}"
+                : (showMoveNum ? $"{main.MoveNumber}... {cleanSan}" : cleanSan);
+            WritePgnToken(sb, ref lineLength, BuildPgnMoveToken(main, moveStr));
+
+            bool hadVariations = parentNode.Children.Count > 1;
+            for (int i = 1; i < parentNode.Children.Count; i++)
+            {
+                WritePgnToken(sb, ref lineLength, "(");
+                AppendPgnVariation(parentNode.Children[i], sb, ref lineLength);
+                WritePgnToken(sb, ref lineLength, ")");
+            }
+
+            // After a variation block, black's next move needs a move number to re-establish context.
+            bool nextNeedsNum = hadVariations && main.Children.Count > 0 && !main.Children[0].IsWhiteMove;
+            AppendPgnSubtree(main, sb, ref lineLength, nextNeedsNum);
+        }
+
+        // Emits a variation starting at varNode (always shows move number, handles nesting).
+        private void AppendPgnVariation(MoveNode varNode, System.Text.StringBuilder sb, ref int lineLength)
+        {
+            string cleanSan = PgnImportService.StripAnnotationSymbols(varNode.SanMove);
+            string moveStr = varNode.IsWhiteMove
+                ? $"{varNode.MoveNumber}. {cleanSan}"
+                : $"{varNode.MoveNumber}... {cleanSan}";
+            WritePgnToken(sb, ref lineLength, BuildPgnMoveToken(varNode, moveStr));
+
+            bool hadVariations = varNode.Children.Count > 1;
+            for (int i = 1; i < varNode.Children.Count; i++)
+            {
+                WritePgnToken(sb, ref lineLength, "(");
+                AppendPgnVariation(varNode.Children[i], sb, ref lineLength);
+                WritePgnToken(sb, ref lineLength, ")");
+            }
+
+            bool nextNeedsNum = hadVariations && varNode.Children.Count > 0 && !varNode.Children[0].IsWhiteMove;
+            AppendPgnSubtree(varNode, sb, ref lineLength, nextNeedsNum);
         }
 
         #endregion
