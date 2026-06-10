@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [3.19.0] - 2026-06-10
+
+### Added
+- **Syzygy tablebase support** — Offline 7-piece endgame tablebase lookup with zero API calls. WDL and DTZ queries via Stockfish's native Syzygy integration. Configure tablebase path in Settings.
+- **Piece movement modes** — Three modes in Settings: Click (click-to-select + click-to-move only), Drag (grab + drop only), Both (either). Correctly separates pseudo-drag in Click mode. Legal move dots shown on mousedown in all modes. Applied live without restart.
+- **Tabbed Settings form** — Settings dialog reorganized into tabs (General, Board, Engine, Training) for easier navigation.
+- **Unified Training Stats dialog** — 📊 button in the board controls bar opens a single dialog showing all personal bests: Daily Puzzle streak, Puzzle Training accuracy and streaks, Opening Training lifetime stats, Vision Training PBs, and Square Training PBs by mode.
+- **Opening training lifetime stats** — Per-opening statistics tracked across sessions: total runs, perfect runs, total mistakes, best run mistakes (0 = clean run achieved), last attempted. Persisted in config keyed by ECO + opening name.
+- **Richer training data (Phase 1+2)** — `BestTimePerQuestion` and `LastSet` timestamp per Vision/Square PB; `PuzzleRushBestByMinutes` (separate PB per rush duration); `GauntletRecentScores` (last 5 scores); `DailyPuzzleCleanSolves` counter.
+
+### Fixed
+- **Training mode audit (5 bugs)** — Challenge mode was showing coordinates (should be hidden); Gauntlet did not restore board position before ending; Vision streak reset missed `_visionStartTime` initialisation; Vision Timed and Survival end paths were not saving `BestTime` or `BestTimePerQuestion` to config.
+- **Ghost ring artifact in puzzles** — Selection state (legal move dot ring, highlighted square) carried over into the next puzzle after a solve. `ClearSelection()` now called at all puzzle session-end points (load-next, show-results, rush-end, gauntlet-end).
+- **Legal move dots disappearing during drag** — Partial rect invalidation (`Invalidate(union)`) was erasing dots as the drag cursor passed over them. Reverted to full `Invalidate()` during drag; the 150ms analysis throttle handles the real performance work.
+- **Drag origin square highlight** — Origin square now stays highlighted throughout the drag, matching Lichess/Chessground behavior. The earlier `!isDragging` guard was an overcorrection.
+- **Mode-switcher tabs locked on training panel open** — The Square/Opening/Puzzle/Vision/Drills tabs were disabled whenever the training panel opened, not only during an active round. Separated into `SetModeSwitchersEnabled()` called only at round start/end.
+- **Draw adjudication triggering at move 4** — Threshold was 15 cp for 8 plies (minimum 4 full moves). Aligned with Lichess: 10 cp for 10 plies (minimum 5 full moves).
+- **Insufficient material inconsistency** — Bot mode (`ChessRulesService.IsInsufficientMaterial`) was missing K+B vs K+B same-color bishop detection; engine match mode already handled it correctly. Now consistent.
+- **KNN vs K incorrectly labelled as automatic draw** — `EndgameAnalysis.DetectInsufficientMaterial` was returning "insufficient material" for KNN vs K and KN vs KN. Neither is an automatic draw per FIDE or Lichess. Removed.
+- **Tournament button missing tooltip** — Tooltip now reads "Tournament".
+
+### Performance
+- **LinearGradientBrush per highlighted square** — Gradient board mode was allocating and disposing a `LinearGradientBrush` for every highlighted square (selected, last-move, legal dot target) on every paint frame (~200 GDI objects/sec during animation). Non-base squares now use the cached flat brush.
+- **`_puzzleRushTimer` Win32 handle leak** — Timer was stopped but never `Dispose()`d before reassignment on each Puzzle Rush restart.
+- **`StreamPositionEvalAsync` semaphore gap** — Method bypassed `_analysisSemaphore`, leaving a race window for concurrent engine `StreamReader` access. Now acquires and releases the semaphore matching all other analysis methods.
+
+---
+
 ## [3.18.1] - 2026-06-08
 
 ### Fixed

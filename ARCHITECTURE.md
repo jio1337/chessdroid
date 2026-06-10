@@ -6,7 +6,7 @@ chessdroid is a pure offline chess analysis application that combines tactical p
 
 ---
 
-## System Architecture (v3.18.0)
+## System Architecture (v3.19.0)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐

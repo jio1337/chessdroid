@@ -1,4 +1,4 @@
-## chessdroid v3.18.0 — User Guide
+## chessdroid v3.19.0 — User Guide
 
 ### Welcome to chessdroid!
 

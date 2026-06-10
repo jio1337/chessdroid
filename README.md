@@ -3,7 +3,7 @@
 [![.NET](https://img.shields.io/badge/.NET-8.0-blue.svg)](https://dotnet.microsoft.com/download/dotnet/8.0)
 [![Platform](https://img.shields.io/badge/platform-Windows-lightgrey.svg)](https://www.microsoft.com/windows)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-3.18.1-brightgreen.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-3.19.0-brightgreen.svg)](CHANGELOG.md)
 
 **Offline chess analysis & training for Windows**
 
@@ -56,11 +56,23 @@ chessdroid is a desktop application built for focused chess study. Analyze posit
 - **Passed Pawn Evaluation** — Advancement bonuses and king tropism
 - **Drawing Patterns** — Wrong color bishop, insufficient material, and more
 
+### Training & Study
+- **Puzzle Training** — 5.94M Lichess puzzles with Rush mode (timed), Gauntlet (survival streak), and Daily Puzzle
+- **Opening Training** — Recreate openings move by move; lifetime stats per opening (runs, perfect runs, mistakes, best run)
+- **Vision Training** — Board coordinate recognition; Timed and Survival modes with personal bests
+- **Square Training** — Easy and Challenge difficulty; PBs for White, Black, and Random square sets
+- **Training Stats Dialog** — 📊 button opens unified personal-best view across all training modes
+
+### Endgame Tablebases
+- **Syzygy tablebase support** — Offline 7-piece endgame lookup (zero API calls) via Stockfish's native Syzygy integration; configure path in Settings
+
 ### Customization
 - **8 UI Themes** — Dark, Light, Cyberpunk, Dracula, Nord, Sepia, Solarized, Miami
 - **Custom Board Colors** — Full RGB color picker for light and dark squares; colors persist across sessions
 - **Board Effects** — Gradient fill, vignette overlay, piece glow, board frame with coordinate labels
 - **Show Coordinates toggle** — Rank/file labels on or off globally
+- **Piece Movement Mode** — Choose Click, Drag, or Both input styles; legal move dots shown on mousedown
+- **Tabbed Settings** — General, Board, Engine, and Training tabs for easier navigation
 - **Feature Toggles** — Customize analysis display (Tactical, Positional, Endgame, Opening, Win%, WDL, Engine Arrows, Eval Graph, Animations, etc.)
 - **22 Piece Sets** — Switch between Chess.com, Lichess, Staunty, Merida, and many more
 
