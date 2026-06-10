@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [3.20.0] - 2026-06-10
+
+### Added
+- **Panel layout selector** — ComboBox in Settings > Board with 6 presets for rearranging the three main panels (Board / Moves / Analysis) in any order. Layout applied live without restart and persisted in config.
+
+### Fixed
+- **Variation tree: PGN import drops all variations** — `TokenizeMoveText` was skipping `(...)` blocks entirely. Now emits `(` / `)` tokens; `ImportPgn` uses a variation stack to correctly restore tree position on each open/close. Nested variations handled.
+- **Variation tree: PGN export only writes main line** — `GeneratePgn` walked `Children[0]` only. Replaced with recursive `AppendPgnSubtree` / `AppendPgnVariation` helpers that emit the full tree with nested `(...)` blocks and correct move-number re-annotation after each block.
+- **Variation from imported game hijacks main line** — Playing a different move while navigating an imported game promoted the new move to `Children[0]`, demoting the entire imported game continuation to a variation. `PromoteToMainLine` now only fires when the displaced `Children[0]` is a PV-inserted node, never a real game move.
+- **Move list desyncs on click** — `NavigateToNode` (called when clicking a move in the list) was missing a `UpdateMoveListSelection()` call, causing the highlight to desync from the actual position.
+- **`IsFromPv` clobbering existing user-played nodes** — PV continuation insertion was marking pre-existing real moves as `IsFromPv = true`, which could cause the main line to render as a variation block. Now only newly created nodes are marked.
+- **`VariationDepth` stale after promote** — `PromoteToMainLine` updated only the promoted node's depth, leaving all descendants with stale values. `PropagateVariationDepth` now walks all descendants after promotion.
+
+---
+
 ## [3.19.0] - 2026-06-10
 
 ### Added
