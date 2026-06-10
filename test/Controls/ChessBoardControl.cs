@@ -44,7 +44,7 @@ namespace ChessDroid.Controls
         private int dragFromCol = -1;
         private char dragPiece = '.';
         private Point dragPosition = Point.Empty;
-        private Rectangle _prevDragRect = Rectangle.Empty; // last frame's drag rect for region invalidation
+
         private const int DRAG_THRESHOLD = 5; // Pixels before drag starts
         private Point mouseDownPosition = Point.Empty;
         private bool mouseDownOnPiece = false;
@@ -1063,8 +1063,7 @@ namespace ChessDroid.Controls
                     if (_highlightedSquares.Contains((row, col)))
                         squareColor = BlendColors(squareColor, SquareHighlightColor);
 
-                    // Highlight selected square (suppressed during drag — piece is floating)
-                    if (row == selectedRow && col == selectedCol && !isDragging)
+                    if (row == selectedRow && col == selectedCol)
                         squareColor = BlendColors(squareColor, selectedSquareColor);
 
                     // Draw square (gradient or flat)
@@ -1610,28 +1609,7 @@ namespace ChessDroid.Controls
             if (isDragging)
             {
                 dragPosition = e.Location;
-                // Invalidate only the union of the previous and current drag-piece rects
-                // instead of the full board — reduces repaint area by ~90% during drag.
-                int fo2 = GetFrameOff();
-                int sq2 = Math.Max(1, Math.Min(Width - 2 * fo2, Height - 2 * fo2) / 8);
-                int ps  = (int)(sq2 * 1.1) + 4; // match OnPaint drag size + 4px anti-alias margin
-                var curr = new Rectangle(e.X - ps / 2, e.Y - ps / 2, ps, ps);
-                if (_prevDragRect.IsEmpty)
-                {
-                    // First drag frame — also repaint the origin square so the piece
-                    // disappears there immediately (it was painted before isDragging=true).
-                    int topOff  = (Height - sq2 * 8) / 2 + fo2;
-                    int leftOff = (Width  - sq2 * 8) / 2 + fo2;
-                    int oCol = isFlipped ? 7 - dragFromCol : dragFromCol;
-                    int oRow = isFlipped ? 7 - dragFromRow : dragFromRow;
-                    var originRect = new Rectangle(leftOff + oCol * sq2, topOff + oRow * sq2, sq2, sq2);
-                    Invalidate(Rectangle.Union(curr, originRect));
-                }
-                else
-                {
-                    Invalidate(Rectangle.Union(_prevDragRect, curr));
-                }
-                _prevDragRect = curr;
+                Invalidate();
             }
         }
 
@@ -1662,7 +1640,6 @@ namespace ChessDroid.Controls
             {
                 // End drag - try to execute move
                 isDragging = false;
-                _prevDragRect = Rectangle.Empty;
 
                 if (boardRow >= 0 && boardRow <= 7 && boardCol >= 0 && boardCol <= 7)
                 {
