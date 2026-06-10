@@ -1129,6 +1129,7 @@ namespace ChessDroid
             _puzzleActive = false;
             _puzzleLocked = false;
             boardControl.ClearTrainingHighlight();
+            boardControl.ClearSelection();
             if (_btnPuzzleNext    != null) _btnPuzzleNext.Visible    = false;
             if (_btnPuzzleAnalyze != null) _btnPuzzleAnalyze.Visible = false;
 
@@ -2701,6 +2702,7 @@ namespace ChessDroid
             _puzzleActive = false;
             _puzzleRushTimer?.Stop();
             boardControl.ClearTrainingHighlight();
+            boardControl.ClearSelection();
             if (_lblRushTimer  != null) _lblRushTimer.Visible  = false;
             if (_btnPuzzleSkip != null) _btnPuzzleSkip.Visible = true;
 
@@ -2763,6 +2765,7 @@ namespace ChessDroid
         {
             _puzzleActive = false;
             boardControl.ClearTrainingHighlight();
+            boardControl.ClearSelection();
 
             if (_gauntletStreak > _gauntletBestStreak)
             {
