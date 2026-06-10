@@ -1063,8 +1063,8 @@ namespace ChessDroid.Controls
                     if (_highlightedSquares.Contains((row, col)))
                         squareColor = BlendColors(squareColor, SquareHighlightColor);
 
-                    // Highlight selected square
-                    if (row == selectedRow && col == selectedCol)
+                    // Highlight selected square (suppressed during drag — piece is floating)
+                    if (row == selectedRow && col == selectedCol && !isDragging)
                         squareColor = BlendColors(squareColor, selectedSquareColor);
 
                     // Draw square (gradient or flat)
