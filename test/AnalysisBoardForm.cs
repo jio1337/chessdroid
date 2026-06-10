@@ -951,9 +951,18 @@ namespace ChessDroid
             // Sound: checkmate (#) → game over, check (+) → check, capture → take, else → move
             PlayMoveSound(e.IsCapture, san);
 
-            // Add move to tree; if a PV was sitting at Children[0], promote the real move to front.
+            // Add move to tree; promote to main line only when displacing a PV-inserted node.
+            // Never demote a real game move (e.g. from an imported PGN) to a variation.
             moveTree.AddMove(e.UciMove, san, e.FEN);
-            PromoteToMainLine(moveTree.CurrentNode);
+            var _promotionParent = moveTree.CurrentNode.Parent;
+            bool _shouldPromote = _promotionParent != null
+                && _promotionParent.Children.Count > 1
+                && _promotionParent.Children[0] != moveTree.CurrentNode
+                && _promotionParent.Children[0].IsFromPv;
+            if (_shouldPromote)
+                PromoteToMainLine(moveTree.CurrentNode);
+            else
+                moveTree.CurrentNode.IsFromPv = false;
 
             UpdateMoveAnnotation(moveTree.CurrentNode);
 
