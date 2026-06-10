@@ -2378,6 +2378,7 @@ namespace ChessDroid
             if (_btnPuzzleAnalyze != null) _btnPuzzleAnalyze.Visible = false;
             if (_btnPuzzleSkip    != null) _btnPuzzleSkip.Visible    = _puzzleSubMode == "training";
             boardControl.ClearTrainingHighlight();
+            boardControl.ClearSelection();
             _puzzleLocked      = false;
             _wrongThisPuzzle   = false;
             _currentPuzzle     = null;

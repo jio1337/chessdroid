@@ -1845,7 +1845,7 @@ namespace ChessDroid.Controls
             legalMoveSquares = GetLegalMovesForPiece(row, col);
         }
 
-        private void ClearSelection()
+        public void ClearSelection()
         {
             selectedRow = -1;
             selectedCol = -1;
