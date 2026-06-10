@@ -505,6 +505,22 @@ namespace ChessDroid.Services
             var pieces = fenPosition.Where(char.IsLetter).ToList();
             if (pieces.Count == 2) return true;
             if (pieces.Count == 3) return pieces.All(c => "KkBbNn".Contains(c));
+
+            // K+B vs K+B same-color bishops — neither side can force checkmate
+            if (pieces.Count == 4 && pieces.All(c => "KkBb".Contains(c)))
+            {
+                var bishopSquareColors = new List<int>();
+                int rank = 0, file = 0;
+                foreach (char ch in fenPosition)
+                {
+                    if (ch == '/') { rank++; file = 0; }
+                    else if (char.IsDigit(ch)) file += ch - '0';
+                    else { if (ch == 'B' || ch == 'b') bishopSquareColors.Add((rank + file) % 2); file++; }
+                }
+                if (bishopSquareColors.Count == 2 && bishopSquareColors[0] == bishopSquareColors[1])
+                    return true;
+            }
+
             return false;
         }
 

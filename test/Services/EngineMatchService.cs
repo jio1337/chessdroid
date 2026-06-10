@@ -31,11 +31,13 @@ namespace ChessDroid.Services
         // Animation sync — set WaitForAnimation = true when board animations are enabled
         public bool WaitForAnimation { get; set; } = false;
 
-        // Adjudication — resign when |eval| >= 500cp for 8 plies; draw when |eval| <= 15cp for 8 plies
+        // Adjudication — resign when |eval| >= 500cp for 10 plies; draw when |eval| <= 10cp for 10 plies
+        // Thresholds aligned with Lichess (600cp resign / 10cp draw / 10 plies).
+        // Draw cp matches exactly; resign cp kept at 500 (slightly more aggressive).
         public bool AdjudicationEnabled { get; set; } = false;
         private const int AdjudicateResignCp = 500;
-        private const int AdjudicateDrawCp   = 15;
-        private const int AdjudicatePlies    = 8;
+        private const int AdjudicateDrawCp   = 10;
+        private const int AdjudicatePlies    = 10;
         private readonly List<int> _adjEvalHistory = new();
 
         // When set, this engine annotates every move with a neutral evaluation instead of

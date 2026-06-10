@@ -969,23 +969,12 @@ namespace ChessDroid.Services
                 if (blackMaterial <= 1 && whiteMaterial == 0)
                     return "insufficient material (cannot force checkmate)";
 
-                // King + Knight vs King + Knight (very drawish)
-                if (whiteKnights == 1 && blackKnights == 1 && whiteBishops == 0 && blackBishops == 0)
-                    return "insufficient material (Knight vs Knight)";
-
                 // King + Bishop vs King + Bishop (same color)
                 if (whiteBishops == 1 && blackBishops == 1 && whiteKnights == 0 && blackKnights == 0)
                 {
                     if (whiteBishopColor == blackBishopColor)
                         return "insufficient material (same-colored bishops)";
                 }
-
-                // Two knights cannot force mate
-                if (whiteKnights == 2 && whiteBishops == 0 && blackMaterial == 0)
-                    return "insufficient material (two knights cannot force mate)";
-
-                if (blackKnights == 2 && blackBishops == 0 && whiteMaterial == 0)
-                    return "insufficient material (two knights cannot force mate)";
 
                 return null;
             }
