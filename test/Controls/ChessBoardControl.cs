@@ -1067,19 +1067,12 @@ namespace ChessDroid.Controls
                         squareColor = BlendColors(squareColor, selectedSquareColor);
 
                     // Draw square (gradient or flat)
-                    if (_gradientBoard)
+                    // Gradient cached bitmaps only apply to base square colors; highlighted squares
+                    // use the flat brush — creating a LinearGradientBrush per highlighted square
+                    // per frame was allocating ~200 GDI objects/sec during animation.
+                    if (_gradientBoard && squareColor == (isLightSquare ? lightSquareColor : darkSquareColor) && _gradientLightBitmap != null)
                     {
-                        bool isBase = squareColor == (isLightSquare ? lightSquareColor : darkSquareColor);
-                        if (isBase && _gradientLightBitmap != null)
-                        {
-                            g.DrawImage(isLightSquare ? _gradientLightBitmap : _gradientDarkBitmap!, rect);
-                        }
-                        else
-                        {
-                            using var lgb = new System.Drawing.Drawing2D.LinearGradientBrush(
-                                rect, LightenColor(squareColor, 0.12f), DarkenColor(squareColor, 0.12f), 45f);
-                            g.FillRectangle(lgb, rect);
-                        }
+                        g.DrawImage(isLightSquare ? _gradientLightBitmap : _gradientDarkBitmap!, rect);
                     }
                     else
                     {

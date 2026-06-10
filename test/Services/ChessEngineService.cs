@@ -1169,6 +1169,9 @@ namespace ChessDroid.Services
             if (!IsEngineAlive() || State != EngineState.Ready)
                 return null;
 
+            try { await _analysisSemaphore.WaitAsync(ct); }
+            catch (OperationCanceledException) { return null; }
+
             bool whiteToMove = true;
             int _fenSpIdx = fen.IndexOf(' ');
             if (_fenSpIdx >= 0 && _fenSpIdx + 1 < fen.Length)
@@ -1259,6 +1262,7 @@ namespace ChessDroid.Services
                 State = EngineState.Error;
                 return null;
             }
+            finally { _analysisSemaphore.Release(); }
         }
 
         public async Task SetChess960Async(bool enabled)

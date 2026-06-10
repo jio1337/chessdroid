@@ -2666,6 +2666,7 @@ namespace ChessDroid
             _rushSecondsRemaining = _rushDurationSeconds;
             UpdateRushDisplay();
 
+            _puzzleRushTimer?.Dispose();
             _puzzleRushTimer = new System.Windows.Forms.Timer { Interval = 1000 };
             _puzzleRushTimer.Tick += PuzzleRushTick;
             _puzzleRushTimer.Start();
