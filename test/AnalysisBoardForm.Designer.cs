@@ -65,7 +65,7 @@ namespace ChessDroid
             splitRightPanels = new SplitContainer();
             middlePanel = new Panel();
             moveListBox = new ListBox();
-            pnlPgnButtons = new Panel();
+            pnlPgnButtons = new TableLayoutPanel();
             btnClassifyMoves = new Button();
             btnExportPgn = new Button();
             btnImportPgn = new Button();
@@ -460,87 +460,90 @@ namespace ChessDroid
             moveListBox.SelectedIndexChanged += MoveListBox_SelectedIndexChanged;
             // 
             // pnlPgnButtons
-            // 
-            // DockStyle.Top controls stack top-to-bottom in reverse Controls-add order.
-            // Add order (last-in = top): Classify → Openings → OpenLibrary → SaveToLibrary → Export
-            // Import uses DockStyle.Bottom and always pins to the bottom edge.
-            pnlPgnButtons.Controls.Add(btnClassifyMoves);
-            pnlPgnButtons.Controls.Add(btnOpenings);
-            pnlPgnButtons.Controls.Add(btnOpenLibrary);
-            pnlPgnButtons.Controls.Add(btnSaveToLibrary);
-            pnlPgnButtons.Controls.Add(btnExportPgn);
-            pnlPgnButtons.Controls.Add(btnImportPgn);
+            //
+            // pnlPgnButtons — 2-col TableLayoutPanel
+            //
+            pnlPgnButtons.ColumnCount = 2;
+            pnlPgnButtons.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+            pnlPgnButtons.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+            pnlPgnButtons.RowCount = 3;
+            pnlPgnButtons.RowStyles.Add(new RowStyle(SizeType.Absolute, 28F));
+            pnlPgnButtons.RowStyles.Add(new RowStyle(SizeType.Absolute, 28F));
+            pnlPgnButtons.RowStyles.Add(new RowStyle(SizeType.Absolute, 28F));
+            pnlPgnButtons.Controls.Add(btnExportPgn, 0, 0);
+            pnlPgnButtons.Controls.Add(btnImportPgn, 1, 0);
+            pnlPgnButtons.Controls.Add(btnSaveToLibrary, 0, 1);
+            pnlPgnButtons.Controls.Add(btnOpenLibrary, 1, 1);
+            pnlPgnButtons.Controls.Add(btnOpenings, 0, 2);
+            pnlPgnButtons.Controls.Add(btnClassifyMoves, 1, 2);
             pnlPgnButtons.Dock = DockStyle.Bottom;
-            pnlPgnButtons.Location = new Point(5, 480);
             pnlPgnButtons.Name = "pnlPgnButtons";
-            pnlPgnButtons.Size = new Size(114, 184);
+            pnlPgnButtons.Padding = new Padding(0);
+            pnlPgnButtons.Size = new Size(114, 84);
             pnlPgnButtons.TabIndex = 2;
-            // 
+            //
             // btnClassifyMoves
-            // 
-            btnClassifyMoves.Dock = DockStyle.Top;
+            //
+            btnClassifyMoves.Dock = DockStyle.Fill;
             btnClassifyMoves.FlatStyle = FlatStyle.Flat;
             btnClassifyMoves.Font = new Font("Courier New", 8.25F);
-            btnClassifyMoves.Location = new Point(0, 30);
+            btnClassifyMoves.Margin = new Padding(1);
             btnClassifyMoves.Name = "btnClassifyMoves";
-            btnClassifyMoves.Size = new Size(114, 37);
             btnClassifyMoves.TabIndex = 0;
             btnClassifyMoves.Text = "Analyze";
             btnClassifyMoves.Click += BtnClassifyMoves_Click;
-            // 
+            //
             // btnExportPgn
-            // 
-            btnExportPgn.Dock = DockStyle.Top;
+            //
+            btnExportPgn.Dock = DockStyle.Fill;
             btnExportPgn.FlatStyle = FlatStyle.Flat;
             btnExportPgn.Font = new Font("Courier New", 8.25F);
-            btnExportPgn.Location = new Point(0, 0);
+            btnExportPgn.Margin = new Padding(1);
             btnExportPgn.Name = "btnExportPgn";
-            btnExportPgn.Size = new Size(114, 30);
             btnExportPgn.TabIndex = 1;
             btnExportPgn.Text = "Export PGN";
             btnExportPgn.Click += BtnExportPgn_Click;
-            // 
+            //
             // btnImportPgn
-            // 
-            btnImportPgn.Dock = DockStyle.Bottom;
+            //
+            btnImportPgn.Dock = DockStyle.Fill;
             btnImportPgn.FlatStyle = FlatStyle.Flat;
             btnImportPgn.Font = new Font("Courier New", 8.25F);
-            btnImportPgn.Location = new Point(0, 122);
+            btnImportPgn.Margin = new Padding(1);
             btnImportPgn.Name = "btnImportPgn";
-            btnImportPgn.Size = new Size(114, 30);
             btnImportPgn.TabIndex = 2;
             btnImportPgn.Text = "Import PGN";
             btnImportPgn.Click += BtnImportPgn_Click;
             //
             // btnSaveToLibrary
             //
-            btnSaveToLibrary.Dock = DockStyle.Top;
+            btnSaveToLibrary.Dock = DockStyle.Fill;
             btnSaveToLibrary.FlatStyle = FlatStyle.Flat;
             btnSaveToLibrary.Font = new Font("Courier New", 8.25F);
+            btnSaveToLibrary.Margin = new Padding(1);
             btnSaveToLibrary.Name = "btnSaveToLibrary";
-            btnSaveToLibrary.Size = new Size(114, 28);
             btnSaveToLibrary.TabIndex = 3;
             btnSaveToLibrary.Text = "💾 Save";
             btnSaveToLibrary.Click += BtnSaveToLibrary_Click;
             //
             // btnOpenLibrary
             //
-            btnOpenLibrary.Dock = DockStyle.Top;
+            btnOpenLibrary.Dock = DockStyle.Fill;
             btnOpenLibrary.FlatStyle = FlatStyle.Flat;
             btnOpenLibrary.Font = new Font("Courier New", 8.25F);
+            btnOpenLibrary.Margin = new Padding(1);
             btnOpenLibrary.Name = "btnOpenLibrary";
-            btnOpenLibrary.Size = new Size(114, 28);
             btnOpenLibrary.TabIndex = 4;
             btnOpenLibrary.Text = "📚 Library";
             btnOpenLibrary.Click += BtnOpenLibrary_Click;
             //
             // btnOpenings
             //
-            btnOpenings.Dock = DockStyle.Top;
+            btnOpenings.Dock = DockStyle.Fill;
             btnOpenings.FlatStyle = FlatStyle.Flat;
             btnOpenings.Font = new Font("Courier New", 8.25F);
+            btnOpenings.Margin = new Padding(1);
             btnOpenings.Name = "btnOpenings";
-            btnOpenings.Size = new Size(114, 28);
             btnOpenings.TabIndex = 5;
             btnOpenings.Text = "📖 Openings";
             btnOpenings.Click += BtnOpenings_Click;
@@ -1012,6 +1015,7 @@ namespace ChessDroid
             splitRightPanels.ResumeLayout(false);
             middlePanel.ResumeLayout(false);
             pnlPgnButtons.ResumeLayout(false);
+            pnlPgnButtons.PerformLayout();
             pnlBoardControls.ResumeLayout(false);
             pnlBoardControls.PerformLayout();
             rightPanel.ResumeLayout(false);
@@ -1070,7 +1074,7 @@ namespace ChessDroid
         // Middle panel - Move list
         private Label lblMoves;
         private ListBox moveListBox;
-        private Panel pnlPgnButtons;
+        private TableLayoutPanel pnlPgnButtons;
         private Button btnClassifyMoves;
         private Button btnExportPgn;
         private Button btnImportPgn;
