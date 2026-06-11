@@ -220,6 +220,7 @@ namespace ChessDroid
         private void HandleBotGameEnd(string fen, string? forcedResult = null)
         {
             _botModeActive = false;
+            _botMoveCts?.Cancel();
 
             // Determine result by checking if king is in check
             var fenParts = fen.Split(' ');

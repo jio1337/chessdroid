@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Text.RegularExpressions;
 using ChessDroid.Models;
 
 namespace ChessDroid.Services
@@ -16,7 +15,7 @@ namespace ChessDroid.Services
         Error           // Engine in error state, needs restart
     }
 
-    public class ChessEngineService
+    public class ChessEngineService : IDisposable
     {
         private Process? engineProcess;
         private StreamWriter? engineInput;
@@ -204,7 +203,7 @@ namespace ChessDroid.Services
                     UseShellExecute = false,
                     RedirectStandardInput = true,
                     RedirectStandardOutput = true,
-                    RedirectStandardError = true, // Also capture stderr
+                    RedirectStandardError = false,
                     CreateNoWindow = true
                 };
 
@@ -331,10 +330,7 @@ namespace ChessDroid.Services
             WDLInfo? wdlInfo = null;
             int retryCount = 0;
 
-            // Determine whose turn it is from FEN (for evaluation perspective)
-            // UCI evaluations are always from White's perspective
-            int _fenSpIdx = fen.IndexOf(' ');
-            bool whiteToMove = _fenSpIdx >= 0 && _fenSpIdx + 1 < fen.Length && fen[_fenSpIdx + 1] == 'w';
+            bool whiteToMove = FenIsWhiteToMove(fen);
 
             // Tell any running analysis to stop so the semaphore holder exits fast
             if (State == EngineState.Analyzing && IsEngineAlive())
@@ -510,6 +506,7 @@ namespace ChessDroid.Services
                                 {
                                     int _bm2 = line.IndexOf(' ', _bm1 + 1);
                                     bestMove = _bm2 >= 0 ? line.Substring(_bm1 + 1, _bm2 - _bm1 - 1) : line.Substring(_bm1 + 1);
+                                    if (bestMove == "(none)" || bestMove == "0000") bestMove = "";
                                 }
                                 break;
                             }
@@ -527,20 +524,9 @@ namespace ChessDroid.Services
                     if (ct.IsCancellationRequested)
                     {
                         Debug.WriteLine("[Analysis] Cancelled by caller — draining engine");
-                        // Send stop and drain bestmove so the next caller gets a clean engine
-                        if (IsEngineAlive() && State == EngineState.Analyzing)
+                        if (State == EngineState.Analyzing)
                         {
-                            await SafeWriteLineAsync("stop");
-                            try
-                            {
-                                using var drainCts = new CancellationTokenSource(1500);
-                                while (IsEngineAlive())
-                                {
-                                    string? dl = await engineOutput!.ReadLineAsync(drainCts.Token);
-                                    if (dl?.StartsWith(UCI_RESPONSE_BESTMOVE) == true) break;
-                                }
-                            }
-                            catch { }
+                            await StopAndDrainAsync();
                             State = EngineState.Ready;
                         }
                         break;
@@ -647,6 +633,56 @@ namespace ChessDroid.Services
             return (bestMove, evaluation, pvs, evaluations, wdlInfo);
         }
 
+        private static bool FenIsWhiteToMove(string fen)
+        {
+            int sp = fen.IndexOf(' ');
+            return sp >= 0 && sp + 1 < fen.Length && fen[sp + 1] == 'w';
+        }
+
+        private string? ParseEvalFromInfoLine(string line, bool whiteToMove)
+        {
+            int scp = line.IndexOf(" score cp ", StringComparison.Ordinal);
+            if (scp >= 0)
+            {
+                int vs = scp + 10, ve = line.IndexOf(' ', scp + 10);
+                if (double.TryParse(ve >= 0 ? line.AsSpan(vs, ve - vs) : line.AsSpan(vs), out double cp))
+                {
+                    double dcp = whiteToMove ? cp : -cp;
+                    return (dcp / 100.0 >= 0 ? "+" : "") + (dcp / 100.0).ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
+                }
+            }
+            else
+            {
+                int smt = line.IndexOf(" score mate ", StringComparison.Ordinal);
+                if (smt >= 0)
+                {
+                    int vs = smt + 12, ve = line.IndexOf(' ', smt + 12);
+                    if (int.TryParse(ve >= 0 ? line.AsSpan(vs, ve - vs) : line.AsSpan(vs), out int mateIn))
+                    {
+                        int dm = whiteToMove ? mateIn : -mateIn;
+                        return dm > 0 ? $"Mate in +{dm}" : dm < 0 ? $"Mate in {dm}" : "Mate in 0";
+                    }
+                }
+            }
+            return null;
+        }
+
+        private async Task StopAndDrainAsync(int timeoutMs = 300)
+        {
+            if (!IsEngineAlive()) return;
+            await SafeWriteLineAsync("stop");
+            try
+            {
+                using var cts = new CancellationTokenSource(timeoutMs);
+                while (IsEngineAlive())
+                {
+                    if ((await engineOutput!.ReadLineAsync(cts.Token))?.StartsWith(UCI_RESPONSE_BESTMOVE) == true)
+                        break;
+                }
+            }
+            catch { }
+        }
+
         /// <summary>
         /// Parse evaluation string for sorting purposes.
         /// All evaluations are now in WHITE's perspective (converted at parse time).
@@ -735,13 +771,13 @@ namespace ChessDroid.Services
                 await SafeWriteLineAsync($"{UCI_CMD_SETOPTION} MultiPV value {multiPV}");
                 await SafeWriteLineAsync($"{UCI_CMD_POSITION} {ChessBoard.SanitizeFenForEngine(fen)}");
 
-                int _spIdx = fen.IndexOf(' ');
-                bool whiteToMove = _spIdx >= 0 && _spIdx + 1 < fen.Length && fen[_spIdx + 1] == 'w';
+                bool whiteToMove = FenIsWhiteToMove(fen);
 
                 State = EngineState.Analyzing;
                 await SafeWriteLineAsync("go infinite");
 
                 int    currentDepth    = 0;
+                int    lastFiredDepth  = 0;
                 int    highestMpvSeen  = 0;
                 var    pvBuffer        = new string[multiPV];
                 var    evalBuffer      = new string[multiPV];
@@ -751,12 +787,14 @@ namespace ChessDroid.Services
 
                 void FireUpdate(int depth)
                 {
-                    if (string.IsNullOrEmpty(bestMove)) return;
+                    if (string.IsNullOrEmpty(bestMove) || depth == lastFiredDepth) return;
+                    lastFiredDepth = depth;
                     var pvs   = pvBuffer.Take(Math.Max(1, highestMpvSeen)).ToList();
                     var evals = evalBuffer.Take(Math.Max(1, highestMpvSeen)).ToList();
                     onUpdate(bestMove, bestEval, pvs, evals, wdl, depth);
                 }
 
+                var pvMoves = new List<string>(64);
                 bool completedNaturally = false;
                 try
                 {
@@ -771,7 +809,7 @@ namespace ChessDroid.Services
                         int    depth    = currentDepth;
                         int    mpv      = 1;
                         string lineEval = "";
-                        var    pvMoves  = new List<string>();
+                        pvMoves.Clear();
                         WDLInfo? lineWdl = null;
 
                         for (int i = 0; i < tokens.Length; i++)
@@ -811,8 +849,8 @@ namespace ChessDroid.Services
                         {
                             if (currentDepth > 0) FireUpdate(currentDepth);
                             currentDepth   = depth;
-                            pvBuffer       = new string[multiPV];
-                            evalBuffer     = new string[multiPV];
+                            Array.Clear(pvBuffer,   0, multiPV);
+                            Array.Clear(evalBuffer, 0, multiPV);
                             highestMpvSeen = 0;
                         }
 
@@ -845,21 +883,9 @@ namespace ChessDroid.Services
 
                     // Only stop+drain when cancelled — if bestmove was already consumed
                     // naturally, sending stop to an idle engine gets no response and the
-                    // 2000ms drain timer runs to completion, stalling the next analysis.
-                    if (IsEngineAlive() && !completedNaturally)
-                    {
-                        await SafeWriteLineAsync("stop");
-                        try
-                        {
-                            using var drain = new CancellationTokenSource(300);
-                            while (IsEngineAlive())
-                            {
-                                var l = await engineOutput!.ReadLineAsync(drain.Token);
-                                if (l != null && l.StartsWith(UCI_RESPONSE_BESTMOVE)) break;
-                            }
-                        }
-                        catch { }
-                    }
+                    // drain timer runs to completion, stalling the next analysis.
+                    if (!completedNaturally)
+                        await StopAndDrainAsync();
                     State = EngineState.Ready;
                 }
             }
@@ -877,11 +903,7 @@ namespace ChessDroid.Services
             if (!IsEngineAlive() || State != EngineState.Ready)
                 return (null, null);
 
-            // Determine side to move from FEN for eval perspective conversion
-            bool whiteToMove = true;
-            int _fenSpIdx = fen.IndexOf(' ');
-            if (_fenSpIdx >= 0 && _fenSpIdx + 1 < fen.Length)
-                whiteToMove = fen[_fenSpIdx + 1] == 'w';
+            bool whiteToMove = FenIsWhiteToMove(fen);
 
             try
             {
@@ -910,38 +932,10 @@ namespace ChessDroid.Services
                     string? line = await engineOutput!.ReadLineAsync(cts.Token);
                     if (line == null) continue;
 
-                    // Parse info lines to capture evaluation
                     if (line.StartsWith(UCI_RESPONSE_INFO) && line.Contains(UCI_TOKEN_SCORE))
                     {
-                        int _scp = line.IndexOf(" score cp ", StringComparison.Ordinal);
-                        if (_scp >= 0)
-                        {
-                            int _vs = _scp + 10, _ve = line.IndexOf(' ', _scp + 10);
-                            if (double.TryParse(_ve >= 0 ? line.AsSpan(_vs, _ve - _vs) : line.AsSpan(_vs), out double cp))
-                            {
-                                double displayCp = whiteToMove ? cp : -cp;
-                                lastEval = (displayCp / 100.0 >= 0 ? "+" : "") +
-                                           (displayCp / 100.0).ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
-                            }
-                        }
-                        else
-                        {
-                            int _smt = line.IndexOf(" score mate ", StringComparison.Ordinal);
-                            if (_smt >= 0)
-                            {
-                                int _vs = _smt + 12, _ve = line.IndexOf(' ', _smt + 12);
-                                if (int.TryParse(_ve >= 0 ? line.AsSpan(_vs, _ve - _vs) : line.AsSpan(_vs), out int mateIn))
-                                {
-                                    int displayMate = whiteToMove ? mateIn : -mateIn;
-                                    if (displayMate > 0)
-                                        lastEval = $"Mate in +{displayMate}";
-                                    else if (displayMate < 0)
-                                        lastEval = $"Mate in {displayMate}";
-                                    else
-                                        lastEval = "Mate in 0";
-                                }
-                            }
-                        }
+                        string? parsed = ParseEvalFromInfoLine(line, whiteToMove);
+                        if (parsed != null) lastEval = parsed;
                     }
                     else if (line.StartsWith(UCI_RESPONSE_BESTMOVE))
                     {
@@ -949,7 +943,6 @@ namespace ChessDroid.Services
                         int _bm1 = line.IndexOf(' ');
                         int _bm2 = _bm1 >= 0 ? line.IndexOf(' ', _bm1 + 1) : -1;
                         string move = _bm1 >= 0 ? (_bm2 >= 0 ? line.Substring(_bm1 + 1, _bm2 - _bm1 - 1) : line.Substring(_bm1 + 1)) : "";
-                        // "(none)" and "0000" mean no legal moves (different engines use different conventions)
                         if (string.IsNullOrEmpty(move) || move == "(none)" || move == "0000")
                             return (null, lastEval);
                         return (move, lastEval);
@@ -989,11 +982,7 @@ namespace ChessDroid.Services
             if (!IsEngineAlive() || State != EngineState.Ready)
                 return null;
 
-            bool whiteToMove = true;
-            int _fenSpIdx = fen.IndexOf(' ');
-            if (_fenSpIdx >= 0 && _fenSpIdx + 1 < fen.Length)
-                whiteToMove = fen[_fenSpIdx + 1] == 'w';
-
+            bool whiteToMove = FenIsWhiteToMove(fen);
             string? lastEval = null;
 
             try
@@ -1017,31 +1006,8 @@ namespace ChessDroid.Services
 
                     if (line.StartsWith(UCI_RESPONSE_INFO) && line.Contains(UCI_TOKEN_SCORE))
                     {
-                        int _scp = line.IndexOf(" score cp ", StringComparison.Ordinal);
-                        if (_scp >= 0)
-                        {
-                            int _vs = _scp + 10, _ve = line.IndexOf(' ', _scp + 10);
-                            if (double.TryParse(_ve >= 0 ? line.AsSpan(_vs, _ve - _vs) : line.AsSpan(_vs), out double cp))
-                            {
-                                double displayCp = whiteToMove ? cp : -cp;
-                                lastEval = (displayCp / 100.0 >= 0 ? "+" : "") +
-                                           (displayCp / 100.0).ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
-                            }
-                        }
-                        else
-                        {
-                            int _smt = line.IndexOf(" score mate ", StringComparison.Ordinal);
-                            if (_smt >= 0)
-                            {
-                                int _vs = _smt + 12, _ve = line.IndexOf(' ', _smt + 12);
-                                if (int.TryParse(_ve >= 0 ? line.AsSpan(_vs, _ve - _vs) : line.AsSpan(_vs), out int mateIn))
-                                {
-                                    int displayMate = whiteToMove ? mateIn : -mateIn;
-                                    lastEval = displayMate > 0 ? $"Mate in +{displayMate}" :
-                                               displayMate < 0 ? $"Mate in {displayMate}" : "Mate in 0";
-                                }
-                            }
-                        }
+                        string? parsed = ParseEvalFromInfoLine(line, whiteToMove);
+                        if (parsed != null) lastEval = parsed;
                     }
                     else if (line.StartsWith(UCI_RESPONSE_BESTMOVE))
                     {
@@ -1082,11 +1048,7 @@ namespace ChessDroid.Services
             if (!IsEngineAlive() || State != EngineState.Ready)
                 return null;
 
-            bool whiteToMove = true;
-            int _fenSpIdx = fen.IndexOf(' ');
-            if (_fenSpIdx >= 0 && _fenSpIdx + 1 < fen.Length)
-                whiteToMove = fen[_fenSpIdx + 1] == 'w';
-
+            bool whiteToMove = FenIsWhiteToMove(fen);
             string? lastEval = null;
 
             try
@@ -1111,31 +1073,8 @@ namespace ChessDroid.Services
 
                     if (line.StartsWith(UCI_RESPONSE_INFO) && line.Contains(UCI_TOKEN_SCORE))
                     {
-                        int _scp = line.IndexOf(" score cp ", StringComparison.Ordinal);
-                        if (_scp >= 0)
-                        {
-                            int _vs = _scp + 10, _ve = line.IndexOf(' ', _scp + 10);
-                            if (double.TryParse(_ve >= 0 ? line.AsSpan(_vs, _ve - _vs) : line.AsSpan(_vs), out double cp))
-                            {
-                                double displayCp = whiteToMove ? cp : -cp;
-                                lastEval = (displayCp / 100.0 >= 0 ? "+" : "") +
-                                           (displayCp / 100.0).ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
-                            }
-                        }
-                        else
-                        {
-                            int _smt = line.IndexOf(" score mate ", StringComparison.Ordinal);
-                            if (_smt >= 0)
-                            {
-                                int _vs = _smt + 12, _ve = line.IndexOf(' ', _smt + 12);
-                                if (int.TryParse(_ve >= 0 ? line.AsSpan(_vs, _ve - _vs) : line.AsSpan(_vs), out int mateIn))
-                                {
-                                    int displayMate = whiteToMove ? mateIn : -mateIn;
-                                    lastEval = displayMate > 0 ? $"Mate in +{displayMate}" :
-                                               displayMate < 0 ? $"Mate in {displayMate}" : "Mate in 0";
-                                }
-                            }
-                        }
+                        string? parsed = ParseEvalFromInfoLine(line, whiteToMove);
+                        if (parsed != null) lastEval = parsed;
                     }
                     else if (line.StartsWith(UCI_RESPONSE_BESTMOVE))
                     {
@@ -1179,11 +1118,7 @@ namespace ChessDroid.Services
             try { await _analysisSemaphore.WaitAsync(ct); }
             catch (OperationCanceledException) { return null; }
 
-            bool whiteToMove = true;
-            int _fenSpIdx = fen.IndexOf(' ');
-            if (_fenSpIdx >= 0 && _fenSpIdx + 1 < fen.Length)
-                whiteToMove = fen[_fenSpIdx + 1] == 'w';
-
+            bool whiteToMove = FenIsWhiteToMove(fen);
             string? lastEval = null;
 
             try
@@ -1204,33 +1139,8 @@ namespace ChessDroid.Services
 
                     if (line.StartsWith(UCI_RESPONSE_INFO) && line.Contains(UCI_TOKEN_SCORE))
                     {
-                        int _scp = line.IndexOf(" score cp ", StringComparison.Ordinal);
-                        if (_scp >= 0)
-                        {
-                            int _vs = _scp + 10, _ve = line.IndexOf(' ', _scp + 10);
-                            if (double.TryParse(_ve >= 0 ? line.AsSpan(_vs, _ve - _vs) : line.AsSpan(_vs), out double cp))
-                            {
-                                double displayCp = whiteToMove ? cp : -cp;
-                                lastEval = (displayCp / 100.0 >= 0 ? "+" : "") +
-                                           (displayCp / 100.0).ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
-                                onEvalUpdate(lastEval);
-                            }
-                        }
-                        else
-                        {
-                            int _smt = line.IndexOf(" score mate ", StringComparison.Ordinal);
-                            if (_smt >= 0)
-                            {
-                                int _vs = _smt + 12, _ve = line.IndexOf(' ', _smt + 12);
-                                if (int.TryParse(_ve >= 0 ? line.AsSpan(_vs, _ve - _vs) : line.AsSpan(_vs), out int mateIn))
-                                {
-                                    int displayMate = whiteToMove ? mateIn : -mateIn;
-                                    lastEval = displayMate > 0 ? $"Mate in +{displayMate}" :
-                                               displayMate < 0 ? $"Mate in {displayMate}" : "Mate in 0";
-                                    onEvalUpdate(lastEval);
-                                }
-                            }
-                        }
+                        string? parsed = ParseEvalFromInfoLine(line, whiteToMove);
+                        if (parsed != null) { lastEval = parsed; onEvalUpdate(lastEval); }
                     }
                     else if (line.StartsWith(UCI_RESPONSE_BESTMOVE))
                     {
@@ -1244,22 +1154,8 @@ namespace ChessDroid.Services
             }
             catch (OperationCanceledException) when (ct.IsCancellationRequested)
             {
-                // Stop the engine and drain to bestmove so it's clean for the next caller
-                if (IsEngineAlive() && State == EngineState.Analyzing)
-                {
-                    await SafeWriteLineAsync("stop");
-                    try
-                    {
-                        using var drainCts = new CancellationTokenSource(300);
-                        while (IsEngineAlive())
-                        {
-                            string? line = await engineOutput!.ReadLineAsync(drainCts.Token);
-                            if (line != null && line.StartsWith(UCI_RESPONSE_BESTMOVE))
-                                break;
-                        }
-                    }
-                    catch { }
-                }
+                if (State == EngineState.Analyzing)
+                    await StopAndDrainAsync();
                 State = EngineState.Ready;
                 return lastEval;
             }
@@ -1370,9 +1266,14 @@ namespace ChessDroid.Services
             }
         }
 
+        private bool _disposed;
+
         public void Dispose()
         {
+            if (_disposed) return;
+            _disposed = true;
             CleanupProcess();
+            _analysisSemaphore.Dispose();
         }
     }
 }

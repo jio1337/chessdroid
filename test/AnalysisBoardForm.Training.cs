@@ -1639,25 +1639,29 @@ namespace ChessDroid
             string savedFen = boardControl.GetFEN();
             bool savedNav = isNavigating;
             isNavigating = true;
-
-            string currentFen = startFen;
-            var tokens = FilterSanTokens(sanMoves);
-
-            foreach (var san in tokens)
+            try
             {
-                string? uci = PgnImportService.ConvertSanToUci(san, currentFen);
-                if (uci == null) break;
+                string currentFen = startFen;
+                var tokens = FilterSanTokens(sanMoves);
 
-                boardControl.LoadFEN(currentFen);
-                if (!boardControl.MakeMove(uci)) break;
+                foreach (var san in tokens)
+                {
+                    string? uci = PgnImportService.ConvertSanToUci(san, currentFen);
+                    if (uci == null) break;
 
-                currentFen = boardControl.GetFEN();
-                _openingUciMoves.Add(uci);
-                _openingFens.Add(currentFen);
+                    boardControl.LoadFEN(currentFen);
+                    if (!boardControl.MakeMove(uci)) break;
+
+                    currentFen = boardControl.GetFEN();
+                    _openingUciMoves.Add(uci);
+                    _openingFens.Add(currentFen);
+                }
             }
-
-            boardControl.LoadFEN(savedFen);
-            isNavigating = savedNav;
+            finally
+            {
+                boardControl.LoadFEN(savedFen);
+                isNavigating = savedNav;
+            }
         }
 
         private void OpeningTrainingStart()
