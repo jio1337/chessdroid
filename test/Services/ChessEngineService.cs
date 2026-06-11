@@ -396,10 +396,8 @@ namespace ChessDroid.Services
                     State = EngineState.Analyzing;
 
                     // Always depth-based: deterministic, reproducible results at exact depth.
-                    // MinAnalysisTimeMs is a display delay only — applied after bestmove arrives.
                     string goCommand = $"{UCI_CMD_GO_DEPTH} {depth}";
                     int effectiveTimeout = config.EngineResponseTimeoutMs;
-                    var analysisStart = DateTime.UtcNow;
 
                     if (!await SafeWriteLineAsync(goCommand))
                     {
@@ -502,14 +500,6 @@ namespace ChessDroid.Services
 
                     if (!string.IsNullOrEmpty(bestMove))
                     {
-                        // MinAnalysisTimeMs: delay display so results don't flash by on fast positions
-                        if (config.MinAnalysisTimeMs > 0)
-                        {
-                            int elapsed = (int)(DateTime.UtcNow - analysisStart).TotalMilliseconds;
-                            int remaining = config.MinAnalysisTimeMs - elapsed;
-                            if (remaining > 0)
-                                await Task.Delay(remaining, ct);
-                        }
                         State = EngineState.Ready;
                         break;
                     }

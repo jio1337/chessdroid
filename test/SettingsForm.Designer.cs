@@ -33,8 +33,6 @@ namespace ChessDroid
             numMoveTimeout = new NumericUpDown();
             lblEngineDepth = new Label();
             numEngineDepth = new NumericUpDown();
-            lblMinAnalysisTime = new Label();
-            numMinAnalysisTime = new NumericUpDown();
             chkContinuousAnalysis = new CheckBox();
             lblAutoPlayInterval = new Label();
             numAutoPlayInterval = new NumericUpDown();
@@ -113,7 +111,6 @@ namespace ChessDroid
             ((System.ComponentModel.ISupportInitialize)numMaxRetries).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numMoveTimeout).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numEngineDepth).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)numMinAnalysisTime).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numAutoPlayInterval).BeginInit();
             ((System.ComponentModel.ISupportInitialize)trkAggressiveness).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numAnimationMs).BeginInit();
@@ -149,8 +146,6 @@ namespace ChessDroid
             tabEngine.Controls.Add(numMoveTimeout);
             tabEngine.Controls.Add(lblEngineDepth);
             tabEngine.Controls.Add(numEngineDepth);
-            tabEngine.Controls.Add(lblMinAnalysisTime);
-            tabEngine.Controls.Add(numMinAnalysisTime);
             tabEngine.Controls.Add(chkContinuousAnalysis);
             tabEngine.Controls.Add(lblAutoPlayInterval);
             tabEngine.Controls.Add(numAutoPlayInterval);
@@ -240,23 +235,7 @@ namespace ChessDroid
             toolTip1.SetToolTip(numEngineDepth, "Analysis depth (1-40). Higher = stronger but slower.");
             numEngineDepth.Value = new decimal(new int[] { 15, 0, 0, 0 });
 
-            lblMinAnalysisTime.Location = new Point(10, 150);
-            lblMinAnalysisTime.Name = "lblMinAnalysisTime";
-            lblMinAnalysisTime.Size = new Size(155, 19);
-            lblMinAnalysisTime.TabIndex = 10;
-            lblMinAnalysisTime.Text = "Min Analysis Time (ms):";
-            toolTip1.SetToolTip(lblMinAnalysisTime, "Minimum analysis time in ms (0 = no minimum).");
-
-            numMinAnalysisTime.Increment = new decimal(new int[] { 100, 0, 0, 0 });
-            numMinAnalysisTime.Location = new Point(170, 148);
-            numMinAnalysisTime.Maximum = new decimal(new int[] { 10000, 0, 0, 0 });
-            numMinAnalysisTime.Name = "numMinAnalysisTime";
-            numMinAnalysisTime.Size = new Size(120, 20);
-            numMinAnalysisTime.TabIndex = 11;
-            toolTip1.SetToolTip(numMinAnalysisTime, "Minimum analysis time in ms (0 = no minimum).");
-            numMinAnalysisTime.Value = new decimal(new int[] { 500, 0, 0, 0 });
-
-            chkContinuousAnalysis.Location = new Point(10, 175);
+            chkContinuousAnalysis.Location = new Point(10, 150);
             chkContinuousAnalysis.Name = "chkContinuousAnalysis";
             chkContinuousAnalysis.Size = new Size(280, 18);
             chkContinuousAnalysis.TabIndex = 12;
@@ -1030,7 +1009,6 @@ namespace ChessDroid
             ((System.ComponentModel.ISupportInitialize)numMaxRetries).EndInit();
             ((System.ComponentModel.ISupportInitialize)numMoveTimeout).EndInit();
             ((System.ComponentModel.ISupportInitialize)numEngineDepth).EndInit();
-            ((System.ComponentModel.ISupportInitialize)numMinAnalysisTime).EndInit();
             ((System.ComponentModel.ISupportInitialize)numAutoPlayInterval).EndInit();
             ((System.ComponentModel.ISupportInitialize)trkAggressiveness).EndInit();
             ((System.ComponentModel.ISupportInitialize)numAnimationMs).EndInit();
@@ -1056,8 +1034,6 @@ namespace ChessDroid
         private System.Windows.Forms.NumericUpDown numMoveTimeout;
         private System.Windows.Forms.Label lblEngineDepth;
         private System.Windows.Forms.NumericUpDown numEngineDepth;
-        private System.Windows.Forms.Label lblMinAnalysisTime;
-        private System.Windows.Forms.NumericUpDown numMinAnalysisTime;
         private System.Windows.Forms.CheckBox chkContinuousAnalysis;
         private System.Windows.Forms.Label lblAutoPlayInterval;
         private System.Windows.Forms.NumericUpDown numAutoPlayInterval;

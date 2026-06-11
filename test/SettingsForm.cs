@@ -80,9 +80,6 @@ namespace ChessDroid
             // Engine depth
             numEngineDepth.Value = Math.Clamp(config.EngineDepth, 1, 40);
 
-            // Min analysis time
-            numMinAnalysisTime.Value = config.MinAnalysisTimeMs;
-
             // Display options
             PopulateEnginesComboBox();
 
@@ -172,7 +169,6 @@ namespace ChessDroid
             config.MaxEngineRetries = (int)numMaxRetries.Value;
             config.MoveTimeoutMs = (int)numMoveTimeout.Value;
             config.EngineDepth = (int)numEngineDepth.Value;
-            config.MinAnalysisTimeMs = (int)numMinAnalysisTime.Value;
             config.Theme = cmbTheme.SelectedItem?.ToString() ?? "Dark";
 
             // Save display options
