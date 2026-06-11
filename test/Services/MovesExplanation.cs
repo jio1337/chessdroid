@@ -277,6 +277,14 @@ namespace ChessDroid.Services
                         if (!string.IsNullOrEmpty(prophylactic))
                             reasons.Add(prophylactic);
 
+                        // Fianchetto preparation: g3/b3 or g6/b6 with bishop still home
+                        if (reasons.Count < 2)
+                        {
+                            string? fianchetto = PositionalEvaluation.DetectFianchetto(board, destRank, destFile, isWhite);
+                            if (!string.IsNullOrEmpty(fianchetto))
+                                reasons.Add(fianchetto);
+                        }
+
                         string? passedPawnInfo = PositionalEvaluation.DetectPassedPawn(tempBoard, destRank, destFile, isWhite);
                         if (!string.IsNullOrEmpty(passedPawnInfo))
                             reasons.Add(passedPawnInfo);

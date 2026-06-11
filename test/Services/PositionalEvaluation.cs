@@ -218,6 +218,39 @@ namespace ChessDroid.Services
         }
 
         /// <summary>
+        /// Detect fianchetto preparation: g3/b3 (white) or g6/b6 (black) with the adjacent bishop
+        /// still undeveloped on its starting square and the fianchetto square empty.
+        /// </summary>
+        public static string? DetectFianchetto(ChessBoard board, int destRank, int destFile, bool isWhite)
+        {
+            try
+            {
+                int backRank = isWhite ? 7 : 0;
+                int pawnRank = isWhite ? 5 : 2; // g3/b3 for white (row 5), g6/b6 for black (row 2)
+                if (destRank != pawnRank) return null;
+
+                char bishop = isWhite ? 'B' : 'b';
+
+                // Kingside fianchetto: g3 / g6
+                if (destFile == 6)
+                {
+                    if (board.GetPiece(backRank, 5) != bishop) return null; // f1/f8 bishop still home
+                    return isWhite ? "prepares fianchetto Bg2" : "prepares fianchetto Bg7";
+                }
+
+                // Queenside fianchetto: b3 / b6
+                if (destFile == 1)
+                {
+                    if (board.GetPiece(backRank, 2) != bishop) return null; // c1/c8 bishop still home
+                    return isWhite ? "prepares fianchetto Bb2" : "prepares fianchetto Bb7";
+                }
+
+                return null;
+            }
+            catch { return null; }
+        }
+
+        /// <summary>
         /// Detect prophylactic pawn moves: the advance denies a key square to an opponent piece.
         /// A move is prophylactic when an opponent bishop, knight, or queen could have reached
         /// the newly controlled square — but the pawn now prevents that.
@@ -226,6 +259,12 @@ namespace ChessDroid.Services
         {
             try
             {
+                // Only single-step advances are prophylactic; double pushes (d4, e4) are center occupation
+                if (Math.Abs(destRank - srcRank) != 1) return null;
+
+                // d and e pawns advance for center control/development, never primarily for prevention
+                if (destFile == 3 || destFile == 4) return null;
+
                 int attackDir = isWhite ? -1 : 1;
 
                 for (int fileOffset = -1; fileOffset <= 1; fileOffset += 2)
@@ -234,20 +273,20 @@ namespace ChessDroid.Services
                     int controlledFile = destFile + fileOffset;
                     if (controlledRank < 0 || controlledRank >= 8 || controlledFile < 0 || controlledFile >= 8) continue;
 
-                    // Check if any opponent bishop, knight, or queen can currently reach this square
+                    // Only bishops and knights — queens are too flexible; preventing one square is not prophylaxis
                     for (int r = 0; r < 8; r++)
                     {
                         for (int c = 0; c < 8; c++)
                         {
                             char p = board.GetPiece(r, c);
                             bool isTarget = isWhite
-                                ? (p == 'b' || p == 'n' || p == 'q')
-                                : (p == 'B' || p == 'N' || p == 'Q');
+                                ? (p == 'b' || p == 'n')
+                                : (p == 'B' || p == 'N');
                             if (!isTarget) continue;
 
                             if (ChessUtilities.CanAttackSquare(board, r, c, p, controlledRank, controlledFile))
                             {
-                                string pieceAbbr = char.ToUpper(p) switch { 'B' => "B", 'N' => "N", _ => "Q" };
+                                string pieceAbbr = char.ToUpper(p) == 'B' ? "B" : "N";
                                 char sqFile = (char)('a' + controlledFile);
                                 int sqRank = 8 - controlledRank;
                                 return $"prophylactic — prevents {pieceAbbr}{sqFile}{sqRank}";
