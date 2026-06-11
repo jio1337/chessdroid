@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [3.21.0] - 2026-06-11
+
+### Added
+- **Prophylactic move detection** — Analysis explains pawn advances that prevent opponent piece intrusions (e.g. `h3 — prophylactic, prevents Bg4`). Filters out d/e-file structural pawns and double-pushes to avoid false positives.
+- **Fianchetto preparation detection** — `g3`/`b3` (and `g6`/`b6` for Black) are annotated `prepares fianchetto Bg2` when the bishop is still on its home square.
+- **Bot engine Elo targeting detection** — At startup, chessdroid probes whether the selected engine advertised `UCI_LimitStrength` during the UCI handshake. If not (Ethereal, Berserk), a warning popup explains the engine plays at full strength regardless of the Elo setting.
+- **CCRL rating display for non-Elo engines** — When the bot engine doesn't support Elo targeting, the difficulty label shows the engine's stored CCRL rating (`~3632 CCRL`) instead of the false selected-Elo label.
+- **Miami board theme** — New board color preset using Inter Miami rose (`#F7B5CD`) / hot cerise pink (`#D9508C`), pairing with the Miami UI theme.
+- **Training Stats: mastered openings popup** — "Mastered: N" line is now clickable (hand cursor, accent color). Clicking opens a small popup listing each mastered opening by ECO + name.
+
+### Fixed
+- **Bot race condition on game end** — `HandleBotGameEnd` now cancels `_botMoveCts` before disposing the engine, preventing `MakeBotMoveAsync` from playing a move on an already-finished game.
+- **`bestmove (none)` treated as valid move** — `GetBestMoveAsync` now guards against `(none)` and `0000` (engine conventions for no legal moves), returning empty string instead of trying to apply them.
+- **Stderr pipe deadlock risk** — `RedirectStandardError` set to `false`; the unread stderr pipe buffer could block engine startup on some builds.
+- **`FireUpdate` double-fire in continuous analysis** — Each completed depth was firing `onUpdate` twice (once when all multiPV lines arrived, again when the next depth's first line arrived). Added `lastFiredDepth` guard.
+- **`PrepareOpeningLine` `isNavigating` stuck on exception** — Bare save/restore replaced with `try/finally` ensuring board and flag are always restored.
+- **Drain timeout inconsistency** — `GetBestMoveAsync` cancel-path drain was 1500ms vs 300ms everywhere else. Unified to 300ms.
+
+### Refactoring / Performance
+- **Engine service resource cleanup** — `ChessEngineService` now implements `IDisposable` properly; `SemaphoreSlim` disposed in `Dispose()`.
+- **`StopAndDrainAsync` helper** — Replaces 3 identical stop+drain patterns (inconsistent timeouts eliminated).
+- **`FenIsWhiteToMove` helper** — Replaces 6 inline FEN side-detection blocks.
+- **`ParseEvalFromInfoLine` helper** — Replaces 4 identical `score cp`/`score mate` parsing blocks.
+- **`pvMoves` list reuse** — Was allocated `new List<string>()` on every info line in continuous analysis; now declared once and `.Clear()`ed per iteration.
+- **`Array.Clear` on depth advance** — Replaced `new string[multiPV]` allocations with `Array.Clear` on existing arrays.
+
+### UI Polish
+- **Training Stats dialog** — Form widened to 560px (date no longer clips), fonts switched to Courier New, form auto-sizes to content height (no empty gap above Close button).
+
+---
+
 ## [3.20.0] - 2026-06-10
 
 ### Added
