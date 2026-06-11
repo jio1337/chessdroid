@@ -373,6 +373,9 @@ namespace ChessDroid.Services
                         throw new IOException("Failed to set MultiPV option");
                     }
 
+                    // Single thread → fully deterministic depth-based results
+                    await SafeWriteLineAsync($"{UCI_CMD_SETOPTION} Threads value 1");
+
                     // Only send ucinewgame if we want to clear hash tables (e.g., new game)
                     // Preserving hash tables allows engine to reuse previous calculations
                     if (!preserveHashTables)
@@ -743,7 +746,8 @@ namespace ChessDroid.Services
             string fen,
             int multiPV,
             Action<string, string, List<string>, List<string>, WDLInfo?, int> onUpdate,
-            CancellationToken ct)
+            CancellationToken ct,
+            bool preserveHashTables = true)
         {
             if (State == EngineState.Analyzing && IsEngineAlive())
                 await SafeWriteLineAsync("stop");
@@ -761,6 +765,14 @@ namespace ChessDroid.Services
                 if (!await SyncWithEngineAsync()) return;
 
                 await SafeWriteLineAsync($"{UCI_CMD_SETOPTION} MultiPV value {multiPV}");
+
+                // Restore all available threads for continuous analysis (go infinite benefits from parallelism)
+                int threadCount = Math.Max(1, Environment.ProcessorCount);
+                await SafeWriteLineAsync($"{UCI_CMD_SETOPTION} Threads value {threadCount}");
+
+                if (!preserveHashTables)
+                    await SafeWriteLineAsync(UCI_CMD_UCINEWGAME);
+
                 await SafeWriteLineAsync($"{UCI_CMD_POSITION} {ChessBoard.SanitizeFenForEngine(fen)}");
 
                 bool whiteToMove = FenIsWhiteToMove(fen);

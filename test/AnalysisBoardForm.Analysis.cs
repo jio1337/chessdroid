@@ -9,7 +9,7 @@ namespace ChessDroid
     {
         #region Analysis
 
-        private async Task AnalyzeCurrentPosition(CancellationToken ct = default)
+        private async Task AnalyzeCurrentPosition(CancellationToken ct = default, bool clearHash = false)
         {
             if (_challengeSnapshot != null) return; // challenge mode: no hints
 
@@ -81,7 +81,7 @@ namespace ChessDroid
                                 UpdateEvalBar(eval);
                             }
                             if (InvokeRequired) BeginInvoke(Update); else Update();
-                        }, ct);
+                        }, ct, preserveHashTables: !clearHash);
 
                     // Engine stopped — only act on terminal positions (checkmate / stalemate).
                     // For normal stops (navigation, new move) the result is simply discarded.
@@ -140,7 +140,7 @@ namespace ChessDroid
 
             try
             {
-                var result = await engineService.GetBestMoveAsync(fen, depth, multiPV, ct: ct);
+                var result = await engineService.GetBestMoveAsync(fen, depth, multiPV, preserveHashTables: !clearHash, ct: ct);
 
                 // Guard: if cancelled or navigated away, discard result — an empty bestMove
                 // from a cancelled search must not be misread as checkmate/stalemate.

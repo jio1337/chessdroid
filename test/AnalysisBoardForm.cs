@@ -991,7 +991,7 @@ namespace ChessDroid
             }
         }
 
-        private async Task TriggerAutoAnalysis()
+        private async Task TriggerAutoAnalysis(bool clearHash = false)
         {
             if (_autoPlaying) return;
             if (_trainingGameActive) return;
@@ -1007,7 +1007,7 @@ namespace ChessDroid
 
             if (!token.IsCancellationRequested)
             {
-                await AnalyzeCurrentPosition(token);
+                await AnalyzeCurrentPosition(token, clearHash);
             }
         }
 
@@ -1060,7 +1060,7 @@ namespace ChessDroid
             UpdateFenDisplay();
             UpdateTurnLabel();
             lblStatus.Text = "New game started";
-            _ = TriggerAutoAnalysis();
+            _ = TriggerAutoAnalysis(clearHash: true);
         }
 
         private void BtnChess960_Click(object? sender, EventArgs e) => ShowChess960Dialog();
@@ -1122,7 +1122,7 @@ namespace ChessDroid
             if (engineService != null)
                 await engineService.SetChess960Async(true);
 
-            _ = TriggerAutoAnalysis();
+            _ = TriggerAutoAnalysis(clearHash: true);
         }
 
 
@@ -1357,7 +1357,7 @@ namespace ChessDroid
                     ResetPositionState(fen);
                     UpdateTurnLabel();
                     lblStatus.Text = "Position loaded from FEN";
-                    _ = TriggerAutoAnalysis();
+                    _ = TriggerAutoAnalysis(clearHash: true);
                 }
                 catch (Exception ex)
                 {
