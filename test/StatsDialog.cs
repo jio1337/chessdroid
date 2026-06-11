@@ -14,17 +14,21 @@ namespace ChessDroid
         private readonly Font _dimFont;
         private readonly Color _headerColor;
         private readonly Color _dimColor;
+        private readonly bool _isDark;
+
+        private const int FormW  = 560;
+        private const int InnerW = FormW - 38;   // 16 left + 22 right margin
 
         public StatsDialog(AppConfig config, string theme)
         {
-            _config = config;
-            bool isDark = Services.ThemeService.IsDarkTheme(theme);
-            _headerFont  = new Font("Segoe UI", 8.5f, FontStyle.Bold);
-            _dataFont    = new Font("Segoe UI", 9f);
-            _dimFont     = new Font("Segoe UI", 8.5f, FontStyle.Italic);
-            _headerColor = isDark ? Color.FromArgb(200, 180, 100) : Color.FromArgb(60, 80, 140);
-            _dimColor    = isDark ? Color.FromArgb(130, 130, 135) : Color.FromArgb(130, 130, 130);
-            BuildUI(isDark);
+            _config  = config;
+            _isDark  = Services.ThemeService.IsDarkTheme(theme);
+            _headerFont  = new Font("Courier New", 8.5f, FontStyle.Bold);
+            _dataFont    = new Font("Courier New", 9f);
+            _dimFont     = new Font("Courier New", 8.5f, FontStyle.Italic);
+            _headerColor = _isDark ? Color.FromArgb(200, 180, 100) : Color.FromArgb(60, 80, 140);
+            _dimColor    = _isDark ? Color.FromArgb(130, 130, 135) : Color.FromArgb(130, 130, 130);
+            BuildUI(_isDark);
         }
 
         private void BuildUI(bool isDark)
@@ -34,7 +38,6 @@ namespace ChessDroid
             MaximizeBox     = false;
             MinimizeBox     = false;
             StartPosition   = FormStartPosition.CenterParent;
-            ClientSize      = new Size(500, 520);
 
             Color bg       = isDark ? Color.FromArgb(45, 45, 48)   : Color.WhiteSmoke;
             Color fg       = isDark ? Color.FromArgb(220, 220, 220) : Color.FromArgb(30, 30, 30);
@@ -42,29 +45,32 @@ namespace ChessDroid
             BackColor = bg;
             ForeColor = fg;
 
-            var scroll = new Panel
-            {
-                Location   = new Point(0, 0),
-                Size       = new Size(500, 476),
-                AutoScroll = true,
-                BackColor  = bg
-            };
-
             var inner = new Panel
             {
                 Location  = new Point(16, 12),
-                Width     = 462,
+                Width     = InnerW,
                 BackColor = bg
             };
 
             int y = 0;
+            var (openingRows, masteredDetail) = BuildOpeningRows();
+
             y = AddSection(inner, "DAILY PUZZLE",    y, fg, bg, sepColor, BuildDailyRows());
             y = AddSection(inner, "PUZZLES",          y, fg, bg, sepColor, BuildPuzzleRows());
-            y = AddSection(inner, "OPENING TRAINING", y, fg, bg, sepColor, BuildOpeningRows());
+            y = AddSection(inner, "OPENING TRAINING", y, fg, bg, sepColor, openingRows,
+                           clickDetails: masteredDetail != null ? new Dictionary<int, string> { [1] = masteredDetail } : null);
             y = AddSection(inner, "VISION TRAINING",  y, fg, bg, sepColor, BuildVisionRows());
             y = AddSection(inner, "SQUARE TRAINING",  y, fg, bg, sepColor, BuildSquareRows(), last: true);
             inner.Height = y + 8;
 
+            int scrollH = Math.Min(inner.Height + 20, 480);
+            var scroll = new Panel
+            {
+                Location   = new Point(0, 0),
+                Size       = new Size(FormW, scrollH),
+                AutoScroll = true,
+                BackColor  = bg
+            };
             scroll.Controls.Add(inner);
 
             var btnClose = new Button
@@ -72,12 +78,14 @@ namespace ChessDroid
                 Text         = "Close",
                 DialogResult = DialogResult.OK,
                 Size         = new Size(90, 30),
-                Location     = new Point(500 - 90 - 12, 482),
+                Location     = new Point(FormW - 90 - 12, scrollH + 6),
                 FlatStyle    = FlatStyle.Flat,
                 ForeColor    = fg,
                 BackColor    = bg
             };
             AcceptButton = btnClose;
+
+            ClientSize = new Size(FormW, btnClose.Bottom + 8);
 
             Controls.Add(scroll);
             Controls.Add(btnClose);
@@ -85,7 +93,8 @@ namespace ChessDroid
 
         private int AddSection(Panel parent, string title, int startY,
                                Color fg, Color bg, Color sepColor,
-                               (string text, bool dim)[] rows, bool last = false)
+                               (string text, bool dim)[] rows, bool last = false,
+                               Dictionary<int, string>? clickDetails = null)
         {
             int y = startY + 6;
 
@@ -101,8 +110,9 @@ namespace ChessDroid
             parent.Controls.Add(header);
             y += 22;
 
-            foreach (var (text, dim) in rows)
+            for (int ri = 0; ri < rows.Length; ri++)
             {
+                var (text, dim) = rows[ri];
                 var lbl = new Label
                 {
                     Text      = text,
@@ -112,6 +122,19 @@ namespace ChessDroid
                     Location  = new Point(10, y),
                     AutoSize  = true
                 };
+
+                if (clickDetails != null && clickDetails.TryGetValue(ri, out string? detail))
+                {
+                    lbl.Cursor   = Cursors.Hand;
+                    lbl.ForeColor = _headerColor;
+                    string captured = detail;
+                    lbl.Click += (s, e) =>
+                    {
+                        var pos = lbl.PointToScreen(new Point(0, lbl.Height + 2));
+                        ShowDetailPopup(captured, pos);
+                    };
+                }
+
                 parent.Controls.Add(lbl);
                 y += 19;
             }
@@ -123,7 +146,7 @@ namespace ChessDroid
                 var sep = new Panel
                 {
                     Location  = new Point(0, y),
-                    Size      = new Size(462, 1),
+                    Size      = new Size(parent.Width, 1),
                     BackColor = sepColor
                 };
                 parent.Controls.Add(sep);
@@ -131,6 +154,46 @@ namespace ChessDroid
             }
 
             return y;
+        }
+
+        private void ShowDetailPopup(string content, Point screenPt)
+        {
+            Color bg = _isDark ? Color.FromArgb(45, 45, 48)   : Color.WhiteSmoke;
+            Color fg = _isDark ? Color.FromArgb(220, 220, 220) : Color.FromArgb(30, 30, 30);
+
+            var popup = new Form
+            {
+                Text            = "Mastered Openings",
+                FormBorderStyle = FormBorderStyle.FixedToolWindow,
+                StartPosition   = FormStartPosition.Manual,
+                MaximizeBox     = false,
+                MinimizeBox     = false,
+                TopMost         = true,
+                BackColor       = bg,
+                ForeColor       = fg,
+                AutoSize        = true,
+                AutoSizeMode    = AutoSizeMode.GrowAndShrink,
+                Padding         = new Padding(12, 8, 12, 12)
+            };
+
+            var lbl = new Label
+            {
+                Text      = content,
+                Font      = _dataFont,
+                ForeColor = fg,
+                BackColor = bg,
+                AutoSize  = true,
+                Location  = new Point(12, 8)
+            };
+            popup.Controls.Add(lbl);
+
+            // Position below the clicked label, clamped to screen
+            var screen = Screen.FromPoint(screenPt).WorkingArea;
+            popup.Location = new Point(
+                Math.Min(screenPt.X, screen.Right  - 300),
+                Math.Min(screenPt.Y, screen.Bottom - 200));
+
+            popup.ShowDialog(this);
         }
 
         // ── Helpers ─────────────────────────────────────────────────────────
@@ -166,7 +229,7 @@ namespace ChessDroid
 
             var rows = new List<(string, bool)>
             {
-                ($"Streak: {streak}   ·   Best streak: {best}   ·   Last solved: {last}", false)
+                ($"Streak: {streak}  ·  Best streak: {best}  ·  Last solved: {last}", false)
             };
             if (!string.IsNullOrEmpty(clean))
                 rows.Add((clean, true));
@@ -175,27 +238,24 @@ namespace ChessDroid
 
         private (string, bool)[] BuildPuzzleRows()
         {
-            // Training streak
             string trainStreak = _config.PuzzleTrainingBestStreak > 0
                 ? _config.PuzzleTrainingBestStreak.ToString() : "—";
             string trainDate = AgeStr(_config.PuzzleTrainingBestStreakDate);
             string trainLine = $"Training best streak: {trainStreak}";
-            if (!string.IsNullOrEmpty(trainDate)) trainLine += $"   ·   set {trainDate}";
+            if (!string.IsNullOrEmpty(trainDate)) trainLine += $"  ·  set {trainDate}";
 
-            // Totals
             string totals = _config.PuzzleTrainingTotalAttempted > 0
-                ? $"{_config.PuzzleTrainingTotalAttempted} puzzles attempted   ·   " +
+                ? $"{_config.PuzzleTrainingTotalAttempted} puzzles attempted  ·  " +
                   $"{(_config.PuzzleTrainingTotalAttempted > 0 ? _config.PuzzleTrainingTotalClean * 100 / _config.PuzzleTrainingTotalAttempted : 0)}% clean"
                 : "";
 
-            // Rush — per-duration PBs
             string rushLine;
             if (_config.PuzzleRushBestByMinutes.Count > 0)
             {
                 var parts = _config.PuzzleRushBestByMinutes
                     .OrderBy(kv => kv.Key)
                     .Select(kv => $"{kv.Key} min: {kv.Value}");
-                rushLine = "Rush best:   " + string.Join("   ·   ", parts);
+                rushLine = "Rush best:  " + string.Join("  ·  ", parts);
             }
             else if (_config.PuzzleRushBest > 0)
             {
@@ -206,14 +266,12 @@ namespace ChessDroid
                 rushLine = "Rush best: —";
             }
 
-            // Gauntlet
             string gauntlet = _config.GauntletBestStreak > 0
                 ? _config.GauntletBestStreak.ToString() : "—";
             string gauntletDate = AgeStr(_config.GauntletBestStreakDate);
             string gauntletLine = $"Gauntlet best: {gauntlet}";
-            if (!string.IsNullOrEmpty(gauntletDate)) gauntletLine += $"   ·   set {gauntletDate}";
+            if (!string.IsNullOrEmpty(gauntletDate)) gauntletLine += $"  ·  set {gauntletDate}";
 
-            // Recent gauntlet average
             string gauntletAvg = "";
             if (_config.GauntletRecentScores.Count >= 2)
             {
@@ -234,39 +292,57 @@ namespace ChessDroid
             return rows.ToArray();
         }
 
-        private (string, bool)[] BuildOpeningRows()
+        private ((string, bool)[] rows, string? masteredDetail) BuildOpeningRows()
         {
             var stats = _config.OpeningTrainingStats;
             if (stats.Count == 0)
-                return new (string, bool)[] { ("No openings studied yet.", false) };
+                return (new (string, bool)[] { ("No openings studied yet.", false) }, null);
 
             int studied      = stats.Count;
             int totalRuns    = stats.Values.Sum(s => s.TotalRuns);
             int totalPerfect = stats.Values.Sum(s => s.PerfectRuns);
-            // Mastered = at least one clean run (BestRunMistakes == 0)
             int mastered     = stats.Values.Count(s => s.BestRunMistakes == 0);
 
             var top = stats.OrderByDescending(kv => kv.Value.TotalRuns).First();
             string topName = top.Key.Contains('|')
                 ? top.Key.Split('|')[0] + "  " + top.Key.Split('|')[1]
                 : top.Key;
-            if (topName.Length > 54) topName = topName[..54] + "…";
+            if (topName.Length > 60) topName = topName[..60] + "…";
 
-            // Total mistakes across all runs — shows how much grinding happened
             int totalMistakes = stats.Values.Sum(s => s.TotalMistakes);
             string mistakesLine = totalMistakes > 0
                 ? $"Total wrong attempts across all runs: {totalMistakes}"
                 : "";
 
+            string masteredLabel = mastered > 0
+                ? $"Mastered (at least one clean run): {mastered}  ← click to expand"
+                : $"Mastered (at least one clean run): {mastered}";
+
+            string? masteredDetail = null;
+            if (mastered > 0)
+            {
+                var masteredNames = stats
+                    .Where(kv => kv.Value.BestRunMistakes == 0)
+                    .OrderBy(kv => kv.Key)
+                    .Select(kv =>
+                    {
+                        var parts = kv.Key.Split('|');
+                        return parts.Length == 2
+                            ? $"  {parts[0]}  {parts[1]}"
+                            : $"  {kv.Key}";
+                    });
+                masteredDetail = string.Join("\n", masteredNames);
+            }
+
             var rows = new List<(string, bool)>
             {
-                ($"{studied} openings studied   ·   {totalRuns} total runs   ·   {totalPerfect} perfect", false),
-                ($"Mastered (at least one clean run): {mastered}", false),
+                ($"{studied} openings studied  ·  {totalRuns} total runs  ·  {totalPerfect} perfect", false),
+                (masteredLabel, false),
                 ($"Most studied: {topName} ({top.Value.TotalRuns} runs)", false),
             };
             if (!string.IsNullOrEmpty(mistakesLine))
                 rows.Add((mistakesLine, true));
-            return rows.ToArray();
+            return (rows.ToArray(), masteredDetail);
         }
 
         private (string, bool)[] BuildVisionRows()
@@ -289,10 +365,9 @@ namespace ChessDroid
 
             var rows = new List<(string, bool)>
             {
-                ($"60 sec: {GetCorrect("Vision-Timed-60")}   ·   3 min: {GetCorrect("Vision-Timed-180")}   ·   5 min: {GetCorrect("Vision-Timed-300")}   ·   Survival: {GetCorrect("Vision-Survival")}", false),
+                ($"60 sec: {GetCorrect("Vision-Timed-60")}  ·  3 min: {GetCorrect("Vision-Timed-180")}  ·  5 min: {GetCorrect("Vision-Timed-300")}  ·  Survival: {GetCorrect("Vision-Survival")}", false),
             };
 
-            // Show when any timed PB was set (use the most recent one)
             var dates = new[] { "Vision-Timed-60", "Vision-Timed-180", "Vision-Timed-300", "Vision-Survival" }
                 .Select(k => GetDate(k))
                 .Where(d => !string.IsNullOrEmpty(d))
@@ -329,7 +404,6 @@ namespace ChessDroid
             string chalB  = GetCorrect("Challenge-Black");
             string chalR  = GetCorrect("Challenge-Random");
 
-            // Best speed across any challenge mode
             string bestSpeed = new[] { "Challenge-White", "Challenge-Black", "Challenge-Random" }
                 .Select(k => GetSpeed(k))
                 .Where(s => !string.IsNullOrEmpty(s))
