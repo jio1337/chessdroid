@@ -2143,9 +2143,8 @@ namespace ChessDroid
             // Always challenge mode for drills — no eval bar, no engine lines, no hints
             ApplyChallengeMode();
 
-            string diffLabel  = _botSettings.GetDifficultyLabel();
             string colorLabel = userPlaysBlack ? "Black" : "White";
-            lblStatus.Text = $"Drill — {chapter.ChapterName}  |  {diffLabel}  |  You play {colorLabel}";
+            lblStatus.Text = $"Drill — {chapter.ChapterName}  |  {GetBotDifficultyLabel()}  |  You play {colorLabel}";
 
             // Bot moves first only if it's their turn in the drill starting position
             bool botMovesFirst = _botSettings.BotPlaysWhite == chapter.WhiteToMove;

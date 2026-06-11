@@ -104,7 +104,7 @@ namespace ChessDroid
 
             if (settings.ChallengeMode) ApplyChallengeMode();
 
-            string diffLabel  = settings.GetDifficultyLabel();
+            string diffLabel  = GetBotDifficultyLabel();
             string colorLabel = userPlaysBlack ? "Black" : "White";
             string typeLabel  = settings.ChallengeMode ? "Challenge" : "Friendly";
             analysisOutput.AppendText($"Bot Mode: You play {colorLabel}\n");
@@ -185,8 +185,7 @@ namespace ChessDroid
                 if (draw != null) { HandleBotGameEnd(currentFen, draw); return; }
 
                 boardControl.InteractionEnabled = true;
-                string diffLabel = _botSettings.GetDifficultyLabel();
-                lblStatus.Text = $"Your turn — {diffLabel}";
+                lblStatus.Text = $"Your turn — {GetBotDifficultyLabel()}";
 
                 // Trigger analysis for the new position (human's turn)
                 _ = TriggerAutoAnalysis();
@@ -284,6 +283,19 @@ namespace ChessDroid
             bool whiteToMove = fenParts.Length >= 2 && fenParts[1] == "w";
             var board = boardControl.GetBoardState();
             return board == null || ChessRulesService.HasAnyLegalMove(board, whiteToMove);
+        }
+
+        private string GetBotDifficultyLabel()
+        {
+            if (_botEngine?.SupportsEloTargeting == true)
+                return _botSettings?.GetDifficultyLabel() ?? "Unknown";
+
+            // Engine plays at full strength — show its CCRL rating instead of the Elo target
+            string engineKey = !string.IsNullOrEmpty(_botSettings?.EngineFileName)
+                ? _botSettings!.EngineFileName : config!.SelectedEngine;
+            if (config?.EngineProfiles.TryGetValue(engineKey, out var profile) == true && profile.Elo > 0)
+                return $"~{profile.Elo} CCRL";
+            return "full strength";
         }
 
         private void StopBotMode()
