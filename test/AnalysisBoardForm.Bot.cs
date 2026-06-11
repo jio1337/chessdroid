@@ -79,6 +79,13 @@ namespace ChessDroid
 
                 await _botEngine.SetEloTargetAsync(settings.EloTarget, settings.GetSkillLevel());
 
+                if (!_botEngine.SupportsEloTargeting)
+                    MessageBox.Show(
+                        $"{_botEngine.EngineName} doesn't support Elo targeting (UCI_LimitStrength).\n" +
+                        "The engine will play at full strength regardless of the Elo setting.",
+                        "Elo Targeting Not Supported",
+                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
+
                 if (_chess960Active)
                     await _botEngine.SetChess960Async(true);
             }

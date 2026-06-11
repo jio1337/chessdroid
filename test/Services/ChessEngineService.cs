@@ -58,6 +58,9 @@ namespace ChessDroid.Services
             private set { lock (stateLock) state = value; }
         }
 
+        /// True if the engine advertised UCI_LimitStrength during init (supports Elo targeting).
+        public bool SupportsEloTargeting { get; private set; }
+
         /// <summary>
         /// Get the name of the currently loaded engine (derived from file name)
         /// </summary>
@@ -226,8 +229,9 @@ namespace ChessDroid.Services
                     throw new Exception("Failed to send UCI command");
                 }
 
-                // Wait for 'uciok' with timeout
+                // Wait for 'uciok' with timeout — collect option lines to detect capabilities
                 bool receivedUciOk = false;
+                SupportsEloTargeting = false;
                 using (var cts = new CancellationTokenSource(5000))
                 {
                     while (!receivedUciOk && IsEngineAlive())
@@ -235,7 +239,10 @@ namespace ChessDroid.Services
                         try
                         {
                             string? line = await engineOutput.ReadLineAsync(cts.Token);
-                            if (line != null && line.StartsWith("uciok"))
+                            if (line == null) continue;
+                            if (line.Contains("UCI_LimitStrength"))
+                                SupportsEloTargeting = true;
+                            if (line.StartsWith("uciok"))
                             {
                                 receivedUciOk = true;
                                 Debug.WriteLine("Engine: received uciok");
