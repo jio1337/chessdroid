@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [3.21.1] - 2026-06-11
+
+### Fixed
+- **Non-deterministic analysis** — Fixed-depth analysis (`go depth N`) now always produces the same best move and evaluation for the same position. Two root causes eliminated: (1) `MinAnalysisTimeMs > 0` was silently replacing `go depth N` with `go movetime X`, making the engine stop by time instead of depth; (2) Lazy SMP multi-threading caused evaluation variance across runs. Fixed by always sending `go depth N` with `Threads 1` for fixed-depth searches.
+- **Hash table contamination on New Game** — Clicking New Game, loading a FEN, or starting a Chess 960 position now sends `ucinewgame` to clear the transposition table before analysis. Previously, leftover hash entries from the prior game influenced the new search, producing different PV lines (e.g. Sicilian vs French as best response to e4) on repeated analyses of the same position.
+- **Continuous analysis restored to full strength** — `go infinite` now correctly restores all CPU threads (`Environment.ProcessorCount`) after any fixed-depth analysis, so live analysis is as deep as the machine allows.
+
+### Removed
+- **Min Analysis Time setting** — Removed from Settings > Engine. The setting was the root cause of the non-determinism bug above (it replaced depth search with time search). After the fix it served only as a display delay, which is unnecessary at practical depths.
+
+---
+
 ## [3.21.0] - 2026-06-11
 
 ### Added
