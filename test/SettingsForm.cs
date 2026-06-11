@@ -25,6 +25,7 @@ namespace ChessDroid
             ("Sungrass",        "#D7E070", "#46942C"),
             ("Space Traveler",  "#8C70E0", "#8B2C94"),
             ("Atlantis",        "#70E0A8", "#2C8394"),
+            ("Miami",           "#F7B5CD", "#D9508C"),
         };
 
         public SettingsForm(AppConfig config, Action? onConfigChanged = null)

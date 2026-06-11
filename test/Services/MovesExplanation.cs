@@ -272,6 +272,11 @@ namespace ChessDroid.Services
                     // Pawn structure analysis
                     if (pieceType == PieceType.Pawn && reasons.Count < 2)
                     {
+                        // Prophylactic: pawn advance denies a key square to an opponent piece
+                        string? prophylactic = PositionalEvaluation.DetectProphylacticMove(board, srcRank, srcFile, destRank, destFile, isWhite);
+                        if (!string.IsNullOrEmpty(prophylactic))
+                            reasons.Add(prophylactic);
+
                         string? passedPawnInfo = PositionalEvaluation.DetectPassedPawn(tempBoard, destRank, destFile, isWhite);
                         if (!string.IsNullOrEmpty(passedPawnInfo))
                             reasons.Add(passedPawnInfo);

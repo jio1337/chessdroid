@@ -218,6 +218,49 @@ namespace ChessDroid.Services
         }
 
         /// <summary>
+        /// Detect prophylactic pawn moves: the advance denies a key square to an opponent piece.
+        /// A move is prophylactic when an opponent bishop, knight, or queen could have reached
+        /// the newly controlled square — but the pawn now prevents that.
+        /// </summary>
+        public static string? DetectProphylacticMove(ChessBoard board, int srcRank, int srcFile, int destRank, int destFile, bool isWhite)
+        {
+            try
+            {
+                int attackDir = isWhite ? -1 : 1;
+
+                for (int fileOffset = -1; fileOffset <= 1; fileOffset += 2)
+                {
+                    int controlledRank = destRank + attackDir;
+                    int controlledFile = destFile + fileOffset;
+                    if (controlledRank < 0 || controlledRank >= 8 || controlledFile < 0 || controlledFile >= 8) continue;
+
+                    // Check if any opponent bishop, knight, or queen can currently reach this square
+                    for (int r = 0; r < 8; r++)
+                    {
+                        for (int c = 0; c < 8; c++)
+                        {
+                            char p = board.GetPiece(r, c);
+                            bool isTarget = isWhite
+                                ? (p == 'b' || p == 'n' || p == 'q')
+                                : (p == 'B' || p == 'N' || p == 'Q');
+                            if (!isTarget) continue;
+
+                            if (ChessUtilities.CanAttackSquare(board, r, c, p, controlledRank, controlledFile))
+                            {
+                                string pieceAbbr = char.ToUpper(p) switch { 'B' => "B", 'N' => "N", _ => "Q" };
+                                char sqFile = (char)('a' + controlledFile);
+                                int sqRank = 8 - controlledRank;
+                                return $"prophylactic — prevents {pieceAbbr}{sqFile}{sqRank}";
+                            }
+                        }
+                    }
+                }
+                return null;
+            }
+            catch { return null; }
+        }
+
+        /// <summary>
         /// Detect passed pawns (no enemy pawns ahead on same file or adjacent files)
         /// Strength: Can advance freely toward promotion
         /// </summary>
