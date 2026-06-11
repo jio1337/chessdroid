@@ -392,27 +392,11 @@ namespace ChessDroid.Services
                     // Update state to analyzing
                     State = EngineState.Analyzing;
 
-                    // Start analysis
-                    // If MinAnalysisTimeMs > 0: use time-based search (reaches deeper on complex positions)
-                    // If MinAnalysisTimeMs = 0: use depth-based search (fast, consistent depth)
-                    string goCommand;
-                    int effectiveTimeout;
-
-                    if (config.MinAnalysisTimeMs > 0)
-                    {
-                        // Time-based search: engine searches for X milliseconds, reaching whatever depth it can
-                        // This gives better results on complex positions where depth 15 isn't enough
-                        goCommand = $"go movetime {config.MinAnalysisTimeMs}";
-                        effectiveTimeout = config.MinAnalysisTimeMs + 2000; // Add buffer for response
-                        Debug.WriteLine($"Engine: Time-based search for {config.MinAnalysisTimeMs}ms");
-                    }
-                    else
-                    {
-                        // Depth-based search: fast, reaches exact depth
-                        goCommand = $"{UCI_CMD_GO_DEPTH} {depth}";
-                        effectiveTimeout = config.EngineResponseTimeoutMs;
-                        Debug.WriteLine($"Engine: Depth-based search to depth {depth}");
-                    }
+                    // Always depth-based: deterministic, reproducible results at exact depth.
+                    // MinAnalysisTimeMs is a display delay only — applied after bestmove arrives.
+                    string goCommand = $"{UCI_CMD_GO_DEPTH} {depth}";
+                    int effectiveTimeout = config.EngineResponseTimeoutMs;
+                    var analysisStart = DateTime.UtcNow;
 
                     if (!await SafeWriteLineAsync(goCommand))
                     {
@@ -515,8 +499,16 @@ namespace ChessDroid.Services
 
                     if (!string.IsNullOrEmpty(bestMove))
                     {
-                        State = EngineState.Ready; // Analysis complete, back to ready
-                        break; // Success - exit retry loop
+                        // MinAnalysisTimeMs: delay display so results don't flash by on fast positions
+                        if (config.MinAnalysisTimeMs > 0)
+                        {
+                            int elapsed = (int)(DateTime.UtcNow - analysisStart).TotalMilliseconds;
+                            int remaining = config.MinAnalysisTimeMs - elapsed;
+                            if (remaining > 0)
+                                await Task.Delay(remaining, ct);
+                        }
+                        State = EngineState.Ready;
+                        break;
                     }
                 }
                 catch (OperationCanceledException)
