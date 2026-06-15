@@ -213,6 +213,7 @@ namespace ChessDroid.Services
 
                 // Build FEN and go command
                 string fen = gameState.ToCompleteFEN();
+                Debug.WriteLine($"[Match] move#{moveCount + 1} {(whiteToMove ? "White" : "Black")} FEN: {fen}");
                 long activeRemaining = whiteToMove ? whiteRemainingMs : blackRemainingMs;
                 string goCommand = timeControl.BuildGoCommand(whiteRemainingMs, blackRemainingMs);
                 int timeoutMs = timeControl.GetTimeoutMs(activeRemaining);
@@ -292,6 +293,21 @@ namespace ChessDroid.Services
 
                 // Apply the move to game state
                 char movingPiece = GetMovingPiece(bestMove);
+
+                // Sanity check: the piece being moved must belong to the side to move.
+                // If violated, the engine played a piece it doesn't own — corrupted board or engine bug.
+                bool wrongColor = movingPiece == '.' ||
+                                  (whiteToMove  && char.IsLower(movingPiece)) ||
+                                  (!whiteToMove && char.IsUpper(movingPiece));
+                if (wrongColor)
+                {
+                    Debug.WriteLine($"[Match] ILLEGAL MOVE DETECTED: {activeName} played {bestMove} " +
+                                    $"(piece='{movingPiece}', side={(whiteToMove ? "White" : "Black")}) in FEN: {fen}");
+                    EndMatch(MatchTermination.EngineError,
+                        whiteToMove ? MatchOutcome.BlackWins : MatchOutcome.WhiteWins);
+                    return;
+                }
+
                 char capturedPiece = GetCapturedPiece(bestMove);
                 bool isPawnMove = char.ToLower(movingPiece) == 'p';
                 bool isCapture = capturedPiece != '.';
