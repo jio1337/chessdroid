@@ -909,7 +909,9 @@ namespace ChessDroid.Services
                 await SafeWriteLineAsync($"{UCI_CMD_SETOPTION} MultiPV value 1");
 
                 // Set position (sanitize FEN so unknown piece chars don't offset engine columns)
-                await SafeWriteLineAsync($"{UCI_CMD_POSITION} {ChessBoard.SanitizeFenForEngine(fen)}");
+                string sanitizedFen = ChessBoard.SanitizeFenForEngine(fen);
+                Debug.WriteLine($"[Match:{EngineName}] send: position fen {sanitizedFen}");
+                await SafeWriteLineAsync($"{UCI_CMD_POSITION} {sanitizedFen}");
 
                 // Start search
                 State = EngineState.Analyzing;
@@ -925,6 +927,7 @@ namespace ChessDroid.Services
                 {
                     string? line = await engineOutput!.ReadLineAsync(cts.Token);
                     if (line == null) continue;
+                    Debug.WriteLine($"[Match:{EngineName}] recv: {line}");
 
                     if (line.StartsWith(UCI_RESPONSE_INFO) && line.Contains(UCI_TOKEN_SCORE))
                     {
