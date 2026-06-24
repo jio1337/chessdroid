@@ -200,6 +200,13 @@ namespace ChessDroid.Services
                 ProcessStartInfo psi = new ProcessStartInfo
                 {
                     FileName = resolvedPath,
+                    // Without this, the child process inherits chessdroid's own CWD
+                    // (e.g. wherever `dotnet run` was invoked from), not the engine's
+                    // folder. FromZero loads its NNUE weights via a relative path
+                    // ("fromzero.bin") -- with the wrong CWD that lookup silently
+                    // fails, leaving the engine evaluating every position as a flat
+                    // 0 (uninitialized weights) instead of erroring loudly.
+                    WorkingDirectory = Path.GetDirectoryName(resolvedPath) ?? AppDomain.CurrentDomain.BaseDirectory,
                     UseShellExecute = false,
                     RedirectStandardInput = true,
                     RedirectStandardOutput = true,
