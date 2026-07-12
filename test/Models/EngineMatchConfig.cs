@@ -4,7 +4,8 @@ namespace ChessDroid.Models
     {
         FixedDepth,
         FixedTimePerMove,
-        TotalPlusIncrement
+        TotalPlusIncrement,
+        RepeatingPeriod    // N moves in T seconds, repeating — CCRL 40/15 style
     }
 
     public enum MatchTermination
@@ -46,7 +47,10 @@ namespace ChessDroid.Models
         /// <summary>For TotalPlusIncrement mode - increment per move (milliseconds)</summary>
         public int IncrementMs { get; set; } = 2000;
 
-        public string BuildGoCommand(long whiteRemainingMs, long blackRemainingMs)
+        /// <summary>For RepeatingPeriod mode - moves per time period (e.g. 40 for CCRL 40/15)</summary>
+        public int MovesPerPeriod { get; set; } = 40;
+
+        public string BuildGoCommand(long whiteRemainingMs, long blackRemainingMs, int movesToGo = 0)
         {
             return Type switch
             {
@@ -54,6 +58,10 @@ namespace ChessDroid.Models
                 TimeControlType.FixedTimePerMove => $"go movetime {MoveTimeMs}",
                 TimeControlType.TotalPlusIncrement =>
                     $"go wtime {whiteRemainingMs} btime {blackRemainingMs} winc {IncrementMs} binc {IncrementMs}",
+                TimeControlType.RepeatingPeriod =>
+                    movesToGo > 0
+                        ? $"go wtime {whiteRemainingMs} btime {blackRemainingMs} movestogo {movesToGo}"
+                        : $"go wtime {whiteRemainingMs} btime {blackRemainingMs}",
                 _ => $"go movetime {MoveTimeMs}"
             };
         }
@@ -65,6 +73,7 @@ namespace ChessDroid.Models
                 TimeControlType.FixedDepth => 120_000,
                 TimeControlType.FixedTimePerMove => MoveTimeMs + 5000,
                 TimeControlType.TotalPlusIncrement => (int)Math.Min(remainingMs + IncrementMs + 30_000, 86_400_000),
+                TimeControlType.RepeatingPeriod => (int)Math.Min(remainingMs + 30_000, 86_400_000),
                 _ => 30_000
             };
         }
@@ -75,8 +84,8 @@ namespace ChessDroid.Models
             {
                 TimeControlType.FixedDepth => $"Depth {Depth}",
                 TimeControlType.FixedTimePerMove => $"{MoveTimeMs}ms/move",
-                TimeControlType.TotalPlusIncrement =>
-                    $"{TotalTimeMs / 1000}s + {IncrementMs / 1000}s",
+                TimeControlType.TotalPlusIncrement => $"{TotalTimeMs / 1000}s + {IncrementMs / 1000}s",
+                TimeControlType.RepeatingPeriod => $"{MovesPerPeriod} moves / {TotalTimeMs / 1000}s",
                 _ => "Unknown"
             };
         }

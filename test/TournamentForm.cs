@@ -941,9 +941,10 @@ namespace ChessDroid
 
         private static string BuildTcDescription(EngineMatchTimeControl tc) => tc.Type switch
         {
-            TimeControlType.FixedDepth        => $"Depth {tc.Depth}",
-            TimeControlType.FixedTimePerMove  => $"{tc.MoveTimeMs}ms/move",
+            TimeControlType.FixedDepth         => $"Depth {tc.Depth}",
+            TimeControlType.FixedTimePerMove   => $"{tc.MoveTimeMs}ms/move",
             TimeControlType.TotalPlusIncrement => $"{tc.TotalTimeMs / 1000}+{tc.IncrementMs / 1000}s",
+            TimeControlType.RepeatingPeriod    => $"{tc.MovesPerPeriod}/{tc.TotalTimeMs / 1000}s",
             _                                  => "?"
         };
 
@@ -952,6 +953,7 @@ namespace ChessDroid
             TimeControlType.FixedDepth         => $"depth:{tc.Depth}",
             TimeControlType.FixedTimePerMove   => $"movetime:{tc.MoveTimeMs}",
             TimeControlType.TotalPlusIncrement => $"{tc.TotalTimeMs / 1000}+{tc.IncrementMs / 1000}",
+            TimeControlType.RepeatingPeriod    => $"{tc.MovesPerPeriod}/{tc.TotalTimeMs / 1000}",
             _                                  => "?"
         };
 

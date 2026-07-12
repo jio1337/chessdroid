@@ -26,11 +26,27 @@ namespace ChessDroid
             lblMoveTime.Visible = idx == 1;
             numMoveTime.Visible = idx == 1;
 
-            // Total + Increment
-            lblTotalTime.Visible = idx == 2;
-            numTotalTime.Visible = idx == 2;
-            lblIncrement.Visible = idx == 2;
-            numIncrement.Visible = idx == 2;
+            // Total + Increment and CCRL Period both show the two time/count fields,
+            // but with different labels and ranges.
+            lblTotalTime.Visible = idx == 2 || idx == 3;
+            numTotalTime.Visible = idx == 2 || idx == 3;
+            lblIncrement.Visible = idx == 2 || idx == 3;
+            numIncrement.Visible = idx == 2 || idx == 3;
+
+            if (idx == 3)
+            {
+                lblTotalTime.Text = "Period(s):";
+                lblIncrement.Text = "Moves/p: ";
+                numIncrement.Maximum = 200;
+                if (numTotalTime.Value == 300) numTotalTime.Value = 900;   // sensible default for CCRL
+                if (numIncrement.Value <= 60)  numIncrement.Value = 40;
+            }
+            else
+            {
+                lblTotalTime.Text = "Time(s): ";
+                lblIncrement.Text = "Inc(s):  ";
+                numIncrement.Maximum = 60;
+            }
         }
 
         private async void BtnStartMatch_Click(object? sender, EventArgs e)
@@ -100,6 +116,11 @@ namespace ChessDroid
                     tc.Type = TimeControlType.TotalPlusIncrement;
                     tc.TotalTimeMs = (int)numTotalTime.Value * 1000;
                     tc.IncrementMs = (int)numIncrement.Value * 1000;
+                    break;
+                case 3: // CCRL Period (N moves / T seconds, repeating)
+                    tc.Type = TimeControlType.RepeatingPeriod;
+                    tc.TotalTimeMs = (int)numTotalTime.Value * 1000;
+                    tc.MovesPerPeriod = (int)numIncrement.Value;
                     break;
             }
 
@@ -177,7 +198,7 @@ namespace ChessDroid
             boardControl.AnimationCompleted  += MatchBoard_AnimationCompleted;
 
             // Initialize clocks display
-            if (tc.Type == TimeControlType.TotalPlusIncrement)
+            if (tc.Type == TimeControlType.TotalPlusIncrement || tc.Type == TimeControlType.RepeatingPeriod)
             {
                 UpdateClockDisplay(tc.TotalTimeMs, tc.TotalTimeMs, true);
             }
@@ -607,6 +628,9 @@ namespace ChessDroid
                 case 2: tc.Type = TimeControlType.TotalPlusIncrement;
                         tc.TotalTimeMs = (int)numTotalTime.Value * 1000;
                         tc.IncrementMs = (int)numIncrement.Value * 1000;                                            break;
+                case 3: tc.Type = TimeControlType.RepeatingPeriod;
+                        tc.TotalTimeMs  = (int)numTotalTime.Value * 1000;
+                        tc.MovesPerPeriod = (int)numIncrement.Value;                                                break;
             }
 
             string startFen = _seriesStartFen;
@@ -649,7 +673,7 @@ namespace ChessDroid
             matchService.AdjudicationEnabled   = chkAdjudicate.Checked;
             boardControl.AnimationCompleted    += MatchBoard_AnimationCompleted;
 
-            if (tc.Type == TimeControlType.TotalPlusIncrement)
+            if (tc.Type == TimeControlType.TotalPlusIncrement || tc.Type == TimeControlType.RepeatingPeriod)
                 UpdateClockDisplay(tc.TotalTimeMs, tc.TotalTimeMs, true);
             else
             { lblWhiteClock.Text = "W: --:--"; lblBlackClock.Text = "B: --:--"; }

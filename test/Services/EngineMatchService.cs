@@ -23,6 +23,8 @@ namespace ChessDroid.Services
         private long blackRemainingMs;
         private long whiteElapsedThisMove;
         private long blackElapsedThisMove;
+        private int whitePeriodMovesLeft;
+        private int blackPeriodMovesLeft;
 
         // Game state
         private GameState gameState = new GameState();
@@ -66,11 +68,13 @@ namespace ChessDroid.Services
         public event Action<string>? OnAnnotatorEvalUpdated;       // fired at each depth during continuous annotation
 
         public bool IsRunning => isRunning;
-        public long WhiteRemainingMs => isRunning && timeControl.Type == TimeControlType.TotalPlusIncrement
+        private bool IsClockRunning => timeControl.Type == TimeControlType.TotalPlusIncrement
+                                    || timeControl.Type == TimeControlType.RepeatingPeriod;
+        public long WhiteRemainingMs => isRunning && IsClockRunning
             && gameState.WhiteToMove && moveStopwatch.IsRunning
             ? Math.Max(0, whiteRemainingMs - moveStopwatch.ElapsedMilliseconds)
             : whiteRemainingMs;
-        public long BlackRemainingMs => isRunning && timeControl.Type == TimeControlType.TotalPlusIncrement
+        public long BlackRemainingMs => isRunning && IsClockRunning
             && !gameState.WhiteToMove && moveStopwatch.IsRunning
             ? Math.Max(0, blackRemainingMs - moveStopwatch.ElapsedMilliseconds)
             : blackRemainingMs;
@@ -146,7 +150,8 @@ namespace ChessDroid.Services
                 moveCount = 0;
 
                 // Initialize clocks
-                if (timeControl.Type == TimeControlType.TotalPlusIncrement)
+                if (timeControl.Type == TimeControlType.TotalPlusIncrement ||
+                    timeControl.Type == TimeControlType.RepeatingPeriod)
                 {
                     whiteRemainingMs = timeControl.TotalTimeMs;
                     blackRemainingMs = timeControl.TotalTimeMs;
@@ -155,6 +160,12 @@ namespace ChessDroid.Services
                 {
                     whiteRemainingMs = 0;
                     blackRemainingMs = 0;
+                }
+
+                if (timeControl.Type == TimeControlType.RepeatingPeriod)
+                {
+                    whitePeriodMovesLeft = timeControl.MovesPerPeriod;
+                    blackPeriodMovesLeft = timeControl.MovesPerPeriod;
                 }
 
                 // Record initial position
@@ -231,7 +242,10 @@ namespace ChessDroid.Services
 
                 OnStatusChanged?.Invoke($"{activeName} ({side}) thinking...");
 
-                string goCommand = timeControl.BuildGoCommand(whiteRemainingMs, blackRemainingMs);
+                int movesToGo = timeControl.Type == TimeControlType.RepeatingPeriod
+                    ? (whiteToMove ? whitePeriodMovesLeft : blackPeriodMovesLeft)
+                    : 0;
+                string goCommand = timeControl.BuildGoCommand(whiteRemainingMs, blackRemainingMs, movesToGo);
                 int timeoutMs = timeControl.GetTimeoutMs(activeRemaining);
 
                 // Fire clock update
@@ -258,7 +272,7 @@ namespace ChessDroid.Services
                 long moveTimeMs = moveStopwatch.ElapsedMilliseconds;
                 LogM($"GetMoveForMatchAsync returned: move={bestMove ?? "(null)"} in {moveTimeMs}ms");
 
-                // Update clock for TotalPlusIncrement mode
+                // Update clock
                 if (timeControl.Type == TimeControlType.TotalPlusIncrement)
                 {
                     if (whiteToMove)
@@ -281,6 +295,41 @@ namespace ChessDroid.Services
                             blackRemainingMs = 0;
                             EndMatch(MatchTermination.TimeForfeit, MatchOutcome.WhiteWins);
                             return;
+                        }
+                    }
+                }
+                else if (timeControl.Type == TimeControlType.RepeatingPeriod)
+                {
+                    if (whiteToMove)
+                    {
+                        whiteRemainingMs -= moveTimeMs;
+                        if (whiteRemainingMs <= 0)
+                        {
+                            whiteRemainingMs = 0;
+                            EndMatch(MatchTermination.TimeForfeit, MatchOutcome.BlackWins);
+                            return;
+                        }
+                        whitePeriodMovesLeft--;
+                        if (whitePeriodMovesLeft <= 0)
+                        {
+                            whiteRemainingMs += timeControl.TotalTimeMs;
+                            whitePeriodMovesLeft = timeControl.MovesPerPeriod;
+                        }
+                    }
+                    else
+                    {
+                        blackRemainingMs -= moveTimeMs;
+                        if (blackRemainingMs <= 0)
+                        {
+                            blackRemainingMs = 0;
+                            EndMatch(MatchTermination.TimeForfeit, MatchOutcome.WhiteWins);
+                            return;
+                        }
+                        blackPeriodMovesLeft--;
+                        if (blackPeriodMovesLeft <= 0)
+                        {
+                            blackRemainingMs += timeControl.TotalTimeMs;
+                            blackPeriodMovesLeft = timeControl.MovesPerPeriod;
                         }
                     }
                 }

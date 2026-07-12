@@ -715,7 +715,7 @@ namespace ChessDroid
             // 
             cmbTimeControlType.DropDownStyle = ComboBoxStyle.DropDownList;
             cmbTimeControlType.Font = new Font("Courier New", 9F);
-            cmbTimeControlType.Items.AddRange(new object[] { "Fixed Depth", "Time per Move", "Total + Increment" });
+            cmbTimeControlType.Items.AddRange(new object[] { "Fixed Depth", "Time per Move", "Total + Increment", "CCRL Period" });
             cmbTimeControlType.Location = new Point(65, 75);
             cmbTimeControlType.Name = "cmbTimeControlType";
             cmbTimeControlType.Size = new Size(155, 23);
