@@ -980,9 +980,11 @@ namespace ChessDroid.Services
                         int _bm1 = line.IndexOf(' ');
                         int _bm2 = _bm1 >= 0 ? line.IndexOf(' ', _bm1 + 1) : -1;
                         string move = _bm1 >= 0 ? (_bm2 >= 0 ? line.Substring(_bm1 + 1, _bm2 - _bm1 - 1) : line.Substring(_bm1 + 1)) : "";
-                        if (string.IsNullOrEmpty(move) || move == "(none)" || move == "0000")
+                        bool isNullMove = string.IsNullOrEmpty(move) || move == "(none)" || move == "0000"
+                            || (move.Length >= 4 && move[0] == move[2] && move[1] == move[3]);
+                        if (isNullMove)
                         {
-                            LogM($"BESTMOVE: (none) — treating as no legal move");
+                            LogM($"BESTMOVE: (none/null) — treating as no legal move");
                             return (null, lastEval);
                         }
                         LogM($"BESTMOVE: {move}  eval={lastEval}");
