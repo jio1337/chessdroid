@@ -26,6 +26,10 @@ namespace ChessDroid.Services
         private readonly object stateLock = new object();
         private readonly SemaphoreSlim _analysisSemaphore = new SemaphoreSlim(1, 1);
 
+        // When set, all match UCI communication is written to this writer in addition to Debug output.
+        public TextWriter? MatchLog { get; set; }
+        private void LogM(string msg) { MatchLog?.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [{EngineName}] {msg}"); MatchLog?.Flush(); }
+
 
         // UCI Protocol Commands
         private const string UCI_CMD_UCI = "uci";
@@ -81,6 +85,18 @@ namespace ChessDroid.Services
             return engineProcess != null && !engineProcess.HasExited && engineInput != null && engineOutput != null;
         }
 
+        /// Returns a short description of the process state, used for crash diagnostics in the match log.
+        public string GetProcessInfo()
+        {
+            try
+            {
+                if (engineProcess == null) return "process=null";
+                if (engineProcess.HasExited) return $"exited(code={engineProcess.ExitCode})";
+                return "running(pipe_broken?)";
+            }
+            catch (Exception ex) { return $"exception:{ex.Message}"; }
+        }
+
         /// <summary>
         /// Synchronizes with the engine using isready/readyok protocol.
         /// This ensures all previous commands have been processed before continuing.
@@ -95,6 +111,7 @@ namespace ChessDroid.Services
                 if (!IsEngineAlive())
                 {
                     Debug.WriteLine("SyncWithEngine: Engine not alive");
+                    LogM("SYNC FAIL: engine not alive before sending isready");
                     State = EngineState.Error;
                     return false;
                 }
@@ -102,10 +119,12 @@ namespace ChessDroid.Services
                 if (!await SafeWriteLineAsync("isready"))
                 {
                     Debug.WriteLine("SyncWithEngine: Failed to send isready");
+                    LogM("SYNC FAIL: could not write isready to engine pipe");
                     State = EngineState.Error;
                     return false;
                 }
 
+                LogM("SYNC: isready sent");
                 using var cts = new CancellationTokenSource(timeoutMs);
                 while (IsEngineAlive())
                 {
@@ -115,6 +134,7 @@ namespace ChessDroid.Services
                         if (line != null && line.StartsWith("readyok"))
                         {
                             Debug.WriteLine("SyncWithEngine: Received readyok - engine synchronized");
+                            LogM("SYNC OK: readyok received");
                             State = EngineState.Ready;
                             return true;
                         }
@@ -122,18 +142,21 @@ namespace ChessDroid.Services
                     catch (OperationCanceledException)
                     {
                         Debug.WriteLine($"SyncWithEngine: Timeout after {timeoutMs}ms waiting for readyok");
+                        LogM($"SYNC TIMEOUT: no readyok within {timeoutMs}ms — engine hung?");
                         State = EngineState.Error;
                         return false;
                     }
                 }
 
                 Debug.WriteLine("SyncWithEngine: Engine died while waiting for readyok");
+                LogM("SYNC FAIL: engine process exited while waiting for readyok");
                 State = EngineState.Error;
                 return false;
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"SyncWithEngine: Error - {ex.Message}");
+                LogM($"SYNC ERROR: {ex.Message}");
                 State = EngineState.Error;
                 return false;
             }
@@ -902,7 +925,10 @@ namespace ChessDroid.Services
         public async Task<(string? move, string? eval)> GetMoveForMatchAsync(string fen, string goCommand, int timeoutMs, CancellationToken ct)
         {
             if (!IsEngineAlive() || State != EngineState.Ready)
+            {
+                LogM($"GetMoveForMatchAsync: early exit — alive={IsEngineAlive()} state={State}");
                 return (null, null);
+            }
 
             bool whiteToMove = FenIsWhiteToMove(fen);
 
@@ -910,7 +936,10 @@ namespace ChessDroid.Services
             {
                 // Sync with engine
                 if (!await SyncWithEngineAsync())
+                {
+                    LogM("GetMoveForMatchAsync: aborting — sync failed");
                     return (null, null);
+                }
 
                 // Set MultiPV to 1
                 await SafeWriteLineAsync($"{UCI_CMD_SETOPTION} MultiPV value 1");
@@ -918,10 +947,13 @@ namespace ChessDroid.Services
                 // Set position (sanitize FEN so unknown piece chars don't offset engine columns)
                 string sanitizedFen = ChessBoard.SanitizeFenForEngine(fen);
                 Debug.WriteLine($"[Match:{EngineName}] send: position fen {sanitizedFen}");
+                LogM($">>> position fen {sanitizedFen}");
                 await SafeWriteLineAsync($"{UCI_CMD_POSITION} {sanitizedFen}");
 
                 // Start search
                 State = EngineState.Analyzing;
+                Debug.WriteLine($"[Match:{EngineName}] send: {goCommand}");
+                LogM($">>> {goCommand}  (timeout={timeoutMs}ms)");
                 await SafeWriteLineAsync(goCommand);
 
                 // Read until "bestmove", capturing last evaluation from info lines
@@ -935,6 +967,7 @@ namespace ChessDroid.Services
                     string? line = await engineOutput!.ReadLineAsync(cts.Token);
                     if (line == null) continue;
                     Debug.WriteLine($"[Match:{EngineName}] recv: {line}");
+                    LogM($"<<< {line}");
 
                     if (line.StartsWith(UCI_RESPONSE_INFO) && line.Contains(UCI_TOKEN_SCORE))
                     {
@@ -948,17 +981,25 @@ namespace ChessDroid.Services
                         int _bm2 = _bm1 >= 0 ? line.IndexOf(' ', _bm1 + 1) : -1;
                         string move = _bm1 >= 0 ? (_bm2 >= 0 ? line.Substring(_bm1 + 1, _bm2 - _bm1 - 1) : line.Substring(_bm1 + 1)) : "";
                         if (string.IsNullOrEmpty(move) || move == "(none)" || move == "0000")
+                        {
+                            LogM($"BESTMOVE: (none) — treating as no legal move");
                             return (null, lastEval);
+                        }
+                        LogM($"BESTMOVE: {move}  eval={lastEval}");
                         return (move, lastEval);
                     }
                 }
 
+                int? exitCode = null;
+                try { if (engineProcess?.HasExited == true) exitCode = engineProcess.ExitCode; } catch { }
+                LogM($"ENGINE DIED while reading output — process exit code: {exitCode?.ToString() ?? "unknown"}");
                 State = EngineState.Error;
                 return (null, null);
             }
             catch (OperationCanceledException) when (ct.IsCancellationRequested)
             {
                 // User stopped the match — propagate so the caller records UserStopped, not stalemate
+                LogM("CANCELLED: match stop requested by user");
                 State = EngineState.Error;
                 throw;
             }
@@ -966,12 +1007,14 @@ namespace ChessDroid.Services
             {
                 // Internal timeout — return null so caller treats it as no legal move
                 Debug.WriteLine("GetMoveForMatchAsync: Timed out");
+                LogM($"TIMEOUT: no bestmove within {timeoutMs}ms");
                 State = EngineState.Error;
                 return (null, null);
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"GetMoveForMatchAsync: Error - {ex.Message}");
+                LogM($"EXCEPTION: {ex.GetType().Name} — {ex.Message}");
                 State = EngineState.Error;
                 return (null, null);
             }

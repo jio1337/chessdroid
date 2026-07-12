@@ -14,6 +14,9 @@ namespace ChessDroid.Services
         private string whiteEngineName = "";
         private string blackEngineName = "";
 
+        private StreamWriter? _matchLog;
+        private void LogM(string msg) { _matchLog?.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [MatchSvc] {msg}"); _matchLog?.Flush(); }
+
         // Time tracking
         private readonly Stopwatch moveStopwatch = new Stopwatch();
         private long whiteRemainingMs;
@@ -91,6 +94,11 @@ namespace ChessDroid.Services
             this.timeControl = timeControl;
             matchCts = new CancellationTokenSource();
 
+            // Open log file — overwrites previous match log; written to exe directory.
+            string logPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "match_debug.txt");
+            _matchLog = new StreamWriter(logPath, append: false) { AutoFlush = true };
+            LogM($"=== MATCH START: {whiteEngine} (W) vs {blackEngine} (B) | TC={timeControl} | FEN={startingFen ?? "startpos"} ===");
+
             try
             {
                 OnStatusChanged?.Invoke($"Initializing {whiteEngine} (White)...");
@@ -98,9 +106,11 @@ namespace ChessDroid.Services
                 // Create two separate engine instances
                 this.whiteEngine = new ChessEngineService(config);
                 await this.whiteEngine.InitializeAsync(whiteEnginePath);
+                this.whiteEngine.MatchLog = _matchLog;
 
                 if (this.whiteEngine.State != EngineState.Ready)
                 {
+                    LogM($"ERROR: white engine failed to initialize (state={this.whiteEngine.State})");
                     OnMatchEnded?.Invoke(new EngineMatchResult
                     {
                         Outcome = MatchOutcome.Interrupted,
@@ -114,9 +124,11 @@ namespace ChessDroid.Services
 
                 this.blackEngine = new ChessEngineService(config);
                 await this.blackEngine.InitializeAsync(blackEnginePath);
+                this.blackEngine.MatchLog = _matchLog;
 
                 if (this.blackEngine.State != EngineState.Ready)
                 {
+                    LogM($"ERROR: black engine failed to initialize (state={this.blackEngine.State})");
                     OnMatchEnded?.Invoke(new EngineMatchResult
                     {
                         Outcome = MatchOutcome.Interrupted,
@@ -201,20 +213,24 @@ namespace ChessDroid.Services
                 bool whiteToMove = gameState.WhiteToMove;
                 var activeEngine = whiteToMove ? whiteEngine : blackEngine;
                 string activeName = whiteToMove ? whiteEngineName : blackEngineName;
+                string side = whiteToMove ? "White" : "Black";
+
+                // Build FEN and go command (computed before alive check so we can log it on error)
+                string fen = gameState.ToCompleteFEN();
+                long activeRemaining = whiteToMove ? whiteRemainingMs : blackRemainingMs;
+                LogM($"--- Move #{moveCount + 1} | {side} ({activeName}) | wtime={whiteRemainingMs} btime={blackRemainingMs} | FEN: {fen}");
 
                 if (activeEngine == null || !activeEngine.IsEngineAlive())
                 {
+                    string exitInfo = activeEngine?.GetProcessInfo() ?? "engine=null";
+                    LogM($"ENGINE DEAD: {side} ({activeName}) not alive — {exitInfo} — EndMatch(EngineError)");
                     EndMatch(MatchTermination.EngineError,
                         whiteToMove ? MatchOutcome.BlackWins : MatchOutcome.WhiteWins);
                     return;
                 }
 
-                OnStatusChanged?.Invoke($"{activeName} ({(whiteToMove ? "White" : "Black")}) thinking...");
+                OnStatusChanged?.Invoke($"{activeName} ({side}) thinking...");
 
-                // Build FEN and go command
-                string fen = gameState.ToCompleteFEN();
-                Debug.WriteLine($"[Match] move#{moveCount + 1} {(whiteToMove ? "White" : "Black")} FEN: {fen}");
-                long activeRemaining = whiteToMove ? whiteRemainingMs : blackRemainingMs;
                 string goCommand = timeControl.BuildGoCommand(whiteRemainingMs, blackRemainingMs);
                 int timeoutMs = timeControl.GetTimeoutMs(activeRemaining);
 
@@ -240,6 +256,7 @@ namespace ChessDroid.Services
 
                 moveStopwatch.Stop();
                 long moveTimeMs = moveStopwatch.ElapsedMilliseconds;
+                LogM($"GetMoveForMatchAsync returned: move={bestMove ?? "(null)"} in {moveTimeMs}ms");
 
                 // Update clock for TotalPlusIncrement mode
                 if (timeControl.Type == TimeControlType.TotalPlusIncrement)
@@ -545,6 +562,7 @@ namespace ChessDroid.Services
         private void EndMatch(MatchTermination termination, MatchOutcome outcome)
         {
             isRunning = false;
+            LogM($"=== END MATCH: termination={termination} outcome={outcome} moves={moveCount} ===");
             _annotCts?.Cancel();
 
             var result = new EngineMatchResult
@@ -950,6 +968,8 @@ namespace ChessDroid.Services
             matchCts?.Dispose();
             _annotCts?.Cancel();
             _annotCts?.Dispose();
+            try { _matchLog?.Close(); } catch { }
+            _matchLog = null;
 
             if (whiteEngine != null)
             {
