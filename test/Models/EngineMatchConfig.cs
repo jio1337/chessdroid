@@ -64,7 +64,7 @@ namespace ChessDroid.Models
             {
                 TimeControlType.FixedDepth => 120_000,
                 TimeControlType.FixedTimePerMove => MoveTimeMs + 5000,
-                TimeControlType.TotalPlusIncrement => (int)Math.Min(remainingMs + 10000, 300_000),
+                TimeControlType.TotalPlusIncrement => (int)Math.Min(remainingMs + IncrementMs + 30_000, 86_400_000),
                 _ => 30_000
             };
         }
