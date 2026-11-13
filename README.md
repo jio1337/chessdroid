@@ -229,7 +229,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [Lc0](https://lczero.org/) — Leela Chess Zero, inspiration for WDL display and aggressiveness features
 - [Chess.com](https://www.chess.com/) — Inspiration for move classification system and quality symbols
 - [Lichess](https://lichess.org/) — Open-source chess platform; puzzle database (5.94M puzzles, CC0 license) powering Puzzle Training, Puzzle Rush, and Puzzle Gauntlet; piece set assets; win-probability formula used for game accuracy scoring
-- [Claude](https://claude.ai/) — AI assistant by Anthropic, instrumental in developing chessdroid's architecture, analysis features, and codebase
+- [Claude](https://claude.ai/) — AI assistant by Anthropic, instrumental in developing chessdroid's architecture
 
 ## Disclaimer
 
@@ -237,6 +237,4 @@ chessdroid is an independent project and is not affiliated with, endorsed by, or
 
 ---
 
-**Made with ♟️ by the chessdroid team**
-
-*There would be no chessdroid without [Claude](https://claude.ai/) — from architecture design to tactical pattern detection, Claude has been the co-pilot behind every feature.*
+**Made with ♟️ by jio1337**
