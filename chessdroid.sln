@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.13.35913.81
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "chessdroid", "test\chessdroid.csproj", "{E8C2472A-88EE-4612-A850-5D89152AC330}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "chessdroid", "src\ChessDroid.App\chessdroid.csproj", "{E8C2472A-88EE-4612-A850-5D89152AC330}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
