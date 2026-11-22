@@ -27,6 +27,7 @@ namespace ChessDroid.Services
         public static LichessPuzzle? GetDailyPuzzle(string folder)
         {
             var files = Directory.GetFiles(folder, "*.csv");
+            Array.Sort(files, StringComparer.Ordinal);
             if (files.Length == 0) return null;
 
             int seed = DateTime.Today.Year * 10000 + DateTime.Today.Month * 100 + DateTime.Today.Day;
@@ -63,6 +64,7 @@ namespace ChessDroid.Services
         public static List<LichessPuzzle> GetRandomBatch(string folder, int count = 300, string? themeFilter = null, int ratingMin = 0, int ratingMax = int.MaxValue, string? openingFilter = null)
         {
             var files = Directory.GetFiles(folder, "*.csv");
+            Array.Sort(files, StringComparer.Ordinal);
             if (files.Length == 0) return new();
 
             string file    = files[_rng.Next(files.Length)];

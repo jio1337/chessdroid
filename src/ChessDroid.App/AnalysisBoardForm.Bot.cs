@@ -112,7 +112,7 @@ namespace ChessDroid
             lblStatus.Text = $"Bot mode — {diffLabel}";
 
             if (settings.BotPlaysWhite)
-                _ = MakeBotMoveAsync();
+                _botMoveTask = MakeBotMoveAsync();
             else
                 _ = TriggerAutoAnalysis();
         }
@@ -313,9 +313,17 @@ namespace ChessDroid
             _botMoveCts?.Cancel();
             _botModeActive = false;
 
-            _botEngine?.Dispose();
+            // MakeBotMoveAsync may still be mid-await on _botEngine.GetMoveForMatchAsync
+            // when this runs. Disposing the engine immediately races that read loop —
+            // Dispose() closing the process/streams can surface as ObjectDisposedException
+            // instead of a clean OperationCanceledException. Null the field out now so
+            // nothing new picks this engine up, but defer actually disposing it until the
+            // in-flight task (if any) has unwound from the cancellation.
+            var engineToDispose = _botEngine;
+            var moveTaskToAwait = _botMoveTask;
             _botEngine = null;
             _botSettings = null;
+            _ = DisposeBotEngineAsync(engineToDispose, moveTaskToAwait);
 
             btnPlayBot.Text = "♞";
             toolTip.SetToolTip(btnPlayBot, "Play vs Bot");
@@ -334,6 +342,16 @@ namespace ChessDroid
             {
                 RestoreChallengeSnapshot();
             }
+        }
+
+        private static async Task DisposeBotEngineAsync(ChessEngineService? engine, Task? moveTask)
+        {
+            if (moveTask != null)
+            {
+                try { await moveTask; }
+                catch { /* expected: cancellation or an engine fault we already logged */ }
+            }
+            engine?.Dispose();
         }
 
         private void RestoreChallengeSnapshot(bool triggerAnalysis = true)

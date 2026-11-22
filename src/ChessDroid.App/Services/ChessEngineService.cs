@@ -1265,7 +1265,7 @@ namespace ChessDroid.Services
                     {
                         if (!engineProcess.HasExited)
                         {
-                            engineProcess.Kill();
+                            engineProcess.Kill(entireProcessTree: true);
                         }
                         engineProcess.Dispose();
                     }

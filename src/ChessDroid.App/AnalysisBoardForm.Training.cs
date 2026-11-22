@@ -2153,7 +2153,7 @@ namespace ChessDroid
             // Bot moves first only if it's their turn in the drill starting position
             bool botMovesFirst = _botSettings.BotPlaysWhite == chapter.WhiteToMove;
             if (botMovesFirst)
-                _ = MakeBotMoveAsync();
+                _botMoveTask = MakeBotMoveAsync();
             // No TriggerAutoAnalysis — challenge mode suppresses analysis anyway
         }
 

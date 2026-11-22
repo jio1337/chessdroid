@@ -93,6 +93,7 @@ namespace ChessDroid
         private ChessEngineService? _botEngine;
         private Dictionary<string, int> _botPositionCounts = new();
         private CancellationTokenSource? _botMoveCts;
+        private Task? _botMoveTask; // in-flight MakeBotMoveAsync, awaited before disposing _botEngine
         private AppConfig? _challengeSnapshot; // non-null while challenge mode is active
         private bool _bookArrowsActive = false; // true when book arrows are shown (suppress engine arrows)
         private System.Windows.Forms.Timer _autoPlayTimer = null!;
@@ -217,6 +218,21 @@ namespace ChessDroid
 
                 await InitializeEngineAsync();
             };
+
+            this.FormClosing += AnalysisBoardForm_FormClosing;
+        }
+
+        // Stockfish exits cleanly on stdin EOF, but other bundled UCI engines (and any
+        // hung/unresponsive process) may not — none of engineService/_botEngine/
+        // matchService were ever disposed on close, leaving orphaned engine processes
+        // behind after the app exits.
+        private void AnalysisBoardForm_FormClosing(object? sender, FormClosingEventArgs e)
+        {
+            consoleFormatter?.Dispose();
+            openingBookService?.Dispose();
+            engineService?.Dispose();
+            _botEngine?.Dispose();
+            matchService?.Dispose();
         }
 
         private async Task InitializeEngineAsync()
@@ -1019,7 +1035,7 @@ namespace ChessDroid
                 string userFen = boardControl.GetFEN();
                 string? draw = CheckBotDrawConditions(userFen);
                 if (draw != null) { HandleBotGameEnd(userFen, draw); return; }
-                _ = MakeBotMoveAsync();
+                _botMoveTask = MakeBotMoveAsync();
             }
         }
 
