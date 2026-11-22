@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Threading.Channels;
 using ChessDroid.Models;
 
 namespace ChessDroid.Services
@@ -35,6 +36,87 @@ namespace ChessDroid.Services
         // UCI defaults, so a cached "already sent" value from the previous process must
         // not be trusted.
         private readonly Dictionary<string, string> _lastSetOptions = new();
+
+        // Single dedicated background task that owns the StreamReader and is the only
+        // thing that ever calls engineOutput.ReadLineAsync. Every other method reads
+        // through the channel instead. Before this, half a dozen methods each ran their
+        // own inline read loop directly against the shared StreamReader; serialization
+        // relied entirely on callers never overlapping, which held in practice but meant
+        // a concurrent read from two call sites (e.g. GetMoveForMatchAsync, which does
+        // NOT take _analysisSemaphore) would have been undefined behavior on the reader.
+        // A Channel<string> makes concurrent consumption well-defined and lets every
+        // consumer stay off the UI thread via ConfigureAwait(false) without worrying
+        // about who currently owns the pipe.
+        private Channel<string>? _lineChannel;
+        private CancellationTokenSource? _readerCts;
+        private Task? _readerTask;
+
+        private void StartLineReader()
+        {
+            _readerCts = new CancellationTokenSource();
+            var ct = _readerCts.Token;
+            var channel = Channel.CreateUnbounded<string>(new UnboundedChannelOptions { SingleReader = false, SingleWriter = true });
+            _lineChannel = channel;
+            var output = engineOutput;
+
+            _readerTask = Task.Run(async () =>
+            {
+                try
+                {
+                    while (!ct.IsCancellationRequested)
+                    {
+                        string? line;
+                        try
+                        {
+                            line = await output!.ReadLineAsync(ct).ConfigureAwait(false);
+                        }
+                        catch (OperationCanceledException) { break; }
+                        catch (Exception ex)
+                        {
+                            Debug.WriteLine($"Engine reader task error: {ex.Message}");
+                            break;
+                        }
+                        if (line == null) break; // EOF — engine process exited
+                        await channel.Writer.WriteAsync(line, ct).ConfigureAwait(false);
+                    }
+                }
+                finally
+                {
+                    channel.Writer.TryComplete();
+                }
+            }, CancellationToken.None);
+        }
+
+        private void StopLineReader()
+        {
+            try { _readerCts?.Cancel(); } catch { }
+            _lineChannel?.Writer.TryComplete();
+            _readerCts?.Dispose();
+            _readerCts = null;
+            _readerTask = null;
+            _lineChannel = null;
+        }
+
+        /// <summary>
+        /// Reads the next engine output line from the background reader's channel.
+        /// Returns null on channel completion (engine died/pipe closed) — same meaning
+        /// as the old "line == null" EOF case callers already handled by looping back
+        /// to their IsEngineAlive() check. Cancelling ct throws OperationCanceledException,
+        /// same as the StreamReader.ReadLineAsync(ct) it replaces.
+        /// </summary>
+        private async Task<string?> ReadEngineLineAsync(CancellationToken ct)
+        {
+            var reader = _lineChannel?.Reader;
+            if (reader == null) return null;
+            try
+            {
+                return await reader.ReadAsync(ct).ConfigureAwait(false);
+            }
+            catch (ChannelClosedException)
+            {
+                return null;
+            }
+        }
 
         // When set, all match UCI communication is written to this writer in addition to Debug output.
         public TextWriter? MatchLog { get; set; }
@@ -126,7 +208,7 @@ namespace ChessDroid.Services
                     return false;
                 }
 
-                if (!await SafeWriteLineAsync("isready"))
+                if (!await SafeWriteLineAsync("isready").ConfigureAwait(false))
                 {
                     Debug.WriteLine("SyncWithEngine: Failed to send isready");
                     LogM("SYNC FAIL: could not write isready to engine pipe");
@@ -140,7 +222,7 @@ namespace ChessDroid.Services
                 {
                     try
                     {
-                        string? line = await engineOutput!.ReadLineAsync(cts.Token);
+                        string? line = await ReadEngineLineAsync(cts.Token).ConfigureAwait(false);
                         if (line != null && line.StartsWith("readyok"))
                         {
                             Debug.WriteLine("SyncWithEngine: Received readyok - engine synchronized");
@@ -185,7 +267,7 @@ namespace ChessDroid.Services
             if (_lastSetOptions.TryGetValue(name, out string? last) && last == value)
                 return true;
 
-            bool ok = await SafeWriteLineAsync($"{UCI_CMD_SETOPTION} {name} value {value}");
+            bool ok = await SafeWriteLineAsync($"{UCI_CMD_SETOPTION} {name} value {value}").ConfigureAwait(false);
             if (ok) _lastSetOptions[name] = value;
             return ok;
         }
@@ -200,8 +282,8 @@ namespace ChessDroid.Services
                     return false;
                 }
 
-                await engineInput!.WriteLineAsync(command);
-                await engineInput.FlushAsync();
+                await engineInput!.WriteLineAsync(command).ConfigureAwait(false);
+                await engineInput.FlushAsync().ConfigureAwait(false);
                 return true;
             }
             catch (IOException ex)
@@ -268,9 +350,10 @@ namespace ChessDroid.Services
 
                 engineInput = engineProcess.StandardInput;
                 engineOutput = engineProcess.StandardOutput;
+                StartLineReader();
 
                 // Give the process a moment to fully start
-                await Task.Delay(100);
+                await Task.Delay(100).ConfigureAwait(false);
 
                 if (!IsEngineAlive())
                 {
@@ -278,7 +361,7 @@ namespace ChessDroid.Services
                 }
 
                 // Step 1: Send 'uci' and wait for 'uciok' response
-                if (!await SafeWriteLineAsync(UCI_CMD_UCI))
+                if (!await SafeWriteLineAsync(UCI_CMD_UCI).ConfigureAwait(false))
                 {
                     throw new Exception("Failed to send UCI command");
                 }
@@ -292,7 +375,7 @@ namespace ChessDroid.Services
                     {
                         try
                         {
-                            string? line = await engineOutput.ReadLineAsync(cts.Token);
+                            string? line = await ReadEngineLineAsync(cts.Token).ConfigureAwait(false);
                             if (line == null) continue;
                             if (line.Contains("UCI_LimitStrength"))
                                 SupportsEloTargeting = true;
@@ -316,18 +399,18 @@ namespace ChessDroid.Services
                 }
 
                 // Step 1.5: Enable WDL output (for Lc0-inspired WDL display)
-                await SafeWriteLineAsync($"{UCI_CMD_SETOPTION} UCI_ShowWDL value true");
+                await SafeWriteLineAsync($"{UCI_CMD_SETOPTION} UCI_ShowWDL value true").ConfigureAwait(false);
                 Debug.WriteLine("Engine: enabled UCI_ShowWDL for WDL output");
 
                 // Step 1.6: Configure Syzygy tablebases if path is set and exists
                 if (!string.IsNullOrWhiteSpace(config?.SyzygyPath) && Directory.Exists(config.SyzygyPath))
                 {
-                    await SafeWriteLineAsync($"{UCI_CMD_SETOPTION} SyzygyPath value {config.SyzygyPath}");
+                    await SafeWriteLineAsync($"{UCI_CMD_SETOPTION} SyzygyPath value {config.SyzygyPath}").ConfigureAwait(false);
                     Debug.WriteLine($"Engine: set SyzygyPath to {config.SyzygyPath}");
                 }
 
                 // Step 2: Send 'isready' and wait for 'readyok'
-                if (!await SafeWriteLineAsync("isready"))
+                if (!await SafeWriteLineAsync("isready").ConfigureAwait(false))
                 {
                     throw new Exception("Failed to send isready command");
                 }
@@ -339,7 +422,7 @@ namespace ChessDroid.Services
                     {
                         try
                         {
-                            string? line = await engineOutput.ReadLineAsync(cts2.Token);
+                            string? line = await ReadEngineLineAsync(cts2.Token).ConfigureAwait(false);
                             if (line != null && line.StartsWith("readyok"))
                             {
                                 receivedReadyOk = true;
@@ -389,10 +472,10 @@ namespace ChessDroid.Services
 
             // Tell any running analysis to stop so the semaphore holder exits fast
             if (State == EngineState.Analyzing && IsEngineAlive())
-                await SafeWriteLineAsync("stop");
+                await SafeWriteLineAsync("stop").ConfigureAwait(false);
 
             // Serialize: only one GetBestMoveAsync at a time
-            try { await _analysisSemaphore.WaitAsync(ct); }
+            try { await _analysisSemaphore.WaitAsync(ct).ConfigureAwait(false); }
             catch (OperationCanceledException) { return (bestMove, evaluation, pvs, evaluations, wdlInfo); }
 
             try
@@ -403,7 +486,7 @@ namespace ChessDroid.Services
                 if (!IsEngineAlive())
                 {
                     Debug.WriteLine($"Engine not alive at start of attempt {retryCount + 1}, restarting...");
-                    await RestartAsync();
+                    await RestartAsync().ConfigureAwait(false);
                     if (!IsEngineAlive())
                     {
                         Debug.WriteLine("Failed to restart engine");
@@ -416,33 +499,33 @@ namespace ChessDroid.Services
                 {
                     // Sync with engine before sending commands (SCID-inspired)
                     // This ensures the engine is ready and previous commands are processed
-                    if (!await SyncWithEngineAsync())
+                    if (!await SyncWithEngineAsync().ConfigureAwait(false))
                     {
                         Debug.WriteLine("Engine sync failed before analysis");
                         throw new IOException("Engine sync failed");
                     }
 
                     // Configure MultiPV
-                    if (!await SetOptionCachedAsync("MultiPV", multiPV.ToString()))
+                    if (!await SetOptionCachedAsync("MultiPV", multiPV.ToString()).ConfigureAwait(false))
                     {
                         throw new IOException("Failed to set MultiPV option");
                     }
 
                     // Single thread → fully deterministic depth-based results
-                    await SetOptionCachedAsync("Threads", "1");
+                    await SetOptionCachedAsync("Threads", "1").ConfigureAwait(false);
 
                     // Only send ucinewgame if we want to clear hash tables (e.g., new game)
                     // Preserving hash tables allows engine to reuse previous calculations
                     if (!preserveHashTables)
                     {
-                        if (!await SafeWriteLineAsync(UCI_CMD_UCINEWGAME))
+                        if (!await SafeWriteLineAsync(UCI_CMD_UCINEWGAME).ConfigureAwait(false))
                         {
                             throw new IOException("Failed to send ucinewgame");
                         }
                     }
 
                     // Set position (sanitize FEN so unknown piece chars don't offset engine columns)
-                    if (!await SafeWriteLineAsync($"{UCI_CMD_POSITION} {ChessBoard.SanitizeFenForEngine(fen)}"))
+                    if (!await SafeWriteLineAsync($"{UCI_CMD_POSITION} {ChessBoard.SanitizeFenForEngine(fen)}").ConfigureAwait(false))
                     {
                         throw new IOException("Failed to set position");
                     }
@@ -454,7 +537,7 @@ namespace ChessDroid.Services
                     string goCommand = $"{UCI_CMD_GO_DEPTH} {depth}";
                     int effectiveTimeout = config.EngineResponseTimeoutMs;
 
-                    if (!await SafeWriteLineAsync(goCommand))
+                    if (!await SafeWriteLineAsync(goCommand).ConfigureAwait(false))
                     {
                         throw new IOException("Failed to start analysis");
                     }
@@ -465,7 +548,7 @@ namespace ChessDroid.Services
                     {
                         while (IsEngineAlive())
                         {
-                            string? line = await engineOutput!.ReadLineAsync(linkedCts.Token);
+                            string? line = await ReadEngineLineAsync(linkedCts.Token).ConfigureAwait(false);
 
                             if (line == null) continue;
 
@@ -566,7 +649,7 @@ namespace ChessDroid.Services
                         Debug.WriteLine("[Analysis] Cancelled by caller — draining engine");
                         if (State == EngineState.Analyzing)
                         {
-                            await StopAndDrainAsync();
+                            await StopAndDrainAsync().ConfigureAwait(false);
                             State = EngineState.Ready;
                         }
                         break;
@@ -592,8 +675,8 @@ namespace ChessDroid.Services
                 if (retryCount < config.MaxEngineRetries)
                 {
                     Debug.WriteLine($"Restarting engine (attempt {retryCount}/{config.MaxEngineRetries})...");
-                    await RestartAsync();
-                    await Task.Delay(200); // Give engine time to initialize
+                    await RestartAsync().ConfigureAwait(false);
+                    await Task.Delay(200).ConfigureAwait(false); // Give engine time to initialize
                 }
             }
             } // end try
@@ -710,13 +793,13 @@ namespace ChessDroid.Services
         private async Task StopAndDrainAsync(int timeoutMs = 300)
         {
             if (!IsEngineAlive()) return;
-            await SafeWriteLineAsync("stop");
+            await SafeWriteLineAsync("stop").ConfigureAwait(false);
             try
             {
                 using var cts = new CancellationTokenSource(timeoutMs);
                 while (IsEngineAlive())
                 {
-                    if ((await engineOutput!.ReadLineAsync(cts.Token))?.StartsWith(UCI_RESPONSE_BESTMOVE) == true)
+                    if ((await ReadEngineLineAsync(cts.Token).ConfigureAwait(false))?.StartsWith(UCI_RESPONSE_BESTMOVE) == true)
                         break;
                 }
             }
@@ -795,35 +878,35 @@ namespace ChessDroid.Services
             bool preserveHashTables = true)
         {
             if (State == EngineState.Analyzing && IsEngineAlive())
-                await SafeWriteLineAsync("stop");
+                await SafeWriteLineAsync("stop").ConfigureAwait(false);
 
-            try { await _analysisSemaphore.WaitAsync(ct); }
+            try { await _analysisSemaphore.WaitAsync(ct).ConfigureAwait(false); }
             catch (OperationCanceledException) { return; }
 
             try
             {
                 if (!IsEngineAlive())
                 {
-                    await RestartAsync();
+                    await RestartAsync().ConfigureAwait(false);
                     if (!IsEngineAlive()) return;
                 }
-                if (!await SyncWithEngineAsync()) return;
+                if (!await SyncWithEngineAsync().ConfigureAwait(false)) return;
 
-                await SetOptionCachedAsync("MultiPV", multiPV.ToString());
+                await SetOptionCachedAsync("MultiPV", multiPV.ToString()).ConfigureAwait(false);
 
                 // Restore all available threads for continuous analysis (go infinite benefits from parallelism)
                 int threadCount = Math.Max(1, Environment.ProcessorCount);
-                await SetOptionCachedAsync("Threads", threadCount.ToString());
+                await SetOptionCachedAsync("Threads", threadCount.ToString()).ConfigureAwait(false);
 
                 if (!preserveHashTables)
-                    await SafeWriteLineAsync(UCI_CMD_UCINEWGAME);
+                    await SafeWriteLineAsync(UCI_CMD_UCINEWGAME).ConfigureAwait(false);
 
-                await SafeWriteLineAsync($"{UCI_CMD_POSITION} {ChessBoard.SanitizeFenForEngine(fen)}");
+                await SafeWriteLineAsync($"{UCI_CMD_POSITION} {ChessBoard.SanitizeFenForEngine(fen)}").ConfigureAwait(false);
 
                 bool whiteToMove = FenIsWhiteToMove(fen);
 
                 State = EngineState.Analyzing;
-                await SafeWriteLineAsync("go infinite");
+                await SafeWriteLineAsync("go infinite").ConfigureAwait(false);
 
                 int    currentDepth    = 0;
                 int    lastFiredDepth  = 0;
@@ -849,7 +932,7 @@ namespace ChessDroid.Services
                 {
                     while (IsEngineAlive())
                     {
-                        string? line = await engineOutput!.ReadLineAsync(ct);
+                        string? line = await ReadEngineLineAsync(ct).ConfigureAwait(false);
                         if (line == null) continue;
                         if (line.StartsWith(UCI_RESPONSE_BESTMOVE)) { completedNaturally = true; break; }
                         if (!line.StartsWith(UCI_RESPONSE_INFO) || !line.Contains(UCI_TOKEN_PV)) continue;
@@ -934,7 +1017,7 @@ namespace ChessDroid.Services
                     // naturally, sending stop to an idle engine gets no response and the
                     // drain timer runs to completion, stalling the next analysis.
                     if (!completedNaturally)
-                        await StopAndDrainAsync();
+                        await StopAndDrainAsync().ConfigureAwait(false);
                     State = EngineState.Ready;
                 }
             }
@@ -960,26 +1043,26 @@ namespace ChessDroid.Services
             try
             {
                 // Sync with engine
-                if (!await SyncWithEngineAsync())
+                if (!await SyncWithEngineAsync().ConfigureAwait(false))
                 {
                     LogM("GetMoveForMatchAsync: aborting — sync failed");
                     return (null, null);
                 }
 
                 // Set MultiPV to 1
-                await SetOptionCachedAsync("MultiPV", "1");
+                await SetOptionCachedAsync("MultiPV", "1").ConfigureAwait(false);
 
                 // Set position (sanitize FEN so unknown piece chars don't offset engine columns)
                 string sanitizedFen = ChessBoard.SanitizeFenForEngine(fen);
                 Debug.WriteLine($"[Match:{EngineName}] send: position fen {sanitizedFen}");
                 LogM($">>> position fen {sanitizedFen}");
-                await SafeWriteLineAsync($"{UCI_CMD_POSITION} {sanitizedFen}");
+                await SafeWriteLineAsync($"{UCI_CMD_POSITION} {sanitizedFen}").ConfigureAwait(false);
 
                 // Start search
                 State = EngineState.Analyzing;
                 Debug.WriteLine($"[Match:{EngineName}] send: {goCommand}");
                 LogM($">>> {goCommand}  (timeout={timeoutMs}ms)");
-                await SafeWriteLineAsync(goCommand);
+                await SafeWriteLineAsync(goCommand).ConfigureAwait(false);
 
                 // Read until "bestmove", capturing last evaluation from info lines
                 using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
@@ -989,7 +1072,7 @@ namespace ChessDroid.Services
 
                 while (IsEngineAlive())
                 {
-                    string? line = await engineOutput!.ReadLineAsync(cts.Token);
+                    string? line = await ReadEngineLineAsync(cts.Token).ConfigureAwait(false);
                     if (line == null) continue;
                     Debug.WriteLine($"[Match:{EngineName}] recv: {line}");
                     LogM($"<<< {line}");
@@ -1061,21 +1144,21 @@ namespace ChessDroid.Services
 
             try
             {
-                if (!await SyncWithEngineAsync())
+                if (!await SyncWithEngineAsync().ConfigureAwait(false))
                     return null;
 
-                await SetOptionCachedAsync("MultiPV", "1");
-                await SafeWriteLineAsync($"{UCI_CMD_POSITION} {ChessBoard.SanitizeFenForEngine(fen)}");
+                await SetOptionCachedAsync("MultiPV", "1").ConfigureAwait(false);
+                await SafeWriteLineAsync($"{UCI_CMD_POSITION} {ChessBoard.SanitizeFenForEngine(fen)}").ConfigureAwait(false);
 
                 State = EngineState.Analyzing;
-                await SafeWriteLineAsync($"go depth {depth}");
+                await SafeWriteLineAsync($"go depth {depth}").ConfigureAwait(false);
 
                 using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
                 cts.CancelAfter(6000);
 
                 while (IsEngineAlive())
                 {
-                    string? line = await engineOutput!.ReadLineAsync(cts.Token);
+                    string? line = await ReadEngineLineAsync(cts.Token).ConfigureAwait(false);
                     if (line == null) continue;
 
                     if (line.StartsWith(UCI_RESPONSE_INFO) && line.Contains(UCI_TOKEN_SCORE))
@@ -1127,14 +1210,14 @@ namespace ChessDroid.Services
 
             try
             {
-                if (!await SyncWithEngineAsync())
+                if (!await SyncWithEngineAsync().ConfigureAwait(false))
                     return null;
 
-                await SetOptionCachedAsync("MultiPV", "1");
-                await SafeWriteLineAsync($"{UCI_CMD_POSITION} {ChessBoard.SanitizeFenForEngine(fen)}");
+                await SetOptionCachedAsync("MultiPV", "1").ConfigureAwait(false);
+                await SafeWriteLineAsync($"{UCI_CMD_POSITION} {ChessBoard.SanitizeFenForEngine(fen)}").ConfigureAwait(false);
 
                 State = EngineState.Analyzing;
-                await SafeWriteLineAsync($"go movetime {timeMsPerMove}");
+                await SafeWriteLineAsync($"go movetime {timeMsPerMove}").ConfigureAwait(false);
 
                 // Hard timeout = movetime + generous buffer for engine overhead
                 using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
@@ -1142,7 +1225,7 @@ namespace ChessDroid.Services
 
                 while (IsEngineAlive())
                 {
-                    string? line = await engineOutput!.ReadLineAsync(cts.Token);
+                    string? line = await ReadEngineLineAsync(cts.Token).ConfigureAwait(false);
                     if (line == null) continue;
 
                     if (line.StartsWith(UCI_RESPONSE_INFO) && line.Contains(UCI_TOKEN_SCORE))
@@ -1189,7 +1272,7 @@ namespace ChessDroid.Services
             if (!IsEngineAlive() || State != EngineState.Ready)
                 return null;
 
-            try { await _analysisSemaphore.WaitAsync(ct); }
+            try { await _analysisSemaphore.WaitAsync(ct).ConfigureAwait(false); }
             catch (OperationCanceledException) { return null; }
 
             bool whiteToMove = FenIsWhiteToMove(fen);
@@ -1197,18 +1280,18 @@ namespace ChessDroid.Services
 
             try
             {
-                if (!await SyncWithEngineAsync())
+                if (!await SyncWithEngineAsync().ConfigureAwait(false))
                     return null;
 
-                await SetOptionCachedAsync("MultiPV", "1");
-                await SafeWriteLineAsync($"{UCI_CMD_POSITION} {ChessBoard.SanitizeFenForEngine(fen)}");
+                await SetOptionCachedAsync("MultiPV", "1").ConfigureAwait(false);
+                await SafeWriteLineAsync($"{UCI_CMD_POSITION} {ChessBoard.SanitizeFenForEngine(fen)}").ConfigureAwait(false);
 
                 State = EngineState.Analyzing;
-                await SafeWriteLineAsync($"go depth {maxDepth}");
+                await SafeWriteLineAsync($"go depth {maxDepth}").ConfigureAwait(false);
 
                 while (IsEngineAlive())
                 {
-                    string? line = await engineOutput!.ReadLineAsync(ct);
+                    string? line = await ReadEngineLineAsync(ct).ConfigureAwait(false);
                     if (line == null) continue;
 
                     if (line.StartsWith(UCI_RESPONSE_INFO) && line.Contains(UCI_TOKEN_SCORE))
@@ -1229,7 +1312,7 @@ namespace ChessDroid.Services
             catch (OperationCanceledException) when (ct.IsCancellationRequested)
             {
                 if (State == EngineState.Analyzing)
-                    await StopAndDrainAsync();
+                    await StopAndDrainAsync().ConfigureAwait(false);
                 State = EngineState.Ready;
                 return lastEval;
             }
@@ -1245,14 +1328,14 @@ namespace ChessDroid.Services
         public async Task SetChess960Async(bool enabled)
         {
             if (!IsEngineAlive() || State != EngineState.Ready) return;
-            await SafeWriteLineAsync($"{UCI_CMD_SETOPTION} UCI_Chess960 value {(enabled ? "true" : "false")}");
+            await SafeWriteLineAsync($"{UCI_CMD_SETOPTION} UCI_Chess960 value {(enabled ? "true" : "false")}").ConfigureAwait(false);
         }
 
         public async Task SetSkillLevelAsync(int level)
         {
             if (!IsEngineAlive() || State != EngineState.Ready) return;
             level = Math.Clamp(level, 0, 20);
-            await SafeWriteLineAsync($"{UCI_CMD_SETOPTION} Skill Level value {level}");
+            await SafeWriteLineAsync($"{UCI_CMD_SETOPTION} Skill Level value {level}").ConfigureAwait(false);
         }
 
         /// Sends UCI_LimitStrength + UCI_Elo for engines that support it (SF9+).
@@ -1261,9 +1344,9 @@ namespace ChessDroid.Services
         {
             if (!IsEngineAlive() || State != EngineState.Ready) return;
             elo = Math.Clamp(elo, 1320, 3190);
-            await SafeWriteLineAsync($"{UCI_CMD_SETOPTION} UCI_LimitStrength value true");
-            await SafeWriteLineAsync($"{UCI_CMD_SETOPTION} UCI_Elo value {elo}");
-            await SafeWriteLineAsync($"{UCI_CMD_SETOPTION} Skill Level value {skillLevelFallback}");
+            await SafeWriteLineAsync($"{UCI_CMD_SETOPTION} UCI_LimitStrength value true").ConfigureAwait(false);
+            await SafeWriteLineAsync($"{UCI_CMD_SETOPTION} UCI_Elo value {elo}").ConfigureAwait(false);
+            await SafeWriteLineAsync($"{UCI_CMD_SETOPTION} Skill Level value {skillLevelFallback}").ConfigureAwait(false);
         }
 
         private void CleanupProcess()
@@ -1272,6 +1355,7 @@ namespace ChessDroid.Services
             {
                 State = EngineState.Uninitialized;
                 _lastSetOptions.Clear(); // a new process reverts to UCI defaults
+                StopLineReader();
 
                 if (engineInput != null)
                 {
@@ -1312,7 +1396,7 @@ namespace ChessDroid.Services
             CleanupProcess();
 
             // Wait a bit for OS to release resources
-            await Task.Delay(100);
+            await Task.Delay(100).ConfigureAwait(false);
 
             // Use lastEnginePath if available, otherwise build full path from config
             string? enginePath = lastEnginePath;
@@ -1327,7 +1411,7 @@ namespace ChessDroid.Services
                 try
                 {
                     Debug.WriteLine($"Initializing engine from: {enginePath}");
-                    await InitializeAsync(enginePath);
+                    await InitializeAsync(enginePath).ConfigureAwait(false);
                     Debug.WriteLine("Engine started successfully");
                 }
                 catch (Exception ex)
