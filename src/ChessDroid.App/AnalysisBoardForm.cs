@@ -1027,6 +1027,14 @@ namespace ChessDroid
         {
             if (_autoPlaying) return;
             if (_trainingGameActive) return;
+            // Classification is a long-running GetBestMoveAsync loop holding the engine's
+            // analysis semaphore. GetBestMoveAsync sends "stop" to whatever is currently
+            // analyzing BEFORE it waits for that semaphore — so if navigation fired another
+            // analysis request while classification is running, it would truncate
+            // classification's in-flight search and cause it to read a shallow eval as
+            // final (see AnalysisBoardForm.Classification.cs). Suspend auto-analysis for
+            // the duration instead of racing it.
+            if (_classifyCts != null) return;
 
             // Cancel previous analysis if still running
             autoAnalysisCts?.Cancel();

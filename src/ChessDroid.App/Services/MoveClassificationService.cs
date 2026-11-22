@@ -55,7 +55,7 @@ namespace ChessDroid.Services
                     double evalBestMove;
                     string rawBeforeEval = "";
 
-                    if (analysisCache.TryGetValue(cacheKey, out var cached))
+                    if (analysisCache.TryGetValue(cacheKey, out var cached) && cached.Depth >= engineDepth)
                     {
                         bestMove = cached.BestMove;
                         rawBeforeEval = cached.Evaluation;
@@ -94,7 +94,7 @@ namespace ChessDroid.Services
                     string afterCacheKey = GetPositionKey(node.FEN);
                     double? evalAfterNullable = null;
 
-                    if (analysisCache.TryGetValue(afterCacheKey, out var afterCached))
+                    if (analysisCache.TryGetValue(afterCacheKey, out var afterCached) && afterCached.Depth >= engineDepth)
                     {
                         evalAfterNullable = EvaluationParser.ParseNullable(afterCached.Evaluation);
                     }
