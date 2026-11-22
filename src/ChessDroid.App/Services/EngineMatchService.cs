@@ -340,9 +340,21 @@ namespace ChessDroid.Services
                 else
                     blackElapsedThisMove = moveTimeMs;
 
-                // No move returned means engine has no legal moves (checkmate or stalemate)
+                // A null move can mean two very different things: the engine genuinely has
+                // no legal move (real checkmate/stalemate), or it timed out/crashed/died
+                // mid-search (GetMoveForMatchAsync sets State = Error in that case). Only
+                // trust the checkmate/stalemate read when the engine is still healthy —
+                // otherwise this is a forfeit, not a drawn or lost-on-the-board game.
                 if (string.IsNullOrEmpty(bestMove))
                 {
+                    if (activeEngine.State == EngineState.Error || !activeEngine.IsEngineAlive())
+                    {
+                        LogM($"ENGINE TIMEOUT/CRASH: {side} ({activeName}) returned no move while unhealthy — EndMatch(EngineError)");
+                        EndMatch(MatchTermination.EngineError,
+                            whiteToMove ? MatchOutcome.BlackWins : MatchOutcome.WhiteWins);
+                        return;
+                    }
+
                     // Determine if it's checkmate or stalemate by checking if king is in check
                     bool inCheck = IsKingInCheck(gameState.Board, whiteToMove);
                     if (inCheck)

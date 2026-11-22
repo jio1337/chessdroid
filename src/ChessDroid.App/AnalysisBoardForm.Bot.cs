@@ -143,6 +143,15 @@ namespace ChessDroid
 
                 if (string.IsNullOrEmpty(bestMove))
                 {
+                    // A timed-out or crashed engine also returns a null move, but that is
+                    // not the same thing as "no legal move" — don't let a hung bot score
+                    // itself a stalemate/checkmate it never actually reached on the board.
+                    if (_botEngine.State == EngineState.Error || !_botEngine.IsEngineAlive())
+                    {
+                        HandleBotGameEnd(fen, "Bot error — engine timed out or crashed");
+                        return;
+                    }
+
                     // No legal moves — game over
                     HandleBotGameEnd(fen);
                     return;
