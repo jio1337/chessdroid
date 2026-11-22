@@ -13,6 +13,17 @@ bool hang = exeName.Contains("hang");
 bool crash = exeName.Contains("crash");
 bool nullMove = exeName.Contains("nullmove");
 
+// Optional: when set, every line received on stdin is appended here. Lets tests (e.g. the
+// §3.3 setoption-caching regression test) assert on exactly what ChessEngineService sent
+// without needing to parse stdout. Set via the test process's own environment before
+// starting the engine — inherited by the child process like any other env var.
+string? receivedLog = Environment.GetEnvironmentVariable("CHESSDROID_FAKEENGINE_LOG");
+void LogReceived(string line)
+{
+    if (receivedLog == null) return;
+    try { File.AppendAllText(receivedLog, line + Environment.NewLine); } catch { /* best effort */ }
+}
+
 if (crash)
 {
     // Look alive just long enough for the caller to see uciok/readyok, then die.
@@ -82,6 +93,7 @@ string? line;
 while ((line = Console.In.ReadLine()) != null)
 {
     line = line.Trim();
+    LogReceived(line);
     if (line == "uci")
     {
         Send("id name FakeEngine");
