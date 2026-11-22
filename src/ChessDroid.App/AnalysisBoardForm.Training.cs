@@ -888,7 +888,7 @@ namespace ChessDroid
                 Dock = DockStyle.Top, Height = 28, FlatStyle = FlatStyle.Flat,
                 Visible = false
             };
-            _btnPuzzleNext.Click += (_, _) => { if (_btnPuzzleNext != null) _btnPuzzleNext.Visible = false; PuzzleLoadNext(); };
+            _btnPuzzleNext.Click += (_, _) => { if (_btnPuzzleNext != null) _btnPuzzleNext.Visible = false; _ = PuzzleLoadNext(); };
             _btnPuzzleAnalyze = new Button
             {
                 Text = "Analyze", Font = F(9f, true),
@@ -1312,10 +1312,10 @@ namespace ChessDroid
             if (_visionModeSelected)  { VisionTrainingStart();   return; }
             if (_puzzleModeSelected)
             {
-                if (_puzzleSubMode == "rush")     { PuzzleRushStart();     return; }
-                if (_puzzleSubMode == "gauntlet") { PuzzleGauntletStart(); return; }
+                if (_puzzleSubMode == "rush")     { _ = PuzzleRushStart();     return; }
+                if (_puzzleSubMode == "gauntlet") { _ = PuzzleGauntletStart(); return; }
                 if (_puzzleSubMode == "daily")    { PuzzleDailyStart();    return; }
-                PuzzleTrainingStart(); return;
+                _ = PuzzleTrainingStart(); return;
             }
             if (_drillModeSelected) { DrillStart(); return; }
 
@@ -2312,13 +2312,15 @@ namespace ChessDroid
             _puzzleQueue.Clear();
         }
 
-        private void PuzzleTrainingStart()
+        private async Task PuzzleTrainingStart()
         {
             if (string.IsNullOrEmpty(_puzzlesFolder)) return;
             ResetPuzzleCounters();
             _puzzleStreak    = 0;
             _puzzleStreakBest = config?.PuzzleTrainingBestStreak ?? 0;
-            _puzzleQueue.AddRange(LichessPuzzleService.GetRandomBatch(_puzzlesFolder, 200, _puzzleThemeFilter, _puzzleRatingMin, _puzzleRatingMax, _puzzleOpeningFilter));
+            var batch = await Task.Run(() => LichessPuzzleService.GetRandomBatch(
+                _puzzlesFolder, 200, _puzzleThemeFilter, _puzzleRatingMin, _puzzleRatingMax, _puzzleOpeningFilter));
+            _puzzleQueue.AddRange(batch);
 
             _trainingPreFen     = boardControl.GetFEN();
             _trainingPreFlipped = boardControl.IsFlipped;
@@ -2329,7 +2331,7 @@ namespace ChessDroid
             _pnlTrainingResult!.Visible = false;
             _pnlPuzzleGame!.Visible     = true;
 
-            PuzzleLoadNext();
+            await PuzzleLoadNext();
         }
 
         private void PuzzleDailyStart()
@@ -2352,7 +2354,7 @@ namespace ChessDroid
             _pnlTrainingResult!.Visible = false;
             _pnlPuzzleGame!.Visible     = true;
 
-            PuzzleLoadNext();
+            _ = PuzzleLoadNext();
         }
 
         private void DailyPuzzleCompleted()
@@ -2383,7 +2385,7 @@ namespace ChessDroid
             _puzzleLocked = true;
         }
 
-        private void PuzzleLoadNext()
+        private async Task PuzzleLoadNext()
         {
             if (_btnPuzzleNext    != null) _btnPuzzleNext.Visible    = false;
             if (_btnPuzzleAnalyze != null) _btnPuzzleAnalyze.Visible = false;
@@ -2403,9 +2405,14 @@ namespace ChessDroid
                 // back empty on a given attempt. Retry with fresh randomness a few times
                 // before giving up, instead of indexing into an empty queue below.
                 const int maxAttempts = 5;
+                string puzzlesFolder = _puzzlesFolder!;
+                string? themeFilter = _puzzleThemeFilter, openingFilter = _puzzleOpeningFilter;
+                int ratingMin = _puzzleRatingMin, ratingMax = _puzzleRatingMax;
                 for (int attempt = 0; attempt < maxAttempts && _puzzleQueue.Count == 0; attempt++)
                 {
-                    _puzzleQueue.AddRange(LichessPuzzleService.GetRandomBatch(_puzzlesFolder!, 200, _puzzleThemeFilter, _puzzleRatingMin, _puzzleRatingMax, _puzzleOpeningFilter));
+                    var batch = await Task.Run(() => LichessPuzzleService.GetRandomBatch(
+                        puzzlesFolder, 200, themeFilter, ratingMin, ratingMax, openingFilter));
+                    _puzzleQueue.AddRange(batch);
                 }
 
                 if (_puzzleQueue.Count == 0)
@@ -2537,7 +2544,7 @@ namespace ChessDroid
                             if (_btnPuzzleSkip    != null) _btnPuzzleSkip.Visible    = false;
                         });
                     else
-                        ScheduleInvoke(solveDelay, PuzzleLoadNext);
+                        ScheduleInvoke(solveDelay, () => _ = PuzzleLoadNext());
                 }
                 else
                 {
@@ -2631,7 +2638,7 @@ namespace ChessDroid
                 if (_btnPuzzleSkip    != null) _btnPuzzleSkip.Visible    = false;
             }
             else
-                ScheduleInvoke(900, PuzzleLoadNext);
+                ScheduleInvoke(900, () => _ = PuzzleLoadNext());
         }
 
         private void PuzzleRevealThemes()
@@ -2671,11 +2678,13 @@ namespace ChessDroid
 
         // ── Puzzle Rush ────────────────────────────────────────────────────────
 
-        private void PuzzleRushStart()
+        private async Task PuzzleRushStart()
         {
             if (string.IsNullOrEmpty(_puzzlesFolder)) return;
             ResetPuzzleCounters();
-            _puzzleQueue.AddRange(LichessPuzzleService.GetRandomBatch(_puzzlesFolder, 300, _puzzleThemeFilter, _puzzleRatingMin, _puzzleRatingMax, _puzzleOpeningFilter));
+            var batch = await Task.Run(() => LichessPuzzleService.GetRandomBatch(
+                _puzzlesFolder, 300, _puzzleThemeFilter, _puzzleRatingMin, _puzzleRatingMax, _puzzleOpeningFilter));
+            _puzzleQueue.AddRange(batch);
 
             _trainingPreFen     = boardControl.GetFEN();
             _trainingPreFlipped = boardControl.IsFlipped;
@@ -2699,7 +2708,7 @@ namespace ChessDroid
             _puzzleRushTimer.Tick += PuzzleRushTick;
             _puzzleRushTimer.Start();
 
-            PuzzleLoadNext();
+            await PuzzleLoadNext();
         }
 
         private void PuzzleRushTick(object? sender, EventArgs e)
@@ -2765,14 +2774,16 @@ namespace ChessDroid
 
         // ── Puzzle Gauntlet ────────────────────────────────────────────────────
 
-        private void PuzzleGauntletStart()
+        private async Task PuzzleGauntletStart()
         {
             if (string.IsNullOrEmpty(_puzzlesFolder)) return;
             ResetPuzzleCounters();
             _gauntletStreak     = 0;
             _gauntletBestStreak = config?.GauntletBestStreak ?? 0;
             _puzzleQueue.Clear();
-            _puzzleQueue.AddRange(LichessPuzzleService.GetRandomBatch(_puzzlesFolder, 300, _puzzleThemeFilter, _puzzleRatingMin, _puzzleRatingMax, _puzzleOpeningFilter));
+            var batch = await Task.Run(() => LichessPuzzleService.GetRandomBatch(
+                _puzzlesFolder, 300, _puzzleThemeFilter, _puzzleRatingMin, _puzzleRatingMax, _puzzleOpeningFilter));
+            _puzzleQueue.AddRange(batch);
 
             _trainingPreFen     = boardControl.GetFEN();
             _trainingPreFlipped = boardControl.IsFlipped;
@@ -2787,7 +2798,7 @@ namespace ChessDroid
             if (_btnPuzzleHint != null) _btnPuzzleHint.Visible = false; // no hints in gauntlet
             if (_btnPuzzleSkip != null) _btnPuzzleSkip.Visible = false; // no skips in gauntlet
 
-            PuzzleLoadNext();
+            await PuzzleLoadNext();
         }
 
         private void GauntletEnd()
