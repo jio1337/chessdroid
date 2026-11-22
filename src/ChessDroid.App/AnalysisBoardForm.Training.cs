@@ -2397,7 +2397,25 @@ namespace ChessDroid
             if (_puzzleQueue.Count == 0)
             {
                 if (_puzzleSubMode == "daily") { DailyPuzzleCompleted(); return; }
-                _puzzleQueue.AddRange(LichessPuzzleService.GetRandomBatch(_puzzlesFolder!, 200, _puzzleThemeFilter, _puzzleRatingMin, _puzzleRatingMax, _puzzleOpeningFilter));
+
+                // GetRandomBatch reads from one randomly chosen file/offset, so a narrow
+                // combination of theme + rating + opening filters can legitimately come
+                // back empty on a given attempt. Retry with fresh randomness a few times
+                // before giving up, instead of indexing into an empty queue below.
+                const int maxAttempts = 5;
+                for (int attempt = 0; attempt < maxAttempts && _puzzleQueue.Count == 0; attempt++)
+                {
+                    _puzzleQueue.AddRange(LichessPuzzleService.GetRandomBatch(_puzzlesFolder!, 200, _puzzleThemeFilter, _puzzleRatingMin, _puzzleRatingMax, _puzzleOpeningFilter));
+                }
+
+                if (_puzzleQueue.Count == 0)
+                {
+                    SetText(_lblPuzzleFeedback, "No puzzles match these filters — try widening theme/rating/opening.");
+                    if (_btnPuzzleNext != null) _btnPuzzleNext.Visible = false;
+                    if (_btnPuzzleSkip != null) _btnPuzzleSkip.Visible = false;
+                    _puzzleActive = false;
+                    return;
+                }
             }
 
             _currentPuzzle = _puzzleQueue[0];
