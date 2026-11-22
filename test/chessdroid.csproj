@@ -9,7 +9,6 @@
     <ApplicationIcon>chessdroid.ico</ApplicationIcon>
     <Copyright>ARWAN</Copyright>
     <Description>CHESSDROID V1.0.0 BY ARWAN</Description>
-    <NoWarn>NU1701</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -17,12 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="ChessDotNet" Version="0.12.3" />
-    <PackageReference Include="ChessDotNetCore" Version="1.6.0" />
-    <PackageReference Include="pgn.NET" Version="1.2.1" />
-    <PackageReference Include="RestSharp" Version="112.1.0" />
     <PackageReference Include="Svg" Version="3.4.7" />
-    <PackageReference Include="System.Management" Version="10.0.1" />
   </ItemGroup>
 
   <ItemGroup>

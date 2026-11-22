@@ -1,7 +1,5 @@
 namespace ChessDroid.Models
 {
-    public enum PairingMode { RoundRobin, Manual, Random }
-
     public class TournamentEngineEntry
     {
         public string FileName    { get; set; } = "";
@@ -14,15 +12,6 @@ namespace ChessDroid.Models
     {
         public TournamentEngineEntry Engine1 { get; set; } = new();
         public TournamentEngineEntry Engine2 { get; set; } = new();
-    }
-
-    public class TournamentConfig
-    {
-        public List<TournamentPairing>     Pairings     { get; set; } = new();
-        public EngineMatchTimeControl      TimeControl  { get; set; } = new();
-        public int                         GamesPerMatch{ get; set; } = 2;
-        public bool                        Adjudicate   { get; set; } = true;
-        public bool                        AutoSavePgn  { get; set; } = false;
     }
 
     public class TournamentStanding
