@@ -5,6 +5,14 @@ VisualStudioVersion = 17.13.35913.81
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "chessdroid", "src\ChessDroid.App\chessdroid.csproj", "{E8C2472A-88EE-4612-A850-5D89152AC330}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{827E0CD3-B72D-47B6-A68D-7590B98EB39B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChessDroid.Core", "src\ChessDroid.Core\ChessDroid.Core.csproj", "{8CA7B599-D703-4137-B57E-62994BBBA809}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0AB3BF05-4346-4AA6-1389-037BE0695223}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChessDroid.Tests", "tests\ChessDroid.Tests\ChessDroid.Tests.csproj", "{59C7C6D2-ABE0-4C88-885B-D257E761A838}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,9 +35,37 @@ Global
 		{E8C2472A-88EE-4612-A850-5D89152AC330}.Release|x64.Build.0 = Release|Any CPU
 		{E8C2472A-88EE-4612-A850-5D89152AC330}.Release|x86.ActiveCfg = Release|Any CPU
 		{E8C2472A-88EE-4612-A850-5D89152AC330}.Release|x86.Build.0 = Release|Any CPU
+		{8CA7B599-D703-4137-B57E-62994BBBA809}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8CA7B599-D703-4137-B57E-62994BBBA809}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8CA7B599-D703-4137-B57E-62994BBBA809}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{8CA7B599-D703-4137-B57E-62994BBBA809}.Debug|x64.Build.0 = Debug|Any CPU
+		{8CA7B599-D703-4137-B57E-62994BBBA809}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{8CA7B599-D703-4137-B57E-62994BBBA809}.Debug|x86.Build.0 = Debug|Any CPU
+		{8CA7B599-D703-4137-B57E-62994BBBA809}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8CA7B599-D703-4137-B57E-62994BBBA809}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8CA7B599-D703-4137-B57E-62994BBBA809}.Release|x64.ActiveCfg = Release|Any CPU
+		{8CA7B599-D703-4137-B57E-62994BBBA809}.Release|x64.Build.0 = Release|Any CPU
+		{8CA7B599-D703-4137-B57E-62994BBBA809}.Release|x86.ActiveCfg = Release|Any CPU
+		{8CA7B599-D703-4137-B57E-62994BBBA809}.Release|x86.Build.0 = Release|Any CPU
+		{59C7C6D2-ABE0-4C88-885B-D257E761A838}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{59C7C6D2-ABE0-4C88-885B-D257E761A838}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{59C7C6D2-ABE0-4C88-885B-D257E761A838}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{59C7C6D2-ABE0-4C88-885B-D257E761A838}.Debug|x64.Build.0 = Debug|Any CPU
+		{59C7C6D2-ABE0-4C88-885B-D257E761A838}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{59C7C6D2-ABE0-4C88-885B-D257E761A838}.Debug|x86.Build.0 = Debug|Any CPU
+		{59C7C6D2-ABE0-4C88-885B-D257E761A838}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{59C7C6D2-ABE0-4C88-885B-D257E761A838}.Release|Any CPU.Build.0 = Release|Any CPU
+		{59C7C6D2-ABE0-4C88-885B-D257E761A838}.Release|x64.ActiveCfg = Release|Any CPU
+		{59C7C6D2-ABE0-4C88-885B-D257E761A838}.Release|x64.Build.0 = Release|Any CPU
+		{59C7C6D2-ABE0-4C88-885B-D257E761A838}.Release|x86.ActiveCfg = Release|Any CPU
+		{59C7C6D2-ABE0-4C88-885B-D257E761A838}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{8CA7B599-D703-4137-B57E-62994BBBA809} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{59C7C6D2-ABE0-4C88-885B-D257E761A838} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {D2A56C02-8F6A-4A0E-9134-4A156BEDBB2D}

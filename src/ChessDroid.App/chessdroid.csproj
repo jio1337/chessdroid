@@ -77,5 +77,8 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\ChessDroid.Core\ChessDroid.Core.csproj" />
+  </ItemGroup>
 
 </Project>
