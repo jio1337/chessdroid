@@ -26,6 +26,16 @@ namespace ChessDroid.Services
         private readonly object stateLock = new object();
         private readonly SemaphoreSlim _analysisSemaphore = new SemaphoreSlim(1, 1);
 
+        // Last value sent for each UCI option, so SetOptionCachedAsync can skip the
+        // round-trip when nothing actually changed. In recent Stockfish versions,
+        // changing Threads re-creates the thread pool and clears the hash table, so
+        // resending the same value on every single analysis request (as this code used
+        // to) silently defeated preserveHashTables and added latency to every navigation.
+        // Cleared on every process teardown — a fresh engine process reverts to its own
+        // UCI defaults, so a cached "already sent" value from the previous process must
+        // not be trusted.
+        private readonly Dictionary<string, string> _lastSetOptions = new();
+
         // When set, all match UCI communication is written to this writer in addition to Debug output.
         public TextWriter? MatchLog { get; set; }
         private void LogM(string msg) { MatchLog?.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [{EngineName}] {msg}"); MatchLog?.Flush(); }
@@ -165,6 +175,21 @@ namespace ChessDroid.Services
         /// <summary>
         /// Safely write to engine, checking if process is alive first
         /// </summary>
+        /// <summary>
+        /// Sends "setoption name {name} value {value}" only if it differs from the last
+        /// value sent for that option on this process. See _lastSetOptions for why this
+        /// matters beyond saving a write.
+        /// </summary>
+        private async Task<bool> SetOptionCachedAsync(string name, string value)
+        {
+            if (_lastSetOptions.TryGetValue(name, out string? last) && last == value)
+                return true;
+
+            bool ok = await SafeWriteLineAsync($"{UCI_CMD_SETOPTION} {name} value {value}");
+            if (ok) _lastSetOptions[name] = value;
+            return ok;
+        }
+
         private async Task<bool> SafeWriteLineAsync(string command)
         {
             try
@@ -398,13 +423,13 @@ namespace ChessDroid.Services
                     }
 
                     // Configure MultiPV
-                    if (!await SafeWriteLineAsync($"{UCI_CMD_SETOPTION} MultiPV value {multiPV}"))
+                    if (!await SetOptionCachedAsync("MultiPV", multiPV.ToString()))
                     {
                         throw new IOException("Failed to set MultiPV option");
                     }
 
                     // Single thread → fully deterministic depth-based results
-                    await SafeWriteLineAsync($"{UCI_CMD_SETOPTION} Threads value 1");
+                    await SetOptionCachedAsync("Threads", "1");
 
                     // Only send ucinewgame if we want to clear hash tables (e.g., new game)
                     // Preserving hash tables allows engine to reuse previous calculations
@@ -784,11 +809,11 @@ namespace ChessDroid.Services
                 }
                 if (!await SyncWithEngineAsync()) return;
 
-                await SafeWriteLineAsync($"{UCI_CMD_SETOPTION} MultiPV value {multiPV}");
+                await SetOptionCachedAsync("MultiPV", multiPV.ToString());
 
                 // Restore all available threads for continuous analysis (go infinite benefits from parallelism)
                 int threadCount = Math.Max(1, Environment.ProcessorCount);
-                await SafeWriteLineAsync($"{UCI_CMD_SETOPTION} Threads value {threadCount}");
+                await SetOptionCachedAsync("Threads", threadCount.ToString());
 
                 if (!preserveHashTables)
                     await SafeWriteLineAsync(UCI_CMD_UCINEWGAME);
@@ -942,7 +967,7 @@ namespace ChessDroid.Services
                 }
 
                 // Set MultiPV to 1
-                await SafeWriteLineAsync($"{UCI_CMD_SETOPTION} MultiPV value 1");
+                await SetOptionCachedAsync("MultiPV", "1");
 
                 // Set position (sanitize FEN so unknown piece chars don't offset engine columns)
                 string sanitizedFen = ChessBoard.SanitizeFenForEngine(fen);
@@ -1039,7 +1064,7 @@ namespace ChessDroid.Services
                 if (!await SyncWithEngineAsync())
                     return null;
 
-                await SafeWriteLineAsync($"{UCI_CMD_SETOPTION} MultiPV value 1");
+                await SetOptionCachedAsync("MultiPV", "1");
                 await SafeWriteLineAsync($"{UCI_CMD_POSITION} {ChessBoard.SanitizeFenForEngine(fen)}");
 
                 State = EngineState.Analyzing;
@@ -1105,7 +1130,7 @@ namespace ChessDroid.Services
                 if (!await SyncWithEngineAsync())
                     return null;
 
-                await SafeWriteLineAsync($"{UCI_CMD_SETOPTION} MultiPV value 1");
+                await SetOptionCachedAsync("MultiPV", "1");
                 await SafeWriteLineAsync($"{UCI_CMD_POSITION} {ChessBoard.SanitizeFenForEngine(fen)}");
 
                 State = EngineState.Analyzing;
@@ -1175,7 +1200,7 @@ namespace ChessDroid.Services
                 if (!await SyncWithEngineAsync())
                     return null;
 
-                await SafeWriteLineAsync($"{UCI_CMD_SETOPTION} MultiPV value 1");
+                await SetOptionCachedAsync("MultiPV", "1");
                 await SafeWriteLineAsync($"{UCI_CMD_POSITION} {ChessBoard.SanitizeFenForEngine(fen)}");
 
                 State = EngineState.Analyzing;
@@ -1246,6 +1271,7 @@ namespace ChessDroid.Services
             try
             {
                 State = EngineState.Uninitialized;
+                _lastSetOptions.Clear(); // a new process reverts to UCI defaults
 
                 if (engineInput != null)
                 {
