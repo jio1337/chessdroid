@@ -149,6 +149,8 @@ namespace ChessDroid
 
         private static readonly string ConfigFilePath = Path.Combine(
             Application.StartupPath, "config.json");
+        private static readonly string BackupFilePath = ConfigFilePath + ".bak";
+        private static readonly string TempFilePath = ConfigFilePath + ".tmp";
 
         // Thread synchronization for file I/O operations
         private static readonly object _fileLock = new object();
@@ -157,23 +159,79 @@ namespace ChessDroid
         {
             lock (_fileLock)
             {
-                try
+                if (File.Exists(ConfigFilePath))
                 {
-                    if (File.Exists(ConfigFilePath))
+                    try
                     {
                         string json = File.ReadAllText(ConfigFilePath);
-                        return JsonSerializer.Deserialize<AppConfig>(json) ?? new AppConfig();
+                        var loaded = JsonSerializer.Deserialize<AppConfig>(json);
+                        if (loaded != null)
+                        {
+                            // Good load — refresh the backup so it reflects the latest known-good state.
+                            TryCopy(ConfigFilePath, BackupFilePath);
+                            return loaded;
+                        }
                     }
-                }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Debug.WriteLine($"Error loading config: {ex.Message}");
+                    catch (Exception ex)
+                    {
+                        Services.CrashLogger.LogException(ex, "Error loading config.json");
+                    }
+
+                    // The file exists but failed to load. Quarantine it instead of overwriting it —
+                    // a corrupt/truncated file is still the user's data and must never be destroyed.
+                    QuarantineCorruptConfig();
                 }
 
-                // Create default config if doesn't exist
+                // Nothing valid at ConfigFilePath. Try the last known-good backup before giving up.
+                if (File.Exists(BackupFilePath))
+                {
+                    try
+                    {
+                        string backupJson = File.ReadAllText(BackupFilePath);
+                        var recovered = JsonSerializer.Deserialize<AppConfig>(backupJson);
+                        if (recovered != null)
+                        {
+                            recovered.SaveInternal();
+                            return recovered;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Services.CrashLogger.LogException(ex, "Error loading config.json.bak during recovery");
+                    }
+                }
+
+                // No usable config anywhere — fall back to defaults.
                 var config = new AppConfig();
                 config.SaveInternal(); // Use internal method since we already hold the lock
                 return config;
+            }
+        }
+
+        private static void QuarantineCorruptConfig()
+        {
+            try
+            {
+                string quarantinePath = Path.Combine(
+                    Path.GetDirectoryName(ConfigFilePath) ?? ".",
+                    $"config.corrupt-{DateTime.Now:yyyyMMdd-HHmmss}.json");
+                File.Move(ConfigFilePath, quarantinePath, overwrite: false);
+            }
+            catch (Exception ex)
+            {
+                Services.CrashLogger.LogException(ex, "Failed to quarantine corrupt config.json");
+            }
+        }
+
+        private static void TryCopy(string source, string destination)
+        {
+            try
+            {
+                File.Copy(source, destination, overwrite: true);
+            }
+            catch (Exception ex)
+            {
+                Services.CrashLogger.LogException(ex, "Failed to refresh config.json.bak");
             }
         }
 
@@ -185,46 +243,29 @@ namespace ChessDroid
             }
         }
 
-        // Internal save method that doesn't acquire lock (for use within already-locked context)
+        // Internal save method that doesn't acquire lock (for use within already-locked context).
+        // Writes to a temp file first and atomically replaces config.json, so a crash or power
+        // loss mid-write can never leave a truncated/corrupt file in its place.
         private void SaveInternal()
         {
             try
             {
                 var options = new JsonSerializerOptions { WriteIndented = true };
                 string json = JsonSerializer.Serialize(this, options);
-                File.WriteAllText(ConfigFilePath, json);
+                File.WriteAllText(TempFilePath, json);
+
+                if (File.Exists(ConfigFilePath))
+                {
+                    File.Replace(TempFilePath, ConfigFilePath, null);
+                }
+                else
+                {
+                    File.Move(TempFilePath, ConfigFilePath);
+                }
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error saving config: {ex.Message}");
-            }
-        }
-
-        /// <summary>
-        /// Reloads configuration from disk and updates this instance in-place.
-        /// This ensures all services holding a reference to this config get updated values.
-        /// </summary>
-        public void Reload()
-        {
-            lock (_fileLock)
-            {
-                try
-                {
-                    if (File.Exists(ConfigFilePath))
-                    {
-                        string json = File.ReadAllText(ConfigFilePath);
-                        var loaded = JsonSerializer.Deserialize<AppConfig>(json);
-                        if (loaded != null)
-                        {
-                            CopyFrom(loaded);
-                            System.Diagnostics.Debug.WriteLine($"[Config] Reloaded - Aggressiveness: {Aggressiveness}");
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Debug.WriteLine($"Error reloading config: {ex.Message}");
-                }
+                Services.CrashLogger.LogException(ex, "Error saving config.json");
             }
         }
 
