@@ -46,6 +46,13 @@ namespace ChessDroid.Services
         private (string fen, string evaluation, List<string> pvs, List<string> evals, WDLInfo? wdl, int depth) _lastLiveData
             = ("", "", new List<string>(), new List<string>(), null, 0);
 
+        // Continuous analysis re-renders every ~150ms while the search deepens, but the
+        // position itself doesn't change between ticks — only the eval/PVs do. Caching
+        // these two per FEN avoids redoing an ECO lookup and a full opponent-threat scan
+        // (including a mate-in-1 search) ~7 times a second for an identical position.
+        private (string fen, string openingDisplay)? _cachedOpeningLookup;
+        private (string fen, List<ThreatDetection.Threat> threats)? _cachedOpponentThreats;
+
         public ConsoleOutputFormatter(
             RichTextBox richTextBox,
             AppConfig config,
@@ -100,7 +107,16 @@ namespace ChessDroid.Services
         {
             if (config?.ShowOpeningName == true)
             {
-                string openingDisplay = OpeningBook.GetOpeningDisplay(fen);
+                string openingDisplay;
+                if (_cachedOpeningLookup is { } cached && cached.fen == fen)
+                {
+                    openingDisplay = cached.openingDisplay;
+                }
+                else
+                {
+                    openingDisplay = OpeningBook.GetOpeningDisplay(fen);
+                    _cachedOpeningLookup = (fen, openingDisplay);
+                }
                 if (!string.IsNullOrEmpty(openingDisplay) && openingDisplay != "Starting Position")
                 {
                     richTextBox.SelectionColor = GetThemeColor(Color.FromArgb(152, 144, 128), Color.FromArgb(64, 54, 40));
@@ -2545,12 +2561,21 @@ namespace ChessDroid.Services
         {
             try
             {
-                string[] fenParts = completeFen.Split(' ');
-                bool whiteToMove = fenParts.Length > 1 && fenParts[1] == "w";
-                string enPassantSquare = fenParts.Length > 3 ? fenParts[3] : "-";
+                List<ThreatDetection.Threat> opponentThreats;
+                if (_cachedOpponentThreats is { } cached && cached.fen == completeFen)
+                {
+                    opponentThreats = cached.threats;
+                }
+                else
+                {
+                    string[] fenParts = completeFen.Split(' ');
+                    bool whiteToMove = fenParts.Length > 1 && fenParts[1] == "w";
+                    string enPassantSquare = fenParts.Length > 3 ? fenParts[3] : "-";
 
-                ChessBoard board = ChessBoard.FromFEN(completeFen);
-                var opponentThreats = ThreatDetection.AnalyzeOpponentThreats(board, whiteToMove, enPassantSquare);
+                    ChessBoard board = ChessBoard.FromFEN(completeFen);
+                    opponentThreats = ThreatDetection.AnalyzeOpponentThreats(board, whiteToMove, enPassantSquare);
+                    _cachedOpponentThreats = (completeFen, opponentThreats);
+                }
 
                 if (opponentThreats.Count > 0)
                 {
