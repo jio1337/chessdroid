@@ -33,6 +33,12 @@ namespace ChessDroid.Controls
         private int enPassantRow = -1;
         private int enPassantCol = -1;
 
+        // FEN halfmove clock (resets on pawn move/capture, else increments) and fullmove
+        // number (increments after Black's move). Tracked so GetFEN() stops always
+        // reporting "0 1" — the engine needs the halfmove clock for 50-move/Syzygy logic.
+        private int halfmoveClock = 0;
+        private int fullmoveNumber = 1;
+
         // Selection state
         private int selectedRow = -1;
         private int selectedCol = -1;
@@ -558,6 +564,8 @@ namespace ChessDroid.Controls
             blackQueensideCastle = true;
             enPassantRow = -1;
             enPassantCol = -1;
+            halfmoveClock = 0;
+            fullmoveNumber = 1;
             lastMove = null;
             _threatArrows.Clear();
             ClearSelection();
@@ -635,6 +643,9 @@ namespace ChessDroid.Controls
                     enPassantCol = -1;
                 }
 
+                halfmoveClock  = parts.Length > 4 && int.TryParse(parts[4], out int hc) ? hc : 0;
+                fullmoveNumber = parts.Length > 5 && int.TryParse(parts[5], out int fm) ? fm : 1;
+
                 lastMove = null;
                 ClearMoveAnnotation();
                 ClearSelection();
@@ -681,7 +692,7 @@ namespace ChessDroid.Controls
                 epSquare = $"{(char)('a' + enPassantCol)}{8 - enPassantRow}";
             }
 
-            return $"{boardFen} {turn} {castling} {epSquare} 0 1";
+            return $"{boardFen} {turn} {castling} {epSquare} {halfmoveClock} {fullmoveNumber}";
         }
 
         /// <summary>
@@ -2227,6 +2238,8 @@ namespace ChessDroid.Controls
                 lastMove = (fromRow, fromCol, fromRow, kingDest);
                 UpdateCastlingRights(movingPiece, fromRow, fromCol, fromRow, kingDest);
                 enPassantRow = -1; enPassantCol = -1;
+                halfmoveClock++;
+                if (!whiteToMove) fullmoveNumber++; // Black just completed castling
                 whiteToMove = !whiteToMove;
                 ClearSelection();
                 Invalidate();
@@ -2289,7 +2302,12 @@ namespace ChessDroid.Controls
                 enPassantCol = -1;
             }
 
+            // FEN halfmove clock: resets on a pawn move or capture, otherwise increments.
+            bool isPawnMove = char.ToLower(movingPiece) == 'p';
+            halfmoveClock = (isPawnMove || isCapture) ? 0 : halfmoveClock + 1;
+
             // Switch turn
+            if (!whiteToMove) fullmoveNumber++; // Black just moved — a full move has elapsed
             whiteToMove = !whiteToMove;
 
             ClearSelection();
