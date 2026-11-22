@@ -35,9 +35,9 @@ namespace ChessDroid
                 _analysisCache.TryGetValue(cacheKey, out var classifiedCache) &&
                 classifiedCache.Depth >= depth)
             {
-                DisplayAnalysisResult(fen, classifiedCache.BestMove, classifiedCache.Evaluation,
+                await DisplayAnalysisResult(fen, classifiedCache.BestMove, classifiedCache.Evaluation,
                     classifiedCache.PVs, classifiedCache.Evaluations, classifiedCache.WDL,
-                    classifiedCache.Depth, fromCache: true);
+                    classifiedCache.Depth, fromCache: true, ct);
                 return;
             }
 
@@ -130,8 +130,8 @@ namespace ChessDroid
             if (_analysisCache.TryGetValue(cacheKey, out var cached) &&
                 cached.Depth >= depth)
             {
-                DisplayAnalysisResult(fen, cached.BestMove, cached.Evaluation,
-                    cached.PVs, cached.Evaluations, cached.WDL, cached.Depth, fromCache: true);
+                await DisplayAnalysisResult(fen, cached.BestMove, cached.Evaluation,
+                    cached.PVs, cached.Evaluations, cached.WDL, cached.Depth, fromCache: true, ct);
                 return;
             }
 
@@ -188,8 +188,8 @@ namespace ChessDroid
                 if (ct.IsCancellationRequested || GetPositionKey(boardControl.GetFEN()) != cacheKey)
                     return;
 
-                DisplayAnalysisResult(fen, result.bestMove, result.evaluation,
-                    pvs, evals, result.wdl, depth, fromCache: false);
+                await DisplayAnalysisResult(fen, result.bestMove, result.evaluation,
+                    pvs, evals, result.wdl, depth, fromCache: false, ct);
             }
             catch (Exception ex)
             {
@@ -225,9 +225,9 @@ namespace ChessDroid
             return fen;
         }
 
-        private void DisplayAnalysisResult(string fen, string bestMove, string evaluation,
+        private async Task DisplayAnalysisResult(string fen, string bestMove, string evaluation,
             List<string> pvs, List<string> evals, WDLInfo? wdl,
-            int depth, bool fromCache)
+            int depth, bool fromCache, CancellationToken ct = default)
         {
             // Apply aggressiveness filter
             var candidates = new List<(string move, string evaluation, string pvLine, int sharpness)>();
@@ -266,11 +266,11 @@ namespace ChessDroid
                     recommendedMove, evaluation, pvs, evals, fen,
                     showBest, showSecond, showThird, depth, wdl, bookMoves);
             }
-            else
+            else if (consoleFormatter != null)
             {
-                consoleFormatter?.DisplayAnalysisResults(
+                await consoleFormatter.DisplayAnalysisResultsAsync(
                     recommendedMove, evaluation, pvs, evals, fen,
-                    showBest, showSecond, showThird, wdl, bookMoves);
+                    showBest, showSecond, showThird, wdl, bookMoves, ct);
             }
 
             // Update engine arrows (book arrows already set upfront in UpdateBookArrowsForPosition)

@@ -186,22 +186,58 @@ namespace ChessDroid.Services
         /// <summary>
         /// Displays a move line with evaluation, explanation, and threats
         /// </summary>
+        /// <summary>
+        /// Computes the explanation/threats/defenses text for a move line without touching the
+        /// RichTextBox — this is the expensive part of what used to be inline in DisplayMoveLine
+        /// (MovesExplanation.GenerateMoveExplanation + ThreatDetection + DefenseDetection). Being
+        /// pure lets callers run it via Task.Run off the UI thread.
+        /// </summary>
+        private (string explanation, string threatsText, string defensesText) ComputeMoveLineContent(
+            string firstMove, string completeFen, List<string> pvs, string evaluation,
+            bool showThreats, bool showExplanation, string? overrideExplanation)
+        {
+            string explanation = showExplanation
+                ? (!string.IsNullOrEmpty(overrideExplanation)
+                    ? overrideExplanation
+                    : generateExplanation(firstMove, completeFen, pvs, evaluation))
+                : "";
+
+            string threatsText = "";
+            string defensesText = "";
+            bool weHaveForcedMate = !string.IsNullOrEmpty(evaluation) &&
+                                     evaluation.StartsWith("Mate in ") &&
+                                     !evaluation.Contains("-");
+
+            if (showThreats && config?.ShowThreats == true && !weHaveForcedMate)
+            {
+                threatsText = GetThreatsForMove(completeFen, firstMove);
+                defensesText = GetDefensesForMove(completeFen, firstMove);
+            }
+
+            string cleanedExplanation = RemoveRedundantPassedPawnPhrases(explanation);
+
+            // Filter threats whose meaning is already expressed in the explanation
+            // (explanation wins — it's richer; don't show both)
+            if (!string.IsNullOrEmpty(threatsText))
+                threatsText = FilterRedundantThreats(threatsText, explanation);
+
+            return (cleanedExplanation, threatsText, defensesText);
+        }
+
         public void DisplayMoveLine(
             string label,
             string sanMove,
             string evaluation,
             string completeFen,
-            List<string> pvs,
-            string firstMove,
+            string explanation,
+            string threatsText,
+            string defensesText,
             Color headerForeColor,
             Color defaultExplanationColor,
-            bool showThreats = false,
             bool isOnlyWinningMove = false,
             bool isSavingMove = false,
             (string label, string symbol, Color color)? classification = null,
-            string? overrideExplanation = null,
-            string? pvUciLine = null,
-            bool showExplanation = true)
+            string? pvUciLine = null)
         {
             // Display header with foreground color only (no background highlight)
             // Include classification symbol if provided (e.g., "??" for Blunder)
@@ -240,45 +276,15 @@ namespace ChessDroid.Services
 
             AppendTextWithFormat(Environment.NewLine, richTextBox.BackColor, headerForeColor, FontStyle.Regular);
 
-            // Generate and display explanation
-            string explanation = showExplanation
-                ? (!string.IsNullOrEmpty(overrideExplanation)
-                    ? overrideExplanation
-                    : generateExplanation(firstMove, completeFen, pvs, evaluation))
-                : "";
-
-            // Get threats for this specific move if enabled
-            // Skip threats/defenses when WE have forced mate - they don't matter
-            // "Mate in X" = we have mate, "Mate in -X" = opponent has mate (still show analysis)
-            string threatsText = "";
-            string defensesText = "";
-            bool weHaveForcedMate = !string.IsNullOrEmpty(evaluation) &&
-                                     evaluation.StartsWith("Mate in ") &&
-                                     !evaluation.Contains("-");
-
-            if (showThreats && config?.ShowThreats == true && !weHaveForcedMate)
-            {
-                threatsText = GetThreatsForMove(completeFen, firstMove);
-                defensesText = GetDefensesForMove(completeFen, firstMove);
-            }
-
+            // explanation/threatsText/defensesText arrive precomputed (ComputeMoveLineContent),
+            // already cleaned/filtered — see that method for what used to run inline here.
             if (!string.IsNullOrEmpty(explanation) || !string.IsNullOrEmpty(threatsText) || !string.IsNullOrEmpty(defensesText))
             {
                 ResetBackground();
 
                 // Use default explanation color (new v2.5 classification handles quality indicators)
                 Color explanationColor = defaultExplanationColor;
-
-                // Remove redundant phrases from explanation
                 string cleanedExplanation = explanation;
-
-                // Remove redundant passed pawn phrases (always check, internal redundancy)
-                cleanedExplanation = RemoveRedundantPassedPawnPhrases(cleanedExplanation);
-
-                // Filter threats whose meaning is already expressed in the explanation
-                // (explanation wins — it's richer; don't show both)
-                if (!string.IsNullOrEmpty(threatsText))
-                    threatsText = FilterRedundantThreats(threatsText, explanation);
 
                 // Build the explanation line
                 if (!string.IsNullOrEmpty(cleanedExplanation))
@@ -2214,52 +2220,33 @@ namespace ChessDroid.Services
         /// <summary>
         /// Displays complete analysis results including multiple lines
         /// </summary>
-        public void DisplayAnalysisResults(
-            string bestMove,
-            string evaluation,
-            List<string> pvs,
-            List<string> evaluations,
-            string completeFen,
-            bool showBestLine,
-            bool showSecondLine,
-            bool showThirdLine,
-            WDLInfo? wdl = null,
-            List<BookMove>? bookMoves = null)
+        // §3.2: the data needed to render one PV line, with its heavy parts
+        // (explanation/threats/defenses) already computed by BuildAnalysisReport.
+        private sealed record MoveLineReportData(
+            string San, string Eval, string Explanation, string ThreatsText, string DefensesText,
+            (string label, string symbol, Color color)? Classification, string? PvUciLine);
+
+        private sealed record RecommendedSectionData(
+            bool AllLinesHidden, string PlayStyle, int Aggressiveness,
+            string San, string Eval, string Explanation, string ThreatsText, string DefensesText);
+
+        private sealed record AnalysisReportData(
+            bool IsOnlyWinningMove, bool IsPreciseSaving,
+            MoveLineReportData? Best, MoveLineReportData? Second, MoveLineReportData? Third,
+            RecommendedSectionData? Recommended);
+
+        /// <summary>
+        /// Computes everything DisplayAnalysisResults needs to render — SAN conversion,
+        /// move-quality classification, Brilliant-move detection, and per-line
+        /// explanation/threat/defense text (via ComputeMoveLineContent) — without touching
+        /// the RichTextBox. Pure, so DisplayAnalysisResultsAsync can run it with Task.Run
+        /// and keep the UI thread free during the ~4 MovesExplanation/ThreatDetection/
+        /// DefenseDetection calls this does per analysis update.
+        /// </summary>
+        private AnalysisReportData BuildAnalysisReport(
+            string bestMove, string evaluation, List<string> pvs, List<string> evaluations, string fen,
+            bool showBestLine, bool showSecondLine, bool showThirdLine)
         {
-            // Validate required parameter - store in local var for null-state tracking
-            string fen = completeFen ?? throw new ArgumentNullException(nameof(completeFen));
-
-            SuspendDrawing();
-            try
-            {
-            Clear();
-            _markers.Clear();
-
-            // [← Game Review] link — shown when a game review is active
-            if (_activeClassification != null)
-            {
-                Color linkClr = GetThemeColor(Color.Cyan, Color.Blue);
-                int rStart = richTextBox.TextLength;
-                int rLen = AppendTextWithFormat("[← Game Review]", richTextBox.BackColor, linkClr, FontStyle.Underline);
-                _markers.Add(new ClickMarker { Start = rStart, Length = rLen, Action = ClickAction.ShowGameReview });
-                richTextBox.AppendText("\n");
-            }
-
-            // Extract whose turn it is from FEN for WDL display
-            string[] fenPartsForWdl = fen.Split(' ');
-            bool whiteToMoveForWdl = fenPartsForWdl.Length > 1 && fenPartsForWdl[1] == "w";
-
-            // Display WDL information if available and enabled
-            if (config?.ShowWDL == true && wdl != null)
-            {
-                DisplayWDLInfo(wdl, whiteToMoveForWdl);
-            }
-
-            AppendOpeningAndBook(fen, bookMoves);
-
-            // Determine if dark mode is enabled for color selection
-            bool isDarkMode = ThemeService.IsDarkTheme(config?.Theme);
-
             // Detect "only winning move" scenario:
             // Best move is winning but second-best loses the advantage
             // Must account for whose turn it is (evals are from White's perspective)
@@ -2271,23 +2258,14 @@ namespace ChessDroid.Services
 
                 if (bestEval.HasValue && secondEval.HasValue)
                 {
-                    // Determine whose turn it is from FEN
                     string[] fenParts = fen.Split(' ');
                     bool whiteToMove = fenParts.Length > 1 && fenParts[1] == "w";
-
-                    // Calculate the evaluation swing between best and second-best
                     double evalSwing = Math.Abs(bestEval.Value - secondEval.Value);
 
                     // Standard evaluation thresholds (chessify.me/Stockfish):
                     // Decisive: > 1.50, Clear: 0.70-1.50, Slight: 0.27-0.70, Equal: < 0.27
-
                     if (whiteToMove)
                     {
-                        // White to move: positive eval = White winning
-                        // Basic: meaningful gap (>= 0.50) where best keeps edge (>= 0.40) and second drops to equal (<=0.20)
-                        // Swing: huge swing (>= 2.0) where best has slight+ advantage (>= 0.27) and second doesn't
-                        // Disaster: best keeps any edge (>= 0) but second is losing badly (<= -1.50)
-                        // Only saving move: best barely draws (~0) but alternatives clearly lose
                         bool basicTrigger = evalSwing >= 0.50 && bestEval.Value >= 0.40 && secondEval.Value <= 0.20;
                         bool swingTrigger = evalSwing >= 2.0 && bestEval.Value >= 0.27 && secondEval.Value <= 0.70;
                         bool disasterTrigger = bestEval.Value >= 0.0 && secondEval.Value <= -1.50;
@@ -2296,11 +2274,6 @@ namespace ChessDroid.Services
                     }
                     else
                     {
-                        // Black to move: negative eval = Black winning
-                        // Basic: meaningful gap (>= 0.50) where best keeps edge (<= -0.40) and second drops to equal (>=-0.20)
-                        // Swing: huge swing (>= 2.0) AND second-best lost most of the advantage (>= -0.70)
-                        // Disaster: best keeps any edge (<= 0) but second is losing badly (>= +1.50)
-                        // Only saving move: best barely draws (~0) but alternatives clearly lose
                         bool basicTrigger = evalSwing >= 0.50 && bestEval.Value <= -0.40 && secondEval.Value >= -0.20;
                         bool swingTrigger = evalSwing >= 2.0 && bestEval.Value <= -0.27 && secondEval.Value >= -0.70;
                         bool disasterTrigger = bestEval.Value <= 0.0 && secondEval.Value >= 1.50;
@@ -2324,15 +2297,11 @@ namespace ChessDroid.Services
                 }
             }
 
-            // Best line - always show threats
             string bestSanFull = ConvertPvToSan(pvs, 0, bestMove, fen);
             string formattedEval = FormatEvaluation(evaluation);
             // Use pvs[0] not bestMove - after Multi-PV sorting, bestMove may not match pvs[0]
             // bestMove is the "recommended" move based on aggressiveness setting
             string firstMove = pvs.Count > 0 ? pvs[0].Split(' ')[0] : bestMove;
-
-            // Check if recommended move (bestMove) differs from eval-best move (firstMove)
-            // If so, we'll mark the recommended line with an indicator
             bool recommendedDiffersFromBest = !string.IsNullOrEmpty(bestMove) &&
                                                !string.IsNullOrEmpty(firstMove) &&
                                                bestMove != firstMove;
@@ -2354,30 +2323,16 @@ namespace ChessDroid.Services
                 }
             }
 
-            // Explanation color — shared across all three lines
-            Color pvExplanationColor = isDarkMode ? Color.FromArgb(158, 178, 200) : Color.FromArgb(60, 82, 108);
-
-            // Best line - show if enabled
+            MoveLineReportData? best = null;
             if (showBestLine)
             {
-                DisplayMoveLine(
-                    "Best line",
-                    bestSanFull,
-                    formattedEval,
-                    fen,
-                    pvs,
-                    firstMove,
-                    isDarkMode ? Color.FromArgb(214, 202, 182) : Color.FromArgb(22, 14, 4),
-                    pvExplanationColor,
-                    showThreats: true,
-                    isOnlyWinningMove: isOnlyWinningMove,
-                    isSavingMove: isPreciseSaving,
-                    classification: bestMoveClassification,
-                    overrideExplanation: brilliantExplanation,
-                    pvUciLine: pvs.Count > 0 ? pvs[0] : null);
+                var (exp, threats, defenses) = ComputeMoveLineContent(firstMove, fen, pvs, formattedEval,
+                    showThreats: true, showExplanation: true, brilliantExplanation);
+                best = new MoveLineReportData(bestSanFull, formattedEval, exp, threats, defenses,
+                    bestMoveClassification, pvs.Count > 0 ? pvs[0] : null);
             }
 
-            // Second best - show threats if enabled
+            MoveLineReportData? second = null;
             if (showSecondLine && pvs.Count >= 2)
             {
                 var secondSan = ChessNotationService.ConvertFullPvToSan(pvs[1], fen,
@@ -2386,7 +2341,6 @@ namespace ChessDroid.Services
                 string secondEval = evaluations.Count >= 2 ? evaluations[1] : "";
                 string formattedSecondEval = FormatEvaluation(secondEval);
 
-                // Calculate classification if best move is the only winning move
                 (string label, string symbol, Color color)? secondClassification = null;
                 if (isOnlyWinningMove)
                 {
@@ -2400,22 +2354,13 @@ namespace ChessDroid.Services
                     }
                 }
 
-                DisplayMoveLine(
-                    "Second best",
-                    secondSan,
-                    formattedSecondEval,
-                    fen,
-                    pvs,
-                    secondMove,
-                    isDarkMode ? Color.FromArgb(196, 186, 168) : Color.FromArgb(44, 34, 20),
-                    pvExplanationColor,
-                    showThreats: true,
-                    isOnlyWinningMove: false,
-                    classification: secondClassification,
-                    pvUciLine: pvs[1]);
+                var (exp, threats, defenses) = ComputeMoveLineContent(secondMove, fen, pvs, formattedSecondEval,
+                    showThreats: true, showExplanation: true, null);
+                second = new MoveLineReportData(secondSan, formattedSecondEval, exp, threats, defenses,
+                    secondClassification, pvs[1]);
             }
 
-            // Third best - show threats if enabled
+            MoveLineReportData? third = null;
             if (showThirdLine && pvs.Count >= 3)
             {
                 var thirdSan = ChessNotationService.ConvertFullPvToSan(pvs[2], fen,
@@ -2424,7 +2369,6 @@ namespace ChessDroid.Services
                 string thirdEval = evaluations.Count >= 3 ? evaluations[2] : "";
                 string formattedThirdEval = FormatEvaluation(thirdEval);
 
-                // Calculate classification if best move is the only winning move
                 (string label, string symbol, Color color)? thirdClassification = null;
                 if (isOnlyWinningMove)
                 {
@@ -2438,19 +2382,10 @@ namespace ChessDroid.Services
                     }
                 }
 
-                DisplayMoveLine(
-                    "Third best",
-                    thirdSan,
-                    formattedThirdEval,
-                    fen,
-                    pvs,
-                    thirdMove,
-                    isDarkMode ? Color.FromArgb(176, 172, 160) : Color.FromArgb(68, 64, 76),
-                    pvExplanationColor,
-                    showThreats: true,
-                    isOnlyWinningMove: false,
-                    classification: thirdClassification,
-                    pvUciLine: pvs[2]);
+                var (exp, threats, defenses) = ComputeMoveLineContent(thirdMove, fen, pvs, formattedThirdEval,
+                    showThreats: true, showExplanation: true, null);
+                third = new MoveLineReportData(thirdSan, formattedThirdEval, exp, threats, defenses,
+                    thirdClassification, pvs[2]);
             }
 
             // Display recommended move (based on aggressiveness) if:
@@ -2462,6 +2397,7 @@ namespace ChessDroid.Services
             bool hasNonBalancedStyle = playStyleEnabled && config != null && (config.Aggressiveness <= 40 || config.Aggressiveness >= 61);
             bool showRecommendedSection = playStyleEnabled && (recommendedDiffersFromBest || allLinesHidden || hasNonBalancedStyle);
 
+            RecommendedSectionData? recommended = null;
             if (showRecommendedSection)
             {
                 // Find the recommended move's PV line and eval
@@ -2484,13 +2420,6 @@ namespace ChessDroid.Services
                     string recommendedEval = recommendedIndex < evaluations.Count ? evaluations[recommendedIndex] : "";
                     string formattedRecommendedEval = FormatEvaluation(recommendedEval);
 
-                    // Add a blank line separator before style/recommended section (only if there are lines above)
-                    if (!allLinesHidden)
-                    {
-                        richTextBox.AppendText(Environment.NewLine);
-                    }
-
-                    // Display play style indicator
                     string playStyle = config.Aggressiveness switch
                     {
                         <= 20 => "Very Solid",
@@ -2499,58 +2428,156 @@ namespace ChessDroid.Services
                         <= 80 => "Aggressive",
                         _ => "Very Aggressive"
                     };
-                    Color styleColor = isDarkMode ? Color.FromArgb(120, 140, 162) : Color.FromArgb(72, 90, 112);
-                    richTextBox.SelectionColor = styleColor;
-                    richTextBox.AppendText($"Style: {playStyle} ({config.Aggressiveness}){Environment.NewLine}");
-                    ResetFormatting();
-
-                    // Use best line colors when it's the only line shown, orange when shown alongside other lines
-                    Color headerColor = isDarkMode ? Color.FromArgb(202, 162, 106) : Color.FromArgb(146, 72, 8);
-                    Color explanationColor = pvExplanationColor;
 
                     if (allLinesHidden)
                     {
-                        // No lines shown above — use full DisplayMoveLine so the section is self-contained
-                        DisplayMoveLine(
-                            "Recommended",
-                            recommendedSan,
-                            formattedRecommendedEval,
-                            fen,
-                            pvs,
-                            bestMove,
-                            headerColor,
-                            explanationColor,
-                            showThreats: true,
-                            isOnlyWinningMove: false,
-                            classification: null);
+                        // No lines shown above — full DisplayMoveLine content, so compute
+                        // explanation/threats/defenses the same way the other lines do.
+                        var (exp, threats, defenses) = ComputeMoveLineContent(bestMove, fen, pvs, formattedRecommendedEval,
+                            showThreats: true, showExplanation: true, null);
+                        recommended = new RecommendedSectionData(true, playStyle, config.Aggressiveness,
+                            recommendedSan, formattedRecommendedEval, exp, threats, defenses);
                     }
                     else
                     {
-                        // Lines are visible above — show only first move + one-line reason to avoid repeating the full PV
-                        string firstSanMove = recommendedSan.Split(' ')[0];
+                        // Lines are visible above — only a one-line reason is shown, no threats/defenses.
+                        // NOTE: matches original behaviour of passing the *raw* recommendedEval (not the
+                        // formatted one) into generateExplanation here.
+                        string explanation = generateExplanation(bestMove, fen, pvs, recommendedEval);
+                        explanation = RemoveRedundantPassedPawnPhrases(explanation);
+                        recommended = new RecommendedSectionData(false, playStyle, config.Aggressiveness,
+                            recommendedSan, formattedRecommendedEval, explanation, "", "");
+                    }
+                }
+            }
+
+            return new AnalysisReportData(isOnlyWinningMove, isPreciseSaving, best, second, third, recommended);
+        }
+
+        /// <summary>
+        /// Pure RichTextBox rendering of an already-built AnalysisReportData — no
+        /// MovesExplanation/ThreatDetection/DefenseDetection calls happen in here.
+        /// </summary>
+        private void RenderAnalysisReport(AnalysisReportData report, string fen, WDLInfo? wdl, List<BookMove>? bookMoves)
+        {
+            SuspendDrawing();
+            try
+            {
+                Clear();
+                _markers.Clear();
+
+                // [← Game Review] link — shown when a game review is active
+                if (_activeClassification != null)
+                {
+                    Color linkClr = GetThemeColor(Color.Cyan, Color.Blue);
+                    int rStart = richTextBox.TextLength;
+                    int rLen = AppendTextWithFormat("[← Game Review]", richTextBox.BackColor, linkClr, FontStyle.Underline);
+                    _markers.Add(new ClickMarker { Start = rStart, Length = rLen, Action = ClickAction.ShowGameReview });
+                    richTextBox.AppendText("\n");
+                }
+
+                string[] fenPartsForWdl = fen.Split(' ');
+                bool whiteToMoveForWdl = fenPartsForWdl.Length > 1 && fenPartsForWdl[1] == "w";
+                if (config?.ShowWDL == true && wdl != null)
+                    DisplayWDLInfo(wdl, whiteToMoveForWdl);
+
+                AppendOpeningAndBook(fen, bookMoves);
+
+                bool isDarkMode = ThemeService.IsDarkTheme(config?.Theme);
+                Color pvExplanationColor = isDarkMode ? Color.FromArgb(158, 178, 200) : Color.FromArgb(60, 82, 108);
+
+                if (report.Best is { } best)
+                {
+                    DisplayMoveLine("Best line", best.San, best.Eval, fen, best.Explanation, best.ThreatsText, best.DefensesText,
+                        isDarkMode ? Color.FromArgb(214, 202, 182) : Color.FromArgb(22, 14, 4), pvExplanationColor,
+                        isOnlyWinningMove: report.IsOnlyWinningMove, isSavingMove: report.IsPreciseSaving,
+                        classification: best.Classification, pvUciLine: best.PvUciLine);
+                }
+
+                if (report.Second is { } second)
+                {
+                    DisplayMoveLine("Second best", second.San, second.Eval, fen, second.Explanation, second.ThreatsText, second.DefensesText,
+                        isDarkMode ? Color.FromArgb(196, 186, 168) : Color.FromArgb(44, 34, 20), pvExplanationColor,
+                        isOnlyWinningMove: false, classification: second.Classification, pvUciLine: second.PvUciLine);
+                }
+
+                if (report.Third is { } third)
+                {
+                    DisplayMoveLine("Third best", third.San, third.Eval, fen, third.Explanation, third.ThreatsText, third.DefensesText,
+                        isDarkMode ? Color.FromArgb(176, 172, 160) : Color.FromArgb(68, 64, 76), pvExplanationColor,
+                        isOnlyWinningMove: false, classification: third.Classification, pvUciLine: third.PvUciLine);
+                }
+
+                if (report.Recommended is { } rec)
+                {
+                    if (!rec.AllLinesHidden)
+                        richTextBox.AppendText(Environment.NewLine);
+
+                    Color styleColor = isDarkMode ? Color.FromArgb(120, 140, 162) : Color.FromArgb(72, 90, 112);
+                    richTextBox.SelectionColor = styleColor;
+                    richTextBox.AppendText($"Style: {rec.PlayStyle} ({rec.Aggressiveness}){Environment.NewLine}");
+                    ResetFormatting();
+
+                    Color headerColor = isDarkMode ? Color.FromArgb(202, 162, 106) : Color.FromArgb(146, 72, 8);
+                    Color explanationColor = pvExplanationColor;
+
+                    if (rec.AllLinesHidden)
+                    {
+                        DisplayMoveLine("Recommended", rec.San, rec.Eval, fen, rec.Explanation, rec.ThreatsText, rec.DefensesText,
+                            headerColor, explanationColor, isOnlyWinningMove: false, classification: null);
+                    }
+                    else
+                    {
+                        string firstSanMove = rec.San.Split(' ')[0];
                         AppendTextWithFormat($"Recommended: {firstSanMove}", richTextBox.BackColor, headerColor, FontStyle.Bold);
                         AppendTextWithFormat(Environment.NewLine, richTextBox.BackColor, headerColor, FontStyle.Regular);
 
-                        string explanation = generateExplanation(bestMove, fen, pvs, recommendedEval);
-                        explanation = RemoveRedundantPassedPawnPhrases(explanation);
-                        if (!string.IsNullOrEmpty(explanation))
-                            AppendTextWithFormat($"  → {explanation}", richTextBox.BackColor, explanationColor, FontStyle.Italic);
+                        if (!string.IsNullOrEmpty(rec.Explanation))
+                            AppendTextWithFormat($"  → {rec.Explanation}", richTextBox.BackColor, explanationColor, FontStyle.Italic);
 
                         AppendTextWithFormat(Environment.NewLine, richTextBox.BackColor, explanationColor, FontStyle.Regular);
                         ResetFormatting();
                     }
                 }
-            }
 
-            // Display opponent threats at the bottom (independent of which move we choose)
-            if (config?.ShowThreats == true)
-            {
-                DisplayOpponentThreats(fen);
-            }
+                // Display opponent threats at the bottom (independent of which move we choose)
+                if (config?.ShowThreats == true)
+                    DisplayOpponentThreats(fen);
 
-            ResetFormatting();
+                ResetFormatting();
             }
             finally { ResumeDrawing(); }
+        }
+
+        /// <summary>
+        /// Builds the analysis report off the UI thread (Task.Run) — this is where the
+        /// MovesExplanation/ThreatDetection/DefenseDetection/Brilliant-move calls that used
+        /// to run inline on the UI thread now happen — then renders it on the calling thread.
+        /// Caller is expected to be on the UI thread (the RichTextBox render half is not
+        /// thread-safe), same as the old synchronous DisplayAnalysisResults.
+        /// </summary>
+        public async Task DisplayAnalysisResultsAsync(
+            string bestMove,
+            string evaluation,
+            List<string> pvs,
+            List<string> evaluations,
+            string completeFen,
+            bool showBestLine,
+            bool showSecondLine,
+            bool showThirdLine,
+            WDLInfo? wdl = null,
+            List<BookMove>? bookMoves = null,
+            CancellationToken ct = default)
+        {
+            string fen = completeFen ?? throw new ArgumentNullException(nameof(completeFen));
+
+            var report = await Task.Run(
+                () => BuildAnalysisReport(bestMove, evaluation, pvs, evaluations, fen, showBestLine, showSecondLine, showThirdLine),
+                ct);
+
+            if (ct.IsCancellationRequested) return;
+
+            RenderAnalysisReport(report, fen, wdl, bookMoves);
         }
 
 
@@ -2654,27 +2681,24 @@ namespace ChessDroid.Services
                 if (showBestLine && pvs.Count >= 1)
                 {
                     string san = ConvertPvToSan(pvs, 0, firstMove, fen);
-                    DisplayMoveLine("", san, FormatEvaluation(evaluation), fen, pvs, firstMove,
-                        lineColors[0], expColor, showThreats: false, showExplanation: false,
-                        pvUciLine: pvs[0]);
+                    DisplayMoveLine("", san, FormatEvaluation(evaluation), fen, "", "", "",
+                        lineColors[0], expColor, pvUciLine: pvs[0]);
                 }
                 if (showSecondLine && pvs.Count >= 2)
                 {
                     string mv2 = pvs[1].Split(' ')[0];
                     string san = ConvertPvToSan(pvs, 1, mv2, fen);
                     string ev2 = evaluations.Count >= 2 ? evaluations[1] : "";
-                    DisplayMoveLine("", san, FormatEvaluation(ev2), fen, pvs, mv2,
-                        lineColors[1], expColor, showThreats: false, showExplanation: false,
-                        pvUciLine: pvs[1]);
+                    DisplayMoveLine("", san, FormatEvaluation(ev2), fen, "", "", "",
+                        lineColors[1], expColor, pvUciLine: pvs[1]);
                 }
                 if (showThirdLine && pvs.Count >= 3)
                 {
                     string mv3 = pvs[2].Split(' ')[0];
                     string san = ConvertPvToSan(pvs, 2, mv3, fen);
                     string ev3 = evaluations.Count >= 3 ? evaluations[2] : "";
-                    DisplayMoveLine("", san, FormatEvaluation(ev3), fen, pvs, mv3,
-                        lineColors[2], expColor, showThreats: false, showExplanation: false,
-                        pvUciLine: pvs[2]);
+                    DisplayMoveLine("", san, FormatEvaluation(ev3), fen, "", "", "",
+                        lineColors[2], expColor, pvUciLine: pvs[2]);
                 }
 
                 if (config?.ShowThreats == true)
