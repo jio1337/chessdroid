@@ -22,3 +22,6 @@ jobs:
 
       - name: Build
         run: dotnet build chessdroid.sln --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test tests/ChessDroid.Tests/ChessDroid.Tests.csproj --configuration Release --no-build
