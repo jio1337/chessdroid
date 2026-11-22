@@ -8,7 +8,7 @@ namespace ChessDroid.Services
     /// Handles formatting and display of chess analysis output to RichTextBox
     /// Extracted from MainForm to centralize console output formatting
     /// </summary>
-    public class ConsoleOutputFormatter
+    public class ConsoleOutputFormatter : IDisposable
     {
         private readonly RichTextBox richTextBox;
         private readonly AppConfig config;
@@ -58,6 +58,17 @@ namespace ChessDroid.Services
             // Wire up mouse events for [See line] click detection
             richTextBox.MouseClick += RichTextBox_MouseClick;
             richTextBox.MouseMove += RichTextBox_MouseMove;
+        }
+
+        /// <summary>
+        /// Unsubscribes the RichTextBox mouse handlers. Must be called if a formatter is
+        /// ever discarded while the RichTextBox it was built on stays alive — otherwise the
+        /// RichTextBox keeps firing into a formatter with stale _markers forever.
+        /// </summary>
+        public void Dispose()
+        {
+            richTextBox.MouseClick -= RichTextBox_MouseClick;
+            richTextBox.MouseMove -= RichTextBox_MouseMove;
         }
 
         /// <summary>

@@ -411,14 +411,46 @@ namespace ChessDroid
 
             // Initialize opening book service
             openingBookService = new PolyglotBookService();
+            LoadOpeningBookSync();
+        }
+
+        // Synchronous initial load, called once at startup only (InitializeServices runs once).
+        private void LoadOpeningBookSync()
+        {
             if (config?.UseOpeningBook == true && !string.IsNullOrEmpty(config.OpeningBooksFolder))
             {
                 string booksPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, config.OpeningBooksFolder);
                 if (Directory.Exists(booksPath))
                 {
-                    openingBookService.LoadBooksFromFolder(booksPath);
+                    openingBookService!.LoadBooksFromFolder(booksPath);
                 }
             }
+        }
+
+        /// <summary>
+        /// Rebuilds the opening book service off the UI thread, then swaps it in. Only called
+        /// when UseOpeningBook/OpeningBooksFolder actually changed — reading the ~16MB .bin
+        /// book is not free and must not block the UI thread or run on every Settings close.
+        /// </summary>
+        private async Task ReloadOpeningBookAsync()
+        {
+            bool useBook = config?.UseOpeningBook == true;
+            string? folder = config?.OpeningBooksFolder;
+
+            var newService = new PolyglotBookService();
+            await Task.Run(() =>
+            {
+                if (useBook && !string.IsNullOrEmpty(folder))
+                {
+                    string booksPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, folder);
+                    if (Directory.Exists(booksPath))
+                        newService.LoadBooksFromFolder(booksPath);
+                }
+            });
+
+            var oldService = openingBookService;
+            openingBookService = newService;
+            oldService?.Dispose();
         }
 
         private void PopulatePiecesComboBox()
@@ -1135,6 +1167,8 @@ namespace ChessDroid
             int prevAggressiveness = config.Aggressiveness;
             bool prevShowExplanations = config.ShowExplanations;
             string prevTheme = config.Theme;
+            bool prevUseOpeningBook = config.UseOpeningBook;
+            string prevOpeningBooksFolder = config.OpeningBooksFolder;
 
             using var settingsForm = new SettingsForm(config);
             if (settingsForm.ShowDialog() == DialogResult.OK)
@@ -1145,13 +1179,21 @@ namespace ChessDroid
                     || config.PlayStyleEnabled != prevPlayStyle
                     || config.Aggressiveness != prevAggressiveness
                     || config.ShowExplanations != prevShowExplanations;
+                bool bookSettingsChanged = config.UseOpeningBook != prevUseOpeningBook
+                    || config.OpeningBooksFolder != prevOpeningBooksFolder;
 
                 if (engineChanged)
                 {
                     engineService?.Dispose();
                     engineService = new ChessEngineService(config);
                 }
-                InitializeServices();
+                // consoleFormatter/openingBookService read the same shared `config` instance
+                // by reference, so they already see the new values without being rebuilt —
+                // rebuilding consoleFormatter here used to leak a RichTextBox event
+                // subscription every time Settings closed with OK.
+                ExplanationFormatter.LoadFromConfig(config);
+                if (bookSettingsChanged)
+                    _ = ReloadOpeningBookAsync();
                 ApplyTheme();
                 if (config.Theme != prevTheme)
                 {
