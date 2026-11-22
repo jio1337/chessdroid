@@ -33,34 +33,15 @@ namespace ChessDroid.Services
                     catch { /* evals are cosmetic — skip on error */ }
                 }
 
-                var raw = new List<OpeningEntry>();
-                foreach (string file in new[] { "ecoA.json", "ecoB.json", "ecoC.json", "ecoD.json", "ecoE.json" })
-                {
-                    string path = Path.Combine(booksFolder, file);
-                    if (!File.Exists(path)) continue;
-
-                    try
+                // EcoFileCache parses the ecoA-E.json files once and shares the raw rows
+                // with OpeningDatabase (see EcoFileCache for why neither consumer can
+                // safely dedup on the other's behalf).
+                var raw = EcoFileCache.LoadRaw(booksFolder)
+                    .Select(e =>
                     {
-                        using var doc = JsonDocument.Parse(File.ReadAllText(path));
-                        foreach (var prop in doc.RootElement.EnumerateObject())
-                        {
-                            var val = prop.Value;
-                            if (!val.TryGetProperty("eco", out var ecoProp)) continue;
-                            if (!val.TryGetProperty("name", out var nameProp)) continue;
-                            if (!val.TryGetProperty("moves", out var movesProp)) continue;
-
-                            string eco = ecoProp.GetString() ?? "";
-                            string name = nameProp.GetString() ?? "";
-                            string moves = movesProp.GetString() ?? "";
-                            if (string.IsNullOrEmpty(eco) || string.IsNullOrEmpty(name) || string.IsNullOrEmpty(moves))
-                                continue;
-
-                            evals.TryGetValue(prop.Name, out string? eval);
-                            raw.Add(new OpeningEntry(eco, name, moves, eval ?? ""));
-                        }
-                    }
-                    catch { /* skip malformed file */ }
-                }
+                        evals.TryGetValue(e.FullFen, out string? eval);
+                        return new OpeningEntry(e.Eco, e.Name, e.Moves, eval ?? "");
+                    });
 
                 // Deduplicate: for each (eco, name) pair keep the longest move sequence
                 _cache = raw

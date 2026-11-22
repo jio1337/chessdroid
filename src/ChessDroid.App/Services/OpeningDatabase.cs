@@ -53,32 +53,25 @@ namespace ChessDroid.Services
                 return;
             }
 
-            // Try loading from eco*.json files in app directory or Books folder
-            string[] ecoFiles = { "ecoA.json", "ecoB.json", "ecoC.json", "ecoD.json", "ecoE.json" };
+            // Try loading from eco*.json files in app directory or Books folder. Routed
+            // through EcoFileCache so the same raw parse can be shared with EcoBookService
+            // instead of each independently re-reading these files from disk.
             bool loadedAny = false;
 
-            // Check app directory first
-            foreach (var file in ecoFiles)
+            var appDirEntries = EcoFileCache.LoadRaw(appPath);
+            if (appDirEntries.Count > 0)
             {
-                string path = Path.Combine(appPath, file);
-                if (File.Exists(path))
-                {
-                    LoadFromJson(path);
-                    loadedAny = true;
-                }
+                LoadFromRawEntries(appDirEntries);
+                loadedAny = true;
             }
 
-            // Also check Books folder
             if (Directory.Exists(booksPath))
             {
-                foreach (var file in ecoFiles)
+                var booksEntries = EcoFileCache.LoadRaw(booksPath);
+                if (booksEntries.Count > 0)
                 {
-                    string path = Path.Combine(booksPath, file);
-                    if (File.Exists(path))
-                    {
-                        LoadFromJson(path);
-                        loadedAny = true;
-                    }
+                    LoadFromRawEntries(booksEntries);
+                    loadedAny = true;
                 }
             }
 
@@ -98,6 +91,33 @@ namespace ChessDroid.Services
             {
                 LoadFromTsv(booksTsvPath);
             }
+        }
+
+        /// <summary>
+        /// Populates _openings from already-parsed raw rows (see EcoFileCache), applying
+        /// the same "first position wins" dedup as LoadFromJson without re-reading or
+        /// re-parsing any files.
+        /// </summary>
+        private void LoadFromRawEntries(IEnumerable<EcoFileCache.RawEntry> entries)
+        {
+            foreach (var entry in entries)
+            {
+                string piecePlacement = ExtractPiecePlacement(entry.FullFen);
+                if (string.IsNullOrEmpty(piecePlacement)) continue;
+                if (string.IsNullOrEmpty(entry.Name)) continue;
+
+                if (!_openings.ContainsKey(piecePlacement))
+                {
+                    _openings[piecePlacement] = new OpeningInfo
+                    {
+                        ECO = entry.Eco,
+                        Name = entry.Name,
+                        Moves = entry.Moves
+                    };
+                }
+            }
+
+            _isLoaded = true;
         }
 
         /// <summary>
