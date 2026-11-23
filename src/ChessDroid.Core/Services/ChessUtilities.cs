@@ -38,7 +38,10 @@ namespace ChessDroid.Services
         // =============================
 
         /// <summary>
-        /// Get material value of piece type
+        /// Get exchange-evaluation value of piece type. King is deliberately a large
+        /// finite value (not 0, not int.MaxValue) so SEE-style exchange math never treats
+        /// capturing/losing the king as "free" or overflows — see GetMaterialValue for the
+        /// separate, deliberately different King=0 value material-counting code needs.
         /// </summary>
         public static int GetPieceValue(PieceType pieceType)
         {
@@ -50,6 +53,28 @@ namespace ChessDroid.Services
                 PieceType.Rook => 5,
                 PieceType.Queen => 9,
                 PieceType.King => 100,
+                _ => 0
+            };
+        }
+
+        /// <summary>
+        /// Get material-counting value of piece type (King=0, excluded from material totals —
+        /// deliberately different from GetPieceValue's King=100, which exchange-evaluation
+        /// code needs instead; CHESSDROID_AUDIT.md §6.3 flagged these as duplicate methods to
+        /// consolidate, but EndgameAnalysis.GetPieceValue and MoveSharpnessAnalyzer.GetPieceValue
+        /// both deliberately used King=0 — merging them onto GetPieceValue would have silently
+        /// changed king's value from 0 to 100 in material-count contexts).
+        /// </summary>
+        public static int GetMaterialValue(PieceType pieceType)
+        {
+            return pieceType switch
+            {
+                PieceType.Pawn => 1,
+                PieceType.Knight => 3,
+                PieceType.Bishop => 3,
+                PieceType.Rook => 5,
+                PieceType.Queen => 9,
+                PieceType.King => 0,
                 _ => 0
             };
         }

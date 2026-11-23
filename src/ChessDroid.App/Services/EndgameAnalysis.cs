@@ -543,19 +543,10 @@ namespace ChessDroid.Services
             }
         }
 
-        private static int GetPieceValue(PieceType pieceType)
-        {
-            return pieceType switch
-            {
-                PieceType.Pawn => 1,
-                PieceType.Knight => 3,
-                PieceType.Bishop => 3,
-                PieceType.Rook => 5,
-                PieceType.Queen => 9,
-                PieceType.King => 0, // Don't count king in material
-                _ => 0
-            };
-        }
+        // King=0 (material-counting, not exchange eval) — see
+        // ChessUtilities.GetMaterialValue's doc comment for why this is a deliberately
+        // different value from ChessUtilities.GetPieceValue's King=100.
+        private static int GetPieceValue(PieceType pieceType) => ChessUtilities.GetMaterialValue(pieceType);
 
         // =============================
         // RULE OF THE SQUARE

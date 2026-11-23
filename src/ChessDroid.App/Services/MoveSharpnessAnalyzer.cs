@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using ChessDroid.Models;
 
 namespace ChessDroid.Services
 {
@@ -346,21 +347,11 @@ namespace ChessDroid.Services
         }
 
         /// <summary>
-        /// Returns material value of a piece (pawn = 1, knight/bishop = 3, rook = 5, queen = 9)
+        /// Returns material value of a piece (King=0, material-counting — see
+        /// ChessUtilities.GetMaterialValue's doc comment for why this is a deliberately
+        /// different value from ChessUtilities.GetPieceValue's King=100).
         /// </summary>
-        private int GetPieceValue(char piece)
-        {
-            return char.ToLower(piece) switch
-            {
-                'p' => 1,
-                'n' => 3,
-                'b' => 3,
-                'r' => 5,
-                'q' => 9,
-                'k' => 0, // King has no material value
-                _ => 0
-            };
-        }
+        private int GetPieceValue(char piece) => ChessUtilities.GetMaterialValue(PieceHelper.GetPieceType(piece));
 
         /// <summary>
         /// Checks if a move is castling.
