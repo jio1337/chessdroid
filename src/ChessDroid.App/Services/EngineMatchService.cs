@@ -98,13 +98,24 @@ namespace ChessDroid.Services
             this.timeControl = timeControl;
             matchCts = new CancellationTokenSource();
 
-            // Open log file — overwrites previous match log; written to exe directory.
-            string logPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "match_debug.txt");
-            _matchLog = new StreamWriter(logPath, append: false) { AutoFlush = true };
-            LogM($"=== MATCH START: {whiteEngine} (W) vs {blackEngine} (B) | TC={timeControl} | FEN={startingFen ?? "startpos"} ===");
-
             try
             {
+                // Open log file. Used to be a single fixed "match_debug.txt" in the exe
+                // directory, overwritten on every match — fine for one match at a time, but
+                // Tournament mode runs up to 4 EngineMatchService instances concurrently, and
+                // StreamWriter opens a file with exclusive write access by default: only the
+                // first of the 4 concurrent StartMatchAsync calls could actually open it, and
+                // the other 3 threw IOException here, BEFORE this try block existed around
+                // this line — so the exception propagated straight out of this fire-and-forget
+                // async method as a silent unobserved task exception, and those 3 matches'
+                // engines never even got created. Now unique per match and inside the try, so
+                // any failure here is caught below and surfaces via OnMatchEnded instead.
+                string logsDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs");
+                Directory.CreateDirectory(logsDir);
+                string logPath = Path.Combine(logsDir, $"match_debug_{Guid.NewGuid():N}.txt");
+                _matchLog = new StreamWriter(logPath, append: false) { AutoFlush = true };
+                LogM($"=== MATCH START: {whiteEngine} (W) vs {blackEngine} (B) | TC={timeControl} | FEN={startingFen ?? "startpos"} ===");
+
                 OnStatusChanged?.Invoke($"Initializing {whiteEngine} (White)...");
 
                 // Create two separate engine instances
