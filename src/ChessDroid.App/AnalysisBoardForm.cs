@@ -73,6 +73,24 @@ namespace ChessDroid
         /// always outside a match, or during a match only while browsing away from the
         /// live tip (the live tip's eval already comes from the match's own annotator).</summary>
         private bool ShouldAutoAnalyzeDuringNav() => !matchRunning || moveTree.CurrentNode != _matchLiveAnchor;
+
+        // analysisOutput doubles as both the running match transcript (built incrementally
+        // by MatchService_OnMovePlayed) and the single-position analysis report (rebuilt
+        // from scratch by RenderAnalysisReport whenever TriggerAutoAnalysis fires on a
+        // browsed position). _matchTranscript is the match log's own persistent copy, so
+        // browsing can safely let analysisOutput get overwritten with an analysis report
+        // without losing the match transcript — RestoreMatchTranscriptIfBackOnLiveTip puts
+        // it back once the viewer returns to following the live game.
+        private readonly System.Text.StringBuilder _matchTranscript = new();
+
+        private void RestoreMatchTranscriptIfBackOnLiveTip()
+        {
+            if (!matchRunning || moveTree.CurrentNode != _matchLiveAnchor) return;
+            analysisOutput.Clear();
+            analysisOutput.AppendText(_matchTranscript.ToString());
+            analysisOutput.ScrollToCaret();
+        }
+
         private bool _awaitingMatchAnimation = false;
         private int _matchWhiteElo;
         private int _matchBlackElo;
@@ -1356,6 +1374,10 @@ namespace ChessDroid
                     {
                         _ = TriggerAutoAnalysis();
                     }
+                    else
+                    {
+                        RestoreMatchTranscriptIfBackOnLiveTip();
+                    }
                 }
                 finally
                 {
@@ -1392,6 +1414,10 @@ namespace ChessDroid
                     if (ShouldAutoAnalyzeDuringNav())
                     {
                         _ = TriggerAutoAnalysis();
+                    }
+                    else
+                    {
+                        RestoreMatchTranscriptIfBackOnLiveTip();
                     }
                 }
                 finally
@@ -1794,6 +1820,7 @@ namespace ChessDroid
                 lblStatus.Text = statusText;
 
                 if (ShouldAutoAnalyzeDuringNav()) _ = TriggerAutoAnalysis();
+                else RestoreMatchTranscriptIfBackOnLiveTip();
             }
             finally { isNavigating = false; }
         }
@@ -1927,6 +1954,10 @@ namespace ChessDroid
                 {
                     _ = TriggerAutoAnalysis();
                 }
+                else
+                {
+                    RestoreMatchTranscriptIfBackOnLiveTip();
+                }
             }
             finally
             {
@@ -1960,6 +1991,10 @@ namespace ChessDroid
                 {
                     _ = TriggerAutoAnalysis();
                 }
+                else
+                {
+                    RestoreMatchTranscriptIfBackOnLiveTip();
+                }
             }
             finally
             {
@@ -1992,6 +2027,10 @@ namespace ChessDroid
                     if (ShouldAutoAnalyzeDuringNav())
                     {
                         _ = TriggerAutoAnalysis();
+                    }
+                    else
+                    {
+                        RestoreMatchTranscriptIfBackOnLiveTip();
                     }
                 }
                 finally

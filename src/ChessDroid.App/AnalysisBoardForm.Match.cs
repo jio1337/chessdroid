@@ -178,6 +178,8 @@ namespace ChessDroid
                     analysisOutput.AppendText($"Book: {startFen}\n");
             }
             analysisOutput.AppendText("\n");
+            _matchTranscript.Clear();
+            _matchTranscript.Append(analysisOutput.Text);
 
             // Disable conflicting controls
             SetMatchControlsEnabled(true);
@@ -407,6 +409,7 @@ namespace ChessDroid
                 _previousMatchEval = currentEval;
 
                 // Threefold repetition check for Watch Engines mode
+                bool threefold = false;
                 if (_drillWatchActive)
                 {
                     string posKey = GetPositionKey(newFen);
@@ -414,27 +417,32 @@ namespace ChessDroid
                     _watchPositionCounts[posKey] = posCount + 1;
                     if (_watchPositionCounts[posKey] >= 3)
                     {
-                        analysisOutput.AppendText("\nDraw — threefold repetition\n");
+                        threefold = true;
                         matchService?.StopMatch();
                     }
                 }
 
-                // Log to analysis output
+                // The running match transcript is kept in _matchTranscript, independent of
+                // whatever analysisOutput currently shows (it may be mid-browse, displaying
+                // a single-position analysis report instead — see RestoreMatchTranscriptIfBackOnLiveTip).
                 var currentNode = newNode;
                 double timeSec = moveTimeMs / 1000.0;
                 string evalStr = !string.IsNullOrEmpty(eval) ? $" [{eval}]" : "";
                 string timeStr = $"({timeSec:F1}s)";
                 string brilliantStr = !string.IsNullOrEmpty(brilliantExplanation) ? $" {brilliantExplanation}" : "";
 
-                if (currentNode.IsWhiteMove)
+                string moveLogText = currentNode.IsWhiteMove
+                    ? $"{currentNode.MoveNumber}. {sanWithSymbol}{evalStr}{brilliantStr} {timeStr}  "
+                    : $"{sanWithSymbol}{evalStr}{brilliantStr} {timeStr}\n";
+                _matchTranscript.Append(moveLogText);
+                if (threefold) _matchTranscript.Append("\nDraw — threefold repetition\n");
+
+                if (wasFollowingLive)
                 {
-                    analysisOutput.AppendText($"{currentNode.MoveNumber}. {sanWithSymbol}{evalStr}{brilliantStr} {timeStr}  ");
+                    analysisOutput.AppendText(moveLogText);
+                    if (threefold) analysisOutput.AppendText("\nDraw — threefold repetition\n");
+                    analysisOutput.ScrollToCaret();
                 }
-                else
-                {
-                    analysisOutput.AppendText($"{sanWithSymbol}{evalStr}{brilliantStr} {timeStr}\n");
-                }
-                analysisOutput.ScrollToCaret();
             }
             finally
             {
@@ -674,7 +682,9 @@ namespace ChessDroid
 
             string whiteName = GetEngineLabel(whiteFile, true);
             string blackName = GetEngineLabel(blackFile, true);
-            analysisOutput.AppendText($"\n— Game {_seriesPlayed + 1}/{_seriesTotal}: {whiteName} (W) vs {blackName} (B) —\n\n");
+            string gameHeader = $"\n— Game {_seriesPlayed + 1}/{_seriesTotal}: {whiteName} (W) vs {blackName} (B) —\n\n";
+            analysisOutput.AppendText(gameHeader);
+            _matchTranscript.Append(gameHeader);
 
             matchService?.Dispose();
             matchService = new EngineMatchService(config);

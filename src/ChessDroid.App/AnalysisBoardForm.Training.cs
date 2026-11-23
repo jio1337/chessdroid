@@ -2255,6 +2255,8 @@ namespace ChessDroid
             // Output header
             analysisOutput.AppendText($"Engine Watch — {chapter.ChapterName}\n");
             analysisOutput.AppendText($"{_matchWhiteName} vs {_matchBlackName}  |  60+0\n\n");
+            _matchTranscript.Clear();
+            _matchTranscript.Append(analysisOutput.Text);
 
             // Set up match service
             matchService?.Dispose();

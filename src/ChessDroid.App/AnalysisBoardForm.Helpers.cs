@@ -244,6 +244,7 @@ namespace ChessDroid
                 UpdateMoveListSelection();
                 lblStatus.Text = $"Move {node.MoveNumber}";
                 if (ShouldAutoAnalyzeDuringNav()) _ = TriggerAutoAnalysis();
+                else RestoreMatchTranscriptIfBackOnLiveTip();
             }
             finally
             {
