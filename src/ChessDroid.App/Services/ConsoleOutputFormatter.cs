@@ -1497,97 +1497,14 @@ namespace ChessDroid.Services
             return ChessUtilities.CanAttackSquare(board, srcR, srcC, piece, destR, destC);
         }
 
-        /// <summary>
-        /// Check if a position is checkmate
-        /// </summary>
-        private static bool IsCheckmate(ChessBoard board, bool kingIsWhite)
-        {
-            char king = kingIsWhite ? 'K' : 'k';
-            var (kingRow, kingCol) = board.GetKingPosition(kingIsWhite);
-            if (kingRow < 0) return false;
-
-            // King must be in check
-            if (!ChessUtilities.IsSquareAttackedBy(board, kingRow, kingCol, !kingIsWhite))
-                return false;
-
-            // Check if king has any escape squares
-            for (int dr = -1; dr <= 1; dr++)
-            {
-                for (int dc = -1; dc <= 1; dc++)
-                {
-                    if (dr == 0 && dc == 0) continue;
-                    int newR = kingRow + dr;
-                    int newC = kingCol + dc;
-                    if (newR < 0 || newR > 7 || newC < 0 || newC > 7) continue;
-
-                    char target = board.GetPiece(newR, newC);
-                    // Can't move to square with own piece
-                    if (target != '.')
-                    {
-                        bool targetIsWhite = char.IsUpper(target);
-                        if (targetIsWhite == kingIsWhite) continue;
-                    }
-
-                    // Simulate king move
-                    using var pooled = BoardPool.Rent(board);
-                    ChessBoard afterKingMove = pooled.Board;
-                    afterKingMove.SetPiece(kingRow, kingCol, '.');
-                    afterKingMove.SetPiece(newR, newC, king);
-
-                    // Check if king is still attacked
-                    if (!ChessUtilities.IsSquareAttackedBy(afterKingMove, newR, newC, !kingIsWhite))
-                        return false; // King can escape
-                }
-            }
-
-            // Check if any piece can block or capture the attacker
-            // This is a simplified check - for full accuracy we'd need to find all attackers
-            // and check if any friendly piece can interpose or capture
-            for (int r = 0; r < 8; r++)
-            {
-                for (int c = 0; c < 8; c++)
-                {
-                    char piece = board.GetPiece(r, c);
-                    if (piece == '.') continue;
-
-                    bool pieceIsWhite = char.IsUpper(piece);
-                    if (pieceIsWhite != kingIsWhite) continue; // Not our piece
-                    if (char.ToUpper(piece) == 'K') continue; // Already handled king moves
-
-                    // Try all moves for this piece
-                    for (int destR = 0; destR < 8; destR++)
-                    {
-                        for (int destC = 0; destC < 8; destC++)
-                        {
-                            if (r == destR && c == destC) continue;
-
-                            if (!ChessUtilities.CanAttackSquare(board, r, c, piece, destR, destC))
-                                continue;
-
-                            // Can't capture own pieces
-                            char target = board.GetPiece(destR, destC);
-                            if (target != '.')
-                            {
-                                bool targetIsWhite = char.IsUpper(target);
-                                if (targetIsWhite == kingIsWhite) continue;
-                            }
-
-                            // Simulate the move
-                            using var pooled = BoardPool.Rent(board);
-                            ChessBoard afterMove = pooled.Board;
-                            afterMove.SetPiece(r, c, '.');
-                            afterMove.SetPiece(destR, destC, piece);
-
-                            // Check if king is still in check
-                            if (!ChessUtilities.IsSquareAttackedBy(afterMove, kingRow, kingCol, !kingIsWhite))
-                                return false; // Can block or capture
-                        }
-                    }
-                }
-            }
-
-            return true; // No escape, no block - it's checkmate
-        }
+        // CHESSDROID_AUDIT.md §6.3: was an independent, genuinely buggy copy — its
+        // block/capture scan used ChessUtilities.CanAttackSquare, which only models capture
+        // geometry, so a pawn PUSH that would block the check (not a diagonal capture) was
+        // invisible to it, and this could misreport checkmate. ChessUtilities.IsKingMated
+        // (already used by ThreatDetection and ChessNotationService for SAN "#" suffixes) is
+        // a more complete existing implementation — its CanPseudoMove correctly includes
+        // pawn pushes — so redirected onto that instead of re-deriving a fix locally.
+        private static bool IsCheckmate(ChessBoard board, bool kingIsWhite) => ChessUtilities.IsKingMated(board, kingIsWhite);
 
         /// <summary>
         /// Check if we have an overwhelming mating attack (multiple major pieces attacking king zone)
