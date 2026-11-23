@@ -89,6 +89,14 @@ namespace ChessDroid
             analysisOutput.Clear();
             analysisOutput.AppendText(_matchTranscript.ToString());
             analysisOutput.ScrollToCaret();
+
+            // Same leak as the Training panel's arrow bug: analysis of a browsed position
+            // draws engine/book arrows, but landing back on the live tip skips analysis
+            // entirely (ShouldAutoAnalyzeDuringNav is false there), so nothing ever cleared
+            // them — they'd otherwise persist on the board indefinitely while the match plays.
+            boardControl.ClearEngineArrows();
+            boardControl.ClearBookArrows();
+            _bookArrowsActive = false;
         }
 
         private bool _awaitingMatchAnimation = false;
