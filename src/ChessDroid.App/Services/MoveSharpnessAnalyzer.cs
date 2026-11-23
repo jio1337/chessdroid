@@ -122,7 +122,7 @@ namespace ChessDroid.Services
 
             // Factor 4: Check detection from PV line (+15 sharpness)
             // Moves that deliver check are inherently forcing/sharp
-            if (pvLine.Contains("+") || pvLine.Contains("#"))
+            if (pvLine.Contains('+') || pvLine.Contains('#'))
             {
                 sharpness += 15;
             }

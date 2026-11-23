@@ -196,8 +196,10 @@ namespace ChessDroid
             }
         }
 
+        private static readonly char[] SanTokenWhitespace = { ' ', '\t', '\r', '\n' };
+
         private static List<string> FilterSanTokens(string sanMoves)
-            => sanMoves.Split(new[] { ' ', '\t', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+            => sanMoves.Split(SanTokenWhitespace, StringSplitOptions.RemoveEmptyEntries)
                        .Where(t => !PgnMoveTokenPrefixRegex.IsMatch(t) &&
                                     t != "1-0" && t != "0-1" && t != "1/2-1/2" && t != "*")
                        .ToList();

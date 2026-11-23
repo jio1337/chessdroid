@@ -12,6 +12,9 @@ namespace ChessDroid.Services
     /// </summary>
     public class ChessNotationService
     {
+        private static readonly char[] SpaceSeparator = { ' ' };
+        private static readonly char[] WhitespaceSeparators = { ' ', '\t', '\r', '\n' };
+
         /// <summary>
         /// Validates if a string is a valid UCI move format
         /// </summary>
@@ -234,7 +237,7 @@ namespace ChessDroid.Services
             Func<ChessBoard, char, bool, int, int, List<(int row, int col)>> findAllPiecesOfSameType)
         {
             if (string.IsNullOrWhiteSpace(pv)) return "";
-            var tokens = pv.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            var tokens = pv.Split(SpaceSeparator, StringSplitOptions.RemoveEmptyEntries);
 
             // Parse starting FEN
             string[] fenParts = startingFen.Split(' ');
@@ -392,7 +395,7 @@ namespace ChessDroid.Services
         {
             const string StartFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
             var tokens = sanMoves
-                .Split(new[] { ' ', '\t', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+                .Split(WhitespaceSeparators, StringSplitOptions.RemoveEmptyEntries)
                 .Where(t => !System.Text.RegularExpressions.Regex.IsMatch(t, @"^\d+\.") &&
                             t != "1-0" && t != "0-1" && t != "1/2-1/2" && t != "*")
                 .ToList();

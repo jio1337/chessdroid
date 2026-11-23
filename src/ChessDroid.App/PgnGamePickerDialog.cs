@@ -155,7 +155,7 @@ namespace ChessDroid
             foreach (string rawLine in pgn.Split('\n'))
             {
                 string line = rawLine.TrimEnd('\r');
-                if (line.TrimStart().StartsWith("["))
+                if (line.TrimStart().StartsWith('['))
                 {
                     if (inMoveText)
                     {
@@ -185,7 +185,7 @@ namespace ChessDroid
             {
                 string line = rawLine.Trim();
                 if (string.IsNullOrEmpty(line)) continue;
-                if (!line.StartsWith("[")) break;
+                if (!line.StartsWith('[')) break;
                 int keyEnd = line.IndexOf(' ');
                 if (keyEnd < 1) continue;
                 string key = line.Substring(1, keyEnd - 1);
@@ -200,7 +200,7 @@ namespace ChessDroid
         {
             // Skip header lines, then find the highest move number in the move text
             var moveLines = pgn.Split('\n')
-                .SkipWhile(l => l.Trim().StartsWith("[") || string.IsNullOrWhiteSpace(l));
+                .SkipWhile(l => l.Trim().StartsWith('[') || string.IsNullOrWhiteSpace(l));
             string moveText = string.Join(" ", moveLines);
             var matches = Regex.Matches(moveText, @"\b(\d+)\.");
             if (matches.Count == 0) return 0;

@@ -19,6 +19,9 @@ namespace ChessDroid
         private const int FormW  = 560;
         private const int InnerW = FormW - 38;   // 16 left + 22 right margin
 
+        private static readonly string[] VisionTimedKeys = { "Vision-Timed-60", "Vision-Timed-180", "Vision-Timed-300", "Vision-Survival" };
+        private static readonly string[] ChallengeSpeedKeys = { "Challenge-White", "Challenge-Black", "Challenge-Random" };
+
         public StatsDialog(AppConfig config, string theme)
         {
             _config  = config;
@@ -368,7 +371,7 @@ namespace ChessDroid
                 ($"60 sec: {GetCorrect("Vision-Timed-60")}  ·  3 min: {GetCorrect("Vision-Timed-180")}  ·  5 min: {GetCorrect("Vision-Timed-300")}  ·  Survival: {GetCorrect("Vision-Survival")}", false),
             };
 
-            var dates = new[] { "Vision-Timed-60", "Vision-Timed-180", "Vision-Timed-300", "Vision-Survival" }
+            var dates = VisionTimedKeys
                 .Select(k => GetDate(k))
                 .Where(d => !string.IsNullOrEmpty(d))
                 .ToList();
@@ -404,7 +407,7 @@ namespace ChessDroid
             string chalB  = GetCorrect("Challenge-Black");
             string chalR  = GetCorrect("Challenge-Random");
 
-            string bestSpeed = new[] { "Challenge-White", "Challenge-Black", "Challenge-Random" }
+            string bestSpeed = ChallengeSpeedKeys
                 .Select(k => GetSpeed(k))
                 .Where(s => !string.IsNullOrEmpty(s))
                 .OrderBy(s => double.Parse(s.Replace("s/q", "")))

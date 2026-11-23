@@ -17,7 +17,7 @@ namespace ChessDroid.Services
             foreach (var line in pgn.Split('\n'))
             {
                 string l = line.Trim();
-                if (!l.StartsWith("[") || !l.EndsWith("]")) continue;
+                if (!l.StartsWith('[') || !l.EndsWith(']')) continue;
                 int keyEnd = l.IndexOf(' ');
                 if (keyEnd <= 1) continue;
                 string key = l.Substring(1, keyEnd - 1);
@@ -290,7 +290,7 @@ namespace ChessDroid.Services
 
         public static CachedAnalysis? DeserializeCachedAnalysis(string comment)
         {
-            if (!comment.StartsWith("[%cda ") || !comment.EndsWith("]")) return null;
+            if (!comment.StartsWith("[%cda ") || !comment.EndsWith(']')) return null;
             string inner = comment.Substring(6, comment.Length - 7);
             var ca = new CachedAnalysis();
             foreach (var field in inner.Split(';'))

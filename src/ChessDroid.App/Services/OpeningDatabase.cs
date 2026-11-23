@@ -191,7 +191,7 @@ namespace ChessDroid.Services
                 foreach (var line in lines)
                 {
                     if (string.IsNullOrWhiteSpace(line)) continue;
-                    if (line.StartsWith("#")) continue; // Skip comments
+                    if (line.StartsWith('#')) continue; // Skip comments
                     if (line.StartsWith("fen\t", StringComparison.OrdinalIgnoreCase)) continue; // Skip header
 
                     var parts = line.Split('\t');

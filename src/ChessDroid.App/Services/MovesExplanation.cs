@@ -553,7 +553,7 @@ namespace ChessDroid.Services
             if (evalStr.Contains("Mate"))
             {
                 // Treat mate as very high advantage (100 for checkmate advantage)
-                return evalStr.Contains("-") ? -100.0 : 100.0;
+                return evalStr.Contains('-') ? -100.0 : 100.0;
             }
 
             // Parse numeric evaluation - use InvariantCulture to match formatting

@@ -7,7 +7,7 @@ namespace ChessDroid.Services
             if (string.IsNullOrEmpty(evalStr))
                 return null;
 
-            if (evalStr.Contains("Mate") || evalStr.StartsWith("M") || evalStr.StartsWith("+M") || evalStr.StartsWith("-M"))
+            if (evalStr.Contains("Mate") || evalStr.StartsWith('M') || evalStr.StartsWith("+M") || evalStr.StartsWith("-M"))
             {
                 string numPart = evalStr
                     .Replace("Mate in", "")
@@ -19,10 +19,10 @@ namespace ChessDroid.Services
                 if (int.TryParse(numPart, out int mateIn))
                 {
                     double mateScore = Math.Max(10, 15 - mateIn * 0.5);
-                    bool isNegative = evalStr.Contains("-");
+                    bool isNegative = evalStr.Contains('-');
                     return isNegative ? -mateScore : mateScore;
                 }
-                return evalStr.Contains("-") ? -12 : 12;
+                return evalStr.Contains('-') ? -12 : 12;
             }
 
             evalStr = evalStr.Replace("+", "").Trim();

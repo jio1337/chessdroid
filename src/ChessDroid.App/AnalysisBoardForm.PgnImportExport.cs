@@ -300,7 +300,7 @@ namespace ChessDroid
                 for (int i = 0; i < lines.Length; i++)
                 {
                     string line = lines[i].Trim();
-                    if (line.StartsWith("[") && line.EndsWith("]"))
+                    if (line.StartsWith('[') && line.EndsWith(']'))
                     {
                         int keyEnd = line.IndexOf(' ');
                         if (keyEnd > 1)

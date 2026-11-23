@@ -206,7 +206,7 @@ namespace ChessDroid.Services
             string defensesText = "";
             bool weHaveForcedMate = !string.IsNullOrEmpty(evaluation) &&
                                      evaluation.StartsWith("Mate in ") &&
-                                     !evaluation.Contains("-");
+                                     !evaluation.Contains('-');
 
             if (showThreats && config?.ShowThreats == true && !weHaveForcedMate)
             {
@@ -553,12 +553,14 @@ namespace ChessDroid.Services
         /// Removes threats whose meaning is already expressed in the explanation.
         /// The explanation wins — it's richer. Don't show both.
         /// </summary>
+        private static readonly string[] ThreatListSeparator = { ", " };
+
         private static string FilterRedundantThreats(string threatsText, string explanation)
         {
             if (string.IsNullOrEmpty(threatsText) || string.IsNullOrEmpty(explanation))
                 return threatsText;
 
-            var parts = threatsText.Split(new[] { ", " }, StringSplitOptions.RemoveEmptyEntries);
+            var parts = threatsText.Split(ThreatListSeparator, StringSplitOptions.RemoveEmptyEntries);
             var kept = parts.Where(t => !IsThreatRedundantWithExplanation(t, explanation)).ToArray();
             return string.Join(", ", kept);
         }
