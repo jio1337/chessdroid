@@ -346,7 +346,6 @@ namespace ChessDroid
                 string newFen = fen;
 
                 string san = ConvertUciToSan(uciMove, fenBeforeMove);
-                PlayMoveSound(san.Contains('x'), san);
 
                 // Check for brilliant move
                 string brilliantSymbol = "";
@@ -382,7 +381,11 @@ namespace ChessDroid
                 if (wasFollowingLive)
                 {
                     // Viewer is following the live tip — advance the view along with it.
+                    // Sound only plays here too: a move sound should only ever fire for a
+                    // move the viewer is actually watching land on the board, not for every
+                    // move the match plays in the background while they're browsing elsewhere.
                     moveTree.CurrentNode = newNode;
+                    PlayMoveSound(san.Contains('x'), san);
                     boardControl.MakeMove(uciMove);
                     if (config?.ShowAnimations == true)
                     {
