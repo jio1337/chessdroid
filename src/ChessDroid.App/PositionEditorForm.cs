@@ -102,7 +102,7 @@ namespace ChessDroid
             return null;
         }
 
-        private static Image? RenderSvg(string path)
+        private static Bitmap? RenderSvg(string path)
         {
             try
             {

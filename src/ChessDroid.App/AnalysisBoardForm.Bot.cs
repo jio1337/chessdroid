@@ -334,7 +334,7 @@ namespace ChessDroid
         {
             private readonly AnalysisBoardForm _form;
             public BotModeController(AnalysisBoardForm form) => _form = form;
-            public void Exit() => _form.StopBotMode();
+            public void ExitMode() => _form.StopBotMode();
         }
 
         private void StopBotMode()

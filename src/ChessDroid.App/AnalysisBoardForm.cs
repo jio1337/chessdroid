@@ -1122,7 +1122,7 @@ namespace ChessDroid
 
             if (!token.IsCancellationRequested)
             {
-                await AnalyzeCurrentPosition(token, clearHash);
+                await AnalyzeCurrentPosition(clearHash, token);
             }
         }
 

@@ -3,7 +3,7 @@ using ChessDroid.Services;
 
 namespace ChessDroid
 {
-    internal class Chess960BrowserDialog : Form
+    internal sealed class Chess960BrowserDialog : Form
     {
         public int SelectedPosition { get; private set; }
         public bool StartBot { get; private set; }

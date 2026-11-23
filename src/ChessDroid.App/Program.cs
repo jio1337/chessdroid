@@ -1,4 +1,7 @@
+using System.Resources;
 using ChessDroid.Services;
+
+[assembly: NeutralResourcesLanguage("en-US")]
 
 namespace ChessDroid
 {

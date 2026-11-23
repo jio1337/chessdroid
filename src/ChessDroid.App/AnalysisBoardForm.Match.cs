@@ -878,7 +878,7 @@ namespace ChessDroid
         {
             private readonly AnalysisBoardForm _form;
             public MatchModeController(AnalysisBoardForm form) => _form = form;
-            public void Exit() => _form.matchService?.StopMatch();
+            public void ExitMode() => _form.matchService?.StopMatch();
         }
 
         private void SetMatchControlsEnabled(bool running)

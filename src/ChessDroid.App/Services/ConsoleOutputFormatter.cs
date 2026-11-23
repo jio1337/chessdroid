@@ -33,11 +33,11 @@ namespace ChessDroid.Services
         private MoveClassificationResult? _activeClassification;
 
         /// <summary>Fired when user clicks a [See line] link.</summary>
-        public Action<string, string>? OnSeeLineClicked;
+        public event Action<string, string>? OnSeeLineClicked;
         /// <summary>Fired when user clicks a quality count in the game review — navigates to that move.</summary>
-        public Action<MoveNode>? OnNavigateToNode;
+        public event Action<MoveNode>? OnNavigateToNode;
         /// <summary>Fired when user clicks the [← Game Review] link in analysis output.</summary>
-        public Action? OnShowGameReview;
+        public event Action? OnShowGameReview;
 
         // Book context stored before engine starts — lets live updates prepend opening/book info
         private string? _activeBookFen;

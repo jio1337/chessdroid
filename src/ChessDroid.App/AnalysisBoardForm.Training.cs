@@ -1258,7 +1258,7 @@ namespace ChessDroid
         {
             private readonly AnalysisBoardForm _form;
             public TrainingModeController(AnalysisBoardForm form) => _form = form;
-            public void Exit() => _form.StopTraining();
+            public void ExitMode() => _form.StopTraining();
         }
 
         private void RestoreBoardAfterTraining()

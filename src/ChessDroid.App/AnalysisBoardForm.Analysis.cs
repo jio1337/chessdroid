@@ -9,7 +9,7 @@ namespace ChessDroid
     {
         #region Analysis
 
-        private async Task AnalyzeCurrentPosition(CancellationToken ct = default, bool clearHash = false)
+        private async Task AnalyzeCurrentPosition(bool clearHash = false, CancellationToken ct = default)
         {
             if (_challengeSnapshot != null) return; // challenge mode: no hints
 

@@ -31,6 +31,8 @@ namespace ChessDroid
 
     public class AppConfig
     {
+        private static readonly JsonSerializerOptions SaveJsonOptions = new() { WriteIndented = true };
+
         public string TemplatesFolder { get; set; } = "Templates";
         public string EnginesFolder { get; set; } = "Engines";
         public int MoveTimeoutMs { get; set; } = 30000;
@@ -250,8 +252,7 @@ namespace ChessDroid
         {
             try
             {
-                var options = new JsonSerializerOptions { WriteIndented = true };
-                string json = JsonSerializer.Serialize(this, options);
+                string json = JsonSerializer.Serialize(this, SaveJsonOptions);
                 File.WriteAllText(TempFilePath, json);
 
                 if (File.Exists(ConfigFilePath))

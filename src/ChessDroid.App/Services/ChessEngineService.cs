@@ -672,7 +672,7 @@ namespace ChessDroid.Services
                 {
                     Debug.WriteLine($"Restarting engine (attempt {retryCount}/{config.MaxEngineRetries})...");
                     await RestartAsync().ConfigureAwait(false);
-                    await Task.Delay(200).ConfigureAwait(false); // Give engine time to initialize
+                    await Task.Delay(200, ct).ConfigureAwait(false); // Give engine time to initialize
                 }
             }
             } // end try

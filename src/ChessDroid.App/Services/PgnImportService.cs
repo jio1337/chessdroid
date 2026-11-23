@@ -285,7 +285,7 @@ namespace ChessDroid.Services
             if (ca.PVs.Count > 0)         sb.Append(CultureInfo.InvariantCulture, $";v={string.Join("~", ca.PVs)}");
             if (ca.Evaluations.Count > 0) sb.Append(CultureInfo.InvariantCulture, $";f={string.Join("~", ca.Evaluations)}");
             if (ca.WDL != null)           sb.Append(CultureInfo.InvariantCulture, $";w={ca.WDL.Win}/{ca.WDL.Draw}/{ca.WDL.Loss}");
-            sb.Append("]");
+            sb.Append(']');
             return $"{{ {sb} }}";
         }
 

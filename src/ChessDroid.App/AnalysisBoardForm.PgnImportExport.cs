@@ -282,7 +282,7 @@ namespace ChessDroid
             }
             else
             {
-                sb.Append("*");
+                sb.Append('*');
             }
 
             sb.AppendLine();

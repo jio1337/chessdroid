@@ -6,7 +6,7 @@ namespace ChessDroid.Services
     /// <summary>
     /// Delegate for applying UCI moves with ref parameters for castling and en passant
     /// </summary>
-    public delegate void ApplyUciMoveDelegate(ChessBoard board, string uciMove, ref string castlingRights, ref string enPassant);
+    public delegate void ApplyUciMoveHandler(ChessBoard board, string uciMove, ref string castlingRights, ref string enPassant);
 
     /// <summary>
     /// Service for chess notation conversions (UCI to SAN, FEN parsing, etc.)
@@ -233,7 +233,7 @@ namespace ChessDroid.Services
         /// Converts a full PV line (space-separated UCI moves) into SAN sequence
         /// </summary>
         public static string ConvertFullPvToSan(string pv, string startingFen,
-            ApplyUciMoveDelegate applyUciMove,
+            ApplyUciMoveHandler applyUciMove,
             Func<ChessBoard, int, int, char, int, int, bool> canReachSquare,
             Func<ChessBoard, char, bool, int, int, List<(int row, int col)>> findAllPiecesOfSameType)
         {

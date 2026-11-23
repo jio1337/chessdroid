@@ -342,7 +342,7 @@ namespace ChessDroid.Controls
         private static readonly System.Text.RegularExpressions.Regex _svgFilterAttr =
             new(@"\s+filter=""url\([^)]+\)""", System.Text.RegularExpressions.RegexOptions.Compiled);
 
-        private static Image? RenderSvg(string path)
+        private static Bitmap? RenderSvg(string path)
         {
             try
             {
@@ -1755,17 +1755,13 @@ namespace ChessDroid.Controls
                 {
                     // Tap on same square — toggle square highlight
                     var sq = (boardRow, boardCol);
-                    if (_highlightedSquares.Contains(sq))
-                        _highlightedSquares.Remove(sq);
-                    else
+                    if (!_highlightedSquares.Remove(sq))
                         _highlightedSquares.Add(sq);
                 }
                 else
                 {
                     var arrow = (arrowFromRow, arrowFromCol, boardRow, boardCol);
-                    if (userArrows.Contains(arrow))
-                        userArrows.Remove(arrow);
-                    else
+                    if (!userArrows.Remove(arrow))
                         userArrows.Add(arrow);
                 }
             }

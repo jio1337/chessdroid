@@ -21,6 +21,6 @@ namespace ChessDroid.Modes
     /// </summary>
     public interface IModeController
     {
-        void Exit();
+        void ExitMode();
     }
 }

@@ -71,10 +71,10 @@ namespace ChessDroid.Services
                 var threats = BuildThreatArray(board, !isWhite);
                 var key = (targetRow, targetCol);
 
-                if (!threats.ContainsKey(key)) return null;
+                if (!threats.TryGetValue(key, out var attackersAtKey)) return null;
 
                 // Check if any attacker has lower value
-                var lowerValueAttackers = threats[key]
+                var lowerValueAttackers = attackersAtKey
                     .Where(attacker => ChessUtilities.GetPieceValue(attacker.attackerType) < targetValue)
                     .ToList();
 

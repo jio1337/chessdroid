@@ -663,8 +663,8 @@ namespace ChessDroid.Services
         private void RecordPosition()
         {
             string key = GetPositionKey();
-            if (positionCounts.ContainsKey(key))
-                positionCounts[key]++;
+            if (positionCounts.TryGetValue(key, out int count))
+                positionCounts[key] = count + 1;
             else
                 positionCounts[key] = 1;
         }
