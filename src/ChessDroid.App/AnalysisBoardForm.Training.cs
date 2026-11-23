@@ -2283,6 +2283,7 @@ namespace ChessDroid
             clockTimer.Start();
             matchRunning = true;
             btnStartMatch.Enabled = false;
+            _matchLiveAnchor = moveTree.CurrentNode;
 
             await matchService.StartMatchAsync(whitePath, blackPath, _matchWhiteName, _matchBlackName, tc, chapter.Fen);
         }

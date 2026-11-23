@@ -210,6 +210,9 @@ namespace ChessDroid
 
             clockTimer.Start();
 
+            // Live moves always extend from here, regardless of where the viewer navigates.
+            _matchLiveAnchor = moveTree.CurrentNode;
+
             // Run match (fire and forget - events handle the rest)
             await matchService.StartMatchAsync(
                 whiteEnginePath, blackEnginePath,
@@ -329,21 +332,18 @@ namespace ChessDroid
             isNavigating = true;
             try
             {
-                // Get FEN before the move for brilliant detection
-                string fenBeforeMove = moveTree.CurrentNode.FEN;
+                // The live game's actual current position is tracked by _matchLiveAnchor,
+                // independent of moveTree.CurrentNode — the viewer may have navigated
+                // CurrentNode elsewhere to browse earlier moves while the match keeps
+                // playing. fenBeforeMove/newFen below are therefore taken from the anchor
+                // and the match's own authoritative "fen" parameter (from EngineMatchService's
+                // internal gameState), never from boardControl — boardControl may currently
+                // be showing a completely different, browsed position.
+                bool wasFollowingLive = moveTree.CurrentNode == _matchLiveAnchor;
+                string fenBeforeMove = _matchLiveAnchor!.FEN;
+                string newFen = fen;
 
-                // Make the move on the visual board
-                boardControl.MakeMove(uciMove);
-                if (config?.ShowAnimations == true)
-                {
-                    _awaitingMatchAnimation = true;
-                    boardControl.StartAnimation(uciMove);
-                }
-
-                // Convert to SAN and add to move tree
                 string san = ConvertUciToSan(uciMove, fenBeforeMove);
-                string newFen = boardControl.GetFEN();
-
                 PlayMoveSound(san.Contains('x'), san);
 
                 // Check for brilliant move
@@ -367,25 +367,41 @@ namespace ChessDroid
                     }
                 }
 
-                // Add move to tree (with symbol if brilliant)
+                // Always extend the live anchor (the real game line), regardless of where
+                // the viewer is currently browsing.
                 string sanWithSymbol = san + brilliantSymbol;
-                moveTree.AddMove(uciMove, sanWithSymbol, newFen);
-
+                var newNode = moveTree.AddMoveAt(_matchLiveAnchor, uciMove, sanWithSymbol, newFen);
+                _matchLiveAnchor = newNode;
                 if (currentEval.HasValue)
                 {
-                    moveTree.CurrentNode.Evaluation = currentEval.Value;
-                    RefreshEvalGraph();
+                    newNode.Evaluation = currentEval.Value;
                 }
 
-                UpdateMoveList();
-                UpdateFenDisplay();
-                UpdateTurnLabel();
-
-                // Update eval bar with engine's evaluation
-                if (!string.IsNullOrEmpty(eval))
+                if (wasFollowingLive)
                 {
-                    UpdateEvalBar(eval);
+                    // Viewer is following the live tip — advance the view along with it.
+                    moveTree.CurrentNode = newNode;
+                    boardControl.MakeMove(uciMove);
+                    if (config?.ShowAnimations == true)
+                    {
+                        _awaitingMatchAnimation = true;
+                        boardControl.StartAnimation(uciMove);
+                    }
+                    UpdateFenDisplay();
+                    UpdateTurnLabel();
+                    if (!string.IsNullOrEmpty(eval))
+                    {
+                        UpdateEvalBar(eval);
+                    }
                 }
+                // Else: viewer is browsing an earlier position — leave boardControl, the FEN
+                // box, turn label, and eval bar showing whatever they navigated to. The move
+                // still landed in the tree (below), so Next / the move list picks it up.
+
+                // Rebuild the move list regardless of view state so a browsing viewer sees
+                // new live moves appear (UpdateMoveListSelection highlights CurrentNode, not
+                // the anchor, so this does not snap their view back to live).
+                UpdateMoveList();
 
                 // Update previous eval for next move
                 _previousMatchEval = currentEval;
@@ -404,7 +420,7 @@ namespace ChessDroid
                 }
 
                 // Log to analysis output
-                var currentNode = moveTree.CurrentNode;
+                var currentNode = newNode;
                 double timeSec = moveTimeMs / 1000.0;
                 string evalStr = !string.IsNullOrEmpty(eval) ? $" [{eval}]" : "";
                 string timeStr = $"({timeSec:F1}s)";
@@ -561,6 +577,7 @@ namespace ChessDroid
             else
             {
                 SetMatchControlsEnabled(false);
+                _matchLiveAnchor = null;
                 if (_drillWatchActive)
                 {
                     _drillWatchActive = false;
@@ -679,6 +696,7 @@ namespace ChessDroid
             { lblWhiteClock.Text = "W: --:--"; lblBlackClock.Text = "B: --:--"; }
 
             clockTimer.Start();
+            _matchLiveAnchor = moveTree.CurrentNode;
             await matchService.StartMatchAsync(whitePath, blackPath, _matchWhiteName, _matchBlackName, tc, startFen);
         }
 

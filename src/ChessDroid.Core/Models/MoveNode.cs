@@ -177,6 +177,20 @@ namespace ChessDroid.Models
         }
 
         /// <summary>
+        /// Add a move as a child of a specific node, without touching CurrentNode. Used by
+        /// live engine matches so a move the engines just played always extends the actual
+        /// game line, even if the viewer has navigated CurrentNode elsewhere to browse —
+        /// AddMove's behavior of appending to CurrentNode would otherwise let a live move
+        /// silently branch off whatever position the viewer happens to be looking at.
+        /// </summary>
+        public MoveNode AddMoveAt(MoveNode parent, string uciMove, string sanMove, string fen)
+        {
+            var existing = parent.FindChild(uciMove);
+            if (existing != null) return existing;
+            return parent.AddChild(uciMove, sanMove, fen);
+        }
+
+        /// <summary>
         /// Navigate to beginning (root)
         /// </summary>
         public void GoToStart()
