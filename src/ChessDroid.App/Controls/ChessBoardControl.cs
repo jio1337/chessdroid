@@ -1834,6 +1834,41 @@ namespace ChessDroid.Controls
             Invalidate();
         }
 
+        /// <summary>
+        /// Enumerates every legal move for the side to move, as UCI strings (e.g. "e2e4",
+        /// "e7e8q" for each promotion piece). Reuses the same per-square legality check
+        /// (castling, en passant, check/pin filtering) that drives click-to-move highlighting
+        /// — there is no separate "all moves" generator elsewhere in the codebase, so this is
+        /// the one place perft-style move-count tests can hook into real legal-move logic.
+        /// </summary>
+        public List<string> GetAllLegalMovesUci()
+        {
+            var moves = new List<string>();
+            for (int row = 0; row < 8; row++)
+            {
+                for (int col = 0; col < 8; col++)
+                {
+                    char piece = board.GetPiece(row, col);
+                    if (piece == '.' || char.IsUpper(piece) != whiteToMove) continue;
+
+                    foreach (var (toRow, toCol) in GetLegalMovesForPiece(row, col))
+                    {
+                        bool isPromotion = char.ToLower(piece) == 'p' && (toRow == 0 || toRow == 7);
+                        if (isPromotion)
+                        {
+                            foreach (char promo in new[] { 'q', 'r', 'b', 'n' })
+                                moves.Add(ToUciMove(row, col, toRow, toCol, promo));
+                        }
+                        else
+                        {
+                            moves.Add(ToUciMove(row, col, toRow, toCol));
+                        }
+                    }
+                }
+            }
+            return moves;
+        }
+
         private HashSet<(int row, int col)> GetLegalMovesForPiece(int row, int col)
         {
             var moves = new HashSet<(int row, int col)>();
