@@ -178,6 +178,8 @@ namespace ChessDroid
                     analysisOutput.AppendText($"Book: {startFen}\n");
             }
             analysisOutput.AppendText("\n");
+            _matchTranscript.Clear();
+            _matchTranscript.Append(analysisOutput.Text);
 
             // Disable conflicting controls
             SetMatchControlsEnabled(true);
@@ -209,6 +211,9 @@ namespace ChessDroid
             }
 
             clockTimer.Start();
+
+            // Live moves always extend from here, regardless of where the viewer navigates.
+            _matchLiveAnchor = moveTree.CurrentNode;
 
             // Run match (fire and forget - events handle the rest)
             await matchService.StartMatchAsync(
@@ -329,22 +334,18 @@ namespace ChessDroid
             isNavigating = true;
             try
             {
-                // Get FEN before the move for brilliant detection
-                string fenBeforeMove = moveTree.CurrentNode.FEN;
+                // The live game's actual current position is tracked by _matchLiveAnchor,
+                // independent of moveTree.CurrentNode — the viewer may have navigated
+                // CurrentNode elsewhere to browse earlier moves while the match keeps
+                // playing. fenBeforeMove/newFen below are therefore taken from the anchor
+                // and the match's own authoritative "fen" parameter (from EngineMatchService's
+                // internal gameState), never from boardControl — boardControl may currently
+                // be showing a completely different, browsed position.
+                bool wasFollowingLive = moveTree.CurrentNode == _matchLiveAnchor;
+                string fenBeforeMove = _matchLiveAnchor!.FEN;
+                string newFen = fen;
 
-                // Make the move on the visual board
-                boardControl.MakeMove(uciMove);
-                if (config?.ShowAnimations == true)
-                {
-                    _awaitingMatchAnimation = true;
-                    boardControl.StartAnimation(uciMove);
-                }
-
-                // Convert to SAN and add to move tree
                 string san = ConvertUciToSan(uciMove, fenBeforeMove);
-                string newFen = boardControl.GetFEN();
-
-                PlayMoveSound(san.Contains('x'), san);
 
                 // Check for brilliant move
                 string brilliantSymbol = "";
@@ -367,30 +368,66 @@ namespace ChessDroid
                     }
                 }
 
-                // Add move to tree (with symbol if brilliant)
+                // Always extend the live anchor (the real game line), regardless of where
+                // the viewer is currently browsing.
                 string sanWithSymbol = san + brilliantSymbol;
-                moveTree.AddMove(uciMove, sanWithSymbol, newFen);
-
+                var newNode = moveTree.AddMoveAt(_matchLiveAnchor, uciMove, sanWithSymbol, newFen);
+                _matchLiveAnchor = newNode;
                 if (currentEval.HasValue)
                 {
-                    moveTree.CurrentNode.Evaluation = currentEval.Value;
-                    RefreshEvalGraph();
+                    newNode.Evaluation = currentEval.Value;
                 }
 
-                UpdateMoveList();
-                UpdateFenDisplay();
-                UpdateTurnLabel();
-
-                // Update eval bar with engine's evaluation
-                if (!string.IsNullOrEmpty(eval))
+                if (wasFollowingLive)
                 {
-                    UpdateEvalBar(eval);
+                    // Viewer is following the live tip — advance the view along with it.
+                    // Sound only plays here too: a move sound should only ever fire for a
+                    // move the viewer is actually watching land on the board, not for every
+                    // move the match plays in the background while they're browsing elsewhere.
+                    moveTree.CurrentNode = newNode;
+                    PlayMoveSound(san.Contains('x'), san);
+                    boardControl.MakeMove(uciMove);
+                    if (config?.ShowAnimations == true)
+                    {
+                        _awaitingMatchAnimation = true;
+                        boardControl.StartAnimation(uciMove);
+                    }
+                    UpdateFenDisplay();
+                    UpdateTurnLabel();
+                    if (!string.IsNullOrEmpty(eval))
+                    {
+                        UpdateEvalBar(eval);
+                    }
+                }
+                // Else: viewer is browsing an earlier position — leave boardControl, the FEN
+                // box, turn label, and eval bar showing whatever they navigated to. The move
+                // still landed in the tree (below), so Next / the move list picks it up.
+
+                // Rebuild the move list regardless of view state so a browsing viewer sees
+                // new live moves appear (UpdateMoveListSelection highlights CurrentNode, not
+                // the anchor, so this does not snap their view back to live). The rebuild
+                // itself resets scroll position, and selecting a row auto-scrolls it into
+                // view — both fight any scrolling the viewer just did by hand, every single
+                // move. Explicitly pin the scroll afterward instead: keep tracking the
+                // bottom while following live (chat-log style), or restore exactly where the
+                // viewer had scrolled to while browsing.
+                int savedTopIndex = moveListBox.TopIndex;
+                UpdateMoveList();
+                if (wasFollowingLive)
+                {
+                    if (moveListBox.Items.Count > 0)
+                        moveListBox.TopIndex = moveListBox.Items.Count - 1;
+                }
+                else
+                {
+                    moveListBox.TopIndex = savedTopIndex;
                 }
 
                 // Update previous eval for next move
                 _previousMatchEval = currentEval;
 
                 // Threefold repetition check for Watch Engines mode
+                bool threefold = false;
                 if (_drillWatchActive)
                 {
                     string posKey = GetPositionKey(newFen);
@@ -398,27 +435,32 @@ namespace ChessDroid
                     _watchPositionCounts[posKey] = posCount + 1;
                     if (_watchPositionCounts[posKey] >= 3)
                     {
-                        analysisOutput.AppendText("\nDraw — threefold repetition\n");
+                        threefold = true;
                         matchService?.StopMatch();
                     }
                 }
 
-                // Log to analysis output
-                var currentNode = moveTree.CurrentNode;
+                // The running match transcript is kept in _matchTranscript, independent of
+                // whatever analysisOutput currently shows (it may be mid-browse, displaying
+                // a single-position analysis report instead — see RestoreMatchTranscriptIfBackOnLiveTip).
+                var currentNode = newNode;
                 double timeSec = moveTimeMs / 1000.0;
                 string evalStr = !string.IsNullOrEmpty(eval) ? $" [{eval}]" : "";
                 string timeStr = $"({timeSec:F1}s)";
                 string brilliantStr = !string.IsNullOrEmpty(brilliantExplanation) ? $" {brilliantExplanation}" : "";
 
-                if (currentNode.IsWhiteMove)
+                string moveLogText = currentNode.IsWhiteMove
+                    ? $"{currentNode.MoveNumber}. {sanWithSymbol}{evalStr}{brilliantStr} {timeStr}  "
+                    : $"{sanWithSymbol}{evalStr}{brilliantStr} {timeStr}\n";
+                _matchTranscript.Append(moveLogText);
+                if (threefold) _matchTranscript.Append("\nDraw — threefold repetition\n");
+
+                if (wasFollowingLive)
                 {
-                    analysisOutput.AppendText($"{currentNode.MoveNumber}. {sanWithSymbol}{evalStr}{brilliantStr} {timeStr}  ");
+                    analysisOutput.AppendText(moveLogText);
+                    if (threefold) analysisOutput.AppendText("\nDraw — threefold repetition\n");
+                    analysisOutput.ScrollToCaret();
                 }
-                else
-                {
-                    analysisOutput.AppendText($"{sanWithSymbol}{evalStr}{brilliantStr} {timeStr}\n");
-                }
-                analysisOutput.ScrollToCaret();
             }
             finally
             {
@@ -561,6 +603,7 @@ namespace ChessDroid
             else
             {
                 SetMatchControlsEnabled(false);
+                _matchLiveAnchor = null;
                 if (_drillWatchActive)
                 {
                     _drillWatchActive = false;
@@ -657,7 +700,9 @@ namespace ChessDroid
 
             string whiteName = GetEngineLabel(whiteFile, true);
             string blackName = GetEngineLabel(blackFile, true);
-            analysisOutput.AppendText($"\n— Game {_seriesPlayed + 1}/{_seriesTotal}: {whiteName} (W) vs {blackName} (B) —\n\n");
+            string gameHeader = $"\n— Game {_seriesPlayed + 1}/{_seriesTotal}: {whiteName} (W) vs {blackName} (B) —\n\n";
+            analysisOutput.AppendText(gameHeader);
+            _matchTranscript.Append(gameHeader);
 
             matchService?.Dispose();
             matchService = new EngineMatchService(config);
@@ -679,6 +724,7 @@ namespace ChessDroid
             { lblWhiteClock.Text = "W: --:--"; lblBlackClock.Text = "B: --:--"; }
 
             clockTimer.Start();
+            _matchLiveAnchor = moveTree.CurrentNode;
             await matchService.StartMatchAsync(whitePath, blackPath, _matchWhiteName, _matchBlackName, tc, startFen);
         }
 

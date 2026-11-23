@@ -62,6 +62,43 @@ namespace ChessDroid
         private System.Windows.Forms.Timer clockTimer = null!;
         private bool matchRunning = false;
         private double? _previousMatchEval; // Track previous eval for brilliant move detection
+
+        // Tracks the actual tip of a live engine match (Engine Match / Drill Watch Engines),
+        // independent of moveTree.CurrentNode — lets the viewer navigate/browse the game
+        // history while the match keeps playing in the background without corrupting the
+        // live game line or desyncing the board. Null when no match is running.
+        private MoveNode? _matchLiveAnchor;
+
+        /// <summary>True when auto-analysis should run on the currently browsed position:
+        /// always outside a match, or during a match only while browsing away from the
+        /// live tip (the live tip's eval already comes from the match's own annotator).</summary>
+        private bool ShouldAutoAnalyzeDuringNav() => !matchRunning || moveTree.CurrentNode != _matchLiveAnchor;
+
+        // analysisOutput doubles as both the running match transcript (built incrementally
+        // by MatchService_OnMovePlayed) and the single-position analysis report (rebuilt
+        // from scratch by RenderAnalysisReport whenever TriggerAutoAnalysis fires on a
+        // browsed position). _matchTranscript is the match log's own persistent copy, so
+        // browsing can safely let analysisOutput get overwritten with an analysis report
+        // without losing the match transcript — RestoreMatchTranscriptIfBackOnLiveTip puts
+        // it back once the viewer returns to following the live game.
+        private readonly System.Text.StringBuilder _matchTranscript = new();
+
+        private void RestoreMatchTranscriptIfBackOnLiveTip()
+        {
+            if (!matchRunning || moveTree.CurrentNode != _matchLiveAnchor) return;
+            analysisOutput.Clear();
+            analysisOutput.AppendText(_matchTranscript.ToString());
+            analysisOutput.ScrollToCaret();
+
+            // Same leak as the Training panel's arrow bug: analysis of a browsed position
+            // draws engine/book arrows, but landing back on the live tip skips analysis
+            // entirely (ShouldAutoAnalyzeDuringNav is false there), so nothing ever cleared
+            // them — they'd otherwise persist on the board indefinitely while the match plays.
+            boardControl.ClearEngineArrows();
+            boardControl.ClearBookArrows();
+            _bookArrowsActive = false;
+        }
+
         private bool _awaitingMatchAnimation = false;
         private int _matchWhiteElo;
         private int _matchBlackElo;
@@ -1319,7 +1356,6 @@ namespace ChessDroid
 
         private void BtnPrevMove_Click(object? sender, EventArgs e)
         {
-            if (matchService?.IsRunning == true) return;
             StopAutoPlay();
             _pvAnimationCts?.Cancel();
             if (moveTree.GoBack())
@@ -1342,9 +1378,13 @@ namespace ChessDroid
                     lblStatus.Text = statusText;
 
                     // Auto-analyze if enabled
-                    if (!matchRunning)
+                    if (ShouldAutoAnalyzeDuringNav())
                     {
                         _ = TriggerAutoAnalysis();
+                    }
+                    else
+                    {
+                        RestoreMatchTranscriptIfBackOnLiveTip();
                     }
                 }
                 finally
@@ -1356,7 +1396,6 @@ namespace ChessDroid
 
         private void BtnNextMove_Click(object? sender, EventArgs e)
         {
-            if (matchService?.IsRunning == true) return;
             _pvAnimationCts?.Cancel();
             if (moveTree.GoForward())
             {
@@ -1380,9 +1419,13 @@ namespace ChessDroid
                     lblStatus.Text = statusText;
 
                     // Auto-analyze if enabled
-                    if (!matchRunning)
+                    if (ShouldAutoAnalyzeDuringNav())
                     {
                         _ = TriggerAutoAnalysis();
+                    }
+                    else
+                    {
+                        RestoreMatchTranscriptIfBackOnLiveTip();
                     }
                 }
                 finally
@@ -1752,7 +1795,6 @@ namespace ChessDroid
         private void MoveListBox_SelectedIndexChanged(object? sender, EventArgs e)
         {
             if (isNavigating) return;
-            if (matchService?.IsRunning == true) return;
 
             int selected = moveListBox.SelectedIndex;
             if (selected < 0 || selected >= _movePairs.Count) return;
@@ -1769,7 +1811,7 @@ namespace ChessDroid
 
         private void NavigateToNode(MoveNode node)
         {
-            if (isNavigating || matchRunning) return;
+            if (isNavigating) return;
             isNavigating = true;
             try
             {
@@ -1785,17 +1827,21 @@ namespace ChessDroid
                 if (!node.IsMainLine) statusText += " (variation)";
                 lblStatus.Text = statusText;
 
-                if (!matchRunning) _ = TriggerAutoAnalysis();
+                if (ShouldAutoAnalyzeDuringNav()) _ = TriggerAutoAnalysis();
+                else RestoreMatchTranscriptIfBackOnLiveTip();
             }
             finally { isNavigating = false; }
         }
 
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
         {
-            if (matchRunning)        return base.ProcessCmdKey(ref msg, keyData);
             if (_trainingGameActive) return base.ProcessCmdKey(ref msg, keyData);
 
-            // Intercept arrow keys before they're used for control navigation
+            // Intercept arrow keys before they're used for control navigation.
+            // Navigation keys are allowed during a running match — they browse the move
+            // tree (safe: live moves always extend the match's own anchor, not wherever
+            // the viewer navigated, see _matchLiveAnchor) — but Ctrl+N would start a brand
+            // new game out from under a running match, so that one still needs the guard.
             switch (keyData)
             {
                 case Keys.Left:
@@ -1820,6 +1866,7 @@ namespace ChessDroid
                     NavigateToEnd();
                     return true;
                 case Keys.N | Keys.Control:
+                    if (matchRunning) return base.ProcessCmdKey(ref msg, keyData);
                     BtnNewGame_Click(this, EventArgs.Empty);
                     return true;
                 case Keys.F | Keys.Control:
@@ -1911,9 +1958,13 @@ namespace ChessDroid
                 lblStatus.Text = "Start position";
 
                 // Auto-analyze if enabled
-                if (!matchRunning)
+                if (ShouldAutoAnalyzeDuringNav())
                 {
                     _ = TriggerAutoAnalysis();
+                }
+                else
+                {
+                    RestoreMatchTranscriptIfBackOnLiveTip();
                 }
             }
             finally
@@ -1944,9 +1995,13 @@ namespace ChessDroid
                 lblStatus.Text = statusText;
 
                 // Auto-analyze if enabled
-                if (!matchRunning)
+                if (ShouldAutoAnalyzeDuringNav())
                 {
                     _ = TriggerAutoAnalysis();
+                }
+                else
+                {
+                    RestoreMatchTranscriptIfBackOnLiveTip();
                 }
             }
             finally
@@ -1977,9 +2032,13 @@ namespace ChessDroid
                     lblStatus.Text = $"Move {target.MoveNumber} - Variation {varIdx + 1}";
 
                     // Auto-analyze if enabled
-                    if (!matchRunning)
+                    if (ShouldAutoAnalyzeDuringNav())
                     {
                         _ = TriggerAutoAnalysis();
+                    }
+                    else
+                    {
+                        RestoreMatchTranscriptIfBackOnLiveTip();
                     }
                 }
                 finally

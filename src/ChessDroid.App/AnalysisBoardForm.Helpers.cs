@@ -232,7 +232,7 @@ namespace ChessDroid
 
         private void EvalGraph_MoveNodeSelected(MoveNode node)
         {
-            if (isNavigating || matchRunning) return;
+            if (isNavigating) return;
             isNavigating = true;
             try
             {
@@ -243,7 +243,8 @@ namespace ChessDroid
                 UpdateTurnLabel();
                 UpdateMoveListSelection();
                 lblStatus.Text = $"Move {node.MoveNumber}";
-                if (!matchRunning) _ = TriggerAutoAnalysis();
+                if (ShouldAutoAnalyzeDuringNav()) _ = TriggerAutoAnalysis();
+                else RestoreMatchTranscriptIfBackOnLiveTip();
             }
             finally
             {
