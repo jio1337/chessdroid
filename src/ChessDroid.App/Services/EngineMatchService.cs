@@ -775,213 +775,31 @@ namespace ChessDroid.Services
         }
 
         /// <summary>
-        /// Checks if the side to move has at least one legal move.
-        /// Returns false if the position is checkmate or stalemate.
+        /// Checks if the side to move has at least one legal move. Returns false if the
+        /// position is checkmate or stalemate. This used to be a third independent
+        /// reimplementation of legal-move detection (per-piece-type candidate generation +
+        /// its own check-simulation) parallel to ChessBoardControl's and
+        /// ChessRulesService.HasAnyLegalMove's — the latter was fixed/deleted in Phase 4
+        /// slice 3 for never generating castling moves; this one had the same castling gap
+        /// (though structurally harmless: castling's legality preconditions on the
+        /// intermediate square are a strict subset of a plain one-square king move's, so if
+        /// castling is legal a king step is too — there's always another move). Delegates to
+        /// MoveGenerator (Phase 4 slice 1) instead of maintaining a third copy.
         /// </summary>
         private bool HasAnyLegalMove()
         {
-            bool whiteToMove = gameState.WhiteToMove;
+            var castling = new CastlingState(
+                WhiteKingside: gameState.CastlingRights.Contains('K'),
+                WhiteQueenside: gameState.CastlingRights.Contains('Q'),
+                BlackKingside: gameState.CastlingRights.Contains('k'),
+                BlackQueenside: gameState.CastlingRights.Contains('q'));
 
-            for (int r = 0; r < 8; r++)
-            {
-                for (int c = 0; c < 8; c++)
-                {
-                    char piece = gameState.Board.GetPiece(r, c);
-                    if (piece == '.') continue;
-                    bool pieceIsWhite = char.IsUpper(piece);
-                    if (pieceIsWhite != whiteToMove) continue;
+            string ep = gameState.EnPassantTarget;
+            (int Row, int Col)? enPassant = (!string.IsNullOrEmpty(ep) && ep != "-" && ep.Length == 2)
+                ? (8 - (ep[1] - '0'), ep[0] - 'a')
+                : null;
 
-                    char lower = char.ToLower(piece);
-
-                    // Generate candidate destinations based on piece type
-                    switch (lower)
-                    {
-                        case 'p':
-                            if (HasLegalPawnMove(r, c, pieceIsWhite)) return true;
-                            break;
-                        case 'n':
-                            if (HasLegalKnightMove(r, c, pieceIsWhite)) return true;
-                            break;
-                        case 'b':
-                            if (HasLegalSlidingMove(r, c, pieceIsWhite, diagonal: true, straight: false)) return true;
-                            break;
-                        case 'r':
-                            if (HasLegalSlidingMove(r, c, pieceIsWhite, diagonal: false, straight: true)) return true;
-                            break;
-                        case 'q':
-                            if (HasLegalSlidingMove(r, c, pieceIsWhite, diagonal: true, straight: true)) return true;
-                            break;
-                        case 'k':
-                            if (HasLegalKingMove(r, c, pieceIsWhite)) return true;
-                            break;
-                    }
-                }
-            }
-
-            return false;
-        }
-
-        private bool HasLegalPawnMove(int row, int col, bool isWhite)
-        {
-            int direction = isWhite ? -1 : 1;
-            int startRow = isWhite ? 6 : 1;
-            char pawn = isWhite ? 'P' : 'p';
-
-            // Single push
-            int fwdRow = row + direction;
-            if (fwdRow >= 0 && fwdRow < 8 && gameState.Board.GetPiece(fwdRow, col) == '.')
-            {
-                if (IsMoveLegal(row, col, fwdRow, col, pawn))
-                    return true;
-
-                // Double push from starting row
-                if (row == startRow)
-                {
-                    int dblRow = row + 2 * direction;
-                    if (dblRow >= 0 && dblRow < 8 && gameState.Board.GetPiece(dblRow, col) == '.')
-                    {
-                        if (IsMoveLegal(row, col, dblRow, col, pawn))
-                            return true;
-                    }
-                }
-            }
-
-            // Captures (including en passant)
-            for (int dc = -1; dc <= 1; dc += 2)
-            {
-                int capCol = col + dc;
-                if (capCol < 0 || capCol > 7 || fwdRow < 0 || fwdRow > 7) continue;
-
-                char target = gameState.Board.GetPiece(fwdRow, capCol);
-                bool isCapture = target != '.' && char.IsUpper(target) != isWhite;
-                bool isEnPassant = false;
-
-                if (target == '.' && !string.IsNullOrEmpty(gameState.EnPassantTarget) && gameState.EnPassantTarget != "-" && gameState.EnPassantTarget.Length >= 2)
-                {
-                    int epFile = gameState.EnPassantTarget[0] - 'a';
-                    int epRank = 8 - (gameState.EnPassantTarget[1] - '0');
-                    isEnPassant = capCol == epFile && fwdRow == epRank;
-                }
-
-                if (isCapture || isEnPassant)
-                {
-                    if (IsMoveLegal(row, col, fwdRow, capCol, pawn))
-                        return true;
-                }
-            }
-
-            return false;
-        }
-
-        private bool HasLegalKnightMove(int row, int col, bool isWhite)
-        {
-            int[,] offsets = { { -2, -1 }, { -2, 1 }, { -1, -2 }, { -1, 2 }, { 1, -2 }, { 1, 2 }, { 2, -1 }, { 2, 1 } };
-            char knight = isWhite ? 'N' : 'n';
-
-            for (int i = 0; i < offsets.GetLength(0); i++)
-            {
-                int tr = row + offsets[i, 0];
-                int tc = col + offsets[i, 1];
-                if (tr < 0 || tr > 7 || tc < 0 || tc > 7) continue;
-
-                char target = gameState.Board.GetPiece(tr, tc);
-                if (target != '.' && char.IsUpper(target) == isWhite) continue; // Own piece
-
-                if (IsMoveLegal(row, col, tr, tc, knight))
-                    return true;
-            }
-
-            return false;
-        }
-
-        private bool HasLegalSlidingMove(int row, int col, bool isWhite, bool diagonal, bool straight)
-        {
-            char piece = gameState.Board.GetPiece(row, col);
-            var directions = new List<(int dr, int dc)>();
-
-            if (diagonal)
-            {
-                directions.Add((-1, -1));
-                directions.Add((-1, 1));
-                directions.Add((1, -1));
-                directions.Add((1, 1));
-            }
-            if (straight)
-            {
-                directions.Add((-1, 0));
-                directions.Add((1, 0));
-                directions.Add((0, -1));
-                directions.Add((0, 1));
-            }
-
-            foreach (var (dr, dc) in directions)
-            {
-                int tr = row + dr;
-                int tc = col + dc;
-
-                while (tr >= 0 && tr < 8 && tc >= 0 && tc < 8)
-                {
-                    char target = gameState.Board.GetPiece(tr, tc);
-
-                    if (target != '.' && char.IsUpper(target) == isWhite)
-                        break; // Own piece blocks
-
-                    if (IsMoveLegal(row, col, tr, tc, piece))
-                        return true;
-
-                    if (target != '.') break; // Enemy piece: can capture but can't go further
-
-                    tr += dr;
-                    tc += dc;
-                }
-            }
-
-            return false;
-        }
-
-        private bool HasLegalKingMove(int row, int col, bool isWhite)
-        {
-            char king = isWhite ? 'K' : 'k';
-
-            for (int dr = -1; dr <= 1; dr++)
-            {
-                for (int dc = -1; dc <= 1; dc++)
-                {
-                    if (dr == 0 && dc == 0) continue;
-                    int tr = row + dr;
-                    int tc = col + dc;
-                    if (tr < 0 || tr > 7 || tc < 0 || tc > 7) continue;
-
-                    char target = gameState.Board.GetPiece(tr, tc);
-                    if (target != '.' && char.IsUpper(target) == isWhite) continue;
-
-                    if (IsMoveLegal(row, col, tr, tc, king))
-                        return true;
-                }
-            }
-
-            return false;
-        }
-
-        /// <summary>
-        /// Tests if making a move leaves the moving side's king safe (not in check).
-        /// </summary>
-        private bool IsMoveLegal(int fromRow, int fromCol, int toRow, int toCol, char piece)
-        {
-            bool isWhite = char.IsUpper(piece);
-
-            // Make the move on a temporary board
-            ChessBoard testBoard = new ChessBoard(gameState.Board.GetArray());
-            testBoard.SetPiece(toRow, toCol, piece);
-            testBoard.SetPiece(fromRow, fromCol, '.');
-
-            // Handle en passant capture: pawn moves diagonally to empty square
-            if (char.ToLower(piece) == 'p' && fromCol != toCol && gameState.Board.GetPiece(toRow, toCol) == '.')
-            {
-                testBoard.SetPiece(fromRow, toCol, '.');
-            }
-
-            return !IsKingInCheck(testBoard, isWhite);
+            return MoveGenerator.GetAllLegalMovesUci(gameState.Board, gameState.WhiteToMove, castling, enPassant).Count > 0;
         }
 
         private bool IsInsufficientMaterial()
