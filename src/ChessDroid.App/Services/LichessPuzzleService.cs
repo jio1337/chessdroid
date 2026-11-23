@@ -46,7 +46,7 @@ namespace ChessDroid.Services
                 string? line;
                 while (candidates.Count < 50 && (line = reader.ReadLine()) != null)
                 {
-                    if (line.StartsWith("PuzzleId")) continue;
+                    if (line.StartsWith("PuzzleId", StringComparison.Ordinal)) continue;
                     var p = ParseLine(line);
                     if (p != null) candidates.Add(p);
                 }
@@ -89,7 +89,7 @@ namespace ChessDroid.Services
                 string? line;
                 while (candidates.Count < readCount && (line = reader.ReadLine()) != null)
                 {
-                    if (line.StartsWith("PuzzleId")) continue;
+                    if (line.StartsWith("PuzzleId", StringComparison.Ordinal)) continue;
                     var p = ParseLine(line);
                     if (p != null) candidates.Add(p);
                 }
@@ -113,7 +113,7 @@ namespace ChessDroid.Services
             IEnumerable<LichessPuzzle> filtered = candidates;
             if (hasTheme)   filtered = filtered.Where(p => p.Themes.Contains(themeFilter!));
             if (hasRating)  filtered = filtered.Where(p => p.Rating >= ratingMin && p.Rating <= ratingMax);
-            if (hasOpening) filtered = filtered.Where(p => p.OpeningTags.StartsWith(openingFilter!));
+            if (hasOpening) filtered = filtered.Where(p => p.OpeningTags.StartsWith(openingFilter!, StringComparison.Ordinal));
             var results = activeFilters > 0 ? filtered.Take(count).ToList() : candidates;
 
             // Fisher-Yates shuffle

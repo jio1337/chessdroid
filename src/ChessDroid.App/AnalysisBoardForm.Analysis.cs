@@ -429,7 +429,7 @@ namespace ChessDroid
             if (evalBar == null || string.IsNullOrEmpty(evaluation))
                 return;
 
-            if (evaluation.StartsWith("Mate in "))
+            if (evaluation.StartsWith("Mate in ", StringComparison.Ordinal))
             {
                 string mateStr = evaluation.Replace("Mate in ", "").Trim();
                 if (int.TryParse(mateStr, out int mateIn))

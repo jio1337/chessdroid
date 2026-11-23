@@ -149,7 +149,7 @@ namespace ChessDroid.Services
                 }
                 threatsAfter.RemoveAll(t =>
                     t.Type == ThreatType.HangingPiece &&
-                    t.Description.StartsWith("wins pawn") &&
+                    t.Description.StartsWith("wins pawn", StringComparison.Ordinal) &&
                     preAttackedPawnSquares.Contains(t.Square));
             }
             catch (Exception ex)

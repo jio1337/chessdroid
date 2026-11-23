@@ -191,7 +191,7 @@ namespace ChessDroid.Services
             string[] symbols = { "!!", "??", "!?", "?!", "!", "?" };
             foreach (var symbol in symbols)
             {
-                if (san.EndsWith(symbol))
+                if (san.EndsWith(symbol, StringComparison.Ordinal))
                 {
                     san = san.Substring(0, san.Length - symbol.Length);
                     break;
@@ -229,7 +229,7 @@ namespace ChessDroid.Services
             if (string.IsNullOrEmpty(san)) return "";
             string[] symbols = { "!!", "??", "!?", "?!", "!", "?" };
             foreach (var s in symbols)
-                if (san.EndsWith(s)) return s;
+                if (san.EndsWith(s, StringComparison.Ordinal)) return s;
             return "";
         }
 
@@ -291,7 +291,7 @@ namespace ChessDroid.Services
 
         public static CachedAnalysis? DeserializeCachedAnalysis(string comment)
         {
-            if (!comment.StartsWith("[%cda ") || !comment.EndsWith(']')) return null;
+            if (!comment.StartsWith("[%cda ", StringComparison.Ordinal) || !comment.EndsWith(']')) return null;
             string inner = comment.Substring(6, comment.Length - 7);
             var ca = new CachedAnalysis();
             foreach (var field in inner.Split(';'))

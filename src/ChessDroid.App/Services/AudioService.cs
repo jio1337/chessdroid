@@ -27,7 +27,7 @@ namespace ChessDroid.Services
                     _sndGameOver?.Play();
                 }
                 else if (san.EndsWith('+'))    _sndCheck?.Play();
-                else if (san.StartsWith("O-O"))
+                else if (san.StartsWith("O-O", StringComparison.Ordinal))
                 {
                     _sndMove?.Play();
                     Task.Delay(70).ContinueWith(_ => _sndMove?.Play());

@@ -418,7 +418,7 @@ namespace ChessDroid
                     }
                     else if (type == 'C' && lastAppliedNode != null && annotationList.Count > 0)
                     {
-                        if (value.StartsWith("[%cda "))
+                        if (value.StartsWith("[%cda ", StringComparison.Ordinal))
                         {
                             var ca = PgnImportService.DeserializeCachedAnalysis(value);
                             if (ca != null)

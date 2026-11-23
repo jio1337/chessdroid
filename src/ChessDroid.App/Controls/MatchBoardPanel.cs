@@ -383,7 +383,7 @@ namespace ChessDroid.Controls
         }
 
         private static string ShortEval(string eval)
-            => eval.StartsWith("Mate in ") ? eval.Replace("Mate in ", "#") : eval;
+            => eval.StartsWith("Mate in ", StringComparison.Ordinal) ? eval.Replace("Mate in ", "#") : eval;
 
         private static string ClockStr(long ms)
         {
@@ -401,7 +401,7 @@ namespace ChessDroid.Controls
 
         private void ApplyEval(string eval)
         {
-            if (eval.StartsWith("Mate in "))
+            if (eval.StartsWith("Mate in ", StringComparison.Ordinal))
             {
                 if (int.TryParse(
                     eval["Mate in ".Length..].Replace("+","").Trim(),

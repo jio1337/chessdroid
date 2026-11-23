@@ -143,7 +143,7 @@ namespace ChessDroid.Services
                     bool isBestMove = node.UciMove == bestMove;
                     bool isBrilliant = false;
 
-                    if (node.SanMove.EndsWith("!!"))
+                    if (node.SanMove.EndsWith("!!", StringComparison.Ordinal))
                     {
                         isBrilliant = true;
                     }

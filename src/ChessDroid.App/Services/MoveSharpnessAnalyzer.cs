@@ -462,7 +462,7 @@ namespace ChessDroid.Services
                 return null;
 
             // Handle mate scores
-            if (eval.StartsWith("Mate in"))
+            if (eval.StartsWith("Mate in", StringComparison.Ordinal))
             {
                 if (int.TryParse(eval.Replace("Mate in ", "").Trim(), out int mateIn))
                 {

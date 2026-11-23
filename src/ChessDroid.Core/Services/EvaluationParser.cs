@@ -7,7 +7,7 @@ namespace ChessDroid.Services
             if (string.IsNullOrEmpty(evalStr))
                 return null;
 
-            if (evalStr.Contains("Mate") || evalStr.StartsWith('M') || evalStr.StartsWith("+M") || evalStr.StartsWith("-M"))
+            if (evalStr.Contains("Mate") || evalStr.StartsWith('M') || evalStr.StartsWith("+M", StringComparison.Ordinal) || evalStr.StartsWith("-M", StringComparison.Ordinal))
             {
                 string numPart = evalStr
                     .Replace("Mate in", "")

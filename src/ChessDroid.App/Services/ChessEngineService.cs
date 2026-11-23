@@ -224,7 +224,7 @@ namespace ChessDroid.Services
                     try
                     {
                         string? line = await ReadEngineLineAsync(cts.Token).ConfigureAwait(false);
-                        if (line != null && line.StartsWith("readyok"))
+                        if (line != null && line.StartsWith("readyok", StringComparison.Ordinal))
                         {
                             Debug.WriteLine("SyncWithEngine: Received readyok - engine synchronized");
                             LogM("SYNC OK: readyok received");
@@ -380,7 +380,7 @@ namespace ChessDroid.Services
                             if (line == null) continue;
                             if (line.Contains("UCI_LimitStrength"))
                                 SupportsEloTargeting = true;
-                            if (line.StartsWith("uciok"))
+                            if (line.StartsWith("uciok", StringComparison.Ordinal))
                             {
                                 receivedUciOk = true;
                                 Debug.WriteLine("Engine: received uciok");
@@ -424,7 +424,7 @@ namespace ChessDroid.Services
                         try
                         {
                             string? line = await ReadEngineLineAsync(cts2.Token).ConfigureAwait(false);
-                            if (line != null && line.StartsWith("readyok"))
+                            if (line != null && line.StartsWith("readyok", StringComparison.Ordinal))
                             {
                                 receivedReadyOk = true;
                                 Debug.WriteLine("Engine: received readyok - fully initialized");
@@ -554,7 +554,7 @@ namespace ChessDroid.Services
                             if (line == null) continue;
 
                             // Parse info lines containing PV
-                            if (line.StartsWith(UCI_RESPONSE_INFO) && line.Contains(UCI_TOKEN_PV))
+                            if (line.StartsWith(UCI_RESPONSE_INFO, StringComparison.Ordinal) && line.Contains(UCI_TOKEN_PV))
                             {
                                 var tokens = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
                                 int mpvIndex = 1;
@@ -618,7 +618,7 @@ namespace ChessDroid.Services
                                 if (mpvIndex == 1)
                                     evaluation = evalStr;
                             }
-                            else if (line.StartsWith(UCI_RESPONSE_BESTMOVE))
+                            else if (line.StartsWith(UCI_RESPONSE_BESTMOVE, StringComparison.Ordinal))
                             {
                                 int _bm1 = line.IndexOf(' ');
                                 if (_bm1 >= 0)
@@ -737,7 +737,7 @@ namespace ChessDroid.Services
 
             // Estimate WDL from the (sorted) best evaluation
             // This ensures WDL always matches the displayed best move
-            if (!string.IsNullOrEmpty(evaluation) && !evaluation.StartsWith("Mate"))
+            if (!string.IsNullOrEmpty(evaluation) && !evaluation.StartsWith("Mate", StringComparison.Ordinal))
             {
                 // Parse centipawns from evaluation string (e.g., "+1.50" or "-0.75")
                 if (double.TryParse(evaluation.Replace("+", ""), System.Globalization.NumberStyles.Float,
@@ -795,7 +795,7 @@ namespace ChessDroid.Services
                 using var cts = new CancellationTokenSource(timeoutMs);
                 while (IsEngineAlive())
                 {
-                    if ((await ReadEngineLineAsync(cts.Token).ConfigureAwait(false))?.StartsWith(UCI_RESPONSE_BESTMOVE) == true)
+                    if ((await ReadEngineLineAsync(cts.Token).ConfigureAwait(false))?.StartsWith(UCI_RESPONSE_BESTMOVE, StringComparison.Ordinal) == true)
                         break;
                 }
             }
@@ -816,7 +816,7 @@ namespace ChessDroid.Services
             // All mate scores are now in WHITE's perspective:
             // - Mate in +X: White delivers mate (or Black gets mated) = good for White
             // - Mate in -X: Black delivers mate (or White gets mated) = good for Black
-            if (evalStr.StartsWith("Mate in "))
+            if (evalStr.StartsWith("Mate in ", StringComparison.Ordinal))
             {
                 string mateStr = evalStr.Replace("Mate in ", "").Trim();
                 // Parse with + or - sign
@@ -930,8 +930,8 @@ namespace ChessDroid.Services
                     {
                         string? line = await ReadEngineLineAsync(ct).ConfigureAwait(false);
                         if (line == null) continue;
-                        if (line.StartsWith(UCI_RESPONSE_BESTMOVE)) { completedNaturally = true; break; }
-                        if (!line.StartsWith(UCI_RESPONSE_INFO) || !line.Contains(UCI_TOKEN_PV)) continue;
+                        if (line.StartsWith(UCI_RESPONSE_BESTMOVE, StringComparison.Ordinal)) { completedNaturally = true; break; }
+                        if (!line.StartsWith(UCI_RESPONSE_INFO, StringComparison.Ordinal) || !line.Contains(UCI_TOKEN_PV)) continue;
 
                         var tokens = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
                         int    depth    = currentDepth;
@@ -1073,12 +1073,12 @@ namespace ChessDroid.Services
                     Debug.WriteLine($"[Match:{EngineName}] recv: {line}");
                     LogM($"<<< {line}");
 
-                    if (line.StartsWith(UCI_RESPONSE_INFO) && line.Contains(UCI_TOKEN_SCORE))
+                    if (line.StartsWith(UCI_RESPONSE_INFO, StringComparison.Ordinal) && line.Contains(UCI_TOKEN_SCORE))
                     {
                         string? parsed = ParseEvalFromInfoLine(line, whiteToMove);
                         if (parsed != null) lastEval = parsed;
                     }
-                    else if (line.StartsWith(UCI_RESPONSE_BESTMOVE))
+                    else if (line.StartsWith(UCI_RESPONSE_BESTMOVE, StringComparison.Ordinal))
                     {
                         State = EngineState.Ready;
                         int _bm1 = line.IndexOf(' ');
@@ -1157,12 +1157,12 @@ namespace ChessDroid.Services
                     string? line = await ReadEngineLineAsync(cts.Token).ConfigureAwait(false);
                     if (line == null) continue;
 
-                    if (line.StartsWith(UCI_RESPONSE_INFO) && line.Contains(UCI_TOKEN_SCORE))
+                    if (line.StartsWith(UCI_RESPONSE_INFO, StringComparison.Ordinal) && line.Contains(UCI_TOKEN_SCORE))
                     {
                         string? parsed = ParseEvalFromInfoLine(line, whiteToMove);
                         if (parsed != null) lastEval = parsed;
                     }
-                    else if (line.StartsWith(UCI_RESPONSE_BESTMOVE))
+                    else if (line.StartsWith(UCI_RESPONSE_BESTMOVE, StringComparison.Ordinal))
                     {
                         State = EngineState.Ready;
                         return lastEval;
@@ -1224,12 +1224,12 @@ namespace ChessDroid.Services
                     string? line = await ReadEngineLineAsync(cts.Token).ConfigureAwait(false);
                     if (line == null) continue;
 
-                    if (line.StartsWith(UCI_RESPONSE_INFO) && line.Contains(UCI_TOKEN_SCORE))
+                    if (line.StartsWith(UCI_RESPONSE_INFO, StringComparison.Ordinal) && line.Contains(UCI_TOKEN_SCORE))
                     {
                         string? parsed = ParseEvalFromInfoLine(line, whiteToMove);
                         if (parsed != null) lastEval = parsed;
                     }
-                    else if (line.StartsWith(UCI_RESPONSE_BESTMOVE))
+                    else if (line.StartsWith(UCI_RESPONSE_BESTMOVE, StringComparison.Ordinal))
                     {
                         State = EngineState.Ready;
                         return lastEval;
@@ -1290,12 +1290,12 @@ namespace ChessDroid.Services
                     string? line = await ReadEngineLineAsync(ct).ConfigureAwait(false);
                     if (line == null) continue;
 
-                    if (line.StartsWith(UCI_RESPONSE_INFO) && line.Contains(UCI_TOKEN_SCORE))
+                    if (line.StartsWith(UCI_RESPONSE_INFO, StringComparison.Ordinal) && line.Contains(UCI_TOKEN_SCORE))
                     {
                         string? parsed = ParseEvalFromInfoLine(line, whiteToMove);
                         if (parsed != null) { lastEval = parsed; onEvalUpdate(lastEval); }
                     }
-                    else if (line.StartsWith(UCI_RESPONSE_BESTMOVE))
+                    else if (line.StartsWith(UCI_RESPONSE_BESTMOVE, StringComparison.Ordinal))
                     {
                         State = EngineState.Ready;
                         return lastEval;

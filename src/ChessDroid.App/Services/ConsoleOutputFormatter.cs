@@ -206,7 +206,7 @@ namespace ChessDroid.Services
             string threatsText = "";
             string defensesText = "";
             bool weHaveForcedMate = !string.IsNullOrEmpty(evaluation) &&
-                                     evaluation.StartsWith("Mate in ") &&
+                                     evaluation.StartsWith("Mate in ", StringComparison.Ordinal) &&
                                      !evaluation.Contains('-');
 
             if (showThreats && config?.ShowThreats == true && !weHaveForcedMate)
@@ -448,7 +448,7 @@ namespace ChessDroid.Services
         public static string FormatEvaluation(string evaluation)
         {
             // Format mate scores to be more readable
-            if (!string.IsNullOrEmpty(evaluation) && evaluation.StartsWith("Mate in "))
+            if (!string.IsNullOrEmpty(evaluation) && evaluation.StartsWith("Mate in ", StringComparison.Ordinal))
             {
                 string mateStr = evaluation.Replace("Mate in ", "").Trim();
                 if (int.TryParse(mateStr, out int mateIn))
