@@ -347,7 +347,7 @@ namespace ChessDroid.Services
 
                 engineProcess = Process.Start(psi);
                 if (engineProcess == null)
-                    throw new Exception("Failed to start engine process");
+                    throw new InvalidOperationException("Failed to start engine process");
 
                 engineInput = engineProcess.StandardInput;
                 engineOutput = engineProcess.StandardOutput;
@@ -358,13 +358,13 @@ namespace ChessDroid.Services
 
                 if (!IsEngineAlive())
                 {
-                    throw new Exception("Engine process died immediately after start");
+                    throw new InvalidOperationException("Engine process died immediately after start");
                 }
 
                 // Step 1: Send 'uci' and wait for 'uciok' response
                 if (!await SafeWriteLineAsync(UCI_CMD_UCI).ConfigureAwait(false))
                 {
-                    throw new Exception("Failed to send UCI command");
+                    throw new InvalidOperationException("Failed to send UCI command");
                 }
 
                 // Wait for 'uciok' with timeout — collect option lines to detect capabilities
@@ -396,7 +396,7 @@ namespace ChessDroid.Services
 
                 if (!IsEngineAlive())
                 {
-                    throw new Exception("Engine died during UCI initialization");
+                    throw new InvalidOperationException("Engine died during UCI initialization");
                 }
 
                 // Step 1.5: Enable WDL output (for Lc0-inspired WDL display)
@@ -413,7 +413,7 @@ namespace ChessDroid.Services
                 // Step 2: Send 'isready' and wait for 'readyok'
                 if (!await SafeWriteLineAsync("isready").ConfigureAwait(false))
                 {
-                    throw new Exception("Failed to send isready command");
+                    throw new InvalidOperationException("Failed to send isready command");
                 }
 
                 bool receivedReadyOk = false;
@@ -1429,6 +1429,7 @@ namespace ChessDroid.Services
             _disposed = true;
             CleanupProcess();
             _analysisSemaphore.Dispose();
+            GC.SuppressFinalize(this);
         }
     }
 }

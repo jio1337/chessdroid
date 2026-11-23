@@ -26,7 +26,7 @@ namespace ChessDroid
         // The process is going down either way; log, tell the user, then let it terminate.
         private static void OnUnhandledException(object sender, UnhandledExceptionEventArgs e)
         {
-            var ex = e.ExceptionObject as Exception ?? new Exception($"Non-exception object thrown: {e.ExceptionObject}");
+            var ex = e.ExceptionObject as Exception ?? new InvalidOperationException($"Non-exception object thrown: {e.ExceptionObject}");
             CrashLogger.LogException(ex, "Fatal (AppDomain.UnhandledException)");
             ShowCrashDialog(ex, fatal: true);
         }

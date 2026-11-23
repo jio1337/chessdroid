@@ -27,7 +27,11 @@ public class AppConfigTests : IDisposable
         CleanupFiles();
     }
 
-    public void Dispose() => CleanupFiles();
+    public void Dispose()
+    {
+        CleanupFiles();
+        GC.SuppressFinalize(this);
+    }
 
     private void CleanupFiles()
     {

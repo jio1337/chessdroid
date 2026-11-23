@@ -15,6 +15,8 @@ namespace ChessDroid.Tests;
 /// </summary>
 public class IsKingMatedTests
 {
+    private static readonly string[] ExpectedPawnPushBlockMoves = { "c2c3" };
+
     [Fact]
     public void PawnPushBlock_IsNotCheckmate()
     {
@@ -32,7 +34,7 @@ public class IsKingMatedTests
 
         var castling = new CastlingState(false, false, false, false);
         var legalMoves = MoveGenerator.GetAllLegalMovesUci(board, true, castling, null);
-        Assert.Equal(new[] { "c2c3" }, legalMoves);
+        Assert.Equal(ExpectedPawnPushBlockMoves, legalMoves);
     }
 
     [Fact]

@@ -43,8 +43,8 @@ public class SetOptionCachingTests
 
         var sent = File.Exists(logPath) ? File.ReadAllLines(logPath) : Array.Empty<string>();
 
-        int threadsSent = sent.Count(l => l.StartsWith("setoption name Threads value"));
-        int multiPvSent = sent.Count(l => l.StartsWith("setoption name MultiPV value"));
+        int threadsSent = sent.Count(l => l.StartsWith("setoption name Threads value", StringComparison.Ordinal));
+        int multiPvSent = sent.Count(l => l.StartsWith("setoption name MultiPV value", StringComparison.Ordinal));
 
         Assert.Equal(1, threadsSent);
         Assert.Equal(1, multiPvSent);
@@ -76,9 +76,9 @@ public class SetOptionCachingTests
         var sent = File.Exists(logPath) ? File.ReadAllLines(logPath) : Array.Empty<string>();
 
         // Threads value never changed across the two calls -> sent once.
-        Assert.Equal(1, sent.Count(l => l.StartsWith("setoption name Threads value")));
+        Assert.Equal(1, sent.Count(l => l.StartsWith("setoption name Threads value", StringComparison.Ordinal)));
         // MultiPV changed 1 -> 2 -> sent twice (once per distinct value).
-        Assert.Equal(2, sent.Count(l => l.StartsWith("setoption name MultiPV value")));
+        Assert.Equal(2, sent.Count(l => l.StartsWith("setoption name MultiPV value", StringComparison.Ordinal)));
 
         try { File.Delete(logPath); } catch { /* best effort cleanup */ }
     }

@@ -77,6 +77,7 @@ namespace ChessDroid.Services
         {
             richTextBox.MouseClick -= RichTextBox_MouseClick;
             richTextBox.MouseMove -= RichTextBox_MouseMove;
+            GC.SuppressFinalize(this);
         }
 
         /// <summary>

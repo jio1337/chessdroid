@@ -761,6 +761,8 @@ namespace ChessDroid.Services
                 try { blackEngine.Dispose(); } catch { }
                 blackEngine = null;
             }
+
+            GC.SuppressFinalize(this);
         }
     }
 }

@@ -24,6 +24,7 @@ public class LichessPuzzleServiceTests : IDisposable
     public void Dispose()
     {
         try { Directory.Delete(_tempDir, recursive: true); } catch { /* best effort */ }
+        GC.SuppressFinalize(this);
     }
 
     private static void WritePuzzleFile(string path, string puzzleId, string themes = "opening")
@@ -50,7 +51,7 @@ public class LichessPuzzleServiceTests : IDisposable
         Array.Sort(files, StringComparer.Ordinal);
         int seed = DateTime.Today.Year * 10000 + DateTime.Today.Month * 100 + DateTime.Today.Day;
         int expectedFileIndex = new Random(seed).Next(files.Length);
-        string expectedId = Path.GetFileNameWithoutExtension(files[expectedFileIndex]).EndsWith("_a") ? "FROM_A" : "FROM_B";
+        string expectedId = Path.GetFileNameWithoutExtension(files[expectedFileIndex]).EndsWith("_a", StringComparison.Ordinal) ? "FROM_A" : "FROM_B";
 
         var puzzle = LichessPuzzleService.GetDailyPuzzle(_tempDir);
 

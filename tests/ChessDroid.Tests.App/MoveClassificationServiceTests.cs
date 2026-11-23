@@ -9,7 +9,7 @@ namespace ChessDroid.Tests.App;
 /// from live analysis at depth 10, now reviewing at depth 20) was silently reused instead
 /// of re-querying the engine. Fix: cache reads now require cached.Depth >= engineDepth.
 /// </summary>
-public class MoveClassificationServiceTests : IAsyncLifetime
+public class MoveClassificationServiceTests : IAsyncLifetime, IDisposable
 {
     private const string StartFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
     private const string AfterE4Fen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1";
@@ -26,6 +26,12 @@ public class MoveClassificationServiceTests : IAsyncLifetime
     {
         _engine.Dispose();
         return Task.CompletedTask;
+    }
+
+    public void Dispose()
+    {
+        _engine?.Dispose();
+        GC.SuppressFinalize(this);
     }
 
     private static List<MoveNode> OneMoveMainLine() => new()

@@ -266,6 +266,7 @@ namespace ChessDroid.Services
                 _entryCount = 0;
                 _disposed = true;
             }
+            GC.SuppressFinalize(this);
         }
     }
 }

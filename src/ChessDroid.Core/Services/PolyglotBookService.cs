@@ -188,6 +188,7 @@ namespace ChessDroid.Services
                 _loadedBookPaths.Clear();
                 _disposed = true;
             }
+            GC.SuppressFinalize(this);
         }
     }
 }
