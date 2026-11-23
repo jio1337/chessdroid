@@ -317,7 +317,7 @@ namespace ChessDroid.Services
                     if (classification.HasValue && !string.IsNullOrEmpty(classification.Value.label))
                     {
                         AppendTextWithFormat($"  → ", richTextBox.BackColor, explanationColor, FontStyle.Italic);
-                        AppendTextWithFormat($"{classification.Value.label.ToUpper()} ", richTextBox.BackColor, classification.Value.color, FontStyle.Bold);
+                        AppendTextWithFormat($"{classification.Value.label.ToUpperInvariant()} ", richTextBox.BackColor, classification.Value.color, FontStyle.Bold);
                         AppendTextWithFormat($"{cleanedExplanation}", richTextBox.BackColor, explanationColor, FontStyle.Italic);
                     }
                     else
@@ -350,7 +350,7 @@ namespace ChessDroid.Services
                     // Show classification label if provided (e.g., "BLUNDER" for second/third best)
                     if (classification.HasValue && !string.IsNullOrEmpty(classification.Value.label))
                     {
-                        AppendTextWithFormat($"{classification.Value.label.ToUpper()}", richTextBox.BackColor, classification.Value.color, FontStyle.Bold);
+                        AppendTextWithFormat($"{classification.Value.label.ToUpperInvariant()}", richTextBox.BackColor, classification.Value.color, FontStyle.Bold);
                         if (!string.IsNullOrEmpty(defensesText) || !string.IsNullOrEmpty(threatsText))
                         {
                             AppendTextWithFormat(" | ", richTextBox.BackColor, GetThemeColor(Color.Gray, Color.DarkSlateGray), FontStyle.Regular);
@@ -941,7 +941,7 @@ namespace ChessDroid.Services
 
             // Handle castling - need to also move the rook!
             // Castling is detected by king moving 2 squares horizontally
-            if (char.ToUpper(movingPiece) == 'K' && Math.Abs(destCol - srcCol) == 2)
+            if (char.ToUpperInvariant(movingPiece) == 'K' && Math.Abs(destCol - srcCol) == 2)
             {
                 int rookRow = srcRow; // Same row as king
                 if (destCol > srcCol) // Kingside (O-O): king goes right
@@ -1109,8 +1109,8 @@ namespace ChessDroid.Services
                     testBoard.SetPiece(targetRow, targetCol, piece);
 
                     // If the king itself is capturing, its position changes
-                    int kRow = (char.ToUpper(piece) == 'K') ? targetRow : kingRow;
-                    int kCol = (char.ToUpper(piece) == 'K') ? targetCol : kingCol;
+                    int kRow = (char.ToUpperInvariant(piece) == 'K') ? targetRow : kingRow;
+                    int kCol = (char.ToUpperInvariant(piece) == 'K') ? targetCol : kingCol;
 
                     if (kRow < 0) continue; // No king found — skip
                     if (!ChessUtilities.IsSquareAttackedBy(testBoard, kRow, kCol, !byWhite))
@@ -1139,7 +1139,7 @@ namespace ChessDroid.Services
                     if (piece == '.') continue;
 
                     // Skip king - can't "win" a king in a fork, we just give check
-                    if (char.ToUpper(piece) == 'K') continue;
+                    if (char.ToUpperInvariant(piece) == 'K') continue;
 
                     bool pieceIsWhite = char.IsUpper(piece);
                     if (pieceIsWhite == weAreWhite) continue; // Not enemy piece
@@ -1269,7 +1269,7 @@ namespace ChessDroid.Services
                     if (piece == '.') continue;
 
                     // Skip king - we want to find deflectable pieces (usually queen)
-                    if (char.ToUpper(piece) == 'K') continue;
+                    if (char.ToUpperInvariant(piece) == 'K') continue;
 
                     bool pieceIsWhite = char.IsUpper(piece);
                     if (pieceIsWhite == weAreWhite) continue; // Not enemy piece
@@ -1358,7 +1358,7 @@ namespace ChessDroid.Services
                         afterMove.SetPiece(srcR, srcC, '.');
                         afterMove.SetPiece(destR, destC, piece);
 
-                        if (char.ToUpper(piece) == 'P' && (destR == 0 || destR == 7))
+                        if (char.ToUpperInvariant(piece) == 'P' && (destR == 0 || destR == 7))
                             afterMove.SetPiece(destR, destC, weAreWhite ? 'Q' : 'q');
 
                         if (IsCheckmate(afterMove, !weAreWhite))
@@ -1405,7 +1405,7 @@ namespace ChessDroid.Services
                             afterOurMove.SetPiece(destR, destC, piece);
 
                             // Handle pawn promotion
-                            if (char.ToUpper(piece) == 'P' && (destR == 0 || destR == 7))
+                            if (char.ToUpperInvariant(piece) == 'P' && (destR == 0 || destR == 7))
                                 afterOurMove.SetPiece(destR, destC, weAreWhite ? 'Q' : 'q');
 
                             // If this is already checkmate, we found mate in 1 (handled elsewhere)
@@ -1449,7 +1449,7 @@ namespace ChessDroid.Services
 
                                             // Check if this leaves their king in check (illegal move)
                                             int newKingRow = kingRow, newKingCol = kingCol;
-                                            if (char.ToUpper(oppPiece) == 'K')
+                                            if (char.ToUpperInvariant(oppPiece) == 'K')
                                             {
                                                 newKingRow = oppDestR;
                                                 newKingCol = oppDestC;
@@ -1574,7 +1574,7 @@ namespace ChessDroid.Services
                     bool pieceIsWhite = char.IsUpper(piece);
                     if (pieceIsWhite != weAreWhite) continue;
 
-                    char upper = char.ToUpper(piece);
+                    char upper = char.ToUpperInvariant(piece);
 
                     // Count major pieces
                     if (upper == 'Q' || upper == 'R')
@@ -1644,7 +1644,7 @@ namespace ChessDroid.Services
         /// </summary>
         private static string GetPieceSymbol(char piece)
         {
-            char upper = char.ToUpper(piece);
+            char upper = char.ToUpperInvariant(piece);
             return upper switch
             {
                 'K' => "K",

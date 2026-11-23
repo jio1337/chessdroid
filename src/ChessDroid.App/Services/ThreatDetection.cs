@@ -80,7 +80,7 @@ namespace ChessDroid.Services
                 // Handle promotion
                 if (move.Length > 4)
                 {
-                    char promotionPiece = movingPlayerIsWhite ? char.ToUpper(move[4]) : char.ToLower(move[4]);
+                    char promotionPiece = movingPlayerIsWhite ? char.ToUpperInvariant(move[4]) : char.ToLowerInvariant(move[4]);
                     afterMove.SetPiece(destRank, destFile, promotionPiece);
                 }
 
@@ -480,7 +480,7 @@ namespace ChessDroid.Services
             // Fork = attacking 2+ pieces worth 3+ points each (or King)
             var valuableAttacked = new List<(int row, int col, char piece, int value)>();
             foreach (var p in attackedPieces)
-                if (p.value >= 3 || char.ToUpper(p.piece) == 'K')
+                if (p.value >= 3 || char.ToUpperInvariant(p.piece) == 'K')
                     valuableAttacked.Add(p);
 
             if (valuableAttacked.Count >= 2)
@@ -493,7 +493,7 @@ namespace ChessDroid.Services
                 var atRisk = new List<(int row, int col, char piece, int value)>();
                 foreach (var p in valuableAttacked)
                 {
-                    if (char.ToUpper(p.piece) == 'K' ||
+                    if (char.ToUpperInvariant(p.piece) == 'K' ||
                         !ChessUtilities.IsSquareDefended(board, p.row, p.col, !movingPlayerIsWhite) ||
                         p.value > forkingValue)
                         atRisk.Add(p);
@@ -1169,7 +1169,7 @@ namespace ChessDroid.Services
 
                     var valuableAttacked = new List<(char piece, int value, string square, int row, int col, bool isDefended)>();
                     foreach (var p in attackedPieces)
-                        if (p.value >= 3 || char.ToUpper(p.piece) == 'K')
+                        if (p.value >= 3 || char.ToUpperInvariant(p.piece) == 'K')
                             valuableAttacked.Add(p);
 
                     if (valuableAttacked.Count >= 2)

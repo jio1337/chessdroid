@@ -1905,7 +1905,7 @@ namespace ChessDroid
             foreach (char c in placement)
                 if (char.IsLetter(c)) counts[c] = counts.GetValueOrDefault(c) + 1;
 
-            static int PieceVal(char p) => char.ToLower(p) switch { 'q' => 9, 'r' => 5, 'b' => 3, 'n' => 3, 'p' => 1, _ => 0 };
+            static int PieceVal(char p) => char.ToLowerInvariant(p) switch { 'q' => 9, 'r' => 5, 'b' => 3, 'n' => 3, 'p' => 1, _ => 0 };
 
             // Black pieces captured by white (lowercase chars)
             var whiteCaptured = new List<char>();

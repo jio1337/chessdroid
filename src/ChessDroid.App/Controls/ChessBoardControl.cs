@@ -1876,7 +1876,7 @@ namespace ChessDroid.Controls
 
             string move = $"{fromFile}{fromRank}{toFile}{toRank}";
             if (promotion.HasValue)
-                move += char.ToLower(promotion.Value);
+                move += char.ToLowerInvariant(promotion.Value);
 
             return move;
         }
@@ -1893,7 +1893,7 @@ namespace ChessDroid.Controls
             char movingPiece = board.GetPiece(fromRow, fromCol);
 
             // Check for pawn promotion
-            if (char.ToLower(movingPiece) == 'p')
+            if (char.ToLowerInvariant(movingPiece) == 'p')
             {
                 bool isPromotion = (char.IsUpper(movingPiece) && toRow == 0) ||
                                    (char.IsLower(movingPiece) && toRow == 7);
@@ -1918,12 +1918,12 @@ namespace ChessDroid.Controls
             // any more; it's only distinguished for isCapture/lastMove, which it is NOT (it's
             // not a real capture, and the king's displayed destination is g/c-file, not the
             // rook's square it "captures").
-            bool isChess960Castle = _chess960Mode && char.ToLower(movingPiece) == 'k' && fromRow == toRow &&
+            bool isChess960Castle = _chess960Mode && char.ToLowerInvariant(movingPiece) == 'k' && fromRow == toRow &&
                 board.GetPiece(toRow, toCol) == (char.IsUpper(movingPiece) ? 'R' : 'r');
 
             char captured = board.GetPiece(toRow, toCol);
             bool isCapture = !isChess960Castle && (captured != '.' ||
-                (char.ToLower(movingPiece) == 'p' && fromCol != toCol && captured == '.')); // en passant
+                (char.ToLowerInvariant(movingPiece) == 'p' && fromCol != toCol && captured == '.')); // en passant
 
             // Store move for highlighting
             int lastMoveToCol = isChess960Castle ? (toCol > fromCol ? 6 : 2) : toCol;
@@ -1942,7 +1942,7 @@ namespace ChessDroid.Controls
             (enPassantRow, enPassantCol) = ParseEnPassantString(enPassantStr);
 
             // FEN halfmove clock: resets on a pawn move or capture, otherwise increments.
-            bool isPawnMove = char.ToLower(movingPiece) == 'p';
+            bool isPawnMove = char.ToLowerInvariant(movingPiece) == 'p';
             halfmoveClock = (isPawnMove || isCapture) ? 0 : halfmoveClock + 1;
 
             // Switch turn

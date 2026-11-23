@@ -402,7 +402,7 @@ namespace ChessDroid
         private static string PieceName(char piece)
         {
             bool white = char.IsUpper(piece);
-            return char.ToUpper(piece) switch
+            return char.ToUpperInvariant(piece) switch
             {
                 'K' => white ? "White King"   : "Black King",
                 'Q' => white ? "White Queen"  : "Black Queen",

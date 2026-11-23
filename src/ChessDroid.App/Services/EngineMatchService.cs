@@ -398,7 +398,7 @@ namespace ChessDroid.Services
                 }
 
                 char capturedPiece = GetCapturedPiece(bestMove);
-                bool isPawnMove = char.ToLower(movingPiece) == 'p';
+                bool isPawnMove = char.ToLowerInvariant(movingPiece) == 'p';
                 bool isCapture = capturedPiece != '.';
 
                 string castling = gameState.CastlingRights;
@@ -554,7 +554,7 @@ namespace ChessDroid.Services
             if (target == '.')
             {
                 char moving = GetMovingPiece(uciMove);
-                if (char.ToLower(moving) == 'p' && uciMove[0] != uciMove[2])
+                if (char.ToLowerInvariant(moving) == 'p' && uciMove[0] != uciMove[2])
                 {
                     // Diagonal pawn move to empty square = en passant
                     return gameState.WhiteToMove ? 'p' : 'P';
@@ -721,15 +721,15 @@ namespace ChessDroid.Services
             // K+minor vs K
             if (pieces.Count == 3)
             {
-                var nonKing = pieces.First(p => char.ToLower(p.piece) != 'k');
-                char type = char.ToLower(nonKing.piece);
+                var nonKing = pieces.First(p => char.ToLowerInvariant(p.piece) != 'k');
+                char type = char.ToLowerInvariant(nonKing.piece);
                 if (type == 'n' || type == 'b') return true;
             }
 
             // K+B vs K+B same color bishops
             if (pieces.Count == 4)
             {
-                var bishops = pieces.Where(p => char.ToLower(p.piece) == 'b').ToList();
+                var bishops = pieces.Where(p => char.ToLowerInvariant(p.piece) == 'b').ToList();
                 if (bishops.Count == 2)
                 {
                     bool sameColor = ((bishops[0].row + bishops[0].col) % 2) ==

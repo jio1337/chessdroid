@@ -33,7 +33,7 @@ namespace ChessDroid.Services
 
                     foreach (var (toRow, toCol) in GetLegalDestinations(board, row, col, whiteToMove, castling, enPassant))
                     {
-                        bool isPromotion = char.ToLower(piece) == 'p' && (toRow == 0 || toRow == 7);
+                        bool isPromotion = char.ToLowerInvariant(piece) == 'p' && (toRow == 0 || toRow == 7);
                         if (isPromotion)
                         {
                             foreach (char promo in new[] { 'q', 'r', 'b', 'n' })
@@ -76,7 +76,7 @@ namespace ChessDroid.Services
 
             // Chess960 exception: king moving to its own rook = castling (not a capture)
             bool isChess960Castle = castling.Chess960Mode && isSameColor &&
-                char.ToLower(movingPiece) == 'k' && char.ToLower(targetPiece) == 'r' &&
+                char.ToLowerInvariant(movingPiece) == 'k' && char.ToLowerInvariant(targetPiece) == 'r' &&
                 fromRow == toRow && (fromRow == 7 || fromRow == 0);
 
             if (isSameColor && !isChess960Castle) return false;
@@ -93,11 +93,11 @@ namespace ChessDroid.Services
                 // that attacks the rook's square but not the king's real destination.
                 return IsValidCastling960(board, fromRow, fromCol, toCol, whiteToMove, castling);
             }
-            else if (!castling.Chess960Mode && char.ToLower(movingPiece) == 'k' && Math.Abs(toCol - fromCol) == 2 && fromRow == toRow)
+            else if (!castling.Chess960Mode && char.ToLowerInvariant(movingPiece) == 'k' && Math.Abs(toCol - fromCol) == 2 && fromRow == toRow)
             {
                 if (!IsValidCastling(board, fromRow, fromCol, toCol, whiteToMove, castling)) return false;
             }
-            else if (char.ToLower(movingPiece) == 'p')
+            else if (char.ToLowerInvariant(movingPiece) == 'p')
             {
                 if (!IsValidPawnMove(board, fromRow, fromCol, toRow, toCol, movingPiece, targetPiece, enPassant))
                     return false;
@@ -115,7 +115,7 @@ namespace ChessDroid.Services
             testBoard.SetPiece(toRow, toCol, movingPiece);
             testBoard.SetPiece(fromRow, fromCol, '.');
 
-            if (char.ToLower(movingPiece) == 'k' && Math.Abs(fromCol - toCol) == 2)
+            if (char.ToLowerInvariant(movingPiece) == 'k' && Math.Abs(fromCol - toCol) == 2)
             {
                 if (toCol > fromCol)
                 {
@@ -129,7 +129,7 @@ namespace ChessDroid.Services
                 }
             }
 
-            if (char.ToLower(movingPiece) == 'p' && fromCol != toCol && targetPiece == '.')
+            if (char.ToLowerInvariant(movingPiece) == 'p' && fromCol != toCol && targetPiece == '.')
             {
                 testBoard.SetPiece(fromRow, toCol, '.');
             }
@@ -311,7 +311,7 @@ namespace ChessDroid.Services
             if (!ChessRulesService.CanReachSquare(testBoard, fromRow, fromCol, piece, toRow, toCol))
                 return false;
 
-            char pieceLower = char.ToLower(piece);
+            char pieceLower = char.ToLowerInvariant(piece);
 
             // Knights and kings don't need path checking (they jump or move 1 square)
             if (pieceLower == 'n' || pieceLower == 'k') return true;
@@ -344,7 +344,7 @@ namespace ChessDroid.Services
             char toRank = (char)('1' + (7 - toRow));
 
             string move = $"{fromFile}{fromRank}{toFile}{toRank}";
-            if (promotion.HasValue) move += char.ToLower(promotion.Value);
+            if (promotion.HasValue) move += char.ToLowerInvariant(promotion.Value);
             return move;
         }
     }

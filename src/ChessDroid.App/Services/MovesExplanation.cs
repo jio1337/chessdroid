@@ -27,7 +27,7 @@ namespace ChessDroid.Services
                 // Forced mate detection (only for "Mate in X", not "Mated in X")
                 if (!string.IsNullOrEmpty(evaluation) && evaluation.StartsWith("Mate in "))
                 {
-                    return $"forced checkmate ({evaluation.ToLower()})";
+                    return $"forced checkmate ({evaluation.ToLowerInvariant()})";
                 }
 
                 ChessBoard board = ChessBoard.FromFEN(fen);
@@ -254,7 +254,7 @@ namespace ChessDroid.Services
                     // Check for promotion
                     if (bestMove.Length > 4)
                     {
-                        reasons.Add("promotes to " + bestMove[4].ToString().ToUpper());
+                        reasons.Add("promotes to " + bestMove[4].ToString().ToUpperInvariant());
                     }
 
                     // Pawn break: advance creates new tension against an enemy pawn
@@ -412,7 +412,7 @@ namespace ChessDroid.Services
                 if (ExplanationFormatter.Features.ShowPositionalAnalysis && reasons.Count < 2 && !pieceWillBeRecaptured &&
                     (srcRank == 0 || srcRank == 7) && (pieceType == PieceType.Knight || pieceType == PieceType.Bishop))
                 {
-                    reasons.Add($"develops {char.ToUpper(piece)}{dest}");
+                    reasons.Add($"develops {char.ToUpperInvariant(piece)}{dest}");
                 }
 
                 // Fianchetto: bishop settles on b2/g2/b7/g7 — skip if immediately recaptured
@@ -621,7 +621,7 @@ namespace ChessDroid.Services
             }
 
             // Fork = attacking 2+ valuable pieces (value >= 3 or King)
-            var valuableAttacked = attackedPieces.Where(p => p.value >= 3 || char.ToUpper(p.piece) == 'K').ToList();
+            var valuableAttacked = attackedPieces.Where(p => p.value >= 3 || char.ToUpperInvariant(p.piece) == 'K').ToList();
 
             if (valuableAttacked.Count >= 2)
             {

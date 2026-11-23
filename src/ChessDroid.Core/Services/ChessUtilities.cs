@@ -218,7 +218,7 @@ namespace ChessDroid.Services
             char target = board.GetPiece(tr, tc);
             if (target != '.' && char.IsUpper(target) == isWhite) return false; // own piece
 
-            char p = char.ToLower(piece);
+            char p = char.ToLowerInvariant(piece);
             switch (p)
             {
                 case 'p':

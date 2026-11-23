@@ -77,7 +77,7 @@ namespace ChessDroid.Services
             }
 
             // Factor 2: Pawn moves - distinguish attacking vs quiet pawns
-            if (movedPiece.HasValue && char.ToLower(movedPiece.Value) == 'p')
+            if (movedPiece.HasValue && char.ToLowerInvariant(movedPiece.Value) == 'p')
             {
                 int toFile = to[0] - 'a';
                 int toRank = to[1] - '1';
@@ -116,7 +116,7 @@ namespace ChessDroid.Services
             {
                 sharpness += 20;
                 // Queen promotion is slightly more forcing
-                if (char.ToLower(promotion.Value) == 'q')
+                if (char.ToLowerInvariant(promotion.Value) == 'q')
                     sharpness += 5;
             }
 
@@ -136,7 +136,7 @@ namespace ChessDroid.Services
             // Factor 6: Piece development in opening
             if (movedPiece.HasValue)
             {
-                char piece = char.ToLower(movedPiece.Value);
+                char piece = char.ToLowerInvariant(movedPiece.Value);
 
                 // Count pieces to estimate game phase
                 int pieceCount = CountPieces(boardPart);
@@ -222,7 +222,7 @@ namespace ChessDroid.Services
             int finalSharpness = Math.Max(0, Math.Min(100, sharpness));
 
             // Enhanced debug output for console
-            string pieceType = movedPiece.HasValue ? char.ToLower(movedPiece.Value).ToString() : "?";
+            string pieceType = movedPiece.HasValue ? char.ToLowerInvariant(movedPiece.Value).ToString() : "?";
             Debug.WriteLine($"[Sharpness] {move} ({pieceType}): base=50 → final={finalSharpness} (delta={finalSharpness - 50:+#;-#;0})");
 
             return finalSharpness;

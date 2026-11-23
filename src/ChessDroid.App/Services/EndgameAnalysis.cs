@@ -53,7 +53,7 @@ namespace ChessDroid.Services
                 for (int c = 0; c < 8; c++)
                 {
                     char piece = board.GetPiece(r, c);
-                    if (piece != '.' && char.ToUpper(piece) != 'K')
+                    if (piece != '.' && char.ToUpperInvariant(piece) != 'K')
                         count++;
                 }
             }

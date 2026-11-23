@@ -72,7 +72,7 @@ namespace ChessDroid.Services
                 // Handle promotion
                 if (move.Length > 4)
                 {
-                    char promotionPiece = movingPlayerIsWhite ? char.ToUpper(move[4]) : char.ToLower(move[4]);
+                    char promotionPiece = movingPlayerIsWhite ? char.ToUpperInvariant(move[4]) : char.ToLowerInvariant(move[4]);
                     afterMove.SetPiece(destRank, destFile, promotionPiece);
                 }
 

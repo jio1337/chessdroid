@@ -154,7 +154,7 @@ namespace ChessDroid.Services
             string pieceLetter = "";
             if (PieceHelper.GetPieceType(piece) != PieceType.Pawn)
             {
-                pieceLetter = piece.ToString().ToUpper();
+                pieceLetter = piece.ToString().ToUpperInvariant();
                 if (pieceLetter == "K") pieceLetter = "K";
                 else if (pieceLetter == "Q") pieceLetter = "Q";
                 else if (pieceLetter == "R") pieceLetter = "R";
@@ -194,7 +194,7 @@ namespace ChessDroid.Services
             string disambiguator = "";
             if (PieceHelper.GetPieceType(piece) != PieceType.Pawn && PieceHelper.GetPieceType(piece) != PieceType.King)
             {
-                char pieceLower = char.ToLower(piece);
+                char pieceLower = char.ToLowerInvariant(piece);
                 bool isWhite = char.IsUpper(piece);
                 var sameTypePieces = findAllPiecesOfSameType(board, pieceLower, isWhite, destRank, destFile);
 
@@ -222,7 +222,7 @@ namespace ChessDroid.Services
             string promotion = "";
             if (uciMove.Length > 4)
             {
-                promotion = "=" + uciMove[4].ToString().ToUpper();
+                promotion = "=" + uciMove[4].ToString().ToUpperInvariant();
             }
 
             return $"{pieceLetter}{disambiguator}{captureSymbol}{dest}{promotion}";
@@ -324,12 +324,12 @@ namespace ChessDroid.Services
                 if (san.Contains('='))
                 {
                     int eqIdx = san.IndexOf('=');
-                    if (eqIdx + 1 < san.Length) promotion = char.ToLower(san[eqIdx + 1]);
+                    if (eqIdx + 1 < san.Length) promotion = char.ToLowerInvariant(san[eqIdx + 1]);
                     san = san[..eqIdx];
                 }
                 else if (san.Length >= 2 && char.IsUpper(san[^1]) && san[^1] != 'O')
                 {
-                    promotion = char.ToLower(san[^1]);
+                    promotion = char.ToLowerInvariant(san[^1]);
                     san = san[..^1];
                 }
 
@@ -361,11 +361,11 @@ namespace ChessDroid.Services
                 }
 
                 var board = ChessBoard.FromFEN(fen);
-                char pieceChar = isWhiteToMove ? pieceType : char.ToLower(pieceType);
+                char pieceChar = isWhiteToMove ? pieceType : char.ToLowerInvariant(pieceType);
                 if (pieceType == 'P') pieceChar = isWhiteToMove ? 'P' : 'p';
 
                 var candidates = ChessRulesService.FindAllPiecesOfSameTypeWithEnPassant(
-                    board, char.ToLower(pieceChar), isWhiteToMove, destRow, destCol, enPassantSquare);
+                    board, char.ToLowerInvariant(pieceChar), isWhiteToMove, destRow, destCol, enPassantSquare);
 
                 foreach (var (row, col) in candidates)
                 {

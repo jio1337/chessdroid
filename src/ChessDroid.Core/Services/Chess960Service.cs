@@ -49,9 +49,9 @@ namespace ChessDroid.Services
             // listed in ascending file order so the queenside letter comes first.
             string castlingWhite = string.Concat(
                 Enumerable.Range(0, 8).Where(f => w[f] == 'R').Select(f => (char)('A' + f)));
-            string castling = castlingWhite + castlingWhite.ToLower();
+            string castling = castlingWhite + castlingWhite.ToLowerInvariant();
 
-            return $"{whitePieces.ToLower()}/pppppppp/8/8/8/8/PPPPPPPP/{whitePieces} w {castling} - 0 1";
+            return $"{whitePieces.ToLowerInvariant()}/pppppppp/8/8/8/8/PPPPPPPP/{whitePieces} w {castling} - 0 1";
         }
 
         // Places piece p at the nth empty slot (0-based) in sq.

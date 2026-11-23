@@ -58,7 +58,7 @@ namespace ChessDroid.Services
             if (string.IsNullOrEmpty(explanation))
                 return MoveQualityColor.Neutral;
 
-            string lower = explanation.ToLower();
+            string lower = explanation.ToLowerInvariant();
 
             // Excellent indicators
             if (lower.Contains("only good move") || lower.Contains("singular move") ||
@@ -342,7 +342,7 @@ namespace ChessDroid.Services
             if (string.IsNullOrEmpty(explanation))
                 return ExplanationType.Unknown;
 
-            string lower = explanation.ToLower();
+            string lower = explanation.ToLowerInvariant();
 
             // Tactical
             if (lower.Contains("fork") || lower.Contains("pin") || lower.Contains("skewer") ||

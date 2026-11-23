@@ -201,7 +201,7 @@ namespace ChessDroid.Services
             if (uciMove.Length > 4)
             {
                 char prom = uciMove[4];
-                char promPiece = char.IsUpper(moving) ? char.ToUpper(prom) : char.ToLower(prom);
+                char promPiece = char.IsUpper(moving) ? char.ToUpperInvariant(prom) : char.ToLowerInvariant(prom);
                 board[dstRank, dstFile] = promPiece;
             }
 
@@ -387,7 +387,7 @@ namespace ChessDroid.Services
                     char p = board[r, f];
                     if (p == '.') continue;
                     if (char.IsUpper(p) != isWhite) continue;
-                    if (char.ToLower(p) != pieceLower) continue;
+                    if (char.ToLowerInvariant(p) != pieceLower) continue;
 
                     if (CanReachSquareWithEnPassant(board, r, f, p, destRank, destFile, enPassantSquare))
                     {

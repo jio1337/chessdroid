@@ -286,7 +286,7 @@ namespace ChessDroid.Services
 
                             if (ChessUtilities.CanAttackSquare(board, r, c, p, controlledRank, controlledFile))
                             {
-                                string pieceAbbr = char.ToUpper(p) == 'B' ? "B" : "N";
+                                string pieceAbbr = char.ToUpperInvariant(p) == 'B' ? "B" : "N";
                                 char sqFile = (char)('a' + controlledFile);
                                 int sqRank = 8 - controlledRank;
                                 return $"prophylactic — prevents {pieceAbbr}{sqFile}{sqRank}";

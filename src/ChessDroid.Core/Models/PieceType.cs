@@ -41,7 +41,7 @@ namespace ChessDroid.Models
     {
         public static PieceType GetPieceType(char piece)
         {
-            return char.ToLower(piece) switch
+            return char.ToLowerInvariant(piece) switch
             {
                 'p' => PieceType.Pawn,
                 'n' => PieceType.Knight,
