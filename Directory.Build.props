@@ -1,0 +1,13 @@
+<Project>
+  <!--
+    CHESSDROID_AUDIT.md §6.4/§8: the version used to live in 3+ places that drifted out of
+    sync (ARCHITECTURE.md said v3.18/v3.19 while the code was v3.21.1; chessdroid.csproj's
+    <Description> still said "V1.0.0"; the window title in AnalysisBoardForm.Designer.cs was
+    a separate hardcoded string). This is now the one place it's set — every project under
+    this directory picks it up automatically, and the window title reads it at runtime
+    instead of hardcoding its own copy.
+  -->
+  <PropertyGroup>
+    <Version>3.21.1</Version>
+  </PropertyGroup>
+</Project>

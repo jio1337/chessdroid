@@ -2,11 +2,19 @@
 
 ## Overview
 
-chessdroid is a pure offline chess analysis application that combines tactical pattern recognition with deep positional understanding inspired by world-class chess engines (Ethereal and Stockfish). As of v3.20.0, the application is centered around the Analysis Board — an interactive workspace for deep chess analysis with visual engine arrows, threat arrows, eval graph, PV line exploration, piece animations, free-draw annotation, bot mode (Elo targeting 1320–3190, Friendly/Challenge, draw detection), Chess 960 (Fischer Random with position browser and legal castling), continuous analysis, annotated PGN round-trips, square highlighting, auto-play, game accuracy scoring, interactive game review, game library, material strips, SVG piece sets, smooth eval bar animation, neutral engine match arbiter, engine match series with adjudication and opening book, Tournament mode (simultaneous 2×2 board grid), full board customization, 8 UI themes, 22 piece sets, resizable panels, a persistent chessdroid engine rating ladder, sound effects, Endgame & Tactics Drills (10 PGN files), and a full Training suite (Puzzle Training with 5.94M Lichess puzzles, Puzzle Rush, Puzzle Gauntlet, Daily Puzzle, Board Vision, Opening Training, and Square Training).
+chessdroid is a pure offline chess analysis application that combines tactical pattern recognition with deep positional understanding inspired by world-class chess engines (Ethereal and Stockfish). As of v3.21.1, the application is centered around the Analysis Board — an interactive workspace for deep chess analysis with visual engine arrows, threat arrows, eval graph, PV line exploration, piece animations, free-draw annotation, bot mode (Elo targeting 1320–3190, Friendly/Challenge, draw detection), Chess 960 (Fischer Random with position browser and legal castling), continuous analysis, annotated PGN round-trips, square highlighting, auto-play, game accuracy scoring, interactive game review, game library, material strips, SVG piece sets, smooth eval bar animation, neutral engine match arbiter, engine match series with adjudication and opening book, Tournament mode (simultaneous 2×2 board grid), full board customization, 8 UI themes, 22 piece sets, resizable panels, a persistent chessdroid engine rating ladder, sound effects, Endgame & Tactics Drills (10 PGN files), and a full Training suite (Puzzle Training with 5.94M Lichess puzzles, Puzzle Rush, Puzzle Gauntlet, Daily Puzzle, Board Vision, Opening Training, and Square Training).
 
 ---
 
-## System Architecture (v3.19.0)
+## System Architecture (v3.21.1)
+
+> **Note (2026-11-23):** this section and the module list below predate the Phase 1-4
+> refactor (CHESSDROID_AUDIT.md) that split the codebase into `ChessDroid.Core` (pure,
+> no WinForms — rules/notation/move-generation/engine-option-independent analysis) and
+> `ChessDroid.App` (WinForms UI). It doesn't yet describe that split, `MoveGenerator`
+> (the single consolidated legal-move/check implementation), or the `Score` struct. A full
+> rewrite reflecting the current module boundaries is a separate task from this version-
+> number fix — flagged here rather than silently left looking authoritative.
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -579,7 +587,11 @@ Create a folder in `Templates/` with 12 PNG files named: wK, wQ, wR, wB, wN, wP,
 
 ## Version History
 
-**v3.18.0** — The Arena (Current)
+**v3.21.1** — see CHANGELOG.md for the full, up-to-date version history from here; this
+section was last kept current at v3.18.0 and isn't being hand-maintained in parallel with
+CHANGELOG.md going forward — see the note at the top of this document.
+
+**v3.18.0** — The Arena
 - Tournament Mode — simultaneous engine matches on a 2×2 live board grid; round-robin and manual pairing; live standings; full PGN auto-saved
 - Engine Match series — N games per match with color swap, auto-adjudication, opening book (Random/Choose), PGN auto-save with eval annotations
 - Endgame & Tactics Drills — 10 PGN files (5 tactics + 4 endgame series + rook database); all chapters with researched descriptions; Practice vs Bot; Watch Engines
@@ -742,5 +754,5 @@ https://github.com/jio1337/chessdroid/issues
 
 ---
 
-**Last Updated:** 2026-06-01
-**Document Version:** 3.17.0
+**Last Updated:** 2026-11-23 (version-number fix only — see the note under "System Architecture" above; module descriptions below are not yet current)
+**Document Version:** 3.21.1

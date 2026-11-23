@@ -1003,7 +1003,9 @@ namespace ChessDroid
             MinimumSize = new Size(1000, 600);
             Name = "AnalysisBoardForm";
             StartPosition = FormStartPosition.CenterScreen;
-            Text = "chessdroid v3.21.1";
+            // Version comes from Directory.Build.props's single <Version> (CHESSDROID_AUDIT.md
+            // §6.4/§8) instead of a hardcoded literal here that drifts out of sync with it.
+            Text = $"chessdroid v{System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString(3)}";
             KeyDown += AnalysisBoardForm_KeyDown;
             outerSplit.Panel1.ResumeLayout(false);
             outerSplit.Panel2.ResumeLayout(false);

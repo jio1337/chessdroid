@@ -8,7 +8,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <ApplicationIcon>chessdroid.ico</ApplicationIcon>
     <Copyright>ARWAN</Copyright>
-    <Description>CHESSDROID V1.0.0 BY ARWAN</Description>
+    <Description>Offline chess analysis application by ARWAN</Description>
   </PropertyGroup>
 
   <ItemGroup>
