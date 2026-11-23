@@ -1236,12 +1236,21 @@ namespace ChessDroid
             _ = TriggerAutoAnalysis();
         }
 
+        /// <summary>Thin IModeController wrapper around StopTraining — see Modes/IModeController.cs.</summary>
+        private sealed class TrainingModeController : Modes.IModeController
+        {
+            private readonly AnalysisBoardForm _form;
+            public TrainingModeController(AnalysisBoardForm form) => _form = form;
+            public void Exit() => _form.StopTraining();
+        }
+
         private void RestoreBoardAfterTraining()
         {
             boardControl.IsFlipped = _trainingPreFlipped;
             if (_trainingPreFen != null) boardControl.LoadFEN(_trainingPreFen);
             _trainingPreFen     = null;
             _trainingGameActive = false;
+            if (CurrentModeController is TrainingModeController) CurrentModeController = null;
         }
 
         private void SetTrainingButtonsEnabled(bool enabled)
@@ -1307,6 +1316,7 @@ namespace ChessDroid
         {
             boardControl.InteractionEnabled = true;
             if (_drillWatchActive) { matchService?.StopMatch(); return; }
+            CurrentModeController = new TrainingModeController(this);
             if (_trainingSubMode == TrainingSubMode.Opening) { OpeningTrainingStart();  return; }
             if (_trainingSubMode == TrainingSubMode.Vision)  { VisionTrainingStart();   return; }
             if (_trainingSubMode == TrainingSubMode.Puzzle)

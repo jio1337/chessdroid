@@ -826,9 +826,19 @@ namespace ChessDroid
             btnTakeBack.Enabled       = !active || _botSettings?.ChallengeMode != true;
         }
 
+        /// <summary>Thin IModeController wrapper around StopMatch — see Modes/IModeController.cs.</summary>
+        private sealed class MatchModeController : Modes.IModeController
+        {
+            private readonly AnalysisBoardForm _form;
+            public MatchModeController(AnalysisBoardForm form) => _form = form;
+            public void Exit() => _form.matchService?.StopMatch();
+        }
+
         private void SetMatchControlsEnabled(bool running)
         {
             matchRunning = running;
+            if (running) CurrentModeController = new MatchModeController(this);
+            else if (CurrentModeController is MatchModeController) CurrentModeController = null;
 
             // Disable/enable game controls
             btnNewGame.Enabled        = !running;

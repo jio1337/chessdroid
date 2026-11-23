@@ -36,6 +36,7 @@ namespace ChessDroid
             autoAnalysisCts?.Cancel();
 
             _botModeActive = true;
+            CurrentModeController = new BotModeController(this);
             SetBotControlsEnabled(true);
             boardControl.ClearEngineArrows();
             boardControl.ClearBookArrows();
@@ -328,10 +329,19 @@ namespace ChessDroid
             return "full strength";
         }
 
+        /// <summary>Thin IModeController wrapper around StopBotMode — see Modes/IModeController.cs.</summary>
+        private sealed class BotModeController : Modes.IModeController
+        {
+            private readonly AnalysisBoardForm _form;
+            public BotModeController(AnalysisBoardForm form) => _form = form;
+            public void Exit() => _form.StopBotMode();
+        }
+
         private void StopBotMode()
         {
             _botMoveCts?.Cancel();
             _botModeActive = false;
+            if (CurrentModeController is BotModeController) CurrentModeController = null;
 
             // MakeBotMoveAsync may still be mid-await on _botEngine.GetMoveForMatchAsync
             // when this runs. Disposing the engine immediately races that read loop —

@@ -89,6 +89,9 @@ namespace ChessDroid
             _trainingGameActive ? AppMode.Training :
             AppMode.Analysis;
 
+        /// <summary>See Modes/IModeController.cs for scope and why this is Exit-only.</summary>
+        private Modes.IModeController? CurrentModeController;
+
         // Bot mode
         private bool _botModeActive  = false;
         private bool _chess960Active = false;
