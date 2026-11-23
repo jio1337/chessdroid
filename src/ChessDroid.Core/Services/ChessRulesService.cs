@@ -458,48 +458,6 @@ namespace ChessDroid.Services
             return false;
         }
 
-        public static bool HasAnyLegalMove(ChessBoard board, bool whiteToMove)
-        {
-            for (int r = 0; r < 8; r++)
-            {
-                for (int c = 0; c < 8; c++)
-                {
-                    char piece = board.GetPiece(r, c);
-                    if (piece == '.') continue;
-                    bool isOwn = whiteToMove ? char.IsUpper(piece) : char.IsLower(piece);
-                    if (!isOwn) continue;
-
-                    for (int tr = 0; tr < 8; tr++)
-                    {
-                        for (int tc = 0; tc < 8; tc++)
-                        {
-                            if (r == tr && c == tc) continue;
-                            char target = board.GetPiece(tr, tc);
-                            if (target != '.' && ((whiteToMove && char.IsUpper(target)) ||
-                                                  (!whiteToMove && char.IsLower(target))))
-                                continue;
-
-                            if (!CanReachSquare(board, r, c, piece, tr, tc))
-                                continue;
-
-                            using var pooled = BoardPool.Rent(board);
-                            var testBoard = pooled.Board;
-                            testBoard.SetPiece(tr, tc, piece);
-                            testBoard.SetPiece(r, c, '.');
-
-                            char pl = char.ToLower(piece);
-                            if (pl == 'p' && c != tc && target == '.')
-                                testBoard.SetPiece(r, tc, '.');
-
-                            if (!IsKingInCheck(testBoard, whiteToMove))
-                                return true;
-                        }
-                    }
-                }
-            }
-            return false;
-        }
-
         public static bool IsInsufficientMaterial(string fenPosition)
         {
             var pieces = fenPosition.Where(char.IsLetter).ToList();

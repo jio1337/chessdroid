@@ -289,10 +289,30 @@ namespace ChessDroid
 
         private bool HasAnyLegalMoveFromFen(string fen)
         {
+            var board = boardControl.GetBoardState();
+            if (board == null) return true;
+
+            // ChessRulesService.HasAnyLegalMove never generates castling moves and its
+            // en-passant handling is broken, so a position whose only escape is a castle or
+            // an en-passant capture was misreported as stalemate/checkmate. MoveGenerator
+            // (Phase 4 slice 1) is the complete, perft-verified implementation — use it here
+            // instead of fixing HasAnyLegalMove itself, which has no other callers left.
             var fenParts = fen.Split(' ');
             bool whiteToMove = fenParts.Length >= 2 && fenParts[1] == "w";
-            var board = boardControl.GetBoardState();
-            return board == null || ChessRulesService.HasAnyLegalMove(board, whiteToMove);
+            string castlingStr = fenParts.Length >= 3 ? fenParts[2] : "-";
+            string epStr = fenParts.Length >= 4 ? fenParts[3] : "-";
+
+            var castling = new CastlingState(
+                WhiteKingside: castlingStr.Contains('K'),
+                WhiteQueenside: castlingStr.Contains('Q'),
+                BlackKingside: castlingStr.Contains('k'),
+                BlackQueenside: castlingStr.Contains('q'));
+
+            (int Row, int Col)? enPassant = (epStr != "-" && epStr.Length == 2)
+                ? (8 - (epStr[1] - '0'), epStr[0] - 'a')
+                : null;
+
+            return MoveGenerator.GetAllLegalMovesUci(board, whiteToMove, castling, enPassant).Count > 0;
         }
 
         private string GetBotDifficultyLabel()
