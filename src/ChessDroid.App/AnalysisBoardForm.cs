@@ -1137,7 +1137,11 @@ namespace ChessDroid
             _ = TriggerAutoAnalysis(clearHash: true);
         }
 
-        private void BtnChess960_Click(object? sender, EventArgs e) => ShowChess960Dialog();
+        private void BtnChess960_Click(object? sender, EventArgs e)
+        {
+            if (matchRunning) { lblStatus.Text = "Stop the match first"; return; }
+            ShowChess960Dialog();
+        }
 
         private async void ShowChess960Dialog()
         {

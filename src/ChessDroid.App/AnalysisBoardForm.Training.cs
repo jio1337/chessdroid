@@ -1198,6 +1198,13 @@ namespace ChessDroid
 
         private void StopTraining()
         {
+            // Drill Watch Engines runs via matchService independently of the training
+            // timers below — stopping it here (same path as the "Stop Watch" button and
+            // TrainingStartRound's guard) is required or the engines keep playing after
+            // the training panel closes. MatchService_OnMatchEnded does the rest of the
+            // cleanup (_drillWatchActive, matchRunning) once the match actually stops.
+            if (_drillWatchActive) { matchService?.StopMatch(); return; }
+
             _trainingClockTimer?.Stop();
             _trainingFlashTimer?.Stop();
             _openingAutoplayTimer?.Stop();
