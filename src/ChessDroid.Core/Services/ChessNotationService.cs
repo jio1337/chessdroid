@@ -159,7 +159,13 @@ namespace ChessDroid.Services
                 else if (pieceLetter == "N") pieceLetter = "N";
             }
 
-            bool isCapture = board[destRank, destFile] != '.';
+            // En passant: a pawn moving diagonally onto an EMPTY square is still a capture in
+            // SAN terms (it removes the pawn on the square behind the destination) — without
+            // this, en passant moves lost their "x" and source-file letter entirely (e.g.
+            // "d6" instead of "exd6"), which is wrong per SAN and ambiguous on re-import.
+            bool isEnPassant = PieceHelper.GetPieceType(piece) == PieceType.Pawn &&
+                srcFile != destFile && board[destRank, destFile] == '.';
+            bool isCapture = board[destRank, destFile] != '.' || isEnPassant;
 
             if (PieceHelper.GetPieceType(piece) == PieceType.King && srcRank == destRank)
             {
