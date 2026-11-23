@@ -24,9 +24,26 @@ namespace ChessDroid
             Debug.WriteLine($"[Analysis] Starting — FEN: {fen}  State: {engineService.State}");
             string cacheKey = GetPositionKey(fen);
 
-            // Already proven terminal (checkmate/stalemate) — skip the engine round-trip
-            // entirely instead of re-running a full search just to rediscover "no legal
-            // moves" every time this position is revisited.
+            // No legal moves = checkmate or stalemate. This was previously discovered only
+            // by sending the position to the engine and waiting for it to report back an
+            // empty bestmove — a real round-trip (stop the previous search, isready/readyok,
+            // setoption, go, wait) that could take a second or more, which is what made the
+            // very first time a mate position was hit feel laggy before the terminal-position
+            // cache below could even kick in. MoveGenerator is the same perft-verified
+            // move-legality source of truth used everywhere else in the app (board click
+            // highlighting, EngineMatchService, bot mode) — checking it locally first makes
+            // checkmate/stalemate detection instant on first encounter too, not just on
+            // revisit, with no engine involved at all.
+            if (boardControl.GetAllLegalMovesUci().Count == 0)
+            {
+                _knownTerminalPositions[cacheKey] = 0;
+                ShowTerminalPosition(fen);
+                return;
+            }
+
+            // Belt-and-suspenders: already proven terminal via the engine round-trip taken
+            // on some earlier call (e.g. before this local check existed, or should the
+            // local and engine-side legality checks ever disagree) — skip the engine.
             if (_knownTerminalPositions.ContainsKey(cacheKey))
             {
                 ShowTerminalPosition(fen);
