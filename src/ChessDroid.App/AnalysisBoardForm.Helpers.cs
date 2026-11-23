@@ -161,7 +161,7 @@ namespace ChessDroid
         // When a PV was inserted first and the user later plays a move, that move lands
         // at Children[1+]. This promotes it to Children[0] so BuildPairedMainLine sees it
         // as the main continuation and the PV falls back to a variation.
-        private void PromoteToMainLine(MoveNode node)
+        private static void PromoteToMainLine(MoveNode node)
         {
             if (node.Parent == null) return;
             node.IsFromPv = false;
@@ -252,7 +252,7 @@ namespace ChessDroid
             }
         }
 
-        private string ConvertUciToSan(string uciMove, string fen)
+        private static string ConvertUciToSan(string uciMove, string fen)
         {
             try
             {

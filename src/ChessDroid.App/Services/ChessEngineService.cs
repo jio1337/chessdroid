@@ -757,7 +757,7 @@ namespace ChessDroid.Services
             return sp >= 0 && sp + 1 < fen.Length && fen[sp + 1] == 'w';
         }
 
-        private string? ParseEvalFromInfoLine(string line, bool whiteToMove)
+        private static string? ParseEvalFromInfoLine(string line, bool whiteToMove)
         {
             int scp = line.IndexOf(" score cp ", StringComparison.Ordinal);
             if (scp >= 0)

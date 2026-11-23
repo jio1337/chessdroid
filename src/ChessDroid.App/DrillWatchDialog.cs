@@ -76,7 +76,7 @@ namespace ChessDroid
             CancelButton = btnCancel;
         }
 
-        private ComboBox BuildEngineCombo(string[] engines,
+        private static ComboBox BuildEngineCombo(string[] engines,
             Dictionary<string, EngineProfile> profiles, string defaultEngine, Point location)
         {
             var cmb = new ComboBox

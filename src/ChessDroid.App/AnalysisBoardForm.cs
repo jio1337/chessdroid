@@ -43,7 +43,6 @@ namespace ChessDroid
 
         // Services
         private ChessEngineService? engineService;
-        private MoveSharpnessAnalyzer sharpnessAnalyzer;
         private ConsoleOutputFormatter? consoleFormatter;
         private PolyglotBookService? openingBookService;
         private AppConfig config;
@@ -202,7 +201,6 @@ namespace ChessDroid
         {
             this.config = config;
             this.engineService = sharedEngineService ?? new ChessEngineService(config);
-            this.sharpnessAnalyzer = new MoveSharpnessAnalyzer();
 
             InitializeComponent();
 

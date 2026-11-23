@@ -37,7 +37,7 @@ namespace ChessDroid.Services
         /// <param name="evaluation">Engine evaluation string (e.g., "+1.50", "Mate in 3")</param>
         /// <param name="pvLine">Full PV line from engine</param>
         /// <returns>Sharpness score 0-100</returns>
-        public int CalculateSharpness(string move, string fen, string evaluation, string pvLine)
+        public static int CalculateSharpness(string move, string fen, string evaluation, string pvLine)
         {
             if (string.IsNullOrEmpty(move) || move.Length < 4)
                 return 50; // Default to balanced
@@ -235,7 +235,7 @@ namespace ChessDroid.Services
         /// <param name="aggressiveness">User's aggressiveness setting 0-100</param>
         /// <param name="evalTolerance">Max eval loss to accept for style preference (in pawns)</param>
         /// <returns>Index of selected move in candidates list</returns>
-        public int SelectMoveByAggressiveness(
+        public static int SelectMoveByAggressiveness(
             List<(string move, string evaluation, string pvLine, int sharpness)> candidates,
             int aggressiveness,
             double evalTolerance = 0.30) // Allow up to 0.30 pawn loss for style
@@ -307,7 +307,7 @@ namespace ChessDroid.Services
         /// <summary>
         /// Gets the piece at a given square from FEN board representation.
         /// </summary>
-        private char? GetPieceAt(string boardFen, string square)
+        private static char? GetPieceAt(string boardFen, string square)
         {
             if (string.IsNullOrEmpty(boardFen) || string.IsNullOrEmpty(square) || square.Length != 2)
                 return null;
@@ -351,12 +351,12 @@ namespace ChessDroid.Services
         /// ChessUtilities.GetMaterialValue's doc comment for why this is a deliberately
         /// different value from ChessUtilities.GetPieceValue's King=100).
         /// </summary>
-        private int GetPieceValue(char piece) => ChessUtilities.GetMaterialValue(PieceHelper.GetPieceType(piece));
+        private static int GetPieceValue(char piece) => ChessUtilities.GetMaterialValue(PieceHelper.GetPieceType(piece));
 
         /// <summary>
         /// Checks if a move is castling.
         /// </summary>
-        private bool IsCastling(string move)
+        private static bool IsCastling(string move)
         {
             return move == "e1g1" || move == "e1c1" || // White castling
                    move == "e8g8" || move == "e8c8";   // Black castling
@@ -365,7 +365,7 @@ namespace ChessDroid.Services
         /// <summary>
         /// Counts total pieces on the board.
         /// </summary>
-        private int CountPieces(string boardFen)
+        private static int CountPieces(string boardFen)
         {
             int count = 0;
             foreach (char c in boardFen)
@@ -380,7 +380,7 @@ namespace ChessDroid.Services
         /// Checks if a pawn on a given square attacks an enemy pawn.
         /// Used to detect aggressive pawn confrontations (like a4 attacking b5).
         /// </summary>
-        private bool PawnAttacksEnemyPawn(string boardFen, string square, bool whiteToMove)
+        private static bool PawnAttacksEnemyPawn(string boardFen, string square, bool whiteToMove)
         {
             if (string.IsNullOrEmpty(square) || square.Length != 2)
                 return false;
@@ -421,7 +421,7 @@ namespace ChessDroid.Services
         /// <summary>
         /// Gets piece at file/rank coordinates (0-7 each) from FEN.
         /// </summary>
-        private char? GetPieceAtCoords(string boardFen, int file, int rank)
+        private static char? GetPieceAtCoords(string boardFen, int file, int rank)
         {
             if (file < 0 || file > 7 || rank < 0 || rank > 7)
                 return null;
@@ -456,7 +456,7 @@ namespace ChessDroid.Services
         /// <summary>
         /// Parses evaluation string to numeric value.
         /// </summary>
-        private double? ParseEvaluation(string eval)
+        private static double? ParseEvaluation(string eval)
         {
             if (string.IsNullOrEmpty(eval))
                 return null;

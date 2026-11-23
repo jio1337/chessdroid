@@ -183,7 +183,7 @@ namespace ChessDroid.Models
         /// AddMove's behavior of appending to CurrentNode would otherwise let a live move
         /// silently branch off whatever position the viewer happens to be looking at.
         /// </summary>
-        public MoveNode AddMoveAt(MoveNode parent, string uciMove, string sanMove, string fen)
+        public static MoveNode AddMoveAt(MoveNode parent, string uciMove, string sanMove, string fen)
         {
             var existing = parent.FindChild(uciMove);
             if (existing != null) return existing;
@@ -286,7 +286,7 @@ namespace ChessDroid.Models
             return HasVariationsRecursive(Root);
         }
 
-        private bool HasVariationsRecursive(MoveNode node)
+        private static bool HasVariationsRecursive(MoveNode node)
         {
             if (node.Children.Count > 1) return true;
             foreach (var child in node.Children)

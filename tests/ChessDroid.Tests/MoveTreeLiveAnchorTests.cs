@@ -22,7 +22,7 @@ public class MoveTreeLiveAnchorTests
         var tree = new MoveTree(StartFen);
         var anchor = tree.Root;
 
-        var node = tree.AddMoveAt(anchor, "e2e4", "e4", AfterE4);
+        var node = MoveTree.AddMoveAt(anchor, "e2e4", "e4", AfterE4);
 
         Assert.Same(anchor, tree.CurrentNode); // CurrentNode untouched
         Assert.Same(node, anchor.Children[0]); // move still landed in the tree
@@ -39,7 +39,7 @@ public class MoveTreeLiveAnchorTests
         Assert.Same(tree.Root, tree.CurrentNode);
 
         // A second live move arrives while the viewer is still looking at the start position.
-        var newNode = tree.AddMoveAt(liveAnchor, "e7e5", "e5", AfterE4E5);
+        var newNode = MoveTree.AddMoveAt(liveAnchor, "e7e5", "e5", AfterE4E5);
 
         // The live line extended from the anchor (1.e4 e5), not from wherever the viewer is.
         Assert.Same(newNode, liveAnchor.Children[0]);
@@ -56,9 +56,9 @@ public class MoveTreeLiveAnchorTests
     {
         var tree = new MoveTree(StartFen);
         var anchor = tree.Root;
-        var first = tree.AddMoveAt(anchor, "e2e4", "e4", AfterE4);
+        var first = MoveTree.AddMoveAt(anchor, "e2e4", "e4", AfterE4);
 
-        var second = tree.AddMoveAt(anchor, "e2e4", "e4", AfterE4);
+        var second = MoveTree.AddMoveAt(anchor, "e2e4", "e4", AfterE4);
 
         Assert.Same(first, second);
         Assert.Single(anchor.Children);

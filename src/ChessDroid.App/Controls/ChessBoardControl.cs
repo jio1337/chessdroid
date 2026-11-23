@@ -1447,7 +1447,7 @@ namespace ChessDroid.Controls
             }
         }
 
-        private string GetPieceUnicode(char piece)
+        private static string GetPieceUnicode(char piece)
         {
             return piece switch
             {
@@ -1467,7 +1467,7 @@ namespace ChessDroid.Controls
             };
         }
 
-        private Color BlendColors(Color background, Color overlay)
+        private static Color BlendColors(Color background, Color overlay)
         {
             int alpha = overlay.A;
             int r = (overlay.R * alpha + background.R * (255 - alpha)) / 255;
@@ -1867,7 +1867,7 @@ namespace ChessDroid.Controls
         private bool IsLegalMove(int fromRow, int fromCol, int toRow, int toCol)
             => MoveGenerator.IsLegalMove(board, fromRow, fromCol, toRow, toCol, whiteToMove, CurrentCastlingState(), CurrentEnPassant());
 
-        private string ToUciMove(int fromRow, int fromCol, int toRow, int toCol, char? promotion = null)
+        private static string ToUciMove(int fromRow, int fromCol, int toRow, int toCol, char? promotion = null)
         {
             char fromFile = (char)('a' + fromCol);
             char fromRank = (char)('1' + (7 - fromRow));
@@ -1984,7 +1984,7 @@ namespace ChessDroid.Controls
             return (8 - (enPassant[1] - '0'), enPassant[0] - 'a');
         }
 
-        private char? ShowPromotionDialog(bool isWhite)
+        private static char? ShowPromotionDialog(bool isWhite)
         {
             using (Form dialog = new Form())
             {

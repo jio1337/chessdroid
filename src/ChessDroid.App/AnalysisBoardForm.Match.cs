@@ -371,7 +371,7 @@ namespace ChessDroid
                 // Always extend the live anchor (the real game line), regardless of where
                 // the viewer is currently browsing.
                 string sanWithSymbol = san + brilliantSymbol;
-                var newNode = moveTree.AddMoveAt(_matchLiveAnchor, uciMove, sanWithSymbol, newFen);
+                var newNode = MoveTree.AddMoveAt(_matchLiveAnchor, uciMove, sanWithSymbol, newFen);
                 _matchLiveAnchor = newNode;
                 if (currentEval.HasValue)
                 {

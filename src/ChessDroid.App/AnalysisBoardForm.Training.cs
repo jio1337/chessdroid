@@ -3216,7 +3216,7 @@ namespace ChessDroid
             SelectVisionGlobalTime(_visionGlobalDurationSeconds);
         }
 
-        private void ApplyThemeToChildren(Control parent, ColorScheme scheme)
+        private static void ApplyThemeToChildren(Control parent, ColorScheme scheme)
         {
             foreach (Control c in parent.Controls)
             {

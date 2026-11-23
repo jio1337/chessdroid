@@ -672,7 +672,7 @@ namespace ChessDroid.Services
         // CHESSDROID_AUDIT.md §6.3: was an independent copy; redirected onto MoveGenerator's
         // (Phase 4 slice 1, perft-verified) after characterization tests (IsKingInCheckConsistencyTests,
         // in ChessDroid.Tests) confirmed the other 3 independent copies already agreed everywhere.
-        private bool IsKingInCheck(ChessBoard board, bool whiteKing) => MoveGenerator.IsKingInCheck(board, whiteKing);
+        private static bool IsKingInCheck(ChessBoard board, bool whiteKing) => MoveGenerator.IsKingInCheck(board, whiteKing);
 
         /// <summary>
         /// Checks if the side to move has at least one legal move. Returns false if the

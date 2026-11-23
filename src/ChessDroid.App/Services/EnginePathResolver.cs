@@ -67,14 +67,6 @@ namespace ChessDroid.Services
         }
 
         /// <summary>
-        /// Validates that the engine path exists
-        /// </summary>
-        public bool ValidateEnginePath(string enginePath)
-        {
-            return File.Exists(enginePath);
-        }
-
-        /// <summary>
         /// Gets all available engine executables in the Engines folder
         /// </summary>
         public string[] GetAvailableEngines()

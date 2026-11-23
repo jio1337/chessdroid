@@ -259,7 +259,7 @@ namespace ChessDroid
                 string pvLine = pvs[i];
                 string eval = evals[i];
                 string firstMove = pvLine.Split(' ')[0];
-                int sharpness = sharpnessAnalyzer.CalculateSharpness(firstMove, fen, eval, pvLine);
+                int sharpness = MoveSharpnessAnalyzer.CalculateSharpness(firstMove, fen, eval, pvLine);
                 candidates.Add((firstMove, eval, pvLine, sharpness));
             }
 
@@ -269,7 +269,7 @@ namespace ChessDroid
 
             if (candidates.Count >= 2 && aggressiveness != 50 && config?.PlayStyleEnabled == true)
             {
-                int selectedIndex = sharpnessAnalyzer.SelectMoveByAggressiveness(candidates, aggressiveness, 0.30);
+                int selectedIndex = MoveSharpnessAnalyzer.SelectMoveByAggressiveness(candidates, aggressiveness, 0.30);
                 if (selectedIndex >= 0 && selectedIndex < candidates.Count)
                 {
                     recommendedMove = candidates[selectedIndex].move;
@@ -330,7 +330,7 @@ namespace ChessDroid
             lblStatus.Text = $"Analysis complete (depth {depth}){cacheIndicator}";
         }
 
-        private (int fromRow, int fromCol, int toRow, int toCol) UciToSquares(string uci)
+        private static (int fromRow, int fromCol, int toRow, int toCol) UciToSquares(string uci)
         {
             int fromCol = uci[0] - 'a';
             int fromRow = 7 - (uci[1] - '1');

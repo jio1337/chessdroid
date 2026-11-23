@@ -368,7 +368,7 @@ namespace ChessDroid.Controls
         }
 
         // ── Helpers ──────────────────────────────────────────────────────────
-        private string SafeSan(string uci, string fen)
+        private static string SafeSan(string uci, string fen)
         {
             try
             {

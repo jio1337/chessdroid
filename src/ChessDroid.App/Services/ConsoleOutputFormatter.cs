@@ -391,7 +391,7 @@ namespace ChessDroid.Services
         /// <summary>
         /// Gets threat descriptions for a specific move
         /// </summary>
-        private string GetThreatsForMove(string completeFen, string move)
+        private static string GetThreatsForMove(string completeFen, string move)
         {
             try
             {
@@ -418,7 +418,7 @@ namespace ChessDroid.Services
         /// <summary>
         /// Gets defense descriptions for a specific move
         /// </summary>
-        private string GetDefensesForMove(string completeFen, string move)
+        private static string GetDefensesForMove(string completeFen, string move)
         {
             try
             {
@@ -444,7 +444,7 @@ namespace ChessDroid.Services
         /// <summary>
         /// Formats evaluation string (win percentage removed - WDL replaces it)
         /// </summary>
-        public string FormatEvaluation(string evaluation)
+        public static string FormatEvaluation(string evaluation)
         {
             // Format mate scores to be more readable
             if (!string.IsNullOrEmpty(evaluation) && evaluation.StartsWith("Mate in "))
