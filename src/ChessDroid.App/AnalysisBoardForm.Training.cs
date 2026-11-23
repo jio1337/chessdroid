@@ -1171,6 +1171,15 @@ namespace ChessDroid
             autoAnalysisCts?.Cancel();
             lblStatus.Text = "";
 
+            // Analysis-mode arrows (engine best-move / book moves) belong to Analysis mode's
+            // display, not Training's — without this, arrows from whatever was on the board
+            // before Training opened stayed visible the whole time the panel was open (e.g.
+            // browsing Drills chapters), since TriggerAutoAnalysis's own new suppression below
+            // only stops FUTURE analysis from drawing MORE arrows, not the ones already drawn.
+            boardControl.ClearEngineArrows();
+            boardControl.ClearBookArrows();
+            _bookArrowsActive = false;
+
             _trainingUiVisible = true;
             analysisOutput.Visible = false;
             grpEngineMatch.Visible = false;

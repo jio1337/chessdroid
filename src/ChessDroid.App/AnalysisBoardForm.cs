@@ -1053,6 +1053,14 @@ namespace ChessDroid
         {
             if (_autoPlaying) return;
             if (_trainingGameActive) return;
+            // _trainingGameActive only covers an actual training round/puzzle/drill in
+            // progress — it's false while just browsing the Training/Drills panel (e.g.
+            // selecting a Drills chapter from its dropdown), which let continuous
+            // auto-analysis keep running and drawing engine arrows the whole time the panel
+            // was open. Suppress it there too, except when a bot/match session is actively
+            // running inside Training (drill-vs-bot, drill-watch) — those still want live
+            // analysis assistance even though the panel stays visible throughout.
+            if (_trainingUiVisible && !_botModeActive && !matchRunning) return;
             // Classification is a long-running GetBestMoveAsync loop holding the engine's
             // analysis semaphore. GetBestMoveAsync sends "stop" to whatever is currently
             // analyzing BEFORE it waits for that semaphore — so if navigation fired another
