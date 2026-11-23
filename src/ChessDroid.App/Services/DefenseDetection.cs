@@ -658,12 +658,12 @@ namespace ChessDroid.Services
 
             // King can't move - check if we can capture the attacker
             // Find the attacking piece(s)
-            var attackers = FindAttackers(board, kingRow, kingCol, !weAreWhite);
+            var attackers = ChessUtilities.FindAttackers(board, kingRow, kingCol, !weAreWhite);
 
             // If there's only one attacker, check if we can capture it
             if (attackers.Count == 1)
             {
-                var (attackerRow, attackerCol) = attackers[0];
+                var (attackerRow, attackerCol, _) = attackers[0];
 
                 // Can any of our NON-KING pieces capture the attacker?
                 // King captures are already handled by the escape squares loop above —
@@ -704,37 +704,12 @@ namespace ChessDroid.Services
         }
 
         /// <summary>
-        /// Find all pieces attacking a square
-        /// </summary>
-        private static List<(int row, int col)> FindAttackers(ChessBoard board, int targetRow, int targetCol, bool attackerIsWhite)
-        {
-            var attackers = new List<(int row, int col)>();
-
-            for (int r = 0; r < 8; r++)
-            {
-                for (int c = 0; c < 8; c++)
-                {
-                    char piece = board.GetPiece(r, c);
-                    if (piece == '.') continue;
-                    if (char.IsUpper(piece) != attackerIsWhite) continue;
-
-                    if (ChessUtilities.CanAttackSquare(board, r, c, piece, targetRow, targetCol))
-                    {
-                        attackers.Add((r, c));
-                    }
-                }
-            }
-
-            return attackers;
-        }
-
-        /// <summary>
         /// Check if any of our pieces can block a check from a sliding piece
         /// </summary>
         private static bool CanBlockCheck(ChessBoard board, int kingRow, int kingCol, int attackerRow, int attackerCol, bool weAreWhite)
         {
             // Get squares between attacker and king
-            var squaresBetween = GetSquaresBetween(attackerRow, attackerCol, kingRow, kingCol);
+            var squaresBetween = ChessUtilities.GetSquaresBetween(attackerRow, attackerCol, kingRow, kingCol);
 
             foreach (var (blockRow, blockCol) in squaresBetween)
             {
@@ -758,29 +733,6 @@ namespace ChessDroid.Services
             }
 
             return false;
-        }
-
-        /// <summary>
-        /// Get squares between two points (exclusive of endpoints)
-        /// </summary>
-        private static List<(int row, int col)> GetSquaresBetween(int r1, int c1, int r2, int c2)
-        {
-            var squares = new List<(int row, int col)>();
-
-            int dr = Math.Sign(r2 - r1);
-            int dc = Math.Sign(c2 - c1);
-
-            int r = r1 + dr;
-            int c = c1 + dc;
-
-            while (r != r2 || c != c2)
-            {
-                squares.Add((r, c));
-                r += dr;
-                c += dc;
-            }
-
-            return squares;
         }
 
         /// <summary>

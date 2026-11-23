@@ -472,7 +472,7 @@ namespace ChessDroid.Services
         /// Get all squares between two points (exclusive of both endpoints).
         /// Only works for straight lines (horizontal, vertical, diagonal).
         /// </summary>
-        private static List<(int row, int col)> GetSquaresBetween(int fromRow, int fromCol, int toRow, int toCol)
+        public static List<(int row, int col)> GetSquaresBetween(int fromRow, int fromCol, int toRow, int toCol)
         {
             var squares = new List<(int, int)>();
 
