@@ -12,33 +12,11 @@ namespace ChessDroid.Controls
     /// </summary>
     public class ChessBoardControl : Control
     {
-        // Board state
-        private ChessBoard board;
+        // Position state — board, side to move, castling rights (incl. Chess960 rook
+        // files), en passant, FEN move counters. Owned by GameSession (Core); this control
+        // is render + input only, see CHESSDROID_AUDIT.md §4.2.
+        private readonly GameSession _session = new();
         private bool isFlipped;
-        private bool whiteToMove = true;
-
-        // Castling rights
-        private bool whiteKingsideCastle = true;
-        private bool whiteQueensideCastle = true;
-        private bool blackKingsideCastle = true;
-        private bool blackQueensideCastle = true;
-
-        // Chess960 mode — uses king-to-rook castling encoding; tracks rook starting files.
-        private bool _chess960Mode;
-        private int _wKsRookFile = 7;   // white kingside rook starting file index
-        private int _wQsRookFile;   // white queenside rook starting file index
-        private int _bKsRookFile = 7;   // black kingside rook starting file index
-        private int _bQsRookFile;   // black queenside rook starting file index
-
-        // En passant target square (-1, -1 if none)
-        private int enPassantRow = -1;
-        private int enPassantCol = -1;
-
-        // FEN halfmove clock (resets on pawn move/capture, else increments) and fullmove
-        // number (increments after Black's move). Tracked so GetFEN() stops always
-        // reporting "0 1" — the engine needs the halfmove clock for 50-move/Syzygy logic.
-        private int halfmoveClock;
-        private int fullmoveNumber = 1;
 
         // Selection state
         private int selectedRow = -1;
@@ -263,8 +241,6 @@ namespace ChessDroid.Controls
                 ControlStyles.ResizeRedraw, // Redraw when resized
                 true);
 
-            board = ChessBoard.FromFEN(STARTING_FEN);
-
             // Load piece images
             LoadPieceImages("Lichess");
 
@@ -438,10 +414,10 @@ namespace ChessDroid.Controls
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public ChessBoard Board
         {
-            get => board;
+            get => _session.Board;
             set
             {
-                board = value;
+                _session.ReplaceBoard(value);
                 ClearSelection();
                 Invalidate();
             }
@@ -488,11 +464,11 @@ namespace ChessDroid.Controls
 
         public bool Chess960Mode
         {
-            get => _chess960Mode;
-            set => _chess960Mode = value;
+            get => _session.Chess960Mode;
+            set => _session.Chess960Mode = value;
         }
 
-        public ChessBoard GetBoardState() => board;
+        public ChessBoard GetBoardState() => _session.Board;
 
         /// <summary>
         /// Gets or sets whether it's white's turn to move
@@ -501,10 +477,10 @@ namespace ChessDroid.Controls
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public bool WhiteToMove
         {
-            get => whiteToMove;
+            get => _session.WhiteToMove;
             set
             {
-                whiteToMove = value;
+                _session.WhiteToMove = value;
                 ClearSelection();
             }
         }
@@ -557,16 +533,7 @@ namespace ChessDroid.Controls
         /// </summary>
         public void ResetBoard()
         {
-            board = ChessBoard.FromFEN(STARTING_FEN);
-            whiteToMove = true;
-            whiteKingsideCastle = true;
-            whiteQueensideCastle = true;
-            blackKingsideCastle = true;
-            blackQueensideCastle = true;
-            enPassantRow = -1;
-            enPassantCol = -1;
-            halfmoveClock = 0;
-            fullmoveNumber = 1;
+            _session.Reset();
             lastMove = null;
             _threatArrows.Clear();
             ClearSelection();
@@ -586,67 +553,7 @@ namespace ChessDroid.Controls
                 userArrows.Clear();
                 _highlightedSquares.Clear();
                 _threatArrows.Clear();
-                board = ChessBoard.FromFEN(fen);
-                string[] parts = fen.Split(' ');
-                whiteToMove = parts.Length > 1 ? parts[1] == "w" : true;
-
-                // Parse castling rights — handles both KQkq (standard) and Shredder file-letter FEN (Chess960).
-                string castling = parts.Length > 2 ? parts[2] : "KQkq";
-                whiteKingsideCastle  = false; whiteQueensideCastle = false;
-                blackKingsideCastle  = false; blackQueensideCastle = false;
-                _wKsRookFile = 7; _wQsRookFile = 0;
-                _bKsRookFile = 7; _bQsRookFile = 0;
-
-                // Find king files for Shredder FEN resolution
-                int wKingFile = -1, bKingFile = -1;
-                for (int f = 0; f < 8; f++)
-                {
-                    if (board.GetPiece(7, f) == 'K') wKingFile = f;
-                    if (board.GetPiece(0, f) == 'k') bKingFile = f;
-                }
-
-                foreach (char c in castling)
-                {
-                    switch (c)
-                    {
-                        case 'K': whiteKingsideCastle  = true; break;
-                        case 'Q': whiteQueensideCastle = true; break;
-                        case 'k': blackKingsideCastle  = true; break;
-                        case 'q': blackQueensideCastle = true; break;
-                        default:
-                            // Shredder FEN file letter
-                            if (c >= 'A' && c <= 'H')
-                            {
-                                int rf = c - 'A';
-                                if (wKingFile >= 0 && rf > wKingFile) { whiteKingsideCastle  = true; _wKsRookFile = rf; }
-                                else                                   { whiteQueensideCastle = true; _wQsRookFile = rf; }
-                            }
-                            else if (c >= 'a' && c <= 'h')
-                            {
-                                int rf = c - 'a';
-                                if (bKingFile >= 0 && rf > bKingFile) { blackKingsideCastle  = true; _bKsRookFile = rf; }
-                                else                                   { blackQueensideCastle = true; _bQsRookFile = rf; }
-                            }
-                            break;
-                    }
-                }
-
-                // Parse en passant square
-                string epSquare = parts.Length > 3 ? parts[3] : "-";
-                if (epSquare != "-" && epSquare.Length == 2)
-                {
-                    enPassantCol = epSquare[0] - 'a';
-                    enPassantRow = 8 - (epSquare[1] - '0');
-                }
-                else
-                {
-                    enPassantRow = -1;
-                    enPassantCol = -1;
-                }
-
-                halfmoveClock  = parts.Length > 4 && int.TryParse(parts[4], out int hc) ? hc : 0;
-                fullmoveNumber = parts.Length > 5 && int.TryParse(parts[5], out int fm) ? fm : 1;
-
+                _session.LoadFen(fen);
                 lastMove = null;
                 ClearMoveAnnotation();
                 ClearSelection();
@@ -662,39 +569,7 @@ namespace ChessDroid.Controls
         /// <summary>
         /// Gets the current position as FEN string
         /// </summary>
-        public string GetFEN()
-        {
-            string boardFen = board.ToFEN();
-            string turn = whiteToMove ? "w" : "b";
-
-            // Build castling rights string
-            string castling = "";
-            if (_chess960Mode)
-            {
-                // Shredder FEN: file letter of each rook, queenside first (ascending file order)
-                if (whiteQueensideCastle) castling += (char)('A' + _wQsRookFile);
-                if (whiteKingsideCastle)  castling += (char)('A' + _wKsRookFile);
-                if (blackQueensideCastle) castling += (char)('a' + _bQsRookFile);
-                if (blackKingsideCastle)  castling += (char)('a' + _bKsRookFile);
-            }
-            else
-            {
-                if (whiteKingsideCastle)  castling += "K";
-                if (whiteQueensideCastle) castling += "Q";
-                if (blackKingsideCastle)  castling += "k";
-                if (blackQueensideCastle) castling += "q";
-            }
-            if (string.IsNullOrEmpty(castling)) castling = "-";
-
-            // Build en passant square string
-            string epSquare = "-";
-            if (enPassantRow >= 0 && enPassantCol >= 0)
-            {
-                epSquare = $"{(char)('a' + enPassantCol)}{8 - enPassantRow}";
-            }
-
-            return $"{boardFen} {turn} {castling} {epSquare} {halfmoveClock} {fullmoveNumber}";
-        }
+        public string GetFEN() => _session.GetFen();
 
         /// <summary>
         /// Flips the board orientation
@@ -782,7 +657,7 @@ namespace ChessDroid.Controls
         public char GetPieceAt(int row, int col)
         {
             if (row < 0 || row > 7 || col < 0 || col > 7) return '.';
-            return board.GetPiece(row, col);
+            return _session.Board.GetPiece(row, col);
         }
 
         /// <summary>
@@ -822,7 +697,7 @@ namespace ChessDroid.Controls
             int toCol   = uciMove[2] - 'a';
             int toRow   = 7 - (uciMove[3] - '1');
 
-            char movedPiece = board.GetPiece(toRow, toCol);
+            char movedPiece = _session.Board.GetPiece(toRow, toCol);
 
             // Castling: king moves 2 squares — animate the rook sliding over instead.
             // In real chess you move the king first then grab the rook, so the rook is
@@ -837,7 +712,7 @@ namespace ChessDroid.Controls
                 int rookToCol   = kingside ? toCol - 1 : toCol + 1;
                 _animFromRow = fromRow; _animFromCol = rookFromCol;
                 _animToRow   = toRow;   _animToCol   = rookToCol;
-                _animPiece   = board.GetPiece(toRow, rookToCol);
+                _animPiece   = _session.Board.GetPiece(toRow, rookToCol);
             }
             else
             {
@@ -1095,7 +970,7 @@ namespace ChessDroid.Controls
                     // Draw legal move indicators
                     if (ShowLegalMoves && legalMoveSquares.Contains((row, col)))
                     {
-                        char pieceAtTarget = board.GetPiece(row, col);
+                        char pieceAtTarget = _session.Board.GetPiece(row, col);
                         if (pieceAtTarget != '.')
                         {
                             // Capture - draw ring
@@ -1115,7 +990,7 @@ namespace ChessDroid.Controls
                     }
 
                     // Draw piece (skip if being dragged or is the animation's in-flight piece)
-                    char piece = board.GetPiece(row, col);
+                    char piece = _session.Board.GetPiece(row, col);
                     bool isBeingDragged = isDragging && row == dragFromRow && col == dragFromCol;
                     bool isInFlight = _animating && row == _animToRow && col == _animToCol;
                     if (piece != '.' && !isBeingDragged && !isInFlight)
@@ -1529,10 +1404,10 @@ namespace ChessDroid.Controls
             if (boardRow < 0 || boardRow > 7 || boardCol < 0 || boardCol > 7)
                 return;
 
-            char clickedPiece = board.GetPiece(boardRow, boardCol);
+            char clickedPiece = _session.Board.GetPiece(boardRow, boardCol);
             bool isOwnPiece = clickedPiece != '.' &&
-                ((whiteToMove && char.IsUpper(clickedPiece)) ||
-                 (!whiteToMove && char.IsLower(clickedPiece)));
+                ((_session.WhiteToMove && char.IsUpper(clickedPiece)) ||
+                 (!_session.WhiteToMove && char.IsLower(clickedPiece)));
 
             mouseDownPosition = e.Location;
             mouseDownOnPiece = isOwnPiece;
@@ -1773,10 +1648,10 @@ namespace ChessDroid.Controls
 
         private void HandleSquareClick(int row, int col)
         {
-            char clickedPiece = board.GetPiece(row, col);
+            char clickedPiece = _session.Board.GetPiece(row, col);
             bool isOwnPiece = clickedPiece != '.' &&
-                ((whiteToMove && char.IsUpper(clickedPiece)) ||
-                 (!whiteToMove && char.IsLower(clickedPiece)));
+                ((_session.WhiteToMove && char.IsUpper(clickedPiece)) ||
+                 (!_session.WhiteToMove && char.IsLower(clickedPiece)));
 
             if (selectedRow == -1)
             {
@@ -1832,37 +1707,20 @@ namespace ChessDroid.Controls
         }
 
         /// <summary>
-        /// Current castling/en-passant state as the parameter shapes MoveGenerator expects.
-        /// </summary>
-        private CastlingState CurrentCastlingState() => new(
-            WhiteKingside: whiteKingsideCastle,
-            WhiteQueenside: whiteQueensideCastle,
-            BlackKingside: blackKingsideCastle,
-            BlackQueenside: blackQueensideCastle,
-            Chess960Mode: _chess960Mode,
-            WhiteKingsideRookFile: _wKsRookFile,
-            WhiteQueensideRookFile: _wQsRookFile,
-            BlackKingsideRookFile: _bKsRookFile,
-            BlackQueensideRookFile: _bQsRookFile);
-
-        private (int Row, int Col)? CurrentEnPassant() =>
-            enPassantRow >= 0 && enPassantCol >= 0 ? (enPassantRow, enPassantCol) : null;
-
-        /// <summary>
         /// Enumerates every legal move for the side to move, as UCI strings (e.g. "e2e4",
-        /// "e7e8q" for each promotion piece). Delegates to Core's MoveGenerator — see that
-        /// class for why: this used to be the one complete, correct legal-move implementation
-        /// in the whole codebase (castling, en passant, check/pin filtering), but lived here
-        /// as private per-square methods only ever used for UI click-to-move highlighting.
+        /// "e7e8q" for each promotion piece). Delegates to Core's MoveGenerator via
+        /// GameSession — see MoveGenerator.cs for why: this used to be the one complete,
+        /// correct legal-move implementation in the whole codebase (castling, en passant,
+        /// check/pin filtering), but lived here as private per-square methods only ever used
+        /// for UI click-to-move highlighting.
         /// </summary>
-        public List<string> GetAllLegalMovesUci()
-            => MoveGenerator.GetAllLegalMovesUci(board, whiteToMove, CurrentCastlingState(), CurrentEnPassant());
+        public List<string> GetAllLegalMovesUci() => _session.GetAllLegalMovesUci();
 
         private HashSet<(int row, int col)> GetLegalMovesForPiece(int row, int col)
-            => MoveGenerator.GetLegalDestinations(board, row, col, whiteToMove, CurrentCastlingState(), CurrentEnPassant());
+            => MoveGenerator.GetLegalDestinations(_session.Board, row, col, _session.WhiteToMove, _session.CurrentCastlingState(), _session.CurrentEnPassant());
 
         private bool IsLegalMove(int fromRow, int fromCol, int toRow, int toCol)
-            => MoveGenerator.IsLegalMove(board, fromRow, fromCol, toRow, toCol, whiteToMove, CurrentCastlingState(), CurrentEnPassant());
+            => MoveGenerator.IsLegalMove(_session.Board, fromRow, fromCol, toRow, toCol, _session.WhiteToMove, _session.CurrentCastlingState(), _session.CurrentEnPassant());
 
         private static string ToUciMove(int fromRow, int fromCol, int toRow, int toCol, char? promotion = null)
         {
@@ -1887,7 +1745,7 @@ namespace ChessDroid.Controls
             userArrows.Clear();
             _highlightedSquares.Clear();
 
-            char movingPiece = board.GetPiece(fromRow, fromCol);
+            char movingPiece = _session.Board.GetPiece(fromRow, fromCol);
 
             // Check for pawn promotion
             if (char.ToLowerInvariant(movingPiece) == 'p')
@@ -1910,41 +1768,16 @@ namespace ChessDroid.Controls
             // Build UCI move
             string uciMove = ToUciMove(fromRow, fromCol, toRow, toCol, promotion);
 
-            // Chess960 castling is king-captures-own-rook notation (e.g. e1h1) — ApplyUciMove
-            // detects this itself from the board state, so it's not a separate code path here
-            // any more; it's only distinguished for isCapture/lastMove, which it is NOT (it's
-            // not a real capture, and the king's displayed destination is g/c-file, not the
-            // rook's square it "captures").
-            bool isChess960Castle = _chess960Mode && char.ToLowerInvariant(movingPiece) == 'k' && fromRow == toRow &&
-                board.GetPiece(toRow, toCol) == (char.IsUpper(movingPiece) ? 'R' : 'r');
-
-            char captured = board.GetPiece(toRow, toCol);
-            bool isCapture = !isChess960Castle && (captured != '.' ||
-                (char.ToLowerInvariant(movingPiece) == 'p' && fromCol != toCol && captured == '.')); // en passant
+            // Apply the move (board mutation, standard + Chess960 castling rook move, en
+            // passant capture, promotion, castling-rights revocation, en-passant-square
+            // update, halfmove/fullmove counters, turn switch) via GameSession, which itself
+            // delegates to the single canonical Core implementation also used by
+            // EngineMatchService, TournamentForm, MoveClassificationService, etc.
+            var (isCapture, isChess960Castle) = _session.ExecuteMove(uciMove);
 
             // Store move for highlighting
             int lastMoveToCol = isChess960Castle ? (toCol > fromCol ? 6 : 2) : toCol;
             lastMove = (fromRow, fromCol, toRow, lastMoveToCol);
-
-            // Apply the move (board mutation, standard + Chess960 castling rook move, en
-            // passant capture, promotion, castling-rights revocation, en-passant-square
-            // update) via the single canonical Core implementation also used by
-            // EngineMatchService, TournamentForm, MoveClassificationService, etc. — this used
-            // to be re-derived here independently; see MoveGenerator.cs for the same
-            // consolidation already done for legal-move checking.
-            string castlingRights = BuildCastlingRightsString();
-            string enPassantStr = CurrentEnPassant() is { } ep ? $"{(char)('a' + ep.Col)}{8 - ep.Row}" : "-";
-            ChessRulesService.ApplyUciMove(board, uciMove, ref castlingRights, ref enPassantStr);
-            ApplyCastlingRightsString(castlingRights);
-            (enPassantRow, enPassantCol) = ParseEnPassantString(enPassantStr);
-
-            // FEN halfmove clock: resets on a pawn move or capture, otherwise increments.
-            bool isPawnMove = char.ToLowerInvariant(movingPiece) == 'p';
-            halfmoveClock = (isPawnMove || isCapture) ? 0 : halfmoveClock + 1;
-
-            // Switch turn
-            if (!whiteToMove) fullmoveNumber++; // Black just moved — a full move has elapsed
-            whiteToMove = !whiteToMove;
 
             ClearSelection();
             Invalidate();
@@ -1954,31 +1787,6 @@ namespace ChessDroid.Controls
             BoardChanged?.Invoke(this, EventArgs.Empty);
 
             return true;
-        }
-
-        // Standard (non-Chess960) "KQkq"-style castling rights string, for handoff to
-        // ChessRulesService.ApplyUciMove — only ever built/consumed in the non-960 ExecuteMove
-        // path, where rook starting files are always 0/7, so Shredder file-letter notation
-        // isn't needed here.
-        private string BuildCastlingRightsString()
-        {
-            string s = (whiteKingsideCastle ? "K" : "") + (whiteQueensideCastle ? "Q" : "")
-                     + (blackKingsideCastle ? "k" : "") + (blackQueensideCastle ? "q" : "");
-            return s.Length == 0 ? "-" : s;
-        }
-
-        private void ApplyCastlingRightsString(string rights)
-        {
-            whiteKingsideCastle  = rights.Contains('K');
-            whiteQueensideCastle = rights.Contains('Q');
-            blackKingsideCastle  = rights.Contains('k');
-            blackQueensideCastle = rights.Contains('q');
-        }
-
-        private static (int Row, int Col) ParseEnPassantString(string enPassant)
-        {
-            if (enPassant == "-" || enPassant.Length != 2) return (-1, -1);
-            return (8 - (enPassant[1] - '0'), enPassant[0] - 'a');
         }
 
         private static char? ShowPromotionDialog(bool isWhite)
