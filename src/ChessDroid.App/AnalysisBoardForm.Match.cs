@@ -405,8 +405,23 @@ namespace ChessDroid
 
                 // Rebuild the move list regardless of view state so a browsing viewer sees
                 // new live moves appear (UpdateMoveListSelection highlights CurrentNode, not
-                // the anchor, so this does not snap their view back to live).
+                // the anchor, so this does not snap their view back to live). The rebuild
+                // itself resets scroll position, and selecting a row auto-scrolls it into
+                // view — both fight any scrolling the viewer just did by hand, every single
+                // move. Explicitly pin the scroll afterward instead: keep tracking the
+                // bottom while following live (chat-log style), or restore exactly where the
+                // viewer had scrolled to while browsing.
+                int savedTopIndex = moveListBox.TopIndex;
                 UpdateMoveList();
+                if (wasFollowingLive)
+                {
+                    if (moveListBox.Items.Count > 0)
+                        moveListBox.TopIndex = moveListBox.Items.Count - 1;
+                }
+                else
+                {
+                    moveListBox.TopIndex = savedTopIndex;
+                }
 
                 // Update previous eval for next move
                 _previousMatchEval = currentEval;
