@@ -416,47 +416,10 @@ namespace ChessDroid.Services
             return differences;
         }
 
-        public static bool IsKingInCheck(ChessBoard board, bool whiteKing)
-        {
-            char king = whiteKing ? 'K' : 'k';
-            int kingRow = -1, kingCol = -1;
-
-            for (int r = 0; r < 8; r++)
-            {
-                for (int c = 0; c < 8; c++)
-                {
-                    if (board.GetPiece(r, c) == king)
-                    {
-                        kingRow = r; kingCol = c; break;
-                    }
-                }
-                if (kingRow != -1) break;
-            }
-            if (kingRow == -1) return false;
-
-            for (int r = 0; r < 8; r++)
-            {
-                for (int c = 0; c < 8; c++)
-                {
-                    char piece = board.GetPiece(r, c);
-                    if (piece == '.') continue;
-                    bool isEnemy = whiteKing ? char.IsLower(piece) : char.IsUpper(piece);
-                    if (!isEnemy) continue;
-
-                    if (!CanReachSquare(board, r, c, piece, kingRow, kingCol))
-                        continue;
-
-                    char pl = char.ToLower(piece);
-                    if (pl == 'n' || pl == 'k')
-                        return true;
-                    if (pl == 'p')
-                        return c != kingCol; // Pawns only attack diagonally
-                    // Sliding pieces: CanReachSquare already checks IsPathClear
-                    return true;
-                }
-            }
-            return false;
-        }
+        // CHESSDROID_AUDIT.md §6.3: was an independent copy; redirected onto MoveGenerator's
+        // (Phase 4 slice 1, perft-verified) after characterization tests (IsKingInCheckConsistencyTests)
+        // confirmed the two already agreed everywhere.
+        public static bool IsKingInCheck(ChessBoard board, bool whiteKing) => MoveGenerator.IsKingInCheck(board, whiteKing);
 
         public static bool IsInsufficientMaterial(string fenPosition)
         {

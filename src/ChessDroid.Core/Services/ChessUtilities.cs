@@ -169,12 +169,10 @@ namespace ChessDroid.Services
         public static bool IsSquareDefended(ChessBoard board, int row, int col, bool byWhite)
             => IsSquareAttackedBy(board, row, col, byWhite);
 
-        public static bool IsKingInCheck(ChessBoard board, bool kingIsWhite)
-        {
-            var (kingRow, kingCol) = board.GetKingPosition(kingIsWhite);
-            if (kingRow < 0) return false;
-            return IsSquareAttackedBy(board, kingRow, kingCol, !kingIsWhite);
-        }
+        // CHESSDROID_AUDIT.md §6.3: was an independent copy; redirected onto MoveGenerator's
+        // (Phase 4 slice 1, perft-verified) after characterization tests (IsKingInCheckConsistencyTests)
+        // confirmed the two already agreed everywhere.
+        public static bool IsKingInCheck(ChessBoard board, bool kingIsWhite) => MoveGenerator.IsKingInCheck(board, kingIsWhite);
 
         /// <summary>
         /// Full checkmate detection: king is in check with no legal move for any piece
