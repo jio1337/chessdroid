@@ -82,6 +82,13 @@ namespace ChessDroid
         private Label _lblBlackEngineInfo = null!;
         private Label _lblWhiteEngineInfo = null!;
 
+        /// <summary>See AppMode.cs for what this does and doesn't cover.</summary>
+        private AppMode CurrentAppMode =>
+            _botModeActive ? AppMode.Bot :
+            matchRunning   ? AppMode.Match :
+            _trainingGameActive ? AppMode.Training :
+            AppMode.Analysis;
+
         // Bot mode
         private bool _botModeActive  = false;
         private bool _chess960Active = false;
@@ -1451,7 +1458,10 @@ namespace ChessDroid
 
         private async void BtnEditPosition_Click(object? sender, EventArgs e)
         {
-            if (matchRunning || _botModeActive)
+            // Was "matchRunning || _botModeActive" — silently missed Training despite the
+            // message below implying any active mode should block this. Closed as part of
+            // introducing AppMode (AppMode.cs), not a deliberate pre-existing restriction.
+            if (CurrentAppMode != AppMode.Analysis)
             {
                 lblStatus.Text = "Stop current mode before editing position";
                 return;
