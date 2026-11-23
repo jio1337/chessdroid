@@ -39,20 +39,17 @@ namespace ChessDroid.Services
             ["rnbqkbnr/pppppppp/8/8/8/P7/1PPPPPPP/RNBQKBNR"] = new Opening { ECO = "A00", Name = "Ware Opening", Moves = "1. a4" },
 
             // A01 - Nimzo-Larsen Attack
-            ["rnbqkbnr/pppppppp/8/8/8/1P6/P1PPPPPP/RNBQKBNR"] = new Opening { ECO = "A01", Name = "Nimzo-Larsen Attack", Moves = "1. b3" },
 
             // A02-A03 - Bird's Opening
             ["rnbqkbnr/pppppppp/8/8/5P2/8/PPPPP1PP/RNBQKBNR"] = new Opening { ECO = "A02", Name = "Bird's Opening", Moves = "1. f4" },
 
             // A04-A09 - Reti Opening
             ["rnbqkbnr/pppppppp/8/8/8/5N2/PPPPPPPP/RNBQKB1R"] = new Opening { ECO = "A04", Name = "Reti Opening", Moves = "1. Nf3" },
-            ["rnbqkbnr/ppp1pppp/8/3p4/8/5N2/PPPPPPPP/RNBQKB1R"] = new Opening { ECO = "A05", Name = "Reti Opening", Moves = "1. Nf3 d5" },
             ["rnbqkbnr/ppp1pppp/8/3p4/2P5/5N2/PP1PPPPP/RNBQKB1R"] = new Opening { ECO = "A09", Name = "Reti Opening: Advance Variation", Moves = "1. Nf3 d5 2. c4" },
 
             // A10-A39 - English Opening
             ["rnbqkbnr/pppppppp/8/8/2P5/8/PP1PPPPP/RNBQKBNR"] = new Opening { ECO = "A10", Name = "English Opening", Moves = "1. c4" },
             ["rnbqkbnr/pppp1ppp/8/4p3/2P5/8/PP1PPPPP/RNBQKBNR"] = new Opening { ECO = "A20", Name = "English Opening: Reversed Sicilian", Moves = "1. c4 e5" },
-            ["rnbqkbnr/pppp1ppp/8/4p3/2P5/5N2/PP1PPPPP/RNBQKB1R"] = new Opening { ECO = "A21", Name = "English Opening: Reversed Sicilian", Moves = "1. c4 e5 2. Nc3" },
             ["rnbqkb1r/pppp1ppp/5n2/4p3/2P5/2N5/PP1PPPPP/R1BQKBNR"] = new Opening { ECO = "A22", Name = "English Opening: Two Knights", Moves = "1. c4 e5 2. Nc3 Nf6" },
             ["rnbqkbnr/ppp1pppp/8/3p4/2P5/8/PP1PPPPP/RNBQKBNR"] = new Opening { ECO = "A30", Name = "English Opening: Symmetrical", Moves = "1. c4 c5" },
 
@@ -61,13 +58,11 @@ namespace ChessDroid.Services
 
             // A45-A46 - Trompowsky Attack & Indian Game
             ["rnbqkb1r/pppppppp/5n2/8/3P4/8/PPP1PPPP/RNBQKBNR"] = new Opening { ECO = "A45", Name = "Indian Game", Moves = "1. d4 Nf6" },
-            ["rnbqkb1r/pppppppp/5n2/6B1/3P4/8/PPP1PPPP/RN1QKBNR"] = new Opening { ECO = "A45", Name = "Trompowsky Attack", Moves = "1. d4 Nf6 2. Bg5" },
             ["rnbqkb1r/pppppppp/5n2/8/3P4/5N2/PPP1PPPP/RNBQKB1R"] = new Opening { ECO = "A46", Name = "Indian Game: Knights Variation", Moves = "1. d4 Nf6 2. Nf3" },
 
             // A50-A79 - Indian Defenses
             ["rnbqkb1r/pppppppp/5n2/8/2PP4/8/PP2PPPP/RNBQKBNR"] = new Opening { ECO = "A50", Name = "Indian Defense", Moves = "1. d4 Nf6 2. c4" },
             ["rnbqkb1r/pppp1ppp/4pn2/8/2PP4/8/PP2PPPP/RNBQKBNR"] = new Opening { ECO = "A53", Name = "Old Indian Defense", Moves = "1. d4 Nf6 2. c4 d6" },
-            ["rnbqkb1r/pp1ppppp/5n2/2p5/2PP4/8/PP2PPPP/RNBQKBNR"] = new Opening { ECO = "A57", Name = "Benko Gambit", Moves = "1. d4 Nf6 2. c4 c5" },
             ["rnbqkb1r/p1pppppp/1p3n2/8/2PP4/8/PP2PPPP/RNBQKBNR"] = new Opening { ECO = "A60", Name = "Benoni Defense", Moves = "1. d4 Nf6 2. c4 e6 3. Nf3 c5 4. d5 b5" },
 
             // A80-A99 - Dutch Defense
@@ -85,7 +80,6 @@ namespace ChessDroid.Services
             ["rnbqkbnr/pppppp1p/6p1/8/4P3/8/PPPP1PPP/RNBQKBNR"] = new Opening { ECO = "B06", Name = "Modern Defense", Moves = "1. e4 g6" },
             ["rnbqkbnr/pppppp1p/6p1/8/3PP3/8/PPP2PPP/RNBQKBNR"] = new Opening { ECO = "B06", Name = "Modern Defense: 2.d4", Moves = "1. e4 g6 2. d4" },
             ["rnbqk1nr/ppppppbp/6p1/8/3PP3/8/PPP2PPP/RNBQKBNR"] = new Opening { ECO = "B06", Name = "Modern Defense: 2...Bg7", Moves = "1. e4 g6 2. d4 Bg7" },
-            ["rnbqk1nr/ppppppbp/6p1/8/3PP3/2N5/PPP2PPP/R1BQKBNR"] = new Opening { ECO = "B06", Name = "Modern Defense: 3.Nc3", Moves = "1. e4 g6 2. d4 Bg7 3. Nc3" },
 
             // B01 - Scandinavian Defense
             ["rnbqkbnr/ppp1pppp/8/3p4/4P3/8/PPPP1PPP/RNBQKBNR"] = new Opening { ECO = "B01", Name = "Scandinavian Defense", Moves = "1. e4 d5" },
@@ -95,7 +89,6 @@ namespace ChessDroid.Services
             ["rnb1kbnr/ppp1pppp/8/8/8/q1N5/PPPP1PPP/R1BQKBNR"] = new Opening { ECO = "B01", Name = "Scandinavian Defense: 3...Qa5", Moves = "1. e4 d5 2. exd5 Qxd5 3. Nc3 Qa5" },
             ["rnb1kbnr/ppp1pppp/3q4/8/8/2N5/PPPP1PPP/R1BQKBNR"] = new Opening { ECO = "B01", Name = "Scandinavian Defense: 3...Qd6", Moves = "1. e4 d5 2. exd5 Qxd5 3. Nc3 Qd6" },
             ["rnbqkb1r/ppp1pppp/5n2/3P4/8/8/PPPP1PPP/RNBQKBNR"] = new Opening { ECO = "B01", Name = "Scandinavian Defense: 2...Nf6", Moves = "1. e4 d5 2. exd5 Nf6" },
-            ["rnbqkb1r/ppp1pppp/5n2/3P4/3P4/8/PPP2PPP/RNBQKBNR"] = new Opening { ECO = "B01", Name = "Scandinavian Defense: Modern", Moves = "1. e4 d5 2. exd5 Nf6 3. d4" },
             ["rnbqkb1r/ppp1pppp/8/3Pn3/8/8/PPPP1PPP/RNBQKBNR"] = new Opening { ECO = "B01", Name = "Scandinavian Defense: 3...Nxd5", Moves = "1. e4 d5 2. exd5 Nf6 3. d4 Nxd5" },
 
             // B02-B05 - Alekhine's Defense
@@ -137,7 +130,6 @@ namespace ChessDroid.Services
             ["rnbqkbnr/pp2pppp/3p4/8/3pP3/5N2/PPP2PPP/RNBQKB1R"] = new Opening { ECO = "B54", Name = "Sicilian Defense: Open", Moves = "1. e4 c5 2. Nf3 d6 3. d4 cxd4" },
             ["r1bqkbnr/pp1ppppp/2n5/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R"] = new Opening { ECO = "B30", Name = "Sicilian Defense: Old Sicilian", Moves = "1. e4 c5 2. Nf3 Nc6" },
             ["r1bqkbnr/pp1ppppp/2n5/2p5/3PP3/5N2/PPP2PPP/RNBQKB1R"] = new Opening { ECO = "B32", Name = "Sicilian Defense: Open", Moves = "1. e4 c5 2. Nf3 Nc6 3. d4" },
-            ["rnbqkbnr/pp1p1ppp/4p3/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R"] = new Opening { ECO = "B40", Name = "Sicilian Defense: French Variation", Moves = "1. e4 c5 2. Nf3 e6" },
             ["r1bqkb1r/pp1ppppp/2n2n2/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R"] = new Opening { ECO = "B30", Name = "Sicilian Defense: Rossolimo", Moves = "1. e4 c5 2. Nf3 Nc6 3. Bb5" },
             ["rnbqkb1r/pp1ppppp/5n2/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R"] = new Opening { ECO = "B27", Name = "Sicilian Defense: Hyperaccelerated Dragon", Moves = "1. e4 c5 2. Nf3 g6" },
 
@@ -145,7 +137,6 @@ namespace ChessDroid.Services
             ["rnbqkb1r/1p2pppp/p2p1n2/8/3NP3/2N5/PPP2PPP/R1BQKB1R"] = new Opening { ECO = "B90", Name = "Sicilian Defense: Najdorf Variation", Moves = "1. e4 c5 2. Nf3 d6 3. d4 cxd4 4. Nxd4 Nf6 5. Nc3 a6" },
             ["rnbqkb1r/1p2pppp/p2p1n2/6B1/3NP3/2N5/PPP2PPP/R2QKB1R"] = new Opening { ECO = "B94", Name = "Sicilian Defense: Najdorf, Bg5", Moves = "1. e4 c5 2. Nf3 d6 3. d4 cxd4 4. Nxd4 Nf6 5. Nc3 a6 6. Bg5" },
             ["rnbqkb1r/1p2pppp/p2p1n2/8/3NP1P1/2N5/PPP2P1P/R1BQKB1R"] = new Opening { ECO = "B91", Name = "Sicilian Defense: Najdorf, Zagreb", Moves = "1. e4 c5 2. Nf3 d6 3. d4 cxd4 4. Nxd4 Nf6 5. Nc3 a6 6. g3" },
-            ["rnbqkb1r/1p2pppp/p2p1n2/8/3NP3/2N1B3/PPP2PPP/R2QKB1R"] = new Opening { ECO = "B90", Name = "Sicilian Defense: Najdorf, English Attack", Moves = "1. e4 c5 2. Nf3 d6 3. d4 cxd4 4. Nxd4 Nf6 5. Nc3 a6 6. Be3" },
             ["rnbqkb1r/1p2pppp/p2p1n2/8/3NP3/2N5/PPP1BPPP/R1BQK2R"] = new Opening { ECO = "B92", Name = "Sicilian Defense: Najdorf, Opocensky", Moves = "1. e4 c5 2. Nf3 d6 3. d4 cxd4 4. Nxd4 Nf6 5. Nc3 a6 6. Be2" },
             ["rnbqkb1r/1p2pppp/p2p1n2/8/3NP3/2N2P2/PPP3PP/R1BQKB1R"] = new Opening { ECO = "B90", Name = "Sicilian Defense: Najdorf, Adams Attack", Moves = "1. e4 c5 2. Nf3 d6 3. d4 cxd4 4. Nxd4 Nf6 5. Nc3 a6 6. f3" },
 
@@ -156,28 +147,19 @@ namespace ChessDroid.Services
             ["rnbq1rk1/pp2ppbp/3p1np1/8/3NP3/2N1BP2/PPPQ2PP/R3KB1R"] = new Opening { ECO = "B77", Name = "Sicilian Defense: Dragon, Yugoslav Attack, Main Line", Moves = "1. e4 c5 2. Nf3 d6 3. d4 cxd4 4. Nxd4 Nf6 5. Nc3 g6 6. Be3 Bg7 7. f3 O-O 8. Qd2" },
 
             // Sicilian Scheveningen
-            ["rnbqkb1r/pp3ppp/3ppn2/8/3NP3/2N5/PPP2PPP/R1BQKB1R"] = new Opening { ECO = "B80", Name = "Sicilian Defense: Scheveningen Variation", Moves = "1. e4 c5 2. Nf3 d6 3. d4 cxd4 4. Nxd4 Nf6 5. Nc3 e6" },
-            ["rnbqkb1r/pp3ppp/3ppn2/6B1/3NP3/2N5/PPP2PPP/R2QKB1R"] = new Opening { ECO = "B82", Name = "Sicilian Defense: Scheveningen, Classical", Moves = "1. e4 c5 2. Nf3 d6 3. d4 cxd4 4. Nxd4 Nf6 5. Nc3 e6 6. Be2" },
 
             // Sicilian Sveshnikov/Kalashnikov
-            ["r1bqkb1r/pp1p1ppp/2n1pn2/2p5/4P3/2N2N2/PPPP1PPP/R1BQKB1R"] = new Opening { ECO = "B30", Name = "Sicilian Defense: Sveshnikov Setup", Moves = "1. e4 c5 2. Nf3 Nc6 3. Nc3 e6" },
             ["r1bqkb1r/pp3ppp/2nppn2/8/3NP3/2N5/PPP2PPP/R1BQKB1R"] = new Opening { ECO = "B33", Name = "Sicilian Defense: Sveshnikov", Moves = "1. e4 c5 2. Nf3 Nc6 3. d4 cxd4 4. Nxd4 Nf6 5. Nc3 e6" },
             ["r1bqkb1r/pp3ppp/2np1n2/4p3/3NP3/2N5/PPP2PPP/R1BQKB1R"] = new Opening { ECO = "B33", Name = "Sicilian Defense: Sveshnikov Variation", Moves = "1. e4 c5 2. Nf3 Nc6 3. d4 cxd4 4. Nxd4 Nf6 5. Nc3 e5" },
             ["r1bqkb1r/pp3ppp/2np1n2/1N2p3/4P3/2N5/PPP2PPP/R1BQKB1R"] = new Opening { ECO = "B33", Name = "Sicilian Defense: Sveshnikov, 6.Ndb5", Moves = "1. e4 c5 2. Nf3 Nc6 3. d4 cxd4 4. Nxd4 Nf6 5. Nc3 e5 6. Ndb5" },
 
             // Sicilian Accelerated Dragon
-            ["r1bqkbnr/pp1ppp1p/2n3p1/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R"] = new Opening { ECO = "B34", Name = "Sicilian Defense: Accelerated Dragon", Moves = "1. e4 c5 2. Nf3 Nc6 3. d4 cxd4 4. Nxd4 g6" },
-            ["r1bqkbnr/pp1ppp1p/2n3p1/8/3NP3/8/PPP2PPP/RNBQKB1R"] = new Opening { ECO = "B35", Name = "Sicilian Defense: Accelerated Dragon", Moves = "1. e4 c5 2. Nf3 Nc6 3. d4 cxd4 4. Nxd4 g6 5. Nc3" },
             ["r1bqk2r/pp1pppbp/2n2np1/8/3NP3/2N5/PPP2PPP/R1BQKB1R"] = new Opening { ECO = "B36", Name = "Sicilian Defense: Accelerated Dragon, Maroczy Bind", Moves = "1. e4 c5 2. Nf3 Nc6 3. d4 cxd4 4. Nxd4 g6 5. c4" },
 
             // Sicilian Taimanov
             ["r1bqkbnr/pp1p1ppp/2n1p3/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R"] = new Opening { ECO = "B44", Name = "Sicilian Defense: Taimanov Variation", Moves = "1. e4 c5 2. Nf3 e6 3. d4 cxd4 4. Nxd4 Nc6" },
-            ["r1bqkbnr/pp1p1ppp/2n1p3/8/3NP3/8/PPP2PPP/RNBQKB1R"] = new Opening { ECO = "B45", Name = "Sicilian Defense: Taimanov", Moves = "1. e4 c5 2. Nf3 e6 3. d4 cxd4 4. Nxd4 Nc6 5. Nc3" },
-            ["r1bqkbnr/1p1p1ppp/p1n1p3/8/3NP3/2N5/PPP2PPP/R1BQKB1R"] = new Opening { ECO = "B46", Name = "Sicilian Defense: Taimanov, 5...a6", Moves = "1. e4 c5 2. Nf3 e6 3. d4 cxd4 4. Nxd4 Nc6 5. Nc3 a6" },
 
             // Sicilian Kan
-            ["rnbqkbnr/pp1p1ppp/4p3/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R"] = new Opening { ECO = "B41", Name = "Sicilian Defense: Kan Variation", Moves = "1. e4 c5 2. Nf3 e6" },
-            ["rnbqkbnr/1p1p1ppp/p3p3/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R"] = new Opening { ECO = "B42", Name = "Sicilian Defense: Kan, 4...a6", Moves = "1. e4 c5 2. Nf3 e6 3. d4 cxd4 4. Nxd4 a6" },
 
             // Sicilian Classical/Sozin
             ["r1bqkb1r/pp2pppp/2np1n2/8/3NP3/2N5/PPP2PPP/R1BQKB1R"] = new Opening { ECO = "B56", Name = "Sicilian Defense: Classical Variation", Moves = "1. e4 c5 2. Nf3 d6 3. d4 cxd4 4. Nxd4 Nf6 5. Nc3 Nc6" },
@@ -185,22 +167,15 @@ namespace ChessDroid.Services
             ["r1bqkb1r/pp2pppp/2Np1n2/8/4P3/2N5/PPP2PPP/R1BQKB1R"] = new Opening { ECO = "B56", Name = "Sicilian Defense: Classical, Anti-Sozin", Moves = "1. e4 c5 2. Nf3 d6 3. d4 cxd4 4. Nxd4 Nf6 5. Nc3 Nc6 6. Nxc6" },
 
             // Sicilian Closed/Grand Prix
-            ["rnbqkbnr/pp1ppppp/8/2p5/4P3/2N5/PPPP1PPP/R1BQKBNR"] = new Opening { ECO = "B23", Name = "Sicilian Defense: Closed", Moves = "1. e4 c5 2. Nc3" },
             ["rnbqkbnr/pp1ppppp/8/2p5/4PP2/2N5/PPPP2PP/R1BQKBNR"] = new Opening { ECO = "B21", Name = "Sicilian Defense: Grand Prix Attack", Moves = "1. e4 c5 2. Nc3 Nc6 3. f4" },
-            ["r1bqkbnr/pp1ppppp/2n5/2p5/4P3/2N5/PPPP1PPP/R1BQKBNR"] = new Opening { ECO = "B23", Name = "Sicilian Defense: Closed, 2...Nc6", Moves = "1. e4 c5 2. Nc3 Nc6" },
 
             // Sicilian Alapin
-            ["rnbqkbnr/pp1ppppp/8/2p5/4P3/2P5/PP1P1PPP/RNBQKBNR"] = new Opening { ECO = "B22", Name = "Sicilian Defense: Alapin Variation", Moves = "1. e4 c5 2. c3" },
             ["rnbqkbnr/pp2pppp/8/2pp4/4P3/2P5/PP1P1PPP/RNBQKBNR"] = new Opening { ECO = "B22", Name = "Sicilian Defense: Alapin, 2...d5", Moves = "1. e4 c5 2. c3 d5" },
             ["rnbqkb1r/pp2pppp/5n2/2pp4/4P3/2P5/PP1P1PPP/RNBQKBNR"] = new Opening { ECO = "B22", Name = "Sicilian Defense: Alapin, 2...d5 3.exd5 Nf6", Moves = "1. e4 c5 2. c3 d5 3. exd5 Nf6" },
 
             // Sicilian Smith-Morra Gambit
-            ["rnbqkbnr/pp1ppppp/8/2p5/3PP3/8/PPP2PPP/RNBQKBNR"] = new Opening { ECO = "B21", Name = "Sicilian Defense: Smith-Morra Gambit", Moves = "1. e4 c5 2. d4" },
-            ["rnbqkbnr/pp1ppppp/8/8/3pP3/8/PPP2PPP/RNBQKBNR"] = new Opening { ECO = "B21", Name = "Sicilian Defense: Smith-Morra, 2...cxd4", Moves = "1. e4 c5 2. d4 cxd4" },
-            ["rnbqkbnr/pp1ppppp/8/8/3pP3/2P5/PP3PPP/RNBQKBNR"] = new Opening { ECO = "B21", Name = "Sicilian Defense: Smith-Morra Gambit Accepted", Moves = "1. e4 c5 2. d4 cxd4 3. c3" },
 
             // Sicilian Moscow/Rossolimo
-            ["r1bqkbnr/pp1ppppp/2n5/1Bp5/4P3/5N2/PPPP1PPP/RNBQK2R"] = new Opening { ECO = "B51", Name = "Sicilian Defense: Moscow Variation", Moves = "1. e4 c5 2. Nf3 d6 3. Bb5+" },
             ["r1bqkb1r/pp1ppppp/2n2n2/1Bp5/4P3/5N2/PPPP1PPP/RNBQK2R"] = new Opening { ECO = "B52", Name = "Sicilian Defense: Moscow, 3...Bd7", Moves = "1. e4 c5 2. Nf3 d6 3. Bb5+ Bd7" },
 
             // C00-C19 - French Defense
@@ -212,22 +187,14 @@ namespace ChessDroid.Services
             ["rnbqkbnr/pp3ppp/4p3/2PpP3/8/8/PPP2PPP/RNBQKBNR"] = new Opening { ECO = "C02", Name = "French Defense: Advance, Milner-Barry Gambit", Moves = "1. e4 e6 2. d4 d5 3. e5 c5 4. c3 Nc6 5. Nf3 Qb6 6. Bd3" },
             ["rnbqkbnr/ppp2ppp/4p3/3p4/3PP3/2N5/PPP2PPP/R1BQKBNR"] = new Opening { ECO = "C03", Name = "French Defense: Tarrasch Variation", Moves = "1. e4 e6 2. d4 d5 3. Nd2" },
             ["rnbqkbnr/ppp2ppp/4pn2/3p4/3PP3/2N5/PPP2PPP/R1BQKBNR"] = new Opening { ECO = "C03", Name = "French Defense: Tarrasch, 3...Nf6", Moves = "1. e4 e6 2. d4 d5 3. Nd2 Nf6" },
-            ["rnbqkbnr/pp3ppp/4p3/2pp4/3PP3/2N5/PPP2PPP/R1BQKBNR"] = new Opening { ECO = "C03", Name = "French Defense: Tarrasch, 3...c5", Moves = "1. e4 e6 2. d4 d5 3. Nd2 c5" },
-            ["rnbqkbnr/ppp2ppp/4p3/3P4/3P4/8/PPP2PPP/RNBQKBNR"] = new Opening { ECO = "C01", Name = "French Defense: Exchange Variation", Moves = "1. e4 e6 2. d4 d5 3. exd5" },
-            ["rnbqkbnr/ppp2ppp/8/3p4/3P4/8/PPP2PPP/RNBQKBNR"] = new Opening { ECO = "C01", Name = "French Defense: Exchange, 3...exd5", Moves = "1. e4 e6 2. d4 d5 3. exd5 exd5" },
             ["rnbqkbnr/ppp2ppp/4p3/3p4/3PP3/5N2/PPP2PPP/RNBQKB1R"] = new Opening { ECO = "C10", Name = "French Defense: Paulsen Variation", Moves = "1. e4 e6 2. d4 d5 3. Nc3" },
-            ["rnbqkb1r/ppp2ppp/4pn2/3p4/3PP3/2N5/PPP2PPP/R1BQKBNR"] = new Opening { ECO = "C11", Name = "French Defense: Classical, 3...Nf6", Moves = "1. e4 e6 2. d4 d5 3. Nc3 Nf6" },
             ["rnbqkb1r/ppp2ppp/4pn2/3pP3/3P4/2N5/PPP2PPP/R1BQKBNR"] = new Opening { ECO = "C11", Name = "French Defense: Classical, Steinitz Variation", Moves = "1. e4 e6 2. d4 d5 3. Nc3 Nf6 4. e5" },
             ["rnbqkb1r/pppn1ppp/4p3/3pP3/3P4/2N5/PPP2PPP/R1BQKBNR"] = new Opening { ECO = "C11", Name = "French Defense: Classical, Steinitz, 4...Nfd7", Moves = "1. e4 e6 2. d4 d5 3. Nc3 Nf6 4. e5 Nfd7" },
             ["rnbqkb1r/ppp2ppp/4pn2/3p4/3PP3/2N2N2/PPP2PPP/R1BQKB1R"] = new Opening { ECO = "C11", Name = "French Defense: Classical, Burn Variation", Moves = "1. e4 e6 2. d4 d5 3. Nc3 Nf6 4. Bg5" },
             ["rnbqkbnr/pp3ppp/4p3/2pp4/3PP3/2N5/PPP2PPP/R1BQKBNR"] = new Opening { ECO = "C15", Name = "French Defense: Winawer Variation", Moves = "1. e4 e6 2. d4 d5 3. Nc3 Bb4" },
             ["rnbqk1nr/ppp2ppp/4p3/3p4/1b1PP3/2N5/PPP2PPP/R1BQKBNR"] = new Opening { ECO = "C15", Name = "French Defense: Winawer", Moves = "1. e4 e6 2. d4 d5 3. Nc3 Bb4" },
-            ["rnbqk1nr/ppp2ppp/4p3/3pP3/1b1P4/2N5/PPP2PPP/R1BQKBNR"] = new Opening { ECO = "C16", Name = "French Defense: Winawer, Advance", Moves = "1. e4 e6 2. d4 d5 3. Nc3 Bb4 4. e5" },
-            ["rnbqk1nr/pp3ppp/4p3/2ppP3/1b1P4/2N5/PPP2PPP/R1BQKBNR"] = new Opening { ECO = "C17", Name = "French Defense: Winawer, 4...c5", Moves = "1. e4 e6 2. d4 d5 3. Nc3 Bb4 4. e5 c5" },
-            ["rnbqk1nr/pp3ppp/4p3/2ppP3/1b1P4/P1N5/1PP2PPP/R1BQKBNR"] = new Opening { ECO = "C18", Name = "French Defense: Winawer, Classical", Moves = "1. e4 e6 2. d4 d5 3. Nc3 Bb4 4. e5 c5 5. a3" },
             ["rnbqk2r/pp3ppp/4pn2/2ppP3/3P4/P1P5/2P2PPP/R1BQKBNR"] = new Opening { ECO = "C19", Name = "French Defense: Winawer, Poisoned Pawn", Moves = "1. e4 e6 2. d4 d5 3. Nc3 Bb4 4. e5 c5 5. a3 Bxc3+ 6. bxc3" },
             ["rnbqkbnr/ppp2ppp/4p3/3p4/3PP3/4B3/PPP2PPP/RN1QKBNR"] = new Opening { ECO = "C00", Name = "French Defense: La Bourdonnais Variation", Moves = "1. e4 e6 2. d4 d5 3. Be3" },
-            ["rnbqkbnr/ppp2ppp/4p3/3p4/3PP3/8/PPPN1PPP/R1BQKBNR"] = new Opening { ECO = "C06", Name = "French Defense: Rubinstein Variation", Moves = "1. e4 e6 2. d4 d5 3. Nc3 dxe4" },
 
             // C20-C29 - King's Pawn Game
             ["rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR"] = new Opening { ECO = "C20", Name = "King's Pawn Game", Moves = "1. e4 e5" },
@@ -240,23 +207,17 @@ namespace ChessDroid.Services
             ["rnbqkbnr/pppp1ppp/8/4p3/2B1P3/8/PPPP1PPP/RNBQK1NR"] = new Opening { ECO = "C23", Name = "Bishop's Opening", Moves = "1. e4 e5 2. Bc4" },
 
             // C25-C29 - Vienna Game
-            ["rnbqkbnr/pppp1ppp/8/4p3/4P3/2N5/PPPP1PPP/R1BQKBNR"] = new Opening { ECO = "C25", Name = "Vienna Game", Moves = "1. e4 e5 2. Nc3" },
 
             // C30-C39 - King's Gambit
-            ["rnbqkbnr/pppp1ppp/8/4p3/4PP2/8/PPPP2PP/RNBQKBNR"] = new Opening { ECO = "C30", Name = "King's Gambit", Moves = "1. e4 e5 2. f4" },
-            ["rnbqkbnr/pppp1ppp/8/8/4Pp2/8/PPPP2PP/RNBQKBNR"] = new Opening { ECO = "C33", Name = "King's Gambit Accepted", Moves = "1. e4 e5 2. f4 exf4" },
 
             // C40-C49 - King's Knight Opening
-            ["r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R"] = new Opening { ECO = "C44", Name = "King's Knight Opening", Moves = "1. e4 e5 2. Nf3 Nc6" },
             ["r1bqkbnr/pppp1ppp/2n5/4p3/2B1P3/5N2/PPPP1PPP/RNBQK2R"] = new Opening { ECO = "C50", Name = "Italian Game", Moves = "1. e4 e5 2. Nf3 Nc6 3. Bc4" },
             ["r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R"] = new Opening { ECO = "C44", Name = "Scotch Game", Moves = "1. e4 e5 2. Nf3 Nc6 3. d4" },
 
             // C42-C43 - Petrov Defense (Russian Game)
-            ["rnbqkb1r/pppp1ppp/5n2/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R"] = new Opening { ECO = "C42", Name = "Petrov Defense", Moves = "1. e4 e5 2. Nf3 Nf6" },
             ["rnbqkb1r/pppp1ppp/5n2/4P3/8/5N2/PPPP1PPP/RNBQKB1R"] = new Opening { ECO = "C42", Name = "Petrov Defense: Classical Attack", Moves = "1. e4 e5 2. Nf3 Nf6 3. Nxe5" },
 
             // C44 - Scotch Game
-            ["r1bqkbnr/pppp1ppp/2n5/4p3/3PP3/5N2/PPP2PPP/RNBQKB1R"] = new Opening { ECO = "C44", Name = "Scotch Game", Moves = "1. e4 e5 2. Nf3 Nc6 3. d4" },
             ["r1bqkbnr/pppp1ppp/2n5/8/3pP3/5N2/PPP2PPP/RNBQKB1R"] = new Opening { ECO = "C45", Name = "Scotch Game", Moves = "1. e4 e5 2. Nf3 Nc6 3. d4 exd4" },
 
             // C50-C59 - Italian Game (Giuoco Piano)
@@ -264,11 +225,9 @@ namespace ChessDroid.Services
             ["r1bqk1nr/pppp1ppp/2n5/2b1p3/2BPP3/5N2/PPP2PPP/RNBQK2R"] = new Opening { ECO = "C53", Name = "Italian Game: Classical Variation", Moves = "1. e4 e5 2. Nf3 Nc6 3. Bc4 Bc5 4. c3" },
             ["r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/2P2N2/PP1P1PPP/RNBQK2R"] = new Opening { ECO = "C54", Name = "Italian Game: Giuoco Piano", Moves = "1. e4 e5 2. Nf3 Nc6 3. Bc4 Bc5 4. c3" },
             ["r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/3P1N2/PPP2PPP/RNBQK2R"] = new Opening { ECO = "C50", Name = "Italian Game: Giuoco Pianissimo", Moves = "1. e4 e5 2. Nf3 Nc6 3. Bc4 Bc5 4. d3" },
-            ["r1bqk2r/pppp1ppp/2n2n2/2b1p3/2B1P3/3P1N2/PPP2PPP/RNBQK2R"] = new Opening { ECO = "C50", Name = "Italian Game: Giuoco Pianissimo, 4...Nf6", Moves = "1. e4 e5 2. Nf3 Nc6 3. Bc4 Bc5 4. d3 Nf6" },
             ["r1bqk2r/pppp1ppp/2n2n2/2b1p3/2B1P3/2NP1N2/PPP2PPP/R1BQK2R"] = new Opening { ECO = "C50", Name = "Italian Game: Giuoco Pianissimo, Normal", Moves = "1. e4 e5 2. Nf3 Nc6 3. Bc4 Bc5 4. d3 Nf6 5. Nc3" },
             ["r1bqk1nr/ppp2ppp/2np4/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQK2R"] = new Opening { ECO = "C50", Name = "Italian Game: Hungarian Defense", Moves = "1. e4 e5 2. Nf3 Nc6 3. Bc4 Be7" },
             ["r1bqkb1r/pppp1ppp/2n2n2/4p3/2B1P3/5N2/PPPP1PPP/RNBQK2R"] = new Opening { ECO = "C55", Name = "Italian Game: Two Knights Defense", Moves = "1. e4 e5 2. Nf3 Nc6 3. Bc4 Nf6" },
-            ["r1bqkb1r/pppp1ppp/2n2n2/4p3/2B1P3/2N2N2/PPPP1PPP/R1BQK2R"] = new Opening { ECO = "C55", Name = "Italian Game: Two Knights, 4.Nc3", Moves = "1. e4 e5 2. Nf3 Nc6 3. Bc4 Nf6 4. Nc3" },
             ["r1bqkb1r/pppp1ppp/2n2n2/4p3/2B1P3/3P1N2/PPP2PPP/RNBQK2R"] = new Opening { ECO = "C55", Name = "Italian Game: Two Knights, 4.d3", Moves = "1. e4 e5 2. Nf3 Nc6 3. Bc4 Nf6 4. d3" },
             ["r1bqkb1r/pppp1ppp/2n2n2/4p1N1/2B1P3/8/PPPP1PPP/RNBQK2R"] = new Opening { ECO = "C57", Name = "Italian Game: Two Knights, Fried Liver Attack", Moves = "1. e4 e5 2. Nf3 Nc6 3. Bc4 Nf6 4. Ng5" },
             ["r1bqkb1r/ppp2ppp/2n2n2/3pp1N1/2B1P3/8/PPPP1PPP/RNBQK2R"] = new Opening { ECO = "C57", Name = "Italian Game: Two Knights, 4...d5", Moves = "1. e4 e5 2. Nf3 Nc6 3. Bc4 Nf6 4. Ng5 d5" },
@@ -281,16 +240,13 @@ namespace ChessDroid.Services
             ["r1bqkbnr/pppp1ppp/2n5/1B2p3/4P3/5N2/PPPP1PPP/RNBQK2R"] = new Opening { ECO = "C60", Name = "Ruy Lopez", Moves = "1. e4 e5 2. Nf3 Nc6 3. Bb5" },
             ["r1bqkbnr/1ppp1ppp/p1n5/1B2p3/4P3/5N2/PPPP1PPP/RNBQK2R"] = new Opening { ECO = "C68", Name = "Ruy Lopez: Morphy Defense", Moves = "1. e4 e5 2. Nf3 Nc6 3. Bb5 a6" },
             ["r1bqkbnr/1ppp1ppp/p1B5/4p3/4P3/5N2/PPPP1PPP/RNBQK2R"] = new Opening { ECO = "C68", Name = "Ruy Lopez: Exchange Variation", Moves = "1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Bxc6" },
-            ["r1bqkbnr/1ppp1ppp/p1n5/4p3/B3P3/5N2/PPPP1PPP/RNBQK2R"] = new Opening { ECO = "C70", Name = "Ruy Lopez: Morphy Defense, 4.Ba4", Moves = "1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4" },
             ["r1bqkb1r/1ppp1ppp/p1n2n2/4p3/B3P3/5N2/PPPP1PPP/RNBQK2R"] = new Opening { ECO = "C78", Name = "Ruy Lopez: Morphy Defense, 4...Nf6", Moves = "1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 Nf6" },
             ["r1bqkb1r/1ppp1ppp/p1n2n2/4p3/B3P3/5N2/PPPP1PPP/RNBQ1RK1"] = new Opening { ECO = "C84", Name = "Ruy Lopez: Closed", Moves = "1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 Nf6 5. O-O" },
             ["r1bqk2r/1pppbppp/p1n2n2/4p3/B3P3/5N2/PPPP1PPP/RNBQ1RK1"] = new Opening { ECO = "C88", Name = "Ruy Lopez: Closed, 5...Be7", Moves = "1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 Nf6 5. O-O Be7" },
             ["r1bqk2r/1pppbppp/p1n2n2/4p3/B3P3/5N2/PPPP1PPP/RNBQR1K1"] = new Opening { ECO = "C88", Name = "Ruy Lopez: Closed, 6.Re1", Moves = "1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 Nf6 5. O-O Be7 6. Re1" },
             ["r1bqk2r/2ppbppp/p1n2n2/1p2p3/B3P3/5N2/PPPP1PPP/RNBQR1K1"] = new Opening { ECO = "C88", Name = "Ruy Lopez: Closed, 6...b5", Moves = "1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 Nf6 5. O-O Be7 6. Re1 b5" },
             ["r1bqk2r/2ppbppp/p1n2n2/1p2p3/4P3/1B3N2/PPPP1PPP/RNBQR1K1"] = new Opening { ECO = "C88", Name = "Ruy Lopez: Closed, 7.Bb3", Moves = "1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 Nf6 5. O-O Be7 6. Re1 b5 7. Bb3" },
-            ["r1bq1rk1/2ppbppp/p1n2n2/1p2p3/4P3/1B3N2/PPPP1PPP/RNBQR1K1"] = new Opening { ECO = "C88", Name = "Ruy Lopez: Closed, 7...O-O", Moves = "1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 Nf6 5. O-O Be7 6. Re1 b5 7. Bb3 O-O" },
             ["r1bq1rk1/2ppbppp/p1n2n2/1p2p3/4P3/1BP2N2/PP1P1PPP/RNBQR1K1"] = new Opening { ECO = "C92", Name = "Ruy Lopez: Closed, Chigorin Defense", Moves = "1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 Nf6 5. O-O Be7 6. Re1 b5 7. Bb3 O-O 8. c3" },
-            ["r1bq1rk1/2p1bppp/p1np1n2/1p2p3/4P3/1BP2N2/PP1P1PPP/RNBQR1K1"] = new Opening { ECO = "C92", Name = "Ruy Lopez: Closed, Chigorin, 8...d6", Moves = "1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 Nf6 5. O-O Be7 6. Re1 b5 7. Bb3 O-O 8. c3 d6" },
             ["r1bq1rk1/2p1bppp/p1np1n2/1p2p3/3PP3/1BP2N2/PP3PPP/RNBQR1K1"] = new Opening { ECO = "C92", Name = "Ruy Lopez: Closed, 9.h3", Moves = "1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 Nf6 5. O-O Be7 6. Re1 b5 7. Bb3 O-O 8. c3 d6 9. h3" },
             ["r1bqkb1r/1ppp1ppp/p1n2n2/4p3/B2PP3/5N2/PPP2PPP/RNBQK2R"] = new Opening { ECO = "C80", Name = "Ruy Lopez: Open", Moves = "1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 Nf6 5. O-O Nxe4" },
             ["r1bqkb1r/1ppp1ppp/p1n5/4p3/B3n3/5N2/PPPP1PPP/RNBQ1RK1"] = new Opening { ECO = "C80", Name = "Ruy Lopez: Open, 5...Nxe4", Moves = "1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 Nf6 5. O-O Nxe4" },
@@ -310,11 +266,9 @@ namespace ChessDroid.Services
 
             // D00-D05 - Queen's Pawn Game
             ["rnbqkbnr/ppp1pppp/8/3p4/3P4/8/PPP1PPPP/RNBQKBNR"] = new Opening { ECO = "D00", Name = "Queen's Pawn Game", Moves = "1. d4 d5" },
-            ["rnbqkbnr/ppp1pppp/8/3p4/2PP4/8/PP2PPPP/RNBQKBNR"] = new Opening { ECO = "D02", Name = "Queen's Pawn Game", Moves = "1. d4 d5 2. c4" },
 
             // D06-D69 - Queen's Gambit
             ["rnbqkbnr/ppp1pppp/8/3p4/2PP4/8/PP2PPPP/RNBQKBNR"] = new Opening { ECO = "D06", Name = "Queen's Gambit", Moves = "1. d4 d5 2. c4" },
-            ["rnbqkbnr/ppp2ppp/4p3/3p4/2PP4/8/PP2PPPP/RNBQKBNR"] = new Opening { ECO = "D30", Name = "Queen's Gambit Declined", Moves = "1. d4 d5 2. c4 e6" },
             ["rnbqkbnr/ppp2ppp/4p3/3p4/2PP4/2N5/PP2PPPP/R1BQKBNR"] = new Opening { ECO = "D31", Name = "Queen's Gambit Declined", Moves = "1. d4 d5 2. c4 e6 3. Nc3" },
             ["rnbqkb1r/ppp2ppp/4pn2/3p4/2PP4/2N5/PP2PPPP/R1BQKBNR"] = new Opening { ECO = "D35", Name = "Queen's Gambit Declined: Exchange Variation", Moves = "1. d4 d5 2. c4 e6 3. Nc3 Nf6" },
             ["rnbqkb1r/ppp2ppp/4pn2/3p4/2PP4/5N2/PP2PPPP/RNBQKB1R"] = new Opening { ECO = "D37", Name = "Queen's Gambit Declined: 3.Nf3", Moves = "1. d4 d5 2. c4 e6 3. Nf3" },
@@ -327,7 +281,6 @@ namespace ChessDroid.Services
             ["rnbqk2r/ppp1bppp/4pn2/3p4/2PP4/2N2N2/PP2PPPP/R1BQKB1R"] = new Opening { ECO = "D37", Name = "Queen's Gambit Declined: Ragozin Defense", Moves = "1. d4 d5 2. c4 e6 3. Nc3 Nf6 4. Nf3 Bb4" },
             ["rnbqkbnr/ppp2ppp/4p3/3p4/2PP4/5N2/PP2PPPP/RNBQKB1R"] = new Opening { ECO = "D30", Name = "Queen's Gambit Declined: 2...e6 3.Nf3", Moves = "1. d4 d5 2. c4 e6 3. Nf3" },
             ["rnb1kb1r/pp3ppp/1qp1pn2/3p4/2PP4/5NP1/PP2PPBP/RNBQK2R"] = new Opening { ECO = "D38", Name = "Queen's Gambit Declined: Ragozin, Vienna Variation", Moves = "1. d4 d5 2. c4 e6 3. Nf3 Nf6 4. Nc3 Bb4 5. Bg5 c6" },
-            ["rnbqkbnr/ppp2ppp/8/3pp3/2PP4/8/PP2PPPP/RNBQKBNR"] = new Opening { ECO = "D07", Name = "Queen's Gambit Declined: Chigorin Defense", Moves = "1. d4 d5 2. c4 Nc6" },
             ["r1bqkbnr/ppp2ppp/2n1p3/3p4/2PP4/5N2/PP2PPPP/RNBQKB1R"] = new Opening { ECO = "D07", Name = "Queen's Gambit Declined: Chigorin, 3.Nf3", Moves = "1. d4 d5 2. c4 Nc6 3. Nf3" },
             ["rnbqkbnr/ppp1pppp/8/8/2pP4/8/PP2PPPP/RNBQKBNR"] = new Opening { ECO = "D20", Name = "Queen's Gambit Accepted", Moves = "1. d4 d5 2. c4 dxc4" },
             ["rnbqkbnr/ppp1pppp/8/8/2pP4/5N2/PP2PPPP/RNBQKB1R"] = new Opening { ECO = "D24", Name = "Queen's Gambit Accepted: 3.Nf3", Moves = "1. d4 d5 2. c4 dxc4 3. Nf3" },
@@ -347,19 +300,13 @@ namespace ChessDroid.Services
             ["rnbqkb1r/pp3ppp/2p1pn2/3p2B1/2PP4/2N2N2/PP2PPPP/R2QKB1R"] = new Opening { ECO = "D46", Name = "Semi-Slav Defense: Meran Variation", Moves = "1. d4 d5 2. c4 c6 3. Nf3 Nf6 4. Nc3 e6 5. Bg5" },
 
             // D70-D99 - Grunfeld Defense
-            ["rnbqkb1r/ppp1pp1p/5np1/3p4/2PP4/2N5/PP2PPPP/R1BQKBNR"] = new Opening { ECO = "D70", Name = "Grunfeld Defense", Moves = "1. d4 Nf6 2. c4 g6 3. Nc3 d5" },
             ["rnbqkb1r/ppp1pp1p/6p1/3n4/3P4/2N5/PP2PPPP/R1BQKBNR"] = new Opening { ECO = "D80", Name = "Grunfeld Defense", Moves = "1. d4 Nf6 2. c4 g6 3. Nc3 d5 4. cxd5 Nxd5" },
 
             // E00-E09 - Catalan Opening
-            ["rnbqkb1r/pppp1ppp/4pn2/8/2PP4/6P1/PP2PP1P/RNBQKBNR"] = new Opening { ECO = "E00", Name = "Catalan Opening", Moves = "1. d4 Nf6 2. c4 e6 3. g3" },
-            ["rnbqkb1r/ppp2ppp/4pn2/3p4/2PP4/6P1/PP2PP1P/RNBQKBNR"] = new Opening { ECO = "E01", Name = "Catalan Opening", Moves = "1. d4 Nf6 2. c4 e6 3. g3 d5" },
 
             // E10-E19 - Queen's Indian Defense
-            ["rnbqkb1r/p1pp1ppp/1p2pn2/8/2PP4/5N2/PP2PPPP/RNBQKB1R"] = new Opening { ECO = "E12", Name = "Queen's Indian Defense", Moves = "1. d4 Nf6 2. c4 e6 3. Nf3 b6" },
 
             // E20-E59 - Nimzo-Indian Defense
-            ["rnbqk2r/pppp1ppp/4pn2/8/1bPP4/2N5/PP2PPPP/R1BQKBNR"] = new Opening { ECO = "E20", Name = "Nimzo-Indian Defense", Moves = "1. d4 Nf6 2. c4 e6 3. Nc3 Bb4" },
-            ["rnbqk2r/pppp1ppp/4pn2/8/1bPP4/2N2N2/PP2PPPP/R1BQKB1R"] = new Opening { ECO = "E21", Name = "Nimzo-Indian Defense: Three Knights", Moves = "1. d4 Nf6 2. c4 e6 3. Nc3 Bb4 4. Nf3" },
             ["rnbqk2r/pppp1ppp/4pn2/8/1bPP4/2N5/PPQ1PPPP/R1B1KBNR"] = new Opening { ECO = "E32", Name = "Nimzo-Indian Defense: Classical Variation", Moves = "1. d4 Nf6 2. c4 e6 3. Nc3 Bb4 4. Qc2" },
             ["rnbqk2r/pppp1ppp/4pn2/8/1bPP4/2N1P3/PP3PPP/R1BQKBNR"] = new Opening { ECO = "E40", Name = "Nimzo-Indian Defense: Rubinstein Variation", Moves = "1. d4 Nf6 2. c4 e6 3. Nc3 Bb4 4. e3" },
 
@@ -373,7 +320,6 @@ namespace ChessDroid.Services
             ["rnbqk2r/ppp1ppbp/3p1np1/8/2PPP3/2N2N2/PP3PPP/R1BQKB1R"] = new Opening { ECO = "E70", Name = "King's Indian Defense: Classical, 5.Nf3", Moves = "1. d4 Nf6 2. c4 g6 3. Nc3 Bg7 4. e4 d6 5. Nf3" },
             ["rnbq1rk1/ppp1ppbp/3p1np1/8/2PPP3/2N2N2/PP3PPP/R1BQKB1R"] = new Opening { ECO = "E70", Name = "King's Indian Defense: Classical, 5...O-O", Moves = "1. d4 Nf6 2. c4 g6 3. Nc3 Bg7 4. e4 d6 5. Nf3 O-O" },
             ["rnbq1rk1/ppp1ppbp/3p1np1/8/2PPP3/2N2N2/PP2BPPP/R1BQK2R"] = new Opening { ECO = "E90", Name = "King's Indian Defense: Classical, 6.Be2", Moves = "1. d4 Nf6 2. c4 g6 3. Nc3 Bg7 4. e4 d6 5. Nf3 O-O 6. Be2" },
-            ["rnbq1rk1/ppp2pbp/3p1np1/4p3/2PPP3/2N2N2/PP2BPPP/R1BQK2R"] = new Opening { ECO = "E92", Name = "King's Indian Defense: Classical, 6...e5", Moves = "1. d4 Nf6 2. c4 g6 3. Nc3 Bg7 4. e4 d6 5. Nf3 O-O 6. Be2 e5" },
             ["rnbq1rk1/ppp2pbp/3p1np1/4p3/2PPP3/2N2N2/PP2BPPP/R1BQ1RK1"] = new Opening { ECO = "E92", Name = "King's Indian Defense: Classical, 7.O-O", Moves = "1. d4 Nf6 2. c4 g6 3. Nc3 Bg7 4. e4 d6 5. Nf3 O-O 6. Be2 e5 7. O-O" },
             ["r1bq1rk1/pppn1pbp/3p1np1/4p3/2PPP3/2N2N2/PP2BPPP/R1BQ1RK1"] = new Opening { ECO = "E92", Name = "King's Indian Defense: Classical, Mar del Plata", Moves = "1. d4 Nf6 2. c4 g6 3. Nc3 Bg7 4. e4 d6 5. Nf3 O-O 6. Be2 e5 7. O-O Nc6" },
             ["rnbq1rk1/ppp2pbp/3p2p1/4p3/2PPP1n1/2N2N2/PP2BPPP/R1BQ1RK1"] = new Opening { ECO = "E92", Name = "King's Indian Defense: Classical, Petrosian", Moves = "1. d4 Nf6 2. c4 g6 3. Nc3 Bg7 4. e4 d6 5. Nf3 O-O 6. Be2 e5 7. O-O Nh5" },
@@ -405,12 +351,9 @@ namespace ChessDroid.Services
             ["rnbqkb1r/ppp2ppp/4pn2/3p4/3P4/3BPN2/PPP2PPP/RNBQK2R"] = new Opening { ECO = "D05", Name = "Colle System: 4.Bd3", Moves = "1. d4 d5 2. Nf3 Nf6 3. e3 e6 4. Bd3" },
 
             // Torre Attack
-            ["rnbqkb1r/pppppppp/5n2/6B1/3P4/8/PPP1PPPP/RN1QKBNR"] = new Opening { ECO = "A46", Name = "Torre Attack", Moves = "1. d4 Nf6 2. Nf3 e6 3. Bg5" },
-            ["rnbqkb1r/ppp1pppp/5n2/3p2B1/3P4/5N2/PPP1PPPP/RN1QKB1R"] = new Opening { ECO = "D03", Name = "Torre Attack", Moves = "1. d4 d5 2. Nf3 Nf6 3. Bg5" },
 
             // Veresov Attack
             ["rnbqkb1r/ppp1pppp/5n2/3p4/3P4/2N5/PPP1PPPP/R1BQKBNR"] = new Opening { ECO = "D01", Name = "Veresov Attack", Moves = "1. d4 d5 2. Nc3" },
-            ["rnbqkb1r/ppp1pppp/5n2/3p2B1/3P4/2N5/PPP1PPPP/R2QKBNR"] = new Opening { ECO = "D01", Name = "Veresov Attack: 3.Bg5", Moves = "1. d4 d5 2. Nc3 Nf6 3. Bg5" },
 
             // Blackmar-Diemer Gambit
             ["rnbqkbnr/ppp1pppp/8/3p4/3PP3/8/PPP2PPP/RNBQKBNR"] = new Opening { ECO = "D00", Name = "Blackmar-Diemer Gambit", Moves = "1. d4 d5 2. e4" },
@@ -419,9 +362,7 @@ namespace ChessDroid.Services
 
             // Benoni Defense
             ["rnbqkb1r/pp1ppppp/5n2/2p5/2PP4/8/PP2PPPP/RNBQKBNR"] = new Opening { ECO = "A56", Name = "Benoni Defense", Moves = "1. d4 Nf6 2. c4 c5" },
-            ["rnbqkb1r/pp1ppppp/5n2/2pP4/8/8/PP2PPPP/RNBQKBNR"] = new Opening { ECO = "A56", Name = "Benoni Defense: 3.d5", Moves = "1. d4 Nf6 2. c4 c5 3. d5" },
             ["rnbqkb1r/pp1p1ppp/4pn2/2pP4/8/8/PP2PPPP/RNBQKBNR"] = new Opening { ECO = "A60", Name = "Modern Benoni", Moves = "1. d4 Nf6 2. c4 c5 3. d5 e6" },
-            ["rnbqkb1r/pp1p1ppp/5n2/2pPp3/8/8/PP2PPPP/RNBQKBNR"] = new Opening { ECO = "A61", Name = "Modern Benoni: 4.Nc3", Moves = "1. d4 Nf6 2. c4 c5 3. d5 e6 4. Nc3 exd5" },
             ["rnbqkb1r/pp1p1ppp/5n2/2pP4/4P3/8/PP3PPP/RNBQKBNR"] = new Opening { ECO = "A62", Name = "Modern Benoni: Fianchetto", Moves = "1. d4 Nf6 2. c4 c5 3. d5 e6 4. Nc3 exd5 5. cxd5 d6" },
             ["rnbqkb1r/pp3ppp/3p1n2/2pP4/4P3/2N5/PP3PPP/R1BQKBNR"] = new Opening { ECO = "A65", Name = "Modern Benoni: 6.e4", Moves = "1. d4 Nf6 2. c4 c5 3. d5 e6 4. Nc3 exd5 5. cxd5 d6 6. e4" },
             ["rnbqk2r/pp3pbp/3p1np1/2pP4/4P3/2N5/PP3PPP/R1BQKBNR"] = new Opening { ECO = "A67", Name = "Modern Benoni: Taimanov Attack", Moves = "1. d4 Nf6 2. c4 c5 3. d5 e6 4. Nc3 exd5 5. cxd5 d6 6. e4 g6 7. f4" },
@@ -466,8 +407,6 @@ namespace ChessDroid.Services
             // King's Gambit (more depth)
             ["rnbqkbnr/pppp1ppp/8/8/4Pp2/5N2/PPPP2PP/RNBQKB1R"] = new Opening { ECO = "C33", Name = "King's Gambit Accepted: 3.Nf3", Moves = "1. e4 e5 2. f4 exf4 3. Nf3" },
             ["rnbqkbnr/pppp1ppp/8/8/2B1Pp2/8/PPPP2PP/RNBQK1NR"] = new Opening { ECO = "C33", Name = "King's Gambit Accepted: Bishop's Gambit", Moves = "1. e4 e5 2. f4 exf4 3. Bc4" },
-            ["rnbqkbnr/pppp1p1p/8/6p1/4Pp2/5N2/PPPP2PP/RNBQKB1R"] = new Opening { ECO = "C37", Name = "King's Gambit Accepted: 3...g5", Moves = "1. e4 e5 2. f4 exf4 3. Nf3 g5" },
-            ["rnbqkbnr/pppp1ppp/8/4p3/4PP2/8/PPPP2PP/RNBQKBNR"] = new Opening { ECO = "C30", Name = "King's Gambit Declined", Moves = "1. e4 e5 2. f4 Bc5" },
             ["rnbqk1nr/pppp1ppp/8/2b1p3/4PP2/8/PPPP2PP/RNBQKBNR"] = new Opening { ECO = "C30", Name = "King's Gambit Declined: Classical", Moves = "1. e4 e5 2. f4 Bc5" },
 
             // Vienna Game (more depth)
@@ -480,8 +419,6 @@ namespace ChessDroid.Services
             ["rnbqkb1r/pppp1ppp/5n2/4p3/2B1P3/5N2/PPPP1PPP/RNBQK2R"] = new Opening { ECO = "C42", Name = "Petrov Defense: Italian Variation", Moves = "1. e4 e5 2. Nf3 Nf6 3. Bc4" },
             ["rnbqkb1r/pppp1ppp/8/4n3/4P3/5N2/PPPP1PPP/RNBQKB1R"] = new Opening { ECO = "C42", Name = "Petrov Defense: 3.Nxe5 d6", Moves = "1. e4 e5 2. Nf3 Nf6 3. Nxe5 d6" },
             ["rnbqkb1r/ppp2ppp/3p4/4n3/4P3/5N2/PPPP1PPP/RNBQKB1R"] = new Opening { ECO = "C42", Name = "Petrov Defense: 4.Nf3", Moves = "1. e4 e5 2. Nf3 Nf6 3. Nxe5 d6 4. Nf3" },
-            ["rnbqkb1r/ppp2ppp/3p1n2/8/4P3/5N2/PPPP1PPP/RNBQKB1R"] = new Opening { ECO = "C43", Name = "Petrov Defense: 4...Nxe4", Moves = "1. e4 e5 2. Nf3 Nf6 3. Nxe5 d6 4. Nf3 Nxe4" },
-            ["rnbqkb1r/ppp2ppp/3p1n2/8/3PP3/5N2/PPP2PPP/RNBQKB1R"] = new Opening { ECO = "C43", Name = "Petrov Defense: Steinitz Attack", Moves = "1. e4 e5 2. Nf3 Nf6 3. d4" },
 
             // Center Game (more depth)
             ["rnbqkbnr/pppp1ppp/8/8/3QP3/8/PPP2PPP/RNB1KBNR"] = new Opening { ECO = "C22", Name = "Center Game: 3.Qxd4", Moves = "1. e4 e5 2. d4 exd4 3. Qxd4" },
@@ -503,7 +440,6 @@ namespace ChessDroid.Services
             // Grunfeld Defense (more depth)
             ["rnbqkb1r/ppp1pp1p/5np1/3p4/2PP4/5N2/PP2PPPP/RNBQKB1R"] = new Opening { ECO = "D70", Name = "Grunfeld Defense: 3.Nf3", Moves = "1. d4 Nf6 2. c4 g6 3. Nf3 d5" },
             ["rnbqkb1r/ppp1pppp/5n2/3p4/2PP4/6P1/PP2PP1P/RNBQKBNR"] = new Opening { ECO = "D70", Name = "Grunfeld Defense: Fianchetto", Moves = "1. d4 Nf6 2. c4 g6 3. g3 d5" },
-            ["rnbqk2r/ppp1ppbp/5np1/3p4/2PP4/2N2N2/PP2PPPP/R1BQKB1R"] = new Opening { ECO = "D85", Name = "Grunfeld Defense: Exchange Variation", Moves = "1. d4 Nf6 2. c4 g6 3. Nc3 d5 4. cxd5 Nxd5 5. e4 Nxc3 6. bxc3 Bg7" },
             ["rnbqk2r/ppp1ppbp/6p1/3n4/3PP3/2N5/PP3PPP/R1BQKBNR"] = new Opening { ECO = "D85", Name = "Grunfeld Defense: Exchange, 5.e4", Moves = "1. d4 Nf6 2. c4 g6 3. Nc3 d5 4. cxd5 Nxd5 5. e4" },
 
             // Nimzo-Indian Defense (more depth)
@@ -527,11 +463,8 @@ namespace ChessDroid.Services
             ["rnbqk2r/ppp1bppp/4pn2/8/2pP4/5NP1/PP2PPBP/RNBQK2R"] = new Opening { ECO = "E06", Name = "Catalan Opening: Closed", Moves = "1. d4 Nf6 2. c4 e6 3. g3 d5 4. Bg2 Be7" },
 
             // Reti Opening (more depth)
-            ["rnbqkbnr/ppp1pppp/8/3p4/8/5NP1/PPPPPP1P/RNBQKB1R"] = new Opening { ECO = "A05", Name = "Reti Opening: 2.g3", Moves = "1. Nf3 d5 2. g3" },
             ["rnbqkbnr/ppp1pppp/8/3p4/8/5N2/PPPPPPPP/RNBQKB1R"] = new Opening { ECO = "A06", Name = "Reti Opening: 1...d5", Moves = "1. Nf3 d5" },
-            ["rnbqkbnr/pp2pppp/8/2pp4/8/5NP1/PPPPPP1P/RNBQKB1R"] = new Opening { ECO = "A06", Name = "Reti Opening: 2...c5", Moves = "1. Nf3 d5 2. g3 c5" },
             ["rnbqkb1r/ppp1pppp/5n2/3p4/8/5NP1/PPPPPP1P/RNBQKB1R"] = new Opening { ECO = "A07", Name = "Reti Opening: King's Indian Attack", Moves = "1. Nf3 d5 2. g3 Nf6" },
-            ["rnbqkb1r/ppp1pppp/5n2/3p4/8/5NP1/PPPPPPBP/RNBQK2R"] = new Opening { ECO = "A07", Name = "Reti Opening: KIA, 3.Bg2", Moves = "1. Nf3 d5 2. g3 Nf6 3. Bg2" },
 
             // English Opening (more depth)
             ["rnbqkbnr/pppp1ppp/8/4p3/2P5/5N2/PP1PPPPP/RNBQKB1R"] = new Opening { ECO = "A21", Name = "English Opening: Reversed Sicilian", Moves = "1. c4 e5 2. Nc3" },
@@ -604,7 +537,6 @@ namespace ChessDroid.Services
             ["rnbqkbnr/1p1p1ppp/p3p3/8/3NP3/2N5/PPP2PPP/R1BQKB1R"] = new Opening { ECO = "B43", Name = "Sicilian Defense: Kan, 5.Nc3", Moves = "1. e4 c5 2. Nf3 e6 3. d4 cxd4 4. Nxd4 a6 5. Nc3" },
 
             // French Defense Winawer (more depth)
-            ["rnbqk1nr/ppp2ppp/4p3/3pP3/1b1P4/2N5/PPP2PPP/R1BQKBNR"] = new Opening { ECO = "C15", Name = "French Defense: Winawer Variation", Moves = "1. e4 e6 2. d4 d5 3. Nc3 Bb4" },
             ["rnbqk1nr/ppp2ppp/4p3/3pP3/1b1P4/2N5/PPP2PPP/R1BQKBNR"] = new Opening { ECO = "C16", Name = "French Defense: Winawer, 4.e5", Moves = "1. e4 e6 2. d4 d5 3. Nc3 Bb4 4. e5" },
             ["rnbqk1nr/pp3ppp/4p3/2ppP3/1b1P4/2N5/PPP2PPP/R1BQKBNR"] = new Opening { ECO = "C17", Name = "French Defense: Winawer, 4...c5", Moves = "1. e4 e6 2. d4 d5 3. Nc3 Bb4 4. e5 c5" },
             ["rnbqk1nr/pp3ppp/4p3/2ppP3/1b1P4/P1N5/1PP2PPP/R1BQKBNR"] = new Opening { ECO = "C18", Name = "French Defense: Winawer, 5.a3", Moves = "1. e4 e6 2. d4 d5 3. Nc3 Bb4 4. e5 c5 5. a3" },
@@ -736,7 +668,6 @@ namespace ChessDroid.Services
             ["r1bqkbnr/ppp1pppp/2n5/3p4/2PP4/5N2/PP2PPPP/RNBQKB1R"] = new Opening { ECO = "D07", Name = "Chigorin Defense: 3.Nf3", Moves = "1. d4 d5 2. c4 Nc6 3. Nf3" },
 
             // Baltic Defense
-            ["rnbqkbnr/ppp2ppp/4p3/3p4/2PP4/8/PP2PPPP/RNBQKBNR"] = new Opening { ECO = "D02", Name = "Queen's Pawn Game: Baltic Defense", Moves = "1. d4 d5 2. c4 Bf5" },
 
             // Albin Counter-Gambit
             ["rnbqkbnr/ppp2ppp/8/3pp3/2PP4/8/PP2PPPP/RNBQKBNR"] = new Opening { ECO = "D08", Name = "Albin Counter-Gambit", Moves = "1. d4 d5 2. c4 e5" },
