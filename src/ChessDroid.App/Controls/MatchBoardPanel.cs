@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Diagnostics;
 using System.Text;
 using ChessDroid.Models;
@@ -473,15 +474,15 @@ namespace ChessDroid.Controls
             for (int i = 0; i < _completedGames.Count; i++)
             {
                 var (white, black, result, moves) = _completedGames[i];
-                sb.AppendLine($"[Event \"{eventName}\"]");
+                sb.AppendLine(CultureInfo.InvariantCulture, $"[Event \"{eventName}\"]");
                 sb.AppendLine($"[Site \"Chessdroid\"]");
-                sb.AppendLine($"[Date \"{date}\"]");
-                sb.AppendLine($"[Round \"{roundStart + i}\"]");
-                sb.AppendLine($"[White \"{white}\"]");
-                sb.AppendLine($"[Black \"{black}\"]");
-                sb.AppendLine($"[Result \"{result}\"]");
+                sb.AppendLine(CultureInfo.InvariantCulture, $"[Date \"{date}\"]");
+                sb.AppendLine(CultureInfo.InvariantCulture, $"[Round \"{roundStart + i}\"]");
+                sb.AppendLine(CultureInfo.InvariantCulture, $"[White \"{white}\"]");
+                sb.AppendLine(CultureInfo.InvariantCulture, $"[Black \"{black}\"]");
+                sb.AppendLine(CultureInfo.InvariantCulture, $"[Result \"{result}\"]");
                 if (!string.IsNullOrEmpty(timeControlTag))
-                    sb.AppendLine($"[TimeControl \"{timeControlTag}\"]");
+                    sb.AppendLine(CultureInfo.InvariantCulture, $"[TimeControl \"{timeControlTag}\"]");
                 sb.AppendLine();
 
                 // One full move (white + black) per line for readability
@@ -490,11 +491,11 @@ namespace ChessDroid.Controls
                     if (m % 2 == 0)
                     {
                         if (m > 0) sb.AppendLine();
-                        sb.Append($"{m / 2 + 1}. {moves[m]}");
+                        sb.Append(CultureInfo.InvariantCulture, $"{m / 2 + 1}. {moves[m]}");
                     }
                     else
                     {
-                        sb.Append($" {moves[m]}");
+                        sb.Append(CultureInfo.InvariantCulture, $" {moves[m]}");
                     }
                 }
                 sb.AppendLine();

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.ComponentModel;
 using System.Diagnostics;
 using ChessDroid.Models;
@@ -1018,7 +1019,7 @@ namespace ChessDroid.Controls
                     for (int row = 0; row < 8; row++)
                     {
                         int dr = isFlipped ? 7 - row : row;
-                        string label = (8 - row).ToString();
+                        string label = (8 - row).ToString(CultureInfo.InvariantCulture);
                         int y = topOff + dr * squareSize;
                         TextRenderer.DrawText(g, label, _coordFont, new Rectangle(0,                y, leftOff,    squareSize), labelColor, coordFlags);
                         TextRenderer.DrawText(g, label, _coordFont, new Rectangle(leftOff + boardPx, y, rightStrip, squareSize), labelColor, coordFlags);
@@ -1209,7 +1210,7 @@ namespace ChessDroid.Controls
 
                     // Rank numbers (1-8)
                     int rankIndex = isFlipped ? i : 7 - i;
-                    string rank = (rankIndex + 1).ToString();
+                    string rank = (rankIndex + 1).ToString(CultureInfo.InvariantCulture);
                     isLight = i % 2 == 0;
                     _paintBrush.Color = _monochromeMode ? Color.White
                         : (_rainbowMode || _waveMode)

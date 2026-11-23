@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Diagnostics;
 using ChessDroid.Models;
 
@@ -70,7 +71,7 @@ namespace ChessDroid.Services
                         evalBeforeNullable = EvaluationParser.ParseNullable(analysisResult.evaluation);
                         evalBestMove = evalBeforeNullable ?? 0;
 
-                        Debug.WriteLine($"  [Before] Raw eval: '{analysisResult.evaluation}' -> Parsed: {evalBeforeNullable?.ToString("F2") ?? "NULL"}");
+                        Debug.WriteLine($"  [Before] Raw eval: '{analysisResult.evaluation}' -> Parsed: {evalBeforeNullable?.ToString("F2", CultureInfo.InvariantCulture) ?? "NULL"}");
 
                         analysisCache[cacheKey] = new CachedAnalysis
                         {
@@ -102,7 +103,7 @@ namespace ChessDroid.Services
                     {
                         var afterResult = await _engineService.GetBestMoveAsync(node.FEN, engineDepth, 3, ct: ct);
 
-                        Debug.WriteLine($"  [After] Raw eval: '{afterResult.evaluation}' -> Parsed: {EvaluationParser.ParseNullable(afterResult.evaluation)?.ToString("F2") ?? "NULL"}");
+                        Debug.WriteLine($"  [After] Raw eval: '{afterResult.evaluation}' -> Parsed: {EvaluationParser.ParseNullable(afterResult.evaluation)?.ToString("F2", CultureInfo.InvariantCulture) ?? "NULL"}");
 
                         evalAfterNullable = EvaluationParser.ParseNullable(afterResult.evaluation);
                         analysisCache[afterCacheKey] = new CachedAnalysis

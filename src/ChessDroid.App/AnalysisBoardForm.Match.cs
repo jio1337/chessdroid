@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.RegularExpressions;
 using ChessDroid.Controls;
 using ChessDroid.Models;
@@ -627,7 +628,7 @@ namespace ChessDroid
             {
                 string dir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "MatchGames");
                 Directory.CreateDirectory(dir);
-                string stamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                string stamp = DateTime.Now.ToString("yyyyMMdd_HHmmss", CultureInfo.InvariantCulture);
                 string file = Path.Combine(dir, $"match_{stamp}.pgn");
                 File.WriteAllText(file, GeneratePgn());
                 analysisOutput.AppendText($"Saved: {file}\n");

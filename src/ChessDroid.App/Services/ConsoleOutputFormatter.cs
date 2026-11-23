@@ -1,3 +1,4 @@
+using System.Globalization;
 using ChessDroid.Models;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -1963,7 +1964,7 @@ namespace ChessDroid.Services
                 AppendTextWithFormat($"{label,-12}",   back, subtext, FontStyle.Regular);
 
                 // White count — right-aligned in 5 chars, underlined if clickable, dash if zero
-                string wDisplay = w > 0 ? w.ToString() : "—";
+                string wDisplay = w > 0 ? w.ToString(CultureInfo.InvariantCulture) : "—";
                 int wStart = richTextBox.TextLength;
                 int wLen = AppendTextWithFormat($"{wDisplay,5}", back, w > 0 ? qColor : subtext, FontStyle.Regular);
                 if (w > 0 && firstWhite?.Node != null)
@@ -1972,7 +1973,7 @@ namespace ChessDroid.Services
                 AppendTextWithFormat("  ", back, back, FontStyle.Regular);
 
                 // Black count — right-aligned in 5 chars, underlined if clickable, dash if zero
-                string bDisplay = b > 0 ? b.ToString() : "—";
+                string bDisplay = b > 0 ? b.ToString(CultureInfo.InvariantCulture) : "—";
                 int bStart = richTextBox.TextLength;
                 int bLen = AppendTextWithFormat($"{bDisplay,5}", back, b > 0 ? qColor : subtext, FontStyle.Regular);
                 if (b > 0 && firstBlack?.Node != null)

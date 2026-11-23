@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
 using ChessDroid.Controls;
@@ -1505,7 +1506,7 @@ namespace ChessDroid
                     pb.BestQuestions = _trainingQuestions;
                     pb.BestTime = elapsed;
                     pb.BestTimePerQuestion = _trainingCorrect > 0 ? elapsed / _trainingCorrect : double.MaxValue;
-                    pb.LastSet = DateTime.Today.ToString("yyyy-MM-dd");
+                    pb.LastSet = DateTime.Today.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
                     config.TrainingPersonalBests[key] = pb;
                     config.Save();
                     newPB = true;
@@ -1582,10 +1583,10 @@ namespace ChessDroid
             {
                 if (isDaily)
                 {
-                    string today  = DateTime.Today.ToString("MMM d");
+                    string today  = DateTime.Today.ToString("MMM d", CultureInfo.InvariantCulture);
                     int streak    = config?.DailyPuzzleStreak ?? 0;
                     string pb     = config?.DailyPuzzleBestStreak > 1 ? $"  ·  Best: {config.DailyPuzzleBestStreak}" : "";
-                    string solved = config?.DailyPuzzleLastSolvedDate == DateTime.Today.ToString("yyyy-MM-dd") ? "  ·  Solved ✓" : "";
+                    string solved = config?.DailyPuzzleLastSolvedDate == DateTime.Today.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ? "  ·  Solved ✓" : "";
                     _lblPuzzleSettingsPB.Text = $"{today}  ·  Streak: {streak}{pb}{solved}";
                 }
                 else
@@ -1924,7 +1925,7 @@ namespace ChessDroid
                 int runMistakes = _openingPosMistakes.Values.Sum();
                 lifetimeStats.TotalMistakes += runMistakes;
                 if (runMistakes < lifetimeStats.BestRunMistakes) lifetimeStats.BestRunMistakes = runMistakes;
-                lifetimeStats.LastAttempted = DateTime.Today.ToString("yyyy-MM-dd");
+                lifetimeStats.LastAttempted = DateTime.Today.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
                 config.OpeningTrainingStats[key] = lifetimeStats;
                 config.Save();
@@ -2387,12 +2388,12 @@ namespace ChessDroid
 
         private void DailyPuzzleCompleted()
         {
-            string today = DateTime.Today.ToString("yyyy-MM-dd");
+            string today = DateTime.Today.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
             if (config != null && config.DailyPuzzleLastSolvedDate != today)
             {
                 // Update streak
                 bool consecutive = config.DailyPuzzleLastSolvedDate ==
-                                   DateTime.Today.AddDays(-1).ToString("yyyy-MM-dd");
+                                   DateTime.Today.AddDays(-1).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
                 config.DailyPuzzleStreak = consecutive ? config.DailyPuzzleStreak + 1 : 1;
                 if (config.DailyPuzzleStreak > config.DailyPuzzleBestStreak)
                     config.DailyPuzzleBestStreak = config.DailyPuzzleStreak;
@@ -2546,7 +2547,7 @@ namespace ChessDroid
                                 if (config != null)
                                 {
                                     config.PuzzleTrainingBestStreak     = _puzzleStreakBest;
-                                    config.PuzzleTrainingBestStreakDate = DateTime.Today.ToString("yyyy-MM-dd");
+                                    config.PuzzleTrainingBestStreakDate = DateTime.Today.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
                                     config.Save();
                                 }
                             }
@@ -2841,7 +2842,7 @@ namespace ChessDroid
                 if (config != null)
                 {
                     config.GauntletBestStreak     = _gauntletBestStreak;
-                    config.GauntletBestStreakDate  = DateTime.Today.ToString("yyyy-MM-dd");
+                    config.GauntletBestStreakDate  = DateTime.Today.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
                 }
             }
             if (config != null)
@@ -3092,7 +3093,7 @@ namespace ChessDroid
                     pb.BestQuestions       = _visionCorrect + _visionWrong;
                     pb.BestTime            = elapsed;
                     pb.BestTimePerQuestion = tpq;
-                    pb.LastSet             = DateTime.Today.ToString("yyyy-MM-dd");
+                    pb.LastSet             = DateTime.Today.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
                     config.TrainingPersonalBests[key] = pb;
                 }
                 if (_visionBestStreak > config.VisionBestStreak)
@@ -3147,7 +3148,7 @@ namespace ChessDroid
                     pb.BestQuestions       = _visionCorrect + _visionWrong;
                     pb.BestTime            = elapsed;
                     pb.BestTimePerQuestion = tpq;
-                    pb.LastSet             = DateTime.Today.ToString("yyyy-MM-dd");
+                    pb.LastSet             = DateTime.Today.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
                     config.TrainingPersonalBests[key] = pb;
                 }
                 if (_visionBestStreak > config.VisionBestStreak)

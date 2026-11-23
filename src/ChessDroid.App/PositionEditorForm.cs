@@ -1,3 +1,4 @@
+using System.Globalization;
 using ChessDroid.Models;
 
 namespace ChessDroid
@@ -210,7 +211,7 @@ namespace ChessDroid
             for (int i = 0; i < 8; i++)
             {
                 g.DrawString(((char)('a' + i)).ToString(), lf, lb, i * SQ + SQ - 11, 480 - 14);
-                g.DrawString((8 - i).ToString(), lf, lb, 2, i * SQ + 2);
+                g.DrawString((8 - i).ToString(CultureInfo.InvariantCulture), lf, lb, 2, i * SQ + 2);
             }
         }
 

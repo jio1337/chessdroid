@@ -1,3 +1,4 @@
+using System.Globalization;
 using ChessDroid.Models;
 
 namespace ChessDroid.Services
@@ -98,7 +99,7 @@ namespace ChessDroid.Services
                     {
                         if (emptyCount > 0)
                         {
-                            rowFen += emptyCount.ToString();
+                            rowFen += emptyCount.ToString(CultureInfo.InvariantCulture);
                             emptyCount = 0;
                         }
                         rowFen += piece;
@@ -106,7 +107,7 @@ namespace ChessDroid.Services
                 }
                 if (emptyCount > 0)
                 {
-                    rowFen += emptyCount.ToString();
+                    rowFen += emptyCount.ToString(CultureInfo.InvariantCulture);
                 }
                 rows.Add(rowFen);
             }

@@ -1,3 +1,4 @@
+using System.Globalization;
 using ChessDroid.Models;
 using ChessDroid.Services;
 
@@ -130,7 +131,7 @@ namespace ChessDroid
             {
                 var item = new ListViewItem(Truncate(game.White, 18));
                 item.SubItems.Add(Truncate(game.Black, 18));
-                item.SubItems.Add(game.SavedAt.ToString("yyyy-MM-dd HH:mm"));
+                item.SubItems.Add(game.SavedAt.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture));
                 item.SubItems.Add(game.WhiteAccuracy.HasValue ? $"{game.WhiteAccuracy:F0}" : "—");
                 item.SubItems.Add(game.BlackAccuracy.HasValue ? $"{game.BlackAccuracy:F0}" : "—");
                 item.SubItems.Add(string.IsNullOrEmpty(game.Opening) ? "—" : Truncate(game.Opening, 28));
@@ -174,7 +175,7 @@ namespace ChessDroid
             var game = (SavedGame)_listView.SelectedItems[0].Tag!;
 
             string label = game.White == "?" && game.Black == "?"
-                ? game.SavedAt.ToString("yyyy-MM-dd HH:mm")
+                ? game.SavedAt.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)
                 : $"{game.White} vs {game.Black}";
 
             if (MessageBox.Show($"Delete \"{label}\" from the library?\nThis cannot be undone.",

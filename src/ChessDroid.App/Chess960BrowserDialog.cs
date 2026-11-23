@@ -1,3 +1,4 @@
+using System.Globalization;
 using ChessDroid.Services;
 
 namespace ChessDroid
@@ -146,7 +147,7 @@ namespace ChessDroid
         {
             _grid.Rows.Clear();
             foreach (var (pos, rank) in rows)
-                _grid.Rows.Add(pos.ToString(), rank);
+                _grid.Rows.Add(pos.ToString(CultureInfo.InvariantCulture), rank);
             if (_grid.Rows.Count > 0)
                 _grid.Rows[0].Selected = true;
         }
@@ -156,13 +157,13 @@ namespace ChessDroid
             string q = _filter.Text.Trim().ToUpperInvariant();
             var filtered = string.IsNullOrEmpty(q)
                 ? _allRows
-                : _allRows.Where(r => r.Pos.ToString().Contains(q) || r.Rank.Contains(q)).ToList();
+                : _allRows.Where(r => r.Pos.ToString(CultureInfo.InvariantCulture).Contains(q) || r.Rank.Contains(q)).ToList();
             PopulateGrid(filtered);
         }
 
         private void SelectRandom()
         {
-            _filter.Text = Chess960Service.GetRandomPosition().ToString();
+            _filter.Text = Chess960Service.GetRandomPosition().ToString(CultureInfo.InvariantCulture);
         }
 
         private void Confirm(bool startBot)

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
 using ChessDroid.Models;
@@ -278,12 +279,12 @@ namespace ChessDroid.Services
         public static string SerializeCachedAnalysis(CachedAnalysis ca)
         {
             var sb = new System.Text.StringBuilder();
-            sb.Append($"[%cda d={ca.Depth}");
-            if (!string.IsNullOrEmpty(ca.BestMove))   sb.Append($";b={ca.BestMove}");
-            if (!string.IsNullOrEmpty(ca.Evaluation)) sb.Append($";e={ca.Evaluation}");
-            if (ca.PVs.Count > 0)         sb.Append($";v={string.Join("~", ca.PVs)}");
-            if (ca.Evaluations.Count > 0) sb.Append($";f={string.Join("~", ca.Evaluations)}");
-            if (ca.WDL != null)           sb.Append($";w={ca.WDL.Win}/{ca.WDL.Draw}/{ca.WDL.Loss}");
+            sb.Append(CultureInfo.InvariantCulture, $"[%cda d={ca.Depth}");
+            if (!string.IsNullOrEmpty(ca.BestMove))   sb.Append(CultureInfo.InvariantCulture, $";b={ca.BestMove}");
+            if (!string.IsNullOrEmpty(ca.Evaluation)) sb.Append(CultureInfo.InvariantCulture, $";e={ca.Evaluation}");
+            if (ca.PVs.Count > 0)         sb.Append(CultureInfo.InvariantCulture, $";v={string.Join("~", ca.PVs)}");
+            if (ca.Evaluations.Count > 0) sb.Append(CultureInfo.InvariantCulture, $";f={string.Join("~", ca.Evaluations)}");
+            if (ca.WDL != null)           sb.Append(CultureInfo.InvariantCulture, $";w={ca.WDL.Win}/{ca.WDL.Draw}/{ca.WDL.Loss}");
             sb.Append("]");
             return $"{{ {sb} }}";
         }

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Diagnostics;
 using ChessDroid.Models;
 using ChessDroid.Services;
@@ -249,22 +250,22 @@ namespace ChessDroid
             // Standard PGN headers
             sb.AppendLine("[Event \"Chess Analysis\"]");
             sb.AppendLine("[Site \"chessdroid\"]");
-            sb.AppendLine($"[Date \"{DateTime.Now:yyyy.MM.dd}\"]");
+            sb.AppendLine(CultureInfo.InvariantCulture, $"[Date \"{DateTime.Now:yyyy.MM.dd}\"]");
             sb.AppendLine("[Round \"?\"]");
-            sb.AppendLine($"[White \"{white}\"]");
-            sb.AppendLine($"[Black \"{black}\"]");
+            sb.AppendLine(CultureInfo.InvariantCulture, $"[White \"{white}\"]");
+            sb.AppendLine(CultureInfo.InvariantCulture, $"[Black \"{black}\"]");
             sb.AppendLine("[Result \"*\"]");
             if (_classificationLookup != null)
             {
                 string annotator = _currentClassification?.EngineName is { Length: > 0 } n ? n : "chessdroid";
-                sb.AppendLine($"[Annotator \"{annotator}\"]");
+                sb.AppendLine(CultureInfo.InvariantCulture, $"[Annotator \"{annotator}\"]");
             }
 
             // Add FEN if not standard starting position
             string rootFen = moveTree.Root.FEN;
             if (rootFen != "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
             {
-                sb.AppendLine($"[FEN \"{rootFen}\"]");
+                sb.AppendLine(CultureInfo.InvariantCulture, $"[FEN \"{rootFen}\"]");
                 sb.AppendLine("[SetUp \"1\"]");
             }
 

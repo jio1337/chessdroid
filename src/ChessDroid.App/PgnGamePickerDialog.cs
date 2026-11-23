@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -110,11 +111,11 @@ namespace ChessDroid
             for (int i = 0; i < games.Count; i++)
             {
                 var h    = ParsePgnHeaders(games[i]);
-                var item = new ListViewItem((i + 1).ToString());
+                var item = new ListViewItem((i + 1).ToString(CultureInfo.InvariantCulture));
                 item.SubItems.Add(h.GetValueOrDefault("White",  "?"));
                 item.SubItems.Add(h.GetValueOrDefault("Black",  "?"));
                 item.SubItems.Add(h.GetValueOrDefault("Result", "?"));
-                item.SubItems.Add(CountMoves(games[i]).ToString());
+                item.SubItems.Add(CountMoves(games[i]).ToString(CultureInfo.InvariantCulture));
                 item.SubItems.Add(h.GetValueOrDefault("Date", "").Replace(".??", "").Replace("??", "").TrimEnd('.'));
                 item.SubItems.Add(h.GetValueOrDefault("Event", ""));
                 _listView.Items.Add(item);

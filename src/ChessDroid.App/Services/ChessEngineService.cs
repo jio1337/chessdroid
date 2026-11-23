@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Diagnostics;
 using System.Threading.Channels;
 using ChessDroid.Models;
@@ -506,7 +507,7 @@ namespace ChessDroid.Services
                     }
 
                     // Configure MultiPV
-                    if (!await SetOptionCachedAsync("MultiPV", multiPV.ToString()).ConfigureAwait(false))
+                    if (!await SetOptionCachedAsync("MultiPV", multiPV.ToString(CultureInfo.InvariantCulture)).ConfigureAwait(false))
                     {
                         throw new IOException("Failed to set MultiPV option");
                     }
@@ -887,11 +888,11 @@ namespace ChessDroid.Services
                 }
                 if (!await SyncWithEngineAsync().ConfigureAwait(false)) return;
 
-                await SetOptionCachedAsync("MultiPV", multiPV.ToString()).ConfigureAwait(false);
+                await SetOptionCachedAsync("MultiPV", multiPV.ToString(CultureInfo.InvariantCulture)).ConfigureAwait(false);
 
                 // Restore all available threads for continuous analysis (go infinite benefits from parallelism)
                 int threadCount = Math.Max(1, Environment.ProcessorCount);
-                await SetOptionCachedAsync("Threads", threadCount.ToString()).ConfigureAwait(false);
+                await SetOptionCachedAsync("Threads", threadCount.ToString(CultureInfo.InvariantCulture)).ConfigureAwait(false);
 
                 if (!preserveHashTables)
                     await SafeWriteLineAsync(UCI_CMD_UCINEWGAME).ConfigureAwait(false);
@@ -1097,7 +1098,7 @@ namespace ChessDroid.Services
 
                 int? exitCode = null;
                 try { if (engineProcess?.HasExited == true) exitCode = engineProcess.ExitCode; } catch { }
-                LogM($"ENGINE DIED while reading output — process exit code: {exitCode?.ToString() ?? "unknown"}");
+                LogM($"ENGINE DIED while reading output — process exit code: {exitCode?.ToString(CultureInfo.InvariantCulture) ?? "unknown"}");
                 State = EngineState.Error;
                 return (null, null);
             }

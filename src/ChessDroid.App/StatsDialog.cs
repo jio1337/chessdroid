@@ -1,3 +1,4 @@
+using System.Globalization;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -221,11 +222,11 @@ namespace ChessDroid
                 ? $"{_config.DailyPuzzleStreak} day{(_config.DailyPuzzleStreak == 1 ? "" : "s")}"
                 : "—";
             string best = _config.DailyPuzzleBestStreak > 0
-                ? _config.DailyPuzzleBestStreak.ToString()
+                ? _config.DailyPuzzleBestStreak.ToString(CultureInfo.InvariantCulture)
                 : "—";
             string last = string.IsNullOrEmpty(_config.DailyPuzzleLastSolvedDate)
                 ? "never"
-                : DateTime.Parse(_config.DailyPuzzleLastSolvedDate).ToString("MMM d, yyyy");
+                : DateTime.Parse(_config.DailyPuzzleLastSolvedDate, CultureInfo.InvariantCulture).ToString("MMM d, yyyy", CultureInfo.InvariantCulture);
             string clean = _config.DailyPuzzleCleanSolves > 0
                 ? $"{_config.DailyPuzzleCleanSolves} clean solve{(_config.DailyPuzzleCleanSolves == 1 ? "" : "s")} lifetime"
                 : "";
@@ -242,7 +243,7 @@ namespace ChessDroid
         private (string, bool)[] BuildPuzzleRows()
         {
             string trainStreak = _config.PuzzleTrainingBestStreak > 0
-                ? _config.PuzzleTrainingBestStreak.ToString() : "—";
+                ? _config.PuzzleTrainingBestStreak.ToString(CultureInfo.InvariantCulture) : "—";
             string trainDate = AgeStr(_config.PuzzleTrainingBestStreakDate);
             string trainLine = $"Training best streak: {trainStreak}";
             if (!string.IsNullOrEmpty(trainDate)) trainLine += $"  ·  set {trainDate}";
@@ -270,7 +271,7 @@ namespace ChessDroid
             }
 
             string gauntlet = _config.GauntletBestStreak > 0
-                ? _config.GauntletBestStreak.ToString() : "—";
+                ? _config.GauntletBestStreak.ToString(CultureInfo.InvariantCulture) : "—";
             string gauntletDate = AgeStr(_config.GauntletBestStreakDate);
             string gauntletLine = $"Gauntlet best: {gauntlet}";
             if (!string.IsNullOrEmpty(gauntletDate)) gauntletLine += $"  ·  set {gauntletDate}";
@@ -353,7 +354,7 @@ namespace ChessDroid
             string GetCorrect(string key)
             {
                 if (_config.TrainingPersonalBests.TryGetValue(key, out var pb) && pb.BestCorrect > 0)
-                    return pb.BestCorrect.ToString();
+                    return pb.BestCorrect.ToString(CultureInfo.InvariantCulture);
                 return "—";
             }
             string GetDate(string key)
@@ -389,7 +390,7 @@ namespace ChessDroid
             string GetCorrect(string key)
             {
                 if (_config.TrainingPersonalBests.TryGetValue(key, out var pb) && pb.BestCorrect > 0)
-                    return pb.BestCorrect.ToString();
+                    return pb.BestCorrect.ToString(CultureInfo.InvariantCulture);
                 return "—";
             }
             string GetSpeed(string key)
@@ -410,7 +411,7 @@ namespace ChessDroid
             string bestSpeed = ChallengeSpeedKeys
                 .Select(k => GetSpeed(k))
                 .Where(s => !string.IsNullOrEmpty(s))
-                .OrderBy(s => double.Parse(s.Replace("s/q", "")))
+                .OrderBy(s => double.Parse(s.Replace("s/q", ""), CultureInfo.InvariantCulture))
                 .FirstOrDefault() ?? "";
 
             var rows = new List<(string, bool)>

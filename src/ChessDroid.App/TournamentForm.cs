@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using ChessDroid.Controls;
 using ChessDroid.Models;
@@ -648,7 +649,7 @@ namespace ChessDroid
             int gamesJustPlayed = panel.GamesPlayed;
             string pgn = panel.BuildSeriesPgn(
                 "Chessdroid Tournament",
-                DateTime.Now.ToString("yyyy.MM.dd"),
+                DateTime.Now.ToString("yyyy.MM.dd", CultureInfo.InvariantCulture),
                 _tcPgnTag,
                 _roundCounter);
             if (pgn.Length > 0) _allPgnGames.Add(pgn);
@@ -809,10 +810,10 @@ namespace ChessDroid
             {
                 var item = new ListViewItem(s.Engine.Label);
                 item.SubItems.Add(s.PointStr);
-                item.SubItems.Add(s.Wins.ToString());
-                item.SubItems.Add(s.Draws.ToString());
-                item.SubItems.Add(s.Losses.ToString());
-                item.SubItems.Add(s.Played.ToString());
+                item.SubItems.Add(s.Wins.ToString(CultureInfo.InvariantCulture));
+                item.SubItems.Add(s.Draws.ToString(CultureInfo.InvariantCulture));
+                item.SubItems.Add(s.Losses.ToString(CultureInfo.InvariantCulture));
+                item.SubItems.Add(s.Played.ToString(CultureInfo.InvariantCulture));
                 _lvStandings.Items.Add(item);
             }
             _lvStandings.EndUpdate();
@@ -893,7 +894,7 @@ namespace ChessDroid
         {
             try
             {
-                string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss", CultureInfo.InvariantCulture);
                 string fileName  = $"tournament_{timestamp}.txt";
                 string path      = Path.Combine(Application.StartupPath, fileName);
 
@@ -901,19 +902,19 @@ namespace ChessDroid
 
                 // ── Header ───────────────────────────────────────────────────
                 sb.AppendLine("Chessdroid Tournament Results");
-                sb.AppendLine($"{DateTime.Now:yyyy-MM-dd HH:mm}  |  {_standings.Count} engines  |  {_totalMatchCount} matches  |  {_tcDescription}");
+                sb.AppendLine(CultureInfo.InvariantCulture, $"{DateTime.Now:yyyy-MM-dd HH:mm}  |  {_standings.Count} engines  |  {_totalMatchCount} matches  |  {_tcDescription}");
                 sb.AppendLine();
 
                 // ── Standings ─────────────────────────────────────────────────
                 const string fmt = "{0,-4}  {1,-35}  {2,6}  {3,4}  {4,4}  {5,4}  {6,5}";
-                sb.AppendLine(string.Format(fmt, "Rank", "Engine", "Score", "W", "D", "L", "Games"));
+                sb.AppendLine(string.Format(CultureInfo.InvariantCulture, fmt, "Rank", "Engine", "Score", "W", "D", "L", "Games"));
                 sb.AppendLine(new string('-', 68));
                 int rank = 1;
                 foreach (var s in _standings.Values
                     .OrderByDescending(s => s.Points)
                     .ThenByDescending(s => s.Wins))
                 {
-                    sb.AppendLine(string.Format(fmt,
+                    sb.AppendLine(string.Format(CultureInfo.InvariantCulture, fmt,
                         rank++, s.Engine.Label, s.PointStr,
                         s.Wins, s.Draws, s.Losses, s.Played));
                 }
@@ -923,7 +924,7 @@ namespace ChessDroid
                 {
                     sb.AppendLine();
                     sb.AppendLine(new string('=', 68));
-                    sb.AppendLine($"Games (PGN) — {_roundCounter - 1} total");
+                    sb.AppendLine(CultureInfo.InvariantCulture, $"Games (PGN) — {_roundCounter - 1} total");
                     sb.AppendLine(new string('=', 68));
                     sb.AppendLine();
                     foreach (var g in _allPgnGames)
