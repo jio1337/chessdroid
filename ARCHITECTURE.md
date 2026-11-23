@@ -6,122 +6,182 @@ chessdroid is a pure offline chess analysis application that combines tactical p
 
 ---
 
-## System Architecture (v3.21.1)
+## Solution Structure (v3.21.1)
 
-> **Note (2026-11-23):** this section and the module list below predate the Phase 1-4
-> refactor (CHESSDROID_AUDIT.md) that split the codebase into `ChessDroid.Core` (pure,
-> no WinForms — rules/notation/move-generation/engine-option-independent analysis) and
-> `ChessDroid.App` (WinForms UI). It doesn't yet describe that split, `MoveGenerator`
-> (the single consolidated legal-move/check implementation), or the `Score` struct. A full
-> rewrite reflecting the current module boundaries is a separate task from this version-
-> number fix — flagged here rather than silently left looking authoritative.
+The codebase is split into two projects plus their test counterparts, the result of the
+Phase 0–5 refactor tracked in `CHESSDROID_AUDIT.md`:
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│              chessdroid Core (AnalysisBoardForm.cs)              │
-│          Pure analysis board — main and only entry point         │
-└────────────────────┬────────────────────────────────────────────┘
-                     │
-         ┌───────────┴────────────┬──────────────────────────┐
-         │                        │                          │
-         ▼                        ▼                          ▼
-┌─────────────────┐     ┌──────────────────┐     ┌──────────────────┐
-│  Service Layer  │     │  UCI Engine      │     │   UI Services    │
-│  (Orchestration)│     │  Integration     │     │   (Display)      │
-└────────┬────────┘     └──────────────────┘     └─────────┬────────┘
-         │                                                   │
-         ├──────────────────────┬────────────────────────────┤
-         │                      │                            │
-         ▼                      ▼                            ▼
-┌─────────────────┐  ┌──────────────────┐      ┌──────────────────┐
-│MoveOrchestrator │  │EngineAnalysis    │      │ConsoleOutput     │
-│                 │  │Strategy          │      │Formatter         │
-└────────┬────────┘  └──────────────────┘      └──────────────────┘
-         │
-         ├─────────────────┬─────────────────┬──────────────────┐
-         │                 │                 │                  │
-         ▼                 ▼                 ▼                  ▼
-┌─────────────┐  ┌─────────────┐  ┌─────────────┐   ┌──────────────┐
-│MovesExplan- │  │MoveEvaluation│  │Positional   │   │  Endgame     │
-│ation        │  │   (SEE)      │  │Evaluation   │   │  Analysis    │
-└──────┬──────┘  └──────────────┘  └─────────────┘   └──────────────┘
-       │
-       ├──────────────────┬─────────────────┬────────────────┐
-       │                  │                 │                │
-       ▼                  ▼                 ▼                ▼
-┌──────────┐    ┌──────────────┐  ┌──────────────┐  ┌────────────┐
-│Stockfish │    │  Advanced    │  │  Explanation │  │ UI Helpers │
-│Features  │    │  Analysis    │  │  Formatter   │  │            │
-└────┬─────┘    └──────────────┘  └──────────────┘  └────────────┘
-     │
-     │      ┌────────────────────────────────────────────────────────┐
-     │      │              Performance & Utility Layer               │
-     │      │  ┌──────────────┐  ┌──────────────┐                   │
-     └─────→│  │ChessUtilities│  │  BoardCache  │                   │
-            │  │(Shared Logic)│  │(Performance) │                   │
-            │  └──────────────┘  └──────────────┘                   │
-            └────────────────────────────────────────────────────────┘
-
-                 ┌────────────────────────────────────────┐
-                 │         Supporting Services            │
-                 │  ┌─────────────┐  ┌─────────────────┐ │
-                 │  │ThemeService │  │EnginePathResolver│ │
-                 │  │(UI Theming) │  │  (Discovery)    │ │
-                 │  └─────────────┘  └─────────────────┘ │
-                 └────────────────────────────────────────┘
+chessdroid/
+├── src/
+│   ├── ChessDroid.Core/     # Pure chess logic — no WinForms, no UI dependency
+│   └── ChessDroid.App/      # WinForms UI, engine process management, all forms/dialogs
+└── tests/
+    ├── ChessDroid.Tests/        # Core-only xUnit tests (no WinForms reference)
+    ├── ChessDroid.Tests.App/    # References the real chessdroid.csproj; UI-adjacent logic
+    └── FakeUciEngine/           # Scripted stdin/stdout UCI stub used by App tests
 ```
 
-### v3.0.0 Changes from Previous Architecture
-- **Removed:** MainForm.cs (old screen-detection entry point)
-- **Removed:** ScreenCaptureService, BoardDetectionService, PieceRecognitionService, BoardMonitorService
-- **Removed:** BoardVisualizer (debug visualization)
-- **Removed:** EmguCV/OpenCvSharp4 dependencies (~50MB savings)
-- **Entry point:** AnalysisBoardForm launched directly from Program.cs
-- **Auto-analysis:** Always on — engine analyzes after every move automatically
+**The split's rule of thumb:** if a type can be exercised with nothing but a FEN string
+and no `System.Windows.Forms` reference, it belongs in `ChessDroid.Core`. Anything that
+touches a `Form`, `Control`, engine process I/O, file paths, or app configuration belongs
+in `ChessDroid.App`. `ChessDroid.App` references `ChessDroid.Core`; `ChessDroid.Core` has
+no reference back.
+
+### ChessDroid.Core — pure chess logic
+
+```
+Core/
+├── Models/
+│   ├── ChessBoard.cs, CastlingState.cs, GameState.cs, PieceType.cs
+│   ├── MoveNode.cs                  # Variation tree node (tree structure itself lives in App)
+│   ├── Score.cs                     # readonly record struct Score(int? Cp, int? Mate)
+│   ├── BookMove.cs, BotSettings.cs, EngineMatchConfig.cs, TournamentConfig.cs, SavedGame.cs
+└── Services/
+    ├── MoveGenerator.cs             # THE single consolidated legal-move-generation and
+    │                                # check-detection implementation (standard + Chess960).
+    │                                # Perft-verified; everything else that needs
+    │                                # "is this move legal" / "is this king in check"
+    │                                # delegates here rather than re-deriving it.
+    ├── ChessRulesService.cs         # Move application (ApplyUciMove), game-end detection
+    ├── ChessNotationService.cs      # UCI↔SAN conversion
+    ├── ChessUtilities.cs            # Piece values (GetPieceValue, exchange-oriented, King=100;
+    │                                # GetMaterialValue, counting-oriented, King=0 — intentionally
+    │                                # NOT merged, see doc comments), attack/path helpers
+    ├── Chess960Service.cs           # Fischer Random start-position generation/validation
+    ├── BoardCache.cs, BoardPool.cs  # Performance layer: cached piece/attack maps, pooled boards
+    ├── EvaluationParser.cs          # UCI info-line → Score parsing
+    ├── EloCalculator.cs             # Rating-ladder math
+    └── PolyglotBookReader/Service/Zobrist.cs   # Opening-book (.bin) binary format
+```
+
+### ChessDroid.App — WinForms UI and orchestration
+
+```
+App/
+├── Program.cs                      # Entry point → AnalysisBoardForm
+├── AnalysisBoardForm.cs + 7 partials   # Main form, split by feature area (see below)
+├── AnalysisBoardForm.Designer.cs
+├── AppConfig.cs, AppMode.cs, TrainingSubMode.cs
+├── SettingsForm.cs / .Designer.cs, HelpForm.cs, StatsDialog.cs
+├── BotSettingsDialog.cs, Chess960BrowserDialog.cs, DrillWatchDialog.cs
+├── EngineProfilesDialog.cs, GameLibraryDialog.cs, OpeningExplorerDialog.cs + .Designer.cs
+├── PgnGamePickerDialog.cs, PositionEditorForm.cs + .Designer.cs, TournamentForm.cs
+├── Controls/
+│   ├── ChessBoardControl.cs        # Board rendering, arrows, piece animation, click/drag input
+│   ├── EvalBarControl.cs, EvalGraphControl.cs
+│   ├── MatchBoardPanel.cs          # One board tile within Tournament mode's 2×2 grid
+│   └── MaterialStripControl.cs
+├── Models/
+│   ├── CachedAnalysis.cs, GameReviewResult.cs
+├── Modes/
+│   └── IModeController.cs          # Narrow lifecycle interface (Exit()) — see note below
+└── Services/
+    ├── ChessEngineService.cs       # UCI engine process I/O (stdin/stdout), SetSkillLevelAsync
+    ├── EngineMatchService.cs       # Engine-vs-engine match running (Tournament mode, match series)
+    ├── MovesExplanation.cs         # Orchestrator: combines all analysis modules into
+    │                                # human-readable explanations (see Data Flow below)
+    ├── PositionalEvaluation.cs, MoveEvaluation.cs (SEE), EndgameAnalysis.cs,
+    │   StockfishFeatures.cs, AdvancedAnalysis.cs, ThreatDetection.cs, DefenseDetection.cs,
+    │   MoveSharpnessAnalyzer.cs, WDLAnalysis.cs      # Analysis modules, described individually below
+    ├── ConsoleOutputFormatter.cs, ExplanationFormatter.cs   # Display-text assembly
+    ├── MoveQualityAnalyzer.cs, MoveClassificationService.cs
+    ├── ThemeService.cs, EnginePathResolver.cs, CrashLogger.cs, AudioService.cs
+    ├── OpeningDatabase.cs, OpeningBook.cs, EcoBookService.cs, EcoFileCache.cs
+    ├── PgnImportService.cs, GameLibraryService.cs, EndgameDrillService.cs
+    └── LichessPuzzleService.cs
+```
+
+**Why analysis modules (`MovesExplanation`, `PositionalEvaluation`, `ThreatDetection`,
+etc.) live in `App` and not `Core`:** they're pure functions of a board position in
+principle, but in practice they're wired directly to `ChessEngineService` UCI output
+parsing and `ConsoleOutputFormatter` display strings, and nothing outside the UI currently
+needs them independent of that. They weren't pulled into `Core` because nothing in this
+refactor needed them to be — not because they depend on WinForms controls.
+
+**`IModeController` (Modes/IModeController.cs):** deliberately scoped narrow —
+`void Exit()` only. `AnalysisBoardForm.Bot.cs`, `.Match.cs`, and `.Training.cs` each
+define a private nested `XModeController : IModeController` and set a single
+`CurrentModeController` field on mode entry/exit. This replaces three separate ad-hoc
+"am I in bot/match/training mode" boolean checks scattered through
+`AnalysisBoardForm.cs` with one polymorphic exit call, but stops short of a full
+`GameSession`/mode-state extraction — that remains future work requiring live GUI
+testing to verify safely (see "Known Gaps" below).
+
+### AnalysisBoardForm partial classes
+
+`AnalysisBoardForm` is one `partial class` split by feature area, not by layer — each
+partial owns both its UI event handlers and the orchestration logic specific to that
+feature:
+
+| File | Owns |
+|---|---|
+| `AnalysisBoardForm.cs` | Core board interaction, move tree, PGN/FEN load, settings wiring |
+| `AnalysisBoardForm.Analysis.cs` | Auto-analysis triggering, debounce/cancellation, caching |
+| `AnalysisBoardForm.Bot.cs` | Bot mode (play vs. engine), `BotModeController` |
+| `AnalysisBoardForm.Match.cs` | Engine-vs-engine match mode, `MatchModeController` |
+| `AnalysisBoardForm.Training.cs` | Training suite (puzzles, drills, opening/square/board-vision training), `TrainingModeController` |
+| `AnalysisBoardForm.Classification.cs` | Move quality classification (Brilliant/Blunder/etc.), game accuracy scoring |
+| `AnalysisBoardForm.PgnImportExport.cs` | Annotated PGN import/export |
+| `AnalysisBoardForm.Helpers.cs` | Shared small utility methods used across the other partials |
+| `AnalysisBoardForm.Designer.cs` | WinForms designer-generated layout |
+
+### Test projects
+
+- **`ChessDroid.Tests`** — xUnit, references only `ChessDroid.Core`. Covers
+  `MoveGenerator` (including perft tests for standard and Chess960 positions),
+  `ChessUtilities`, `Score`, `IsKingInCheck`/`IsKingMated` consistency.
+- **`ChessDroid.Tests.App`** — xUnit, references the real `chessdroid.csproj` so it can
+  exercise UI-adjacent logic (PGN round-trips through `PgnImportService`, the
+  `MovesExplanation` golden/snapshot corpus, `EngineMatchService` concurrency, perft via
+  the App's board types) without a WinForms message loop.
+- **`FakeUciEngine`** — a minimal console app that speaks just enough UCI protocol to
+  stand in for a real engine binary in `EngineMatchService` tests.
 
 ---
 
-## Module Descriptions
+## Data Flow
 
-### 1. **AnalysisBoardForm.cs** (Main Form)
-**Purpose:** The heart of chessdroid — a complete interactive workspace for deep chess analysis
+### Typical Analysis Flow:
 
-**Key Responsibilities:**
-- Interactive chess board with click-to-move
-- Engine arrows on board (green/yellow/red per PV line, separate from user arrows)
-- [See line] PV loading into move tree with animated playback
-- Free-draw right-click arrows (any square to any square)
-- Move quality badge overlaid on destination square during navigation
-- Move tree navigation with variation branching
-- Auto-analysis on every move, new game, and form open with result caching
-- Analysis debounce with cancellation token; stale-position check discards engine results that arrive after navigation
-- PGN import/export
-- Move classification (Brilliant, Blunder, Mistake, Inaccuracy)
-- Evaluation bar with smooth transitions
-- Engine match management (engine vs engine)
-- Bot mode — play vs Stockfish with configurable skill level; separate `ChessEngineService` instance so analysis engine keeps running
-- Custom board colors (light/dark squares) via `ColorDialog`, persisted as hex in `AppConfig`
-- FEN loading and copying
-- Settings access via ⚙ button
+```
+1. User makes a move on the Analysis Board
+   ↓
+2. Auto-analysis triggers (no button press needed) — unless suppressed by an active
+   mode (bot turn in progress, training panel open, auto-play running; see the guard
+   in AnalysisBoardForm.Analysis.cs's TriggerAutoAnalysis)
+   ↓
+3. Check analysis cache (ConcurrentDictionary)
+   ├─→ Cache hit: Display cached results instantly
+   └─→ Cache miss: Continue to step 4
+   ↓
+4. ChessEngineService sends "go" to the UCI engine process, reads "info"/"bestmove" lines
+   ↓
+5. EvaluationParser (Core) turns the info line's score into a Score struct
+   ↓
+6. MovesExplanation.GenerateMoveExplanation() called
+   ↓
+7. Parse move notation (ChessNotationService, Core) and create temp board
+   (ChessRulesService.ApplyUciMove, Core)
+   ↓
+8. Check features in priority order:
+   │
+   ├─→ StockfishFeatures.IsSingularMove() / DetectThreatCreation()
+   ├─→ DetectTacticalPattern() [30+ patterns]
+   ├─→ MoveEvaluation.DetectWinningCapture() [SEE]
+   ├─→ PositionalEvaluation.DetectPassedPawn() / DetectOutpost()
+   ├─→ EndgameAnalysis.DetectKPvK()
+   ├─→ AdvancedAnalysis.GetWinningChanceDescription()
+   └─→ Generic fallback
+   ↓
+9. Combine top 2 reasons into explanation via ConsoleOutputFormatter
+   ↓
+10. Display results with WDL, opening name, book moves, threats
+   ↓
+11. Cache results for instant replay
+```
 
-**Supporting Controls:**
-- `ChessBoardControl` — Renders pieces, engine arrows, user arrows, and move quality badge using PNG templates with Unicode fallback; `SetSquareColors()` applies custom board colors
-- `MoveTree.cs` / `MoveNode.cs` — Variation tree data structure
-- `MoveQualityAnalyzer.cs` — Centipawn loss classification; `isBestMove` checked before centipawn thresholds to prevent noise from two independent engine searches misclassifying the best move
-- `BotSettings.cs` / `BotSettingsDialog.cs` — Bot difficulty presets and programmatic settings dialog
-
----
-
-### 2. **MovesExplanation.cs** (Orchestrator)
-**Purpose:** Main coordinator that combines all analysis modules into human-readable explanations
-
-**Key Responsibilities:**
-- Parse UCI engine output (best moves, evaluations, PV lines)
-- Coordinate tactical and positional analysis
-- Generate natural language explanations
-- Priority management (which features to check first)
-
-**Explanation Priority Order:**
+**Explanation priority order** (`MovesExplanation`), unchanged since v3.0.0:
 ```
 1. Singular moves ("only good move")
 2. Forced moves (check evasion)
@@ -137,370 +197,153 @@ chessdroid is a pure offline chess analysis application that combines tactical p
 12. Generic positional improvement
 ```
 
-**Performance:** O(n) where n = number of pieces on board
-
 ---
 
-### 3. **PositionalEvaluation.cs** (Ethereal Phase 1)
-**Purpose:** Evaluate positional features inspired by Ethereal's evaluate.c
+## Module Reference
 
-**Features:**
+### MoveGenerator.cs (Core) — the single source of truth for legality
 
-#### **Pawn Structure:**
-- `DetectPassedPawn()` — No enemy pawns blocking promotion
-- `DetectConnectedPawns()` — Mutually supporting pawns
-- `DetectIsolatedPawn()` — No friendly pawns on adjacent files
-- `DetectDoubledPawns()` — Multiple pawns on same file
-- `DetectBackwardPawn()` — Stuck behind neighbors
+Consolidates what used to be independently-reimplemented legal-move-generation and
+check-detection logic scattered across `ChessRulesService`, `EngineMatchService`,
+`DefenseDetection`, and `ConsoleOutputFormatter`. Handles standard castling and Chess960
+castling (including the "king captures own rook" UCI notation) through the same legality
+path. Verified against published perft reference node counts for both variants
+(`MoveGeneratorPerftTests.cs`, `PerftTests.cs`). Everywhere else that needs
+"is this move legal" or "is this king in check" delegates here rather than re-deriving
+it — `IsKingInCheck` in `ChessRulesService`, `EngineMatchService`, and
+`ConsoleOutputFormatter`/`ChessUtilities` is now a thin redirect.
 
-#### **Piece Activity:**
-- `DetectOutpost()` — Piece immune to pawn attacks
-- `DetectHighMobility()` — Piece with many legal moves
-- `DetectLongDiagonalControl()` — Bishop on powerful diagonal
-- `DetectCentralControl()` — Controlling d4, e4, d5, e5
+### MovesExplanation.cs (App, Orchestrator)
+Combines all analysis modules into a single human-readable explanation string; see Data
+Flow above for the priority order. O(n) where n = number of pieces on board. Covered by
+a golden/snapshot test corpus (`MovesExplanationGoldenTests.cs`) rather than a
+correctness oracle — it locks today's behavior against unintended regressions without
+claiming today's wording is independently verified as "right."
 
-#### **King Safety:**
-- `DetectKingShelter()` — Pawn shield strength
-- `DetectWeakKingSquares()` — Vulnerable squares near king
+### PositionalEvaluation.cs (App, Ethereal Phase 1)
+Pawn structure (passed/connected/isolated/doubled/backward pawns), piece activity
+(outposts, mobility, long diagonals, central control), king safety (shelter, weak
+squares) — all inspired by Ethereal's `evaluate.c`.
 
----
-
-### 4. **MoveEvaluation.cs** (Ethereal Phase 2)
-**Purpose:** Advanced move evaluation with Static Exchange Evaluation (SEE)
-
-**Key Features:**
-
-#### **Static Exchange Evaluation (SEE):**
+### MoveEvaluation.cs (App, Ethereal Phase 2) — Static Exchange Evaluation
 ```csharp
 StaticExchangeEvaluation(board, targetRow, targetCol, attackingPiece, isWhite)
 ```
-- Simulates all captures on a square
-- Returns final material balance
-- Uses MVV-LVA (Most Valuable Victim — Least Valuable Attacker)
-- Check-aware: filters out attackers that can't recapture while in check
-- Pin-aware: filters out pinned pieces that can't legally capture
+Simulates all captures on a square using MVV-LVA ordering; check-aware (filters
+attackers that can't recapture while in check) and pin-aware (filters pinned pieces that
+can't legally capture). Returns the final material balance.
 
-**Algorithm:**
-```
-1. Initial capture: +victimValue
-2. Find all attackers to square (both sides)
-3. Alternately capture with least valuable piece
-4. Stop when one side refuses to recapture (would lose material)
-5. Return final material balance
-```
+### EndgameAnalysis.cs (App, Ethereal Phase 3)
+Game-phase detection by piece count (0–5 late endgame, 6–7 endgame, 8–11 transition, 12+
+middlegame/opening), rule of the square, king centralization, opposition, wrong-color
+bishop draws, FIDE insufficient-material rules, mop-up evaluation, passed-pawn/king
+tropism bonuses, fortress detection.
 
----
+### StockfishFeatures.cs (App, Stockfish-inspired)
+Threat-array construction (`BuildThreatArray`, O(n²) via `BoardCache`), singular-move
+detection (best vs. second-best eval gap ≥ 1.5 pawns), move-quality classification
+thresholds (Excellent/Good/Marginal/Bad/Terrible).
 
-### 5. **EndgameAnalysis.cs** (Ethereal Phase 3)
-**Purpose:** Endgame-specific knowledge and pattern recognition
-
-**Game Phase Detection:**
-```
-Piece Count    Phase
-0-5           Late Endgame (basic endgames)
-6-7           Endgame
-8-11          Transition
-12+           Middlegame/Opening
-```
-
-**Advanced Endgame Heuristics (Stockfish/Ethereal-inspired):**
-- Rule of the Square (unstoppable pawn detection)
-- King centralization scoring with lookup tables
-- Opposition detection (direct and distant)
-- Wrong color bishop + rook pawn draw detection
-- Insufficient material detection (FIDE rules)
-- Mop-up evaluation (push enemy king to corner)
-- Passed pawn advancement bonuses
-- King tropism to passed pawns
-- Fortress detection
-
----
-
-### 6. **StockfishFeatures.cs** (Stockfish High Priority)
-**Purpose:** Stockfish-inspired search and evaluation features
-
-**Key Features:**
-
-#### **Threat Array Detection:**
-```csharp
-BuildThreatArray(board, forWhite)
-```
-- Maps all squares attacked by each side
-- Groups attackers by target square
-- Identifies low-value attackers on high-value pieces
-
-#### **Singular Move Detection:**
-- Compares best move eval vs second-best eval
-- Gap >= 1.5 pawns = singular move ("only good move")
-
-#### **Move Quality Classification:**
-```
-Eval Change    Quality
-+1.0 or more   Excellent
-+0.3 to +1.0   Good
--0.3 to +0.3   Marginal
--1.0 to -0.3   Bad
--1.0 or worse   Terrible
-```
-
----
-
-### 7. **AdvancedAnalysis.cs** (Medium Priority)
-**Purpose:** Advanced user-friendly features
-
-**Key Features:**
-
-#### **Win Rate Model (Stockfish WDL):**
-```csharp
-EvalToWinningPercentage(eval, materialCount)
-```
-
-**Formula:**
+### AdvancedAnalysis.cs (App)
+Stockfish WDL win-rate model:
 ```
 WinRate = 50 + 50 * (2 / (1 + exp(-eval * scale)) - 1)
-
-Scale = {
-    0.0015  if materialCount <= 10 (endgame)
-    0.0012  if materialCount <= 20 (transition)
-    0.0010  if materialCount > 20 (opening/middlegame)
-}
+Scale = 0.0015 (≤10 pieces) | 0.0012 (≤20) | 0.0010 (>20)
 ```
+Plus detailed blunder explanations (what the blunder allows).
 
-#### **Blunder Explanations:**
-- Shows WHY moves are bad with detailed reasoning
-- Explains what the blunder allows (material loss, tactical vulnerability, positional collapse)
+### ThreatDetection.cs / DefenseDetection.cs (App)
+Before/after threat comparison — only reports threats *newly created* by a move, to
+avoid false positives. Threat types: HangingPiece, MaterialWin, Fork, Pin, Skewer,
+DiscoveredAttack, CheckmateThreat, Check, Promotion, TrappedPiece. Defense types:
+ProtectPiece, BlockAttack, Escape, ProtectKing.
 
----
+### ChessUtilities.cs (Core)
+Shared helpers used across analysis modules: `GetPieceValue` (exchange-oriented, King =
+100, used by SEE/MVV-LVA where a king can never be a "free" capture) vs.
+`GetMaterialValue` (counting-oriented, King = 0, used wherever material totals must
+exclude kings) — a deliberate, non-mergeable divergence, locked by
+`ChessUtilitiesTests.cs`. Also: attack detection, path validation, pin detection,
+`IsKingInCheck`/`IsKingMated` (delegating to `MoveGenerator`).
 
-### 8. **ThreatDetection.cs** (Threat Analysis)
-**Purpose:** Detects chess threats for both sides, showing NEW threats created by moves
+### BoardCache.cs (Core, Performance)
+Eliminates repeated O(n²) board scans via cached piece locations and attack maps.
+`IsSquareAttacked`/`GetKingPosition` are O(1) lookups; ~4–10x faster tactical analysis,
+~100x faster `BuildThreatArray` (O(n³) → O(n²)), ~2KB memory cost per position.
 
-**Threat Types Detected:**
-- HangingPiece — Undefended piece under attack
-- MaterialWin — Attacking higher value piece
-- Fork — Attacking multiple pieces
-- Pin — Piece pinned to more valuable piece/king
-- Skewer — Attacking through a piece
-- DiscoveredAttack — Moving reveals attack
-- CheckmateThreat — Threatening mate
-- Check — Giving check
-- Promotion — Pawn about to promote
-- TrappedPiece — Piece with no escape
+### ThemeService.cs / EnginePathResolver.cs (App)
+Theme management (8 themes, dark/light base schemes applied consistently across
+controls) and UCI engine binary auto-discovery (config → `Engines/` folder scan →
+`stockfish.exe` fallback).
 
-**Before/After Comparison:** Only shows NEW threats created by the move, preventing false positives.
+### Opening & Book Services
+- `OpeningDatabase.cs` (App) — lazy-loaded ECO lookup singleton (12,379+ positions)
+- `PolyglotBookService.cs` / `PolyglotBookReader.cs` / `PolyglotZobrist.cs` (Core) —
+  Polyglot `.bin` opening-book loading and Zobrist hashing
+- `EcoBookService.cs` / `EcoFileCache.cs` (App) — ECO file loading/caching
 
----
+### MoveSharpnessAnalyzer.cs (App)
+Scores move "sharpness" (captures/sacrifices/pawn breaks/checks = aggressive; castling/
+quiet development/defense = solid) for style-based move filtering (0 = solid, 100 =
+aggressive), used by the engine analysis strategy.
 
-### 9. **DefenseDetection.cs** (Defense Analysis)
-**Purpose:** Detects defensive aspects of moves
-
-**Defense Types Detected:**
-- ProtectPiece — Newly defending a piece
-- BlockAttack — Blocking an attack on valuable piece
-- Escape — Moving attacked piece to safety
-- ProtectKing — Improving king safety
-
----
-
-### 10. **ChessUtilities.cs** (Core Performance Layer)
-**Purpose:** Consolidated shared utility functions used across all analysis modules
-
-**Key Features:**
-- Piece Operations: `GetPieceValue()`, `GetPieceName()`
-- Attack Detection: `CanAttackSquare()`, `IsSquareDefended()`, `CountAttackers()`
-- Path Validation: `IsDiagonalClear()`, `IsLineClear()`, `IsPathClear()`
-- Advanced Helpers: `IsPiecePinned()`, `GetAttackers()`
-
----
-
-### 11. **BoardCache.cs** (Performance Optimization Layer)
-**Purpose:** Eliminates repeated O(n^2) board scans by caching piece locations and attack maps
-
-**Core Methods:**
-```csharp
-GetPieces(isWhite)                    // All pieces for a color
-GetPiecesByType(type, isWhite)        // Specific piece type
-IsSquareAttacked(row, col, byWhite)   // HashSet lookup (O(1))
-GetKingPosition(isWhite)              // Cached position (O(1))
-```
-
-**Performance Impact:**
-- 4-10x faster tactical analysis
-- ~100x faster BuildThreatArray (O(n^3) -> O(n^2))
-- ~2KB memory cost per position
+### Score.cs (Core)
+`readonly record struct Score(int? Cp, int? Mate)` — typed replacement for hand-
+formatted eval strings at the point they're produced (`ChessEngineService`'s three eval-
+string-formatting call sites). The 5 downstream parsers of eval strings were **not**
+unified onto `Score`, because they have genuinely incompatible numeric semantics (flat
+±100 scoring, distance-scaled ±10–15, sort-dominant ±100000, exact-preserved) — see
+`ScoreTests.cs` for the locked string format.
 
 ---
 
-### 12. **ThemeService.cs** (UI Theme Management)
-**Purpose:** Centralized theme management for dark and light modes
+## Known Gaps (tracked against CHESSDROID_AUDIT.md)
 
-**Architecture:**
-```csharp
-public class ThemeService
-{
-    private static readonly ColorScheme DarkScheme = new ColorScheme { ... };
-    private static readonly ColorScheme LightScheme = new ColorScheme { ... };
+These remain open, deliberately deferred rather than attempted blind:
 
-    public static void ApplyTheme(Form form, ..., bool isDarkMode)
-}
-```
-
-- Dark mode (RGB 45, 45, 48 base) and Light mode (WhiteSmoke base)
-- 14+ color properties including Analysis Board-specific colors
-- Applies to all UI controls consistently
+- **`GameSession` extraction / full `TrainingPanel` extraction / full `IModeController`
+  rewrite** — `AnalysisBoardForm` still owns a large amount of per-mode state directly
+  rather than through an extracted session/panel abstraction. The current
+  `IModeController` is intentionally narrow (see above). A full extraction touches
+  enough UI wiring and timing-sensitive behavior (training panel visibility, bot-turn
+  gating, match-board refresh) that it needs live GUI verification, not just unit tests,
+  to do safely.
+- **Analyzer/`.editorconfig` cleanup** — enabling `AnalysisLevel=latest-recommended`
+  surfaces 1,040 warnings (864 in `src/`) on this pre-existing codebase. Investigated,
+  not attempted; a real future task, explicitly deferred by user choice rather than
+  silently skipped.
 
 ---
 
-### 13. **EnginePathResolver.cs** (Engine Discovery)
-**Purpose:** Automatic discovery and resolution of chess engine paths
-
-**Auto-Discovery Algorithm:**
-```
-1. Check if config has SelectedEngine
-2. If not: scan Engines folder for .exe files
-3. Return first found engine, save to config
-4. Fallback to "stockfish.exe" if none found
-```
-
----
-
-### 14. **Opening & Book Services**
-**Purpose:** Opening recognition and book move lookup
-
-- **OpeningDatabase.cs** — Lazy-loaded singleton for ECO lookups (12,379+ positions)
-- **PolyglotBookService.cs** — Multi-book loading from `.bin` files (1M+ positions)
-- **PolyglotBookReader.cs** — Binary file parser for Polyglot format
-- **PolyglotZobrist.cs** — Polyglot-compatible Zobrist hash computation
-
----
-
-### 15. **MoveSharpnessAnalyzer.cs** (Play Style)
-**Purpose:** Evaluates move "sharpness" for style-based filtering
-
-**Sharpness scoring factors:**
-- Captures and sacrifices (more aggressive)
-- Pawn breaks and central pushes (more aggressive)
-- Checks and forcing moves (more aggressive)
-- Castling and quiet development (more solid)
-- Defensive moves (more solid)
-
-Used by EngineAnalysisStrategy to filter moves based on user's style preference (0=solid, 100=aggressive).
-
----
-
-## Data Flow
-
-### Typical Analysis Flow (v3.0.0):
-
-```
-1. User makes a move on the Analysis Board
-   ↓
-2. Auto-analysis triggers (no button press needed)
-   ↓
-3. Check analysis cache (ConcurrentDictionary)
-   ├─→ Cache hit: Display cached results instantly
-   └─→ Cache miss: Continue to step 4
-   ↓
-4. UCI Engine calculates best moves + evaluations
-   ↓
-5. MovesExplanation.GenerateMoveExplanation() called
-   ↓
-6. Parse move notation and create temp board
-   ↓
-7. Check features in priority order:
-   │
-   ├─→ StockfishFeatures.IsSingularMove()
-   ├─→ StockfishFeatures.DetectThreatCreation()
-   ├─→ DetectTacticalPattern() [30+ patterns]
-   ├─→ MoveEvaluation.DetectWinningCapture() [SEE]
-   ├─→ PositionalEvaluation.DetectPassedPawn()
-   ├─→ PositionalEvaluation.DetectOutpost()
-   ├─→ EndgameAnalysis.DetectKPvK()
-   ├─→ AdvancedAnalysis.GetWinningChanceDescription()
-   └─→ Generic fallback
-   ↓
-8. Combine top 2 reasons into explanation
-   ↓
-9. Display results with WDL, opening name, book moves, threats
-   ↓
-10. Cache results for instant replay
-```
-
----
-
-## Performance Characteristics
-
-### Time Complexity by Module:
-
-| Module | Average Case | Worst Case | Notes |
-|--------|-------------|------------|-------|
-| Tactical Detection | O(n) | O(n^2) | n = pieces on board |
-| Pawn Structure | O(p) | O(p^2) | p = pawns on board |
-| Piece Activity | O(n) | O(n^2) | With mobility checks |
-| SEE Calculation | O(a) | O(a^2) | a = attackers to square |
-| Threat Array | O(n^2) | O(n^3) | Builds full attack map |
-| Endgame Detection | O(1) | O(n) | Simple pattern matching |
-| Win Rate Model | O(1) | O(1) | Pure calculation |
-| Analysis Cache | O(1) | O(1) | ConcurrentDictionary lookup |
-
-### Space Complexity:
-
-| Module | Space Used | Cacheable |
-|--------|-----------|-----------|
-| PositionalEvaluation | O(1) | No (stateless) |
-| MoveEvaluation | O(n) | Attacker lists |
-| StockfishFeatures | O(n^2) | Threat arrays |
-| EndgameAnalysis | O(1) | No (stateless) |
-| AdvancedAnalysis | O(m) | m = history entries |
-| OptimizationHelpers | O(k) | k = cache entries |
-| Analysis Cache | O(p) | p = analyzed positions |
-
----
-
-## Folder Structure
+## Folder Structure (build artifacts, assets)
 
 ```
 chessdroid/
-├── test/                          # Main project directory
-│   ├── Program.cs                 # Entry point → AnalysisBoardForm
-│   ├── AnalysisBoardForm.cs       # Main form (analysis board)
-│   ├── AnalysisBoardForm.Designer.cs
-│   ├── SettingsForm.cs            # Settings dialog
-│   ├── HelpForm.cs                # Help dialog
-│   ├── AppConfig.cs               # Configuration management
-│   ├── Controls/
-│   │   └── ChessBoardControl.cs   # Board rendering control
-│   ├── Models/
-│   │   ├── MoveTree.cs            # Variation tree
-│   │   ├── MoveNode.cs            # Tree node
-│   │   ├── BotSettings.cs         # Bot difficulty presets + BotDifficulty enum
-│   │   ├── BookMove.cs            # Opening book move
-│   │   └── ...
-│   ├── BotSettingsDialog.cs       # Programmatic bot config dialog (no designer)
-│   └── Services/
-│       ├── ChessEngineService.cs  # UCI engine communication + SetSkillLevelAsync()
-│       ├── ThemeService.cs        # Dark/light theme management
-│       ├── EnginePathResolver.cs  # Engine discovery
-│       ├── MoveQualityAnalyzer.cs # Centipawn loss classification
-│       ├── OpeningDatabase.cs     # ECO lookups
-│       ├── PolyglotBookService.cs # Opening book lookups
-│       └── ...
-├── Templates/                     # Piece set images (gitignored)
-│   ├── Chess.com/                 # 12 PNGs (wK, wQ, ..., bP)
-│   └── Lichess/                   # 12 PNGs
-├── Engines/                       # UCI engines (gitignored)
-│   └── stockfish17.exe
-├── Books/                         # Opening books
-│   ├── codekiddy.bin              # Polyglot book (~1M positions)
-│   └── ecoA-E.json               # ECO database
-└── config.json                    # User settings (gitignored)
+├── src/
+│   ├── ChessDroid.Core/chessdroid.core.csproj
+│   └── ChessDroid.App/
+│       ├── chessdroid.csproj
+│       ├── Templates/                 # Piece set images (gitignored)
+│       │   ├── Chess.com/             # 12 PNGs (wK, wQ, ..., bP)
+│       │   └── Lichess/               # 12 PNGs
+│       ├── Engines/                   # UCI engines (gitignored)
+│       │   └── stockfish17.exe
+│       ├── Books/                     # Opening books
+│       │   ├── codekiddy.bin          # Polyglot book (~1M positions)
+│       │   └── ecoA-E.json            # ECO database
+│       └── config.json                # User settings (gitignored)
+├── tests/
+│   ├── ChessDroid.Tests/
+│   ├── ChessDroid.Tests.App/
+│   └── FakeUciEngine/
+└── Directory.Build.props              # <Version>3.21.1</Version>, shared across all projects
 ```
 
 ---
 
 ## Configuration & Tuning
 
-### AppConfig.cs — Key Properties (v3.2.x additions):
+### AppConfig.cs — representative properties:
 ```csharp
 public string LightSquareColor { get; set; } = "#F0D9B5"; // hex, persisted to config.json
 public string DarkSquareColor  { get; set; } = "#B58863"; // hex, persisted to config.json
@@ -531,35 +374,44 @@ Midgame:  scale = 0.0010
 
 ## Extension Points
 
-### Adding New Tactical Patterns:
-```csharp
-// In MovesExplanation.cs DetectTacticalPattern()
-if (IsMyNewPattern(board, ...))
-    return "my new pattern description";
-```
+### Adding a new tactical pattern:
+Add detection logic in `MovesExplanation.cs`'s `DetectTacticalPattern()` (App), returning
+a description string. If the underlying check is a pure board-position query reusable
+outside the UI, consider whether it belongs in `ChessDroid.Core` instead.
 
-### Adding New Positional Features:
+### Adding a new positional feature:
 ```csharp
 // In PositionalEvaluation.cs
 public static string? DetectMyFeature(ChessBoard board, ...)
 {
-    // Analysis logic
     return "feature description";
 }
 ```
 
-### Adding New Piece Sets:
-Create a folder in `Templates/` with 12 PNG files named: wK, wQ, wR, wB, wN, wP, bK, bQ, bR, bB, bN, bP. The folder will automatically appear in the piece set dropdown.
+### Adding a new piece set:
+Create a folder in `Templates/` with 12 PNG files named: wK, wQ, wR, wB, wN, wP, bK, bQ,
+bR, bB, bN, bP. The folder will automatically appear in the piece set dropdown.
+
+### Adding a Core vs. App decision:
+If the new code needs nothing but a `ChessBoard`/FEN and produces a value, string, or
+bool — `ChessDroid.Core`, and add coverage in `ChessDroid.Tests`. If it touches
+`ChessEngineService`, a `Form`/`Control`, file I/O, or `AppConfig` — `ChessDroid.App`,
+and add coverage in `ChessDroid.Tests.App`.
 
 ---
 
 ## Testing Strategy
 
-### Target Performance:
-- Position analysis: < 50ms per position
-- Explanation generation: < 100ms total
-- Analysis with cache hit: < 1ms
-- Memory footprint: < 10MB for typical game
+- **Core logic** (`ChessDroid.Tests`): correctness-critical paths (move generation,
+  check detection, notation conversion) are perft-verified or cross-checked against an
+  independently-constructed ground-truth corpus, not just asserted against the
+  implementation's own prior output.
+- **App logic** (`ChessDroid.Tests.App`): PGN round-trips through real `ChessBoard`
+  positions, `EngineMatchService` concurrency (via `FakeUciEngine`), and a golden/
+  snapshot corpus for `MovesExplanation` output.
+- **Target performance:** position analysis < 50ms; explanation generation < 100ms
+  total; analysis with cache hit < 1ms.
+- 158 tests total (92 Core + 66 App) as of this writing, all green in Debug and Release.
 
 ---
 
@@ -589,7 +441,7 @@ Create a folder in `Templates/` with 12 PNG files named: wK, wQ, wR, wB, wN, wP,
 
 **v3.21.1** — see CHANGELOG.md for the full, up-to-date version history from here; this
 section was last kept current at v3.18.0 and isn't being hand-maintained in parallel with
-CHANGELOG.md going forward — see the note at the top of this document.
+CHANGELOG.md going forward.
 
 **v3.18.0** — The Arena
 - Tournament Mode — simultaneous engine matches on a 2×2 live board grid; round-robin and manual pairing; live standings; full PGN auto-saved
@@ -754,5 +606,5 @@ https://github.com/jio1337/chessdroid/issues
 
 ---
 
-**Last Updated:** 2026-11-23 (version-number fix only — see the note under "System Architecture" above; module descriptions below are not yet current)
+**Last Updated:** 2026-11-23 — full rewrite reflecting the Core/App split
 **Document Version:** 3.21.1
