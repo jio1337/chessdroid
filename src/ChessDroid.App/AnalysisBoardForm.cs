@@ -24,6 +24,15 @@ namespace ChessDroid
         private ConcurrentDictionary<string, CachedAnalysis> _analysisCache = new();
         private int _cachedDepth = 0; // Track the depth used for cached analyses
 
+        // Positions already proven to have no legal moves (checkmate/stalemate). A terminal
+        // position was never cached in _analysisCache (there's no bestMove to store), so
+        // revisiting one — e.g. navigating away and back — re-ran a full engine search purely
+        // to rediscover "no legal moves" before the checkmate animation/sound could fire
+        // again, which is what made repeated re-triggering feel laggy. Depth-independent
+        // (no legal moves regardless of depth), so unlike _analysisCache this never needs
+        // invalidating on a depth-setting change.
+        private readonly ConcurrentDictionary<string, byte> _knownTerminalPositions = new();
+
         // Classification lookup for O(1) DrawItem color lookups
         private Dictionary<MoveNode, MoveReviewResult>? _classificationLookup;
 
