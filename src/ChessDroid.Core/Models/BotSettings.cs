@@ -3,8 +3,8 @@ namespace ChessDroid.Models
     public class BotSettings
     {
         public int  EloTarget     { get; set; } = 1500;
-        public bool BotPlaysWhite { get; set; } = false;
-        public bool ChallengeMode { get; set; } = false;
+        public bool BotPlaysWhite { get; set; }
+        public bool ChallengeMode { get; set; }
         public string EngineFileName { get; set; } = "";
 
         // Fallback Skill Level for engines that don't support UCI_LimitStrength

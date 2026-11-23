@@ -68,7 +68,7 @@ namespace ChessDroid
         // ── Results export ───────────────────────────────────────────────────
         private readonly List<string> _allPgnGames  = new();
         private int    _roundCounter   = 1;
-        private int    _totalMatchCount = 0;
+        private int    _totalMatchCount;
         private string _tcDescription  = "";
         private string _tcPgnTag       = "";
 

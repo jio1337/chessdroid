@@ -10,7 +10,7 @@ namespace ChessDroid.Models
         // Zobrist hashing for fast position comparison
         private static readonly ulong[,] ZobristTable;
         private static readonly Dictionary<char, int> PieceIndex;
-        private ulong? cachedHash = null;
+        private ulong? cachedHash;
 
         // Cached king positions for O(1) lookup (eliminates 20+ O(n²) scans)
         private int whiteKingRow = -1, whiteKingCol = -1;

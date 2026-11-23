@@ -42,19 +42,19 @@ namespace ChessDroid.Controls
         private string _blackName = "";
 
         private int    _gamesTotal   = 1;
-        private int    _gamesPlayed  = 0;
-        private double _score1       = 0;   // engine that played White in game 1
-        private double _score2       = 0;
-        private int    _wins1        = 0;
-        private int    _wins2        = 0;
-        private int    _drawCount    = 0;
+        private int    _gamesPlayed;
+        private double _score1;   // engine that played White in game 1
+        private double _score2;
+        private int    _wins1;
+        private int    _wins2;
+        private int    _drawCount;
         private string _eng1File     = "";
         private string _eng2File     = "";
         private string _eng1Name     = "";
         private string _eng2Name     = "";
         private string _curWhiteFile = "";
 
-        private bool _isExpanded    = false;
+        private bool _isExpanded;
         private int  _fullMoveNum   = 1;
         private bool _whiteToMove   = true;
 

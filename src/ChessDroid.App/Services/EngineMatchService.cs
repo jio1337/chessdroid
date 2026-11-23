@@ -34,12 +34,12 @@ namespace ChessDroid.Services
         private CancellationTokenSource? matchCts;
 
         // Animation sync — set WaitForAnimation = true when board animations are enabled
-        public bool WaitForAnimation { get; set; } = false;
+        public bool WaitForAnimation { get; set; }
 
         // Adjudication — resign when |eval| >= 500cp for 10 plies; draw when |eval| <= 10cp for 10 plies
         // Thresholds aligned with Lichess (600cp resign / 10cp draw / 10 plies).
         // Draw cp matches exactly; resign cp kept at 500 (slightly more aggressive).
-        public bool AdjudicationEnabled { get; set; } = false;
+        public bool AdjudicationEnabled { get; set; }
         private const int AdjudicateResignCp = 500;
         private const int AdjudicateDrawCp   = 10;
         private const int AdjudicatePlies    = 10;

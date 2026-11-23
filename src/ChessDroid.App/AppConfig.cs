@@ -5,15 +5,15 @@ namespace ChessDroid
     public class EngineProfile
     {
         public string DisplayName { get; set; } = "";
-        public int Elo { get; set; } = 0;              // CCRL reference rating, manually set
-        public int ChessdroidElo { get; set; } = 0;    // Dynamic rating from in-app matches; 0 = not yet seeded
-        public int GamesPlayed { get; set; } = 0;      // Games played inside Chessdroid
+        public int Elo { get; set; }              // CCRL reference rating, manually set
+        public int ChessdroidElo { get; set; }    // Dynamic rating from in-app matches; 0 = not yet seeded
+        public int GamesPlayed { get; set; }      // Games played inside Chessdroid
     }
 
     public class TrainingPersonalBest
     {
-        public int BestCorrect { get; set; } = 0;
-        public int BestQuestions { get; set; } = 0;
+        public int BestCorrect { get; set; }
+        public int BestQuestions { get; set; }
         public double BestTime { get; set; } = double.MaxValue;
         public double BestTimePerQuestion { get; set; } = double.MaxValue; // BestTime/BestCorrect — comparable across round sizes
         public string LastSet { get; set; } = ""; // ISO date "yyyy-MM-dd" when this PB was last beaten
@@ -21,10 +21,10 @@ namespace ChessDroid
 
     public class OpeningStats
     {
-        public int TotalRuns { get; set; } = 0;
-        public int PerfectRuns { get; set; } = 0;
-        public int TotalHintsUsed { get; set; } = 0;
-        public int TotalMistakes { get; set; } = 0;       // cumulative wrong-move attempts across all runs
+        public int TotalRuns { get; set; }
+        public int PerfectRuns { get; set; }
+        public int TotalHintsUsed { get; set; }
+        public int TotalMistakes { get; set; }       // cumulative wrong-move attempts across all runs
         public int BestRunMistakes { get; set; } = int.MaxValue; // min wrong attempts in a single run; 0 = clean run achieved
         public string LastAttempted { get; set; } = "";   // ISO date "yyyy-MM-dd"
     }
@@ -44,8 +44,8 @@ namespace ChessDroid
 
         public string SelectedSite { get; set; } = "Lichess"; // "Lichess" or "Chess.com"
         public bool ShowBestLine { get; set; } = true; // Show best line
-        public bool ShowSecondLine { get; set; } = false; // Show 2nd best line
-        public bool ShowThirdLine { get; set; } = false; // Show 3rd best line
+        public bool ShowSecondLine { get; set; } // Show 2nd best line
+        public bool ShowThirdLine { get; set; } // Show 3rd best line
         public bool ShowEngineArrows { get; set; } = true; // Kept for JSON backward compatibility
         public int EngineArrowCount { get; set; } = 1;    // 0=none, 1=best only, 2=best+2nd, 3=all 3
         public bool ShowEvalBar { get; set; } = true; // Show evaluation bar
@@ -53,12 +53,12 @@ namespace ChessDroid
         // Board square colors (hex strings e.g. "#F0D9B5")
         public string LightSquareColor { get; set; } = "#F0D9B5";
         public string DarkSquareColor { get; set; } = "#B58863";
-        public bool MonochromeBoard { get; set; } = false;
-        public bool ShowSquareLabels { get; set; } = false;
+        public bool MonochromeBoard { get; set; }
+        public bool ShowSquareLabels { get; set; }
         public bool ShowCoordinates { get; set; } = true;
 
         // Visual aids
-        public bool ShowThreatArrows { get; set; } = false;
+        public bool ShowThreatArrows { get; set; }
         public bool ShowBookArrows { get; set; } = true;
         public bool ShowEvalGraph { get; set; } = true;
         public bool ShowAnimations { get; set; } = true;
@@ -71,11 +71,11 @@ namespace ChessDroid
         public string MovementMode { get; set; } = "Both";
 
         // Board visual effects
-        public bool GradientBoard { get; set; } = false;
-        public bool BoardVignette { get; set; } = false;
+        public bool GradientBoard { get; set; }
+        public bool BoardVignette { get; set; }
         public int  VignetteAlpha { get; set; } = 110;
-        public bool PieceGlow { get; set; } = false;
-        public bool BoardFrame { get; set; } = false;
+        public bool PieceGlow { get; set; }
+        public bool BoardFrame { get; set; }
         public int BoardFrameWidth { get; set; } = 26;
         public string BoardFrameColor { get; set; } = "#503219";
 
@@ -83,21 +83,21 @@ namespace ChessDroid
         public bool SoundEffectsEnabled { get; set; } = true;
 
         // Training records
-        public int PuzzleRushBest { get; set; } = 0; // kept for backward compat; prefer PuzzleRushBestByMinutes
+        public int PuzzleRushBest { get; set; } // kept for backward compat; prefer PuzzleRushBestByMinutes
         public Dictionary<int, int> PuzzleRushBestByMinutes { get; set; } = new(); // keyed by duration in minutes (1–5)
-        public int PuzzleTrainingBestStreak { get; set; } = 0;
+        public int PuzzleTrainingBestStreak { get; set; }
         public string PuzzleTrainingBestStreakDate { get; set; } = "";
-        public int PuzzleTrainingTotalAttempted { get; set; } = 0;
-        public int PuzzleTrainingTotalClean { get; set; } = 0;
-        public int GauntletBestStreak { get; set; } = 0;
+        public int PuzzleTrainingTotalAttempted { get; set; }
+        public int PuzzleTrainingTotalClean { get; set; }
+        public int GauntletBestStreak { get; set; }
         public string GauntletBestStreakDate { get; set; } = "";
         public List<int> GauntletRecentScores { get; set; } = new(); // last 5 session scores
-        public int VisionBestStreak { get; set; } = 0;
+        public int VisionBestStreak { get; set; }
         public bool PuzzleAutoNext { get; set; } = true;
         public string DailyPuzzleLastSolvedDate { get; set; } = "";
-        public int    DailyPuzzleStreak         { get; set; } = 0;
-        public int    DailyPuzzleBestStreak     { get; set; } = 0;
-        public int    DailyPuzzleCleanSolves    { get; set; } = 0;
+        public int    DailyPuzzleStreak         { get; set; }
+        public int    DailyPuzzleBestStreak     { get; set; }
+        public int    DailyPuzzleCleanSolves    { get; set; }
         public bool VisionAutoNext { get; set; } = true;
 
         // Explanation settings
@@ -105,7 +105,7 @@ namespace ChessDroid
         public bool ShowPositionalAnalysis { get; set; } = true; // Show positional evaluation
         public bool ShowEndgameAnalysis { get; set; } = true; // Show endgame patterns
         public bool ShowOpeningPrinciples { get; set; } = true; // Show opening principles
-        public bool ShowSEEValues { get; set; } = false; // SEE runs internally, no longer displayed
+        public bool ShowSEEValues { get; set; } // SEE runs internally, no longer displayed
         public bool ShowThreats { get; set; } = true; // Show threats analysis
         public bool ShowWDL { get; set; } = true; // Show Win/Draw/Loss probabilities (Lc0-inspired)
 
@@ -117,7 +117,7 @@ namespace ChessDroid
 
 
         // Analysis mode
-        public bool ContinuousAnalysis { get; set; } = false; // true = go infinite live updates, false = fixed depth
+        public bool ContinuousAnalysis { get; set; } // true = go infinite live updates, false = fixed depth
         public bool ShowExplanations { get; set; } = true;    // false = raw depth header + clickable PVs only
         public int AutoPlayInterval { get; set; } = 600; // ms between moves during auto-play (200-2000)
 

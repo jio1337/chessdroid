@@ -9,7 +9,7 @@ namespace ChessDroid
         private bool _whiteToMove = true;
         private bool _castleWK = true, _castleWQ = true, _castleBK = true, _castleBQ = true;
 
-        private char _selectedPiece = '\0'; // '\0' = nothing selected; '.' = erase
+        private char _selectedPiece; // '\0' = nothing selected; '.' = erase
         private Panel? _highlightedCell;
         private Dictionary<char, Image?> _images = new();
         private Panel[] _paletteCells = Array.Empty<Panel>();

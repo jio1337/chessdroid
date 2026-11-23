@@ -19,8 +19,8 @@ namespace ChessDroid
         private static readonly Color TrainingErrorColor = Color.FromArgb(175, 215, 50, 50);
         private static readonly Color TrainingOkColor    = Color.FromArgb(175, 50, 205, 50);
 
-        private bool _trainingUiVisible = false;
-        private bool _trainingGameActive = false;
+        private bool _trainingUiVisible;
+        private bool _trainingGameActive;
         private string? _trainingPreFen;
         private bool _trainingPreFlipped;
         private int  _trainingTargetRow, _trainingTargetCol;
@@ -131,7 +131,7 @@ namespace ChessDroid
         private Panel?  _pnlRatingRow;
         private Button? _ratingBtnAny, _ratingBtnBeg, _ratingBtnInt, _ratingBtnAdv, _ratingBtnMaster;
         private Label?  _lblRatingRange;
-        private int     _puzzleRatingMin = 0;
+        private int     _puzzleRatingMin;
         private int     _puzzleRatingMax = int.MaxValue;
         private Label?  _lblGauntletDesc;
         private int     _rushDurationSeconds = 180;

@@ -18,7 +18,7 @@ namespace ChessDroid.Services
 
         // Dictionary mapping FEN piece placement -> Opening info
         private readonly Dictionary<string, OpeningInfo> _openings = new();
-        private bool _isLoaded = false;
+        private bool _isLoaded;
 
         public class OpeningInfo
         {

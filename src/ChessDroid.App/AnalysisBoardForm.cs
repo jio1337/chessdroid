@@ -22,7 +22,7 @@ namespace ChessDroid
         // Analysis cache - keyed by FEN (position only, not full FEN with move counters)
         // Thread-safe for concurrent async access
         private ConcurrentDictionary<string, CachedAnalysis> _analysisCache = new();
-        private int _cachedDepth = 0; // Track the depth used for cached analyses
+        private int _cachedDepth; // Track the depth used for cached analyses
 
         // Positions already proven to have no legal moves (checkmate/stalemate). A terminal
         // position was never cached in _analysisCache (there's no bestMove to store), so
@@ -50,7 +50,7 @@ namespace ChessDroid
 
         // Game state - move tree for variations support
         private MoveTree moveTree = null!;
-        private bool isNavigating = false;
+        private bool isNavigating;
 
         // Move list grid — one MovePair per ListBox row
         private sealed class MovePair
@@ -69,7 +69,7 @@ namespace ChessDroid
         // Engine match
         private EngineMatchService? matchService;
         private System.Windows.Forms.Timer clockTimer = null!;
-        private bool matchRunning = false;
+        private bool matchRunning;
         private double? _previousMatchEval; // Track previous eval for brilliant move detection
 
         // Tracks the actual tip of a live engine match (Engine Match / Drill Watch Engines),
@@ -108,7 +108,7 @@ namespace ChessDroid
             _bookArrowsActive = false;
         }
 
-        private bool _awaitingMatchAnimation = false;
+        private bool _awaitingMatchAnimation;
         private int _matchWhiteElo;
         private int _matchBlackElo;
         private string _matchWhiteFileName = "";
@@ -116,9 +116,9 @@ namespace ChessDroid
         private string[] _matchEngineFiles = [];
         // Series tracking
         private int    _seriesTotal    = 1;
-        private int    _seriesPlayed   = 0;
-        private double _seriesEng1Score = 0;
-        private double _seriesEng2Score = 0;
+        private int    _seriesPlayed;
+        private double _seriesEng1Score;
+        private double _seriesEng2Score;
         private string _seriesEng1File = "";
         private string _seriesEng2File = "";
         private string _seriesCurrentWhiteFile = "";
@@ -139,21 +139,21 @@ namespace ChessDroid
         private Modes.IModeController? CurrentModeController;
 
         // Bot mode
-        private bool _botModeActive  = false;
-        private bool _chess960Active = false;
-        private bool _drillBotActive   = false; // true while a drill Practice vs Bot session is running
-        private bool _drillWatchActive = false; // true while a drill Watch Engines session is running
+        private bool _botModeActive;
+        private bool _chess960Active;
+        private bool _drillBotActive; // true while a drill Practice vs Bot session is running
+        private bool _drillWatchActive; // true while a drill Watch Engines session is running
         private Dictionary<string, int> _watchPositionCounts = new();
-        private bool _matchPanelActive = false;
+        private bool _matchPanelActive;
         private BotSettings? _botSettings;
         private ChessEngineService? _botEngine;
         private Dictionary<string, int> _botPositionCounts = new();
         private CancellationTokenSource? _botMoveCts;
         private Task? _botMoveTask; // in-flight MakeBotMoveAsync, awaited before disposing _botEngine
         private AppConfig? _challengeSnapshot; // non-null while challenge mode is active
-        private bool _bookArrowsActive = false; // true when book arrows are shown (suppress engine arrows)
+        private bool _bookArrowsActive; // true when book arrows are shown (suppress engine arrows)
         private System.Windows.Forms.Timer _autoPlayTimer = null!;
-        private bool _autoPlaying = false;
+        private bool _autoPlaying;
 
         // Piece set hover preview — query the combobox's internal listbox for the hovered item
         [StructLayout(LayoutKind.Sequential)]
@@ -176,11 +176,10 @@ namespace ChessDroid
         // Board color hover preview
         private string _boardColorSavedLight = "";
         private string _boardColorSavedDark = "";
-        private bool _boardColorSavedRainbow = false;
-        private bool _boardColorSavedWave = false;
-        private bool _boardColorSavedMonochrome = false;
+        private bool _boardColorSavedRainbow;
+        private bool _boardColorSavedWave;
+        private bool _boardColorSavedMonochrome;
         private int  _boardColorSavedIndex = -1;
-        private bool _restoringBoardColor = false;
         private System.Windows.Forms.Timer? _boardColorHoverTimer;
         private System.Windows.Forms.Timer? _drillHoverTimer;
         private int _drillHoverLastIdx = -1;
@@ -682,8 +681,6 @@ namespace ChessDroid
 
         private void CmbBoardColor_SelectedIndexChanged(object? sender, EventArgs e)
         {
-            if (_restoringBoardColor) return;
-
             int idx = cmbBoardColor.SelectedIndex;
             if (idx < 0) return;
 

@@ -7,7 +7,7 @@ namespace ChessDroid.Controls
         private Dictionary<char, Image?> _images = new();
         private string _templateSet = "";
         private char[] _pieces = Array.Empty<char>();
-        private int _advantage = 0;
+        private int _advantage;
         private bool _isDarkMode = true;
         private readonly Font _advFont;
         private readonly SolidBrush _brush;

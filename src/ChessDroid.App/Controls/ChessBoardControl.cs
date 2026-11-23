@@ -13,7 +13,7 @@ namespace ChessDroid.Controls
     {
         // Board state
         private ChessBoard board;
-        private bool isFlipped = false;
+        private bool isFlipped;
         private bool whiteToMove = true;
 
         // Castling rights
@@ -23,11 +23,11 @@ namespace ChessDroid.Controls
         private bool blackQueensideCastle = true;
 
         // Chess960 mode — uses king-to-rook castling encoding; tracks rook starting files.
-        private bool _chess960Mode = false;
+        private bool _chess960Mode;
         private int _wKsRookFile = 7;   // white kingside rook starting file index
-        private int _wQsRookFile = 0;   // white queenside rook starting file index
+        private int _wQsRookFile;   // white queenside rook starting file index
         private int _bKsRookFile = 7;   // black kingside rook starting file index
-        private int _bQsRookFile = 0;   // black queenside rook starting file index
+        private int _bQsRookFile;   // black queenside rook starting file index
 
         // En passant target square (-1, -1 if none)
         private int enPassantRow = -1;
@@ -36,7 +36,7 @@ namespace ChessDroid.Controls
         // FEN halfmove clock (resets on pawn move/capture, else increments) and fullmove
         // number (increments after Black's move). Tracked so GetFEN() stops always
         // reporting "0 1" — the engine needs the halfmove clock for 50-move/Syzygy logic.
-        private int halfmoveClock = 0;
+        private int halfmoveClock;
         private int fullmoveNumber = 1;
 
         // Selection state
@@ -45,7 +45,7 @@ namespace ChessDroid.Controls
         private HashSet<(int row, int col)> legalMoveSquares = new HashSet<(int, int)>();
 
         // Drag state
-        private bool isDragging = false;
+        private bool isDragging;
         private int dragFromRow = -1;
         private int dragFromCol = -1;
         private char dragPiece = '.';
@@ -53,12 +53,12 @@ namespace ChessDroid.Controls
 
         private const int DRAG_THRESHOLD = 5; // Pixels before drag starts
         private Point mouseDownPosition = Point.Empty;
-        private bool mouseDownOnPiece = false;
-        private bool _selectionMadeThisDown = false;
+        private bool mouseDownOnPiece;
+        private bool _selectionMadeThisDown;
 
         // Right-click arrow drawing
         private List<(int fromRow, int fromCol, int toRow, int toCol)> userArrows = new();
-        private bool isDrawingArrow = false;
+        private bool isDrawingArrow;
         private int arrowFromRow = -1;
         private int arrowFromCol = -1;
         private Point arrowDragPosition = Point.Empty;
@@ -80,26 +80,26 @@ namespace ChessDroid.Controls
         private static readonly Color _monochromeGray  = Color.FromArgb(108, 108, 108);
 
         // Rainbow / Wave mode (share one hue-advance timer)
-        private bool _rainbowMode = false;
-        private bool _waveMode   = false;
-        private float _rainbowHue = 0f;
+        private bool _rainbowMode;
+        private bool _waveMode;
+        private float _rainbowHue;
         private readonly System.Windows.Forms.Timer _rainbowTimer;
 
         // Visual FX
-        private bool _gradientBoard    = false;
+        private bool _gradientBoard;
         private Bitmap? _gradientLightBitmap;
         private Bitmap? _gradientDarkBitmap;
         private Bitmap? _glowWhiteBitmap;
         private Bitmap? _glowBlackBitmap;
-        private bool _vignetteEnabled  = false;
+        private bool _vignetteEnabled;
         private int  _vignetteAlpha    = 110;
-        private bool _pieceGlowEnabled = false;
+        private bool _pieceGlowEnabled;
         private Bitmap? _vignetteBitmap;
-        private int _lastVignetteBoardPx = 0;
+        private int _lastVignetteBoardPx;
         private int _lastVignetteAlpha   = -1;
 
         // Board frame
-        private bool  _boardFrameEnabled = false;
+        private bool  _boardFrameEnabled;
         private int   _boardFrameWidth   = 26;
         private Color _boardFrameColor   = Color.FromArgb(80, 50, 25);
 
@@ -112,8 +112,8 @@ namespace ChessDroid.Controls
         private static readonly Random _particleRng = new();
 
         // Training mode
-        private bool _trainingMode = false;
-        private bool _hoverSquareLabelEnabled = false;
+        private bool _trainingMode;
+        private bool _hoverSquareLabelEnabled;
         private int _hoverRow = -1;
         private int _hoverCol = -1;
         private int _trainingHighlightRow = -1;
@@ -124,8 +124,8 @@ namespace ChessDroid.Controls
         // Visual settings
         private Color lightSquareColor = Color.FromArgb(240, 217, 181);
         private Color darkSquareColor = Color.FromArgb(181, 136, 99);
-        private bool showSquareLabels = false;
-        private bool _monochromeMode = false;
+        private bool showSquareLabels;
+        private bool _monochromeMode;
         private Color selectedSquareColor = Color.FromArgb(130, 186, 221, 97);
         private Color legalMoveColor = Color.FromArgb(100, 130, 151, 105);
         private Color lastMoveFromColor = Color.FromArgb(100, 255, 255, 100);
@@ -135,11 +135,11 @@ namespace ChessDroid.Controls
         private (int fromRow, int fromCol, int toRow, int toCol)? lastMove;
 
         // Piece move animation
-        private bool _animating = false;
+        private bool _animating;
         private char _animPiece = '.';
         private int _animFromRow, _animFromCol, _animToRow, _animToCol;
-        private float _animProgress = 0f;
-        private float _animProgressPerTick = 0f;
+        private float _animProgress;
+        private float _animProgressPerTick;
         private float _animDurationMs = 150f;
         public int AnimationDurationMs
         {
@@ -156,7 +156,7 @@ namespace ChessDroid.Controls
         // Piece images — source bitmaps + pre-scaled cache for fast drag painting
         private Dictionary<char, Image?> pieceImages = new Dictionary<char, Image?>();
         private Dictionary<char, Bitmap?> _scaledImages = new();
-        private int _lastScaledSquareSize = 0;
+        private int _lastScaledSquareSize;
         private string currentTemplateSet = "Lichess";
 
         // Font for coordinates (fallback for pieces if images fail)
@@ -164,7 +164,7 @@ namespace ChessDroid.Controls
 
         // Cached font for fallback Unicode piece rendering (prevents GDI+ leak)
         private Font? pieceFallbackFont;
-        private float lastPieceFontSize = 0f;
+        private float lastPieceFontSize;
 
         // Cached fonts for OnPaint — recreated only when squareSize changes
         private Font? _labelFont;
@@ -478,7 +478,7 @@ namespace ChessDroid.Controls
             set { if (_monochromeMode != value) { _monochromeMode = value; Invalidate(); } }
         }
 
-        private bool _hideCoordinates = false;
+        private bool _hideCoordinates;
         public bool HideCoordinates
         {
             get => _hideCoordinates;
