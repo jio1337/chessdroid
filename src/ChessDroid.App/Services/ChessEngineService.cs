@@ -570,17 +570,12 @@ namespace ChessDroid.Services
                                         if (tokens[i + 1] == UCI_TOKEN_CP && double.TryParse(tokens[i + 2], out double cp))
                                         {
                                             double displayCp = whiteToMove ? cp : -cp;
-                                            evalStr = (displayCp / 100.0 >= 0 ? "+" : "") + (displayCp / 100.0).ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
+                                            evalStr = Score.FromCentipawns(displayCp).ToString();
                                         }
                                         else if (tokens[i + 1] == UCI_TOKEN_MATE && int.TryParse(tokens[i + 2], out int mateIn))
                                         {
                                             int displayMate = whiteToMove ? mateIn : -mateIn;
-                                            if (displayMate > 0)
-                                                evalStr = $"Mate in +{displayMate}";
-                                            else if (displayMate < 0)
-                                                evalStr = $"Mate in {displayMate}";
-                                            else
-                                                evalStr = "Mate in 0";
+                                            evalStr = Score.FromMate(displayMate).ToString();
                                         }
                                     }
 
@@ -771,7 +766,7 @@ namespace ChessDroid.Services
                 if (double.TryParse(ve >= 0 ? line.AsSpan(vs, ve - vs) : line.AsSpan(vs), out double cp))
                 {
                     double dcp = whiteToMove ? cp : -cp;
-                    return (dcp / 100.0 >= 0 ? "+" : "") + (dcp / 100.0).ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
+                    return Score.FromCentipawns(dcp).ToString();
                 }
             }
             else
@@ -783,7 +778,7 @@ namespace ChessDroid.Services
                     if (int.TryParse(ve >= 0 ? line.AsSpan(vs, ve - vs) : line.AsSpan(vs), out int mateIn))
                     {
                         int dm = whiteToMove ? mateIn : -mateIn;
-                        return dm > 0 ? $"Mate in +{dm}" : dm < 0 ? $"Mate in {dm}" : "Mate in 0";
+                        return Score.FromMate(dm).ToString();
                     }
                 }
             }
@@ -954,12 +949,12 @@ namespace ChessDroid.Services
                                 if (tokens[i + 1] == UCI_TOKEN_CP && double.TryParse(tokens[i + 2], out double cp))
                                 {
                                     double dcp = whiteToMove ? cp : -cp;
-                                    lineEval = (dcp / 100.0 >= 0 ? "+" : "") + (dcp / 100.0).ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
+                                    lineEval = Score.FromCentipawns(dcp).ToString();
                                 }
                                 else if (tokens[i + 1] == UCI_TOKEN_MATE && i + 2 < tokens.Length && int.TryParse(tokens[i + 2], out int mate))
                                 {
                                     int dm = whiteToMove ? mate : -mate;
-                                    lineEval = dm > 0 ? $"Mate in +{dm}" : dm < 0 ? $"Mate in {dm}" : "Mate in 0";
+                                    lineEval = Score.FromMate(dm).ToString();
                                 }
                             }
 
