@@ -52,8 +52,10 @@ namespace ChessDroid
         private Label?       _lblTrainingFinalScore;
         private Label?       _lblTrainingPB;
 
+        // Which training sub-mode (Square/Opening/Puzzle/Vision/Drill) is currently selected.
+        private TrainingSubMode _trainingSubMode = TrainingSubMode.Square;
+
         // Opening Training state
-        private bool _openingModeSelected;
         private bool _openingRecreatePhase;
         private bool _openingRecreateLocked; // true during flash + restore delay
 
@@ -102,7 +104,6 @@ namespace ChessDroid
         private int     _openingSessionPerfect;
 
         // Puzzle Training state
-        private bool   _puzzleModeSelected;
         private bool   _puzzleActive;
         private bool   _puzzleLocked;
         private LichessPuzzle? _currentPuzzle;
@@ -161,9 +162,7 @@ namespace ChessDroid
         private int     _puzzleHintsUsed;
 
         // Board Vision state
-        private bool    _visionModeSelected;
         // Endgame Drills state
-        private bool    _drillModeSelected;
         private int     _visionCorrect;
         private int     _visionWrong;
         private int     _visionStreak;
@@ -372,11 +371,11 @@ namespace ChessDroid
                 Location = new Point(100, 36), Size = new Size(96, 26), FlatStyle = FlatStyle.Flat,
                 Visible = false
             };
-            _btnSqMode.Click     += (_, _) => SetTrainingMode("square");
-            _btnOpMode.Click     += (_, _) => SetTrainingMode("opening");
-            _btnPuzzleMode.Click += (_, _) => SetTrainingMode("puzzle");
-            _btnVisionMode.Click += (_, _) => SetTrainingMode("vision");
-            _btnDrillMode.Click  += (_, _) => SetTrainingMode("drill");
+            _btnSqMode.Click     += (_, _) => SetTrainingMode(TrainingSubMode.Square);
+            _btnOpMode.Click     += (_, _) => SetTrainingMode(TrainingSubMode.Opening);
+            _btnPuzzleMode.Click += (_, _) => SetTrainingMode(TrainingSubMode.Puzzle);
+            _btnVisionMode.Click += (_, _) => SetTrainingMode(TrainingSubMode.Vision);
+            _btnDrillMode.Click  += (_, _) => SetTrainingMode(TrainingSubMode.Drill);
             pnlModeSwitcher.Controls.AddRange(new Control[] { _btnSqMode, _btnOpMode, _btnPuzzleMode, _btnVisionMode, _btnDrillMode });
 
             _lblSquareSettingsPB = new Label
@@ -778,7 +777,7 @@ namespace ChessDroid
             {
                 var ch = SelectedDrillChapter();
                 SetDrillDescription(ch?.Description ?? "");
-                if (ch != null && _drillModeSelected)
+                if (ch != null && _trainingSubMode == TrainingSubMode.Drill)
                     boardControl.LoadFEN(ch.Fen);
             };
             _cmbDrillChapter.DropDown += (_, _) =>
@@ -1061,7 +1060,7 @@ namespace ChessDroid
             _visionGlobalTimer = new System.Windows.Forms.Timer { Interval = 1000 };
             _visionGlobalTimer.Tick += VisionGlobalTimer_Tick;
 
-            SetTrainingMode("square"); // initialize Square mode as default
+            SetTrainingMode(TrainingSubMode.Square); // initialize Square mode as default
             SetPuzzleSubMode("training"); // initialize puzzle sub-mode
             SelectRushTime(3);            // default 3 min
             SelectPuzzleRating(0, int.MaxValue); // default Any
@@ -1308,16 +1307,16 @@ namespace ChessDroid
         {
             boardControl.InteractionEnabled = true;
             if (_drillWatchActive) { matchService?.StopMatch(); return; }
-            if (_openingModeSelected) { OpeningTrainingStart();  return; }
-            if (_visionModeSelected)  { VisionTrainingStart();   return; }
-            if (_puzzleModeSelected)
+            if (_trainingSubMode == TrainingSubMode.Opening) { OpeningTrainingStart();  return; }
+            if (_trainingSubMode == TrainingSubMode.Vision)  { VisionTrainingStart();   return; }
+            if (_trainingSubMode == TrainingSubMode.Puzzle)
             {
                 if (_puzzleSubMode == "rush")     { _ = PuzzleRushStart();     return; }
                 if (_puzzleSubMode == "gauntlet") { _ = PuzzleGauntletStart(); return; }
                 if (_puzzleSubMode == "daily")    { PuzzleDailyStart();    return; }
                 _ = PuzzleTrainingStart(); return;
             }
-            if (_drillModeSelected) { DrillStart(); return; }
+            if (_trainingSubMode == TrainingSubMode.Drill) { DrillStart(); return; }
 
             _trainingPreFen = boardControl.GetFEN();
             _trainingPreFlipped = boardControl.IsFlipped;
@@ -1504,35 +1503,35 @@ namespace ChessDroid
 
         // ── Opening Training ───────────────────────────────────────────────
 
-        private void SetTrainingMode(string mode) // "square" | "opening" | "puzzle" | "vision" | "drill"
+        private void SetTrainingMode(TrainingSubMode mode)
         {
-            _openingModeSelected = mode == "opening";
-            _puzzleModeSelected  = mode == "puzzle";
-            _visionModeSelected  = mode == "vision";
-            _drillModeSelected   = mode == "drill";
+            _trainingSubMode = mode;
             if (_lblTrainingTitle != null)
-                _lblTrainingTitle.Text = mode == "opening" ? "Opening Training"
-                                       : mode == "puzzle"  ? "Puzzle Training"
-                                       : mode == "vision"  ? "Board Vision"
-                                       : mode == "drill"   ? "Drills"
-                                       : "Square Training";
-            if (_pnlSquareSettings  != null) _pnlSquareSettings.Visible  = mode == "square";
-            if (_pnlOpeningSettings != null) _pnlOpeningSettings.Visible = mode == "opening";
-            if (_pnlPuzzleSettings  != null) _pnlPuzzleSettings.Visible  = mode == "puzzle";
-            if (_pnlVisionSettings  != null) _pnlVisionSettings.Visible  = mode == "vision";
-            if (_pnlDrillSettings   != null) _pnlDrillSettings.Visible   = mode == "drill";
-            HighlightButton(_btnSqMode,     mode == "square");
-            HighlightButton(_btnOpMode,     mode == "opening");
-            HighlightButton(_btnPuzzleMode, mode == "puzzle");
-            HighlightButton(_btnVisionMode, mode == "vision");
-            HighlightButton(_btnDrillMode,  mode == "drill");
+                _lblTrainingTitle.Text = mode switch
+                {
+                    TrainingSubMode.Opening => "Opening Training",
+                    TrainingSubMode.Puzzle  => "Puzzle Training",
+                    TrainingSubMode.Vision  => "Board Vision",
+                    TrainingSubMode.Drill   => "Drills",
+                    _                       => "Square Training"
+                };
+            if (_pnlSquareSettings  != null) _pnlSquareSettings.Visible  = mode == TrainingSubMode.Square;
+            if (_pnlOpeningSettings != null) _pnlOpeningSettings.Visible = mode == TrainingSubMode.Opening;
+            if (_pnlPuzzleSettings  != null) _pnlPuzzleSettings.Visible  = mode == TrainingSubMode.Puzzle;
+            if (_pnlVisionSettings  != null) _pnlVisionSettings.Visible  = mode == TrainingSubMode.Vision;
+            if (_pnlDrillSettings   != null) _pnlDrillSettings.Visible   = mode == TrainingSubMode.Drill;
+            HighlightButton(_btnSqMode,     mode == TrainingSubMode.Square);
+            HighlightButton(_btnOpMode,     mode == TrainingSubMode.Opening);
+            HighlightButton(_btnPuzzleMode, mode == TrainingSubMode.Puzzle);
+            HighlightButton(_btnVisionMode, mode == TrainingSubMode.Vision);
+            HighlightButton(_btnDrillMode,  mode == TrainingSubMode.Drill);
             if (_btnTrainingStart != null)
-                _btnTrainingStart.Text = mode == "drill" ? "Load position" : "Start";
-            if (mode == "square")  UpdateSquarePBLabel();
-            if (mode == "puzzle")  SetPuzzleSubMode(_puzzleSubMode);
-            if (mode == "vision")  UpdateVisionPBLabel();
+                _btnTrainingStart.Text = mode == TrainingSubMode.Drill ? "Load position" : "Start";
+            if (mode == TrainingSubMode.Square) UpdateSquarePBLabel();
+            if (mode == TrainingSubMode.Puzzle) SetPuzzleSubMode(_puzzleSubMode);
+            if (mode == TrainingSubMode.Vision) UpdateVisionPBLabel();
             // Re-measure description height now that the panel has its real width
-            if (mode == "drill" && IsHandleCreated)
+            if (mode == TrainingSubMode.Drill && IsHandleCreated)
                 BeginInvoke(() => SetDrillDescription(_lblDrillDesc?.Text ?? ""));
         }
 
@@ -3178,8 +3177,7 @@ namespace ChessDroid
             _pnlTraining.BackColor = scheme.FormBackColor;
             ApplyThemeToChildren(_pnlTraining, scheme);
             // Re-apply mode + sub-mode + rush time button highlights with current theme
-            string mode = _drillModeSelected ? "drill" : _visionModeSelected ? "vision" : _puzzleModeSelected ? "puzzle" : _openingModeSelected ? "opening" : "square";
-            SetTrainingMode(mode);
+            SetTrainingMode(_trainingSubMode);
             SetPuzzleSubMode(_puzzleSubMode);
             SetVisionSubMode(_visionSubMode);
             int rushMins = _rushDurationSeconds / 60;
