@@ -93,4 +93,75 @@ public class MoveGeneratorPerftTests
     [InlineData(3, 9467)]
     public void Position4_PromotionHeavy_MatchesPublishedPerftCounts(int depth, long expectedNodes)
         => Assert.Equal(expectedNodes, Perft(Position4Fen, depth));
+
+    // Chess960 coverage: rooks on their standard a/h files under Chess960 rules is operationally
+    // identical to standard castling, so these must match the exact same published counts — driven
+    // through the Chess960 "king captures own rook" notation end to end. Caught a real bug this
+    // way: IsLegalMove's generic post-move check used toCol (the rook's square in this notation)
+    // as if it were the king's own destination, which could spuriously detect check on the wrong
+    // square and silently drop legal castling moves. Fixed in MoveGenerator.IsLegalMove by
+    // returning directly from the already-self-contained IsValidCastling960 result instead of
+    // falling through to that generic recheck.
+    // Both Chess960 test positions keep the king on the e-file, so a rook's Shredder-FEN
+    // file letter maps to kingside/queenside purely by whether it's above or below file e.
+    // Also accepts the literal K/Q/k/q letters CastlingToString emits between recursion
+    // steps, so this one parser covers both the initial FEN and every subsequent ply.
+    private static CastlingState ParseShredderCastling(string rights)
+    {
+        bool wKs = false, wQs = false, bKs = false, bQs = false;
+        foreach (char c in rights)
+        {
+            if (c == 'K') wKs = true;
+            else if (c == 'Q') wQs = true;
+            else if (c == 'k') bKs = true;
+            else if (c == 'q') bQs = true;
+            else if (c >= 'A' && c <= 'H') { if (c - 'A' > 4) wKs = true; else wQs = true; }
+            else if (c >= 'a' && c <= 'h') { if (c - 'a' > 4) bKs = true; else bQs = true; }
+        }
+        return new CastlingState(wKs, wQs, bKs, bQs, Chess960Mode: true,
+            WhiteKingsideRookFile: 7, WhiteQueensideRookFile: 0,
+            BlackKingsideRookFile: 7, BlackQueensideRookFile: 0);
+    }
+
+    private static long Perft960(string fen, int depth)
+    {
+        var parts = fen.Split(' ');
+        var board = ChessBoard.FromFEN(fen);
+        bool whiteToMove = parts[1] == "w";
+        var castling = ParseShredderCastling(parts[2]);
+        var enPassant = ParseEnPassant(parts[3]);
+        return PerftRecursive960(board, whiteToMove, castling, enPassant, depth);
+    }
+
+    private static long PerftRecursive960(
+        ChessBoard board, bool whiteToMove, CastlingState castling, (int Row, int Col)? enPassant, int depth)
+    {
+        if (depth == 0) return 1;
+
+        long nodes = 0;
+        foreach (var move in MoveGenerator.GetAllLegalMovesUci(board, whiteToMove, castling, enPassant))
+        {
+            var nextBoard = new ChessBoard(board.GetArray());
+            string castlingStr = CastlingToString(castling);
+            string epStr = enPassant.HasValue ? $"{(char)('a' + enPassant.Value.Col)}{8 - enPassant.Value.Row}" : "-";
+
+            ChessRulesService.ApplyUciMove(nextBoard, move, ref castlingStr, ref epStr);
+
+            nodes += PerftRecursive960(nextBoard, !whiteToMove, ParseShredderCastling(castlingStr), ParseEnPassant(epStr), depth - 1);
+        }
+        return nodes;
+    }
+
+    [Theory]
+    [InlineData(1, 20)]
+    [InlineData(2, 400)]
+    [InlineData(3, 8902)]
+    public void Chess960_StartingPositionWithStandardRookFiles_MatchesPublishedPerftCounts(int depth, long expectedNodes)
+        => Assert.Equal(expectedNodes, Perft960("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w HAha - 0 1", depth));
+
+    [Theory]
+    [InlineData(1, 48)]
+    [InlineData(2, 2039)]
+    public void Chess960_KiwipeteWithStandardRookFiles_MatchesPublishedPerftCounts(int depth, long expectedNodes)
+        => Assert.Equal(expectedNodes, Perft960("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w HAha - 0 1", depth));
 }

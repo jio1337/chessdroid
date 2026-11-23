@@ -59,6 +59,14 @@ public class PerftTests
         return board;
     }
 
+    private static ChessBoardControl Chess960BoardAt(string fen)
+    {
+        var board = new ChessBoardControl();
+        board.Chess960Mode = true;
+        board.LoadFEN(fen);
+        return board;
+    }
+
     [Theory]
     [InlineData(1, 20)]
     [InlineData(2, 400)]
@@ -98,6 +106,31 @@ public class PerftTests
     public void Position4_PromotionHeavy_MatchesPublishedPerftCounts(int depth, long expectedNodes)
     {
         var board = BoardAt(Position4Fen);
+        Assert.Equal(expectedNodes, Perft(board, depth));
+    }
+
+    // Chess960 coverage: rooks on their standard a/h files under Chess960 rules is operationally
+    // identical to standard castling, so these must match the exact same published counts as the
+    // non-960 positions above — but driven through the Chess960 code path end to end (king-
+    // captures-own-rook UCI notation from GetAllLegalMovesUci, through ExecuteMove's consolidated
+    // ApplyUciMove call). Any divergence here means the Chess960 castling consolidation broke
+    // something that the non-960 perft suite can't see.
+    [Theory]
+    [InlineData(1, 20)]
+    [InlineData(2, 400)]
+    [InlineData(3, 8902)]
+    public void Chess960_StartingPositionWithStandardRookFiles_MatchesPublishedPerftCounts(int depth, long expectedNodes)
+    {
+        var board = Chess960BoardAt("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w HAha - 0 1");
+        Assert.Equal(expectedNodes, Perft(board, depth));
+    }
+
+    [Theory]
+    [InlineData(1, 48)]
+    [InlineData(2, 2039)]
+    public void Chess960_KiwipeteWithStandardRookFiles_MatchesPublishedPerftCounts(int depth, long expectedNodes)
+    {
+        var board = Chess960BoardAt("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w HAha - 0 1");
         Assert.Equal(expectedNodes, Perft(board, depth));
     }
 }

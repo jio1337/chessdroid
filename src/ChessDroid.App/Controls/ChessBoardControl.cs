@@ -1913,47 +1913,28 @@ namespace ChessDroid.Controls
             // Build UCI move
             string uciMove = ToUciMove(fromRow, fromCol, toRow, toCol, promotion);
 
-            // Chess960 castling: king moves to own rook's starting square → resolve before standard path
-            if (_chess960Mode && char.ToLower(movingPiece) == 'k' && fromRow == toRow &&
-                board.GetPiece(toRow, toCol) == (char.IsUpper(movingPiece) ? 'R' : 'r'))
-            {
-                bool kingside = toCol > fromCol;
-                int kingDest = kingside ? 6 : 2;
-                int rookDest = kingside ? 5 : 3;
-
-                board.SetPiece(fromRow, fromCol, '.');
-                board.SetPiece(toRow,   toCol,   '.');
-                board.SetPiece(fromRow, kingDest, movingPiece);
-                board.SetPiece(fromRow, rookDest, char.IsUpper(movingPiece) ? 'R' : 'r');
-
-                lastMove = (fromRow, fromCol, fromRow, kingDest);
-                UpdateCastlingRights(movingPiece, fromRow, fromCol, fromRow, kingDest);
-                enPassantRow = -1; enPassantCol = -1;
-                halfmoveClock++;
-                if (!whiteToMove) fullmoveNumber++; // Black just completed castling
-                whiteToMove = !whiteToMove;
-                ClearSelection();
-                Invalidate();
-                MoveMade?.Invoke(this, new MoveEventArgs(uciMove, GetFEN(), false));
-                BoardChanged?.Invoke(this, EventArgs.Empty);
-                return true;
-            }
-
-            // Store move for highlighting
-            lastMove = (fromRow, fromCol, toRow, toCol);
+            // Chess960 castling is king-captures-own-rook notation (e.g. e1h1) — ApplyUciMove
+            // detects this itself from the board state, so it's not a separate code path here
+            // any more; it's only distinguished for isCapture/lastMove, which it is NOT (it's
+            // not a real capture, and the king's displayed destination is g/c-file, not the
+            // rook's square it "captures").
+            bool isChess960Castle = _chess960Mode && char.ToLower(movingPiece) == 'k' && fromRow == toRow &&
+                board.GetPiece(toRow, toCol) == (char.IsUpper(movingPiece) ? 'R' : 'r');
 
             char captured = board.GetPiece(toRow, toCol);
-            bool isCapture = captured != '.' ||
-                (char.ToLower(movingPiece) == 'p' && fromCol != toCol && captured == '.'); // en passant
+            bool isCapture = !isChess960Castle && (captured != '.' ||
+                (char.ToLower(movingPiece) == 'p' && fromCol != toCol && captured == '.')); // en passant
 
-            // Apply the move (board mutation, standard castling rook move, en passant
-            // capture, promotion, castling-rights revocation, en-passant-square update) via
-            // the single canonical Core implementation also used by EngineMatchService,
-            // TournamentForm, MoveClassificationService, etc. — this used to be re-derived
-            // here independently; see MoveGenerator.cs for the same consolidation already
-            // done for legal-move checking. Chess960 castling is handled above and never
-            // reaches here (it returns early), since ApplyUciMove's rook-move-on-castle path
-            // assumes standard rook starting files.
+            // Store move for highlighting
+            int lastMoveToCol = isChess960Castle ? (toCol > fromCol ? 6 : 2) : toCol;
+            lastMove = (fromRow, fromCol, toRow, lastMoveToCol);
+
+            // Apply the move (board mutation, standard + Chess960 castling rook move, en
+            // passant capture, promotion, castling-rights revocation, en-passant-square
+            // update) via the single canonical Core implementation also used by
+            // EngineMatchService, TournamentForm, MoveClassificationService, etc. — this used
+            // to be re-derived here independently; see MoveGenerator.cs for the same
+            // consolidation already done for legal-move checking.
             string castlingRights = BuildCastlingRightsString();
             string enPassantStr = CurrentEnPassant() is { } ep ? $"{(char)('a' + ep.Col)}{8 - ep.Row}" : "-";
             ChessRulesService.ApplyUciMove(board, uciMove, ref castlingRights, ref enPassantStr);
@@ -1976,37 +1957,6 @@ namespace ChessDroid.Controls
             BoardChanged?.Invoke(this, EventArgs.Empty);
 
             return true;
-        }
-
-        private void UpdateCastlingRights(char movingPiece, int fromRow, int fromCol, int toRow, int toCol)
-        {
-            // King moves - lose all castling rights for that color
-            if (movingPiece == 'K') { whiteKingsideCastle = false; whiteQueensideCastle = false; }
-            else if (movingPiece == 'k') { blackKingsideCastle = false; blackQueensideCastle = false; }
-
-            // Rook moves from starting square - lose that side's castling right
-            // In Chess960 the starting files are tracked per-side; in standard chess they are always 0/7.
-            int wKs = _chess960Mode ? _wKsRookFile : 7;
-            int wQs = _chess960Mode ? _wQsRookFile : 0;
-            int bKs = _chess960Mode ? _bKsRookFile : 7;
-            int bQs = _chess960Mode ? _bQsRookFile : 0;
-
-            if (movingPiece == 'R')
-            {
-                if (fromRow == 7 && fromCol == wKs) whiteKingsideCastle  = false;
-                if (fromRow == 7 && fromCol == wQs) whiteQueensideCastle = false;
-            }
-            else if (movingPiece == 'r')
-            {
-                if (fromRow == 0 && fromCol == bKs) blackKingsideCastle  = false;
-                if (fromRow == 0 && fromCol == bQs) blackQueensideCastle = false;
-            }
-
-            // Rook captured on its starting square - remove its castling right
-            if (toRow == 7 && toCol == wKs) whiteKingsideCastle  = false;
-            if (toRow == 7 && toCol == wQs) whiteQueensideCastle = false;
-            if (toRow == 0 && toCol == bKs) blackKingsideCastle  = false;
-            if (toRow == 0 && toCol == bQs) blackQueensideCastle = false;
         }
 
         // Standard (non-Chess960) "KQkq"-style castling rights string, for handoff to

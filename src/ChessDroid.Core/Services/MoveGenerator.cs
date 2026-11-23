@@ -83,7 +83,15 @@ namespace ChessDroid.Services
 
             if (isChess960Castle)
             {
-                if (!IsValidCastling960(board, fromRow, fromCol, toCol, whiteToMove, castling)) return false;
+                // IsValidCastling960 already fully validates legality, including the king's
+                // final square (its path-walk loop ends on kingDest). Return immediately
+                // instead of falling into the generic post-move recheck below: that block
+                // assumes toCol is the king's own destination (true for standard "e1g1"
+                // notation), but here toCol is the ROOK's square (Chess960 "king captures
+                // own rook" notation), so it would simulate the king landing on the rook's
+                // square instead of g/c-file and could spuriously detect check from a piece
+                // that attacks the rook's square but not the king's real destination.
+                return IsValidCastling960(board, fromRow, fromCol, toCol, whiteToMove, castling);
             }
             else if (!castling.Chess960Mode && char.ToLower(movingPiece) == 'k' && Math.Abs(toCol - fromCol) == 2 && fromRow == toRow)
             {
