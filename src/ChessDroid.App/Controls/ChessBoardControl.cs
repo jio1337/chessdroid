@@ -1942,56 +1942,23 @@ namespace ChessDroid.Controls
             // Store move for highlighting
             lastMove = (fromRow, fromCol, toRow, toCol);
 
-            // Apply the move to the board
             char captured = board.GetPiece(toRow, toCol);
             bool isCapture = captured != '.' ||
                 (char.ToLower(movingPiece) == 'p' && fromCol != toCol && captured == '.'); // en passant
 
-            // Handle special moves
-            if (!_chess960Mode && char.ToLower(movingPiece) == 'k' && Math.Abs(fromCol - toCol) == 2)
-            {
-                // Standard castling (king moves 2 squares)
-                if (toCol > fromCol) // Kingside
-                {
-                    board.SetPiece(fromRow, 5, board.GetPiece(fromRow, 7));
-                    board.SetPiece(fromRow, 7, '.');
-                }
-                else // Queenside
-                {
-                    board.SetPiece(fromRow, 3, board.GetPiece(fromRow, 0));
-                    board.SetPiece(fromRow, 0, '.');
-                }
-            }
-            else if (char.ToLower(movingPiece) == 'p' && fromCol != toCol && captured == '.')
-            {
-                // En passant
-                board.SetPiece(fromRow, toCol, '.');
-            }
-
-            // Move the piece
-            char finalPiece = promotion.HasValue
-                ? (char.IsUpper(movingPiece) ? char.ToUpper(promotion.Value) : char.ToLower(promotion.Value))
-                : movingPiece;
-
-            board.SetPiece(toRow, toCol, finalPiece);
-            board.SetPiece(fromRow, fromCol, '.');
-
-            // Update castling rights
-            UpdateCastlingRights(movingPiece, fromRow, fromCol, toRow, toCol);
-
-            // Update en passant square
-            if (char.ToLower(movingPiece) == 'p' && Math.Abs(toRow - fromRow) == 2)
-            {
-                // Pawn moved 2 squares - set en passant target square (the square behind the pawn)
-                enPassantRow = (fromRow + toRow) / 2;
-                enPassantCol = fromCol;
-            }
-            else
-            {
-                // Any other move clears en passant
-                enPassantRow = -1;
-                enPassantCol = -1;
-            }
+            // Apply the move (board mutation, standard castling rook move, en passant
+            // capture, promotion, castling-rights revocation, en-passant-square update) via
+            // the single canonical Core implementation also used by EngineMatchService,
+            // TournamentForm, MoveClassificationService, etc. — this used to be re-derived
+            // here independently; see MoveGenerator.cs for the same consolidation already
+            // done for legal-move checking. Chess960 castling is handled above and never
+            // reaches here (it returns early), since ApplyUciMove's rook-move-on-castle path
+            // assumes standard rook starting files.
+            string castlingRights = BuildCastlingRightsString();
+            string enPassantStr = CurrentEnPassant() is { } ep ? $"{(char)('a' + ep.Col)}{8 - ep.Row}" : "-";
+            ChessRulesService.ApplyUciMove(board, uciMove, ref castlingRights, ref enPassantStr);
+            ApplyCastlingRightsString(castlingRights);
+            (enPassantRow, enPassantCol) = ParseEnPassantString(enPassantStr);
 
             // FEN halfmove clock: resets on a pawn move or capture, otherwise increments.
             bool isPawnMove = char.ToLower(movingPiece) == 'p';
@@ -2040,6 +2007,31 @@ namespace ChessDroid.Controls
             if (toRow == 7 && toCol == wQs) whiteQueensideCastle = false;
             if (toRow == 0 && toCol == bKs) blackKingsideCastle  = false;
             if (toRow == 0 && toCol == bQs) blackQueensideCastle = false;
+        }
+
+        // Standard (non-Chess960) "KQkq"-style castling rights string, for handoff to
+        // ChessRulesService.ApplyUciMove — only ever built/consumed in the non-960 ExecuteMove
+        // path, where rook starting files are always 0/7, so Shredder file-letter notation
+        // isn't needed here.
+        private string BuildCastlingRightsString()
+        {
+            string s = (whiteKingsideCastle ? "K" : "") + (whiteQueensideCastle ? "Q" : "")
+                     + (blackKingsideCastle ? "k" : "") + (blackQueensideCastle ? "q" : "");
+            return s.Length == 0 ? "-" : s;
+        }
+
+        private void ApplyCastlingRightsString(string rights)
+        {
+            whiteKingsideCastle  = rights.Contains('K');
+            whiteQueensideCastle = rights.Contains('Q');
+            blackKingsideCastle  = rights.Contains('k');
+            blackQueensideCastle = rights.Contains('q');
+        }
+
+        private static (int Row, int Col) ParseEnPassantString(string enPassant)
+        {
+            if (enPassant == "-" || enPassant.Length != 2) return (-1, -1);
+            return (8 - (enPassant[1] - '0'), enPassant[0] - 'a');
         }
 
         private char? ShowPromotionDialog(bool isWhite)
