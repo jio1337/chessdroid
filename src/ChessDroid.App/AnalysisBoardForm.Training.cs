@@ -38,7 +38,7 @@ namespace ChessDroid
         internal System.Windows.Forms.Timer? _trainingClockTimer;
         internal System.Windows.Forms.Timer? _trainingFlashTimer;
 
-        private TrainingPanel _trainingPanel = null!;
+        internal TrainingPanel _trainingPanel = null!;
 
         // Which training sub-mode (Square/Opening/Puzzle/Vision/Drill) is currently selected.
         internal TrainingSubMode _trainingSubMode = TrainingSubMode.Square;

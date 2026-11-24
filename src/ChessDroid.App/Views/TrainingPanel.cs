@@ -115,6 +115,11 @@ namespace ChessDroid.Views
         internal TrainingPanel(ChessDroid.AnalysisBoardForm form)
         {
             _form = form;
+            // BuildUi() ends by calling back into _form.SetTrainingMode()/ApplyTrainingTheme()/
+            // etc., which reach _form._trainingPanel — assign it now, before BuildUi() runs,
+            // since the caller's own "_trainingPanel = new TrainingPanel(this)" assignment
+            // doesn't happen until this constructor returns.
+            _form._trainingPanel = this;
             Dock = DockStyle.Fill;
             Visible = false;
             Padding = new Padding(16, 12, 14, 10);
