@@ -9,5 +9,13 @@
   -->
   <PropertyGroup>
     <Version>3.21.1</Version>
+    <!--
+      CHESSDROID_AUDIT.md: analyzer settings were only ever passed on the command line
+      (-p:AnalysisLevel=latest-recommended -p:EnableNETAnalyzers=true) during the 864-to-0
+      warning cleanup, never persisted into the build itself. Centralized here so every
+      project under this directory gets them automatically, same reasoning as <Version>.
+    -->
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
   </PropertyGroup>
 </Project>
