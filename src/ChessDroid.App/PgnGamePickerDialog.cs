@@ -156,7 +156,14 @@ namespace ChessDroid
             foreach (string rawLine in pgn.Split('\n'))
             {
                 string line = rawLine.TrimEnd('\r');
-                if (line.TrimStart().StartsWith('['))
+                // A real PGN tag is always [Name "value"] (quoted); Lichess/chess.com-style
+                // move annotations like [%eval 0.31] or [%clk 0:05:00] are never quoted. If a
+                // long move-text line word-wraps so one of those lands alone at the start of a
+                // line, it still starts and ends with brackets — the quote check is what tells
+                // a real new-game header apart from an annotation and avoids a false split.
+                string trimmed = line.Trim();
+                bool looksLikeHeaderTag = trimmed.StartsWith('[') && trimmed.EndsWith(']') && trimmed.Contains('"');
+                if (looksLikeHeaderTag)
                 {
                     if (inMoveText)
                     {
@@ -197,7 +204,7 @@ namespace ChessDroid
             return h;
         }
 
-        private static int CountMoves(string pgn)
+        internal static int CountMoves(string pgn)
         {
             // Skip header lines, then find the highest move number in the move text
             var moveLines = pgn.Split('\n')
