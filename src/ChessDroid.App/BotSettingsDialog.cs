@@ -10,7 +10,7 @@ namespace ChessDroid
         private RadioButton rbPlayBlack = null!;
         private RadioButton rbFriendly = null!;
         private RadioButton rbChallenge = null!;
-        private Button btnStart = null!;
+        internal Button btnStart = null!;
         private Button btnCancel = null!;
 
         private readonly string[] _engineFileNames;
@@ -180,11 +180,18 @@ namespace ChessDroid
             grpType.Controls.Add(rbChallenge);
 
             // In drill mode the active side is fixed and challenge mode is always on —
-            // hide the Play as and Type groups and compact the form
+            // hide the Play as and Type groups and compact the form. Hiding grpType does
+            // NOT change rbChallenge's checked state on its own (rbFriendly defaults to
+            // checked) — without this, Settings.ChallengeMode below would read false for
+            // every drill game, silently defeating the "no takebacks in challenge mode"
+            // guard (AnalysisBoardForm.cs's BtnTakeBack_Click) even though drills are
+            // documented as always-challenge.
             if (drillMode)
             {
                 grpColor.Visible = false;
                 grpType.Visible  = false;
+                rbFriendly.Checked  = false;
+                rbChallenge.Checked = true;
                 Size = new Size(280, 240);
             }
 

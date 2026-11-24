@@ -1,7 +1,9 @@
 using System.Resources;
+using System.Runtime.CompilerServices;
 using ChessDroid.Services;
 
 [assembly: NeutralResourcesLanguage("en-US")]
+[assembly: InternalsVisibleTo("ChessDroid.Tests.App")]
 
 namespace ChessDroid
 {
