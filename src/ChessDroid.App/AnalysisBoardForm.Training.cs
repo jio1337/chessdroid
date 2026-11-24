@@ -226,6 +226,16 @@ namespace ChessDroid
             // cleanup (_drillWatchActive, matchRunning) once the match actually stops.
             if (_drillWatchActive) { matchService?.StopMatch(); return; }
 
+            // Drill vs Bot deliberately keeps the training panel visible while the bot game
+            // is live (see DrillPracticeAsync's "no StopTraining — we keep the training panel
+            // visible" comment). Letting StopTraining run anyway — reachable via BtnMatch_Click
+            // or BtnTraining_Click, both of which call it whenever _trainingUiVisible is true —
+            // would hide the drill UI and re-enable every button SetDrillControlsEnabled just
+            // locked (New Game, mode switchers, etc.) while the bot engine keeps playing
+            // underneath, unseen. Block instead; StopBotMode() (the drill's own Stop Practice
+            // button, or the general bot toggle) is the only way out of a running drill.
+            if (_drillBotActive) { lblStatus.Text = "Stop the drill first"; return; }
+
             _trainingClockTimer?.Stop();
             _trainingFlashTimer?.Stop();
             _openingAutoplayTimer?.Stop();
