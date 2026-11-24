@@ -35,6 +35,7 @@ namespace ChessDroid.Controls
         private AppConfig?          _config;
         private string              _engineBasePath = "";
         private bool                _adjudicate     = true;
+        private bool                _updateRatings  = true;
         private EngineMatchTimeControl _tc          = new();
 
         private string _whiteFile = "";
@@ -169,6 +170,7 @@ namespace ChessDroid.Controls
             AppConfig config,
             int gamesTotal,
             bool adjudicate,
+            bool updateRatings,
             string? openingFen = null)
         {
             _config         = config;
@@ -180,6 +182,7 @@ namespace ChessDroid.Controls
             _tc             = tc;
             _gamesTotal     = gamesTotal;
             _adjudicate     = adjudicate;
+            _updateRatings  = updateRatings;
 
             _eng1File = _curWhiteFile = _whiteFile = white1File;
             _eng2File = _blackFile = black1File;
@@ -323,6 +326,17 @@ namespace ChessDroid.Controls
             }
             _gamesPlayed++;
 
+            if (_updateRatings && result.Outcome != MatchOutcome.Interrupted)
+            {
+                double whiteScoreForRating = result.Outcome switch
+                {
+                    MatchOutcome.WhiteWins => 1.0,
+                    MatchOutcome.Draw      => 0.5,
+                    _                      => 0.0
+                };
+                UpdateChessdroidRatings(_whiteFile, _blackFile, _whiteName, _blackName, whiteScoreForRating);
+            }
+
             // Flush any pending white-only half-move (game ended before black replied)
             if (_pendingWhiteMoveLine.Length > 0)
             {
@@ -369,6 +383,64 @@ namespace ChessDroid.Controls
         }
 
         // ── Helpers ──────────────────────────────────────────────────────────
+
+        // Mirrors AnalysisBoardForm.Match.cs's 1v1 Chessdroid Rating update (K=32, seeds from
+        // CCRL Elo on first game). Skipped if either engine has no CCRL Elo seed (Elo <= 0) —
+        // same gate the 1v1 feature uses, since a 0 baseline makes the logistic formula
+        // meaningless.
+        private void UpdateChessdroidRatings(string whiteFile, string blackFile,
+            string whiteName, string blackName, double whiteScore)
+        {
+            if (_config == null) return;
+            _config.EngineProfiles.TryGetValue(whiteFile, out var wProf);
+            _config.EngineProfiles.TryGetValue(blackFile, out var bProf);
+            var updated = ComputeRatingUpdate(wProf, bProf, whiteScore);
+            if (updated == null) return;
+            var (wOld, bOld, wNew, bNew) = updated.Value;
+
+            _config.EngineProfiles[whiteFile] = wNew;
+            _config.EngineProfiles[blackFile] = bNew;
+            _config.Save();
+
+            string line = $"Chessdroid:  {whiteName} {wOld} → {wNew.ChessdroidElo} ({EloCalculator.FormatDelta(wNew.ChessdroidElo - wOld)})  |  " +
+                          $"{blackName} {bOld} → {bNew.ChessdroidElo} ({EloCalculator.FormatDelta(bNew.ChessdroidElo - bOld)})";
+            _logLines.Add(line);
+            if (_isExpanded) AppendLog(line);
+        }
+
+        /// <summary>
+        /// Pure rating-update calculation, isolated from WinForms/config I-O so it can be
+        /// tested directly: given the two engines' current profiles and this game's result
+        /// (from White's perspective), returns their old Chessdroid ratings plus updated
+        /// profiles, or null if either profile is missing or has no CCRL Elo seed (a 0
+        /// baseline would make the logistic formula meaningless — same gate the 1v1 Engine
+        /// Match feature uses in AnalysisBoardForm.Match.cs).
+        /// </summary>
+        internal static (int WhiteOld, int BlackOld, EngineProfile WhiteNew, EngineProfile BlackNew)?
+            ComputeRatingUpdate(EngineProfile? whiteProfile, EngineProfile? blackProfile, double whiteScore)
+        {
+            if (whiteProfile == null || blackProfile == null ||
+                whiteProfile.Elo <= 0 || blackProfile.Elo <= 0)
+                return null;
+
+            int wCurr = whiteProfile.ChessdroidElo > 0 ? whiteProfile.ChessdroidElo : whiteProfile.Elo;
+            int bCurr = blackProfile.ChessdroidElo > 0 ? blackProfile.ChessdroidElo : blackProfile.Elo;
+            int wDelta = EloCalculator.EloChangeChessdroid(wCurr, bCurr, whiteScore);
+            int bDelta = EloCalculator.EloChangeChessdroid(bCurr, wCurr, 1.0 - whiteScore);
+
+            var whiteNew = new EngineProfile
+            {
+                DisplayName = whiteProfile.DisplayName, Elo = whiteProfile.Elo,
+                ChessdroidElo = wCurr + wDelta, GamesPlayed = whiteProfile.GamesPlayed + 1
+            };
+            var blackNew = new EngineProfile
+            {
+                DisplayName = blackProfile.DisplayName, Elo = blackProfile.Elo,
+                ChessdroidElo = bCurr + bDelta, GamesPlayed = blackProfile.GamesPlayed + 1
+            };
+            return (wCurr, bCurr, whiteNew, blackNew);
+        }
+
         private static string SafeSan(string uci, string fen)
         {
             try

@@ -29,6 +29,7 @@ namespace ChessDroid
         private readonly Label[]         _lblVs     = new Label[4];
         private readonly NumericUpDown   _numGames;
         private readonly CheckBox        _chkAdjudicate;
+        private readonly CheckBox        _chkUpdateRatings;
         // Time control
         private readonly RadioButton     _rbDepth;
         private readonly RadioButton     _rbMovetime;
@@ -80,8 +81,8 @@ namespace ChessDroid
             _engineBasePath = config.GetEnginesPath();
 
             Text            = "chessdroid://tournament";
-            Size            = new Size(360, 510);
-            MinimumSize     = new Size(330, 380);
+            Size            = new Size(360, 536);
+            MinimumSize     = new Size(330, 406);
             StartPosition   = FormStartPosition.CenterParent;
             BackColor       = Color.FromArgb(25, 25, 25);
             ForeColor       = Color.FromArgb(220, 220, 220);
@@ -163,55 +164,64 @@ namespace ChessDroid
                 ForeColor = Color.FromArgb(200, 200, 200)
             };
 
+            _chkUpdateRatings = new CheckBox
+            {
+                Text      = "Update Chessdroid ratings after finishing",
+                Checked   = true,
+                Location  = new Point(20, 312),
+                AutoSize  = true,
+                ForeColor = Color.FromArgb(200, 200, 200)
+            };
+
             // Time control
-            var lblTC = MakeLbl("Time Control:", new Point(20, 316));
+            var lblTC = MakeLbl("Time Control:", new Point(20, 342));
             lblTC.Font = new Font("Courier New", 9f, FontStyle.Bold);
 
-            _rbDepth    = MakeRadio("Depth",      new Point(20,  336), true);
-            _rbMovetime = MakeRadio("Time/move",  new Point(100, 336), false);
-            _rbClock    = MakeRadio("Clock",      new Point(200, 336), false);
+            _rbDepth    = MakeRadio("Depth",      new Point(20,  362), true);
+            _rbMovetime = MakeRadio("Time/move",  new Point(100, 362), false);
+            _rbClock    = MakeRadio("Clock",      new Point(200, 362), false);
 
             _numDepth = new NumericUpDown
             {
-                Location = new Point(20, 360),
+                Location = new Point(20, 386),
                 Size     = new Size(70, 26),
                 Minimum  = 1, Maximum = 40, Value = 12,
                 BackColor = Color.FromArgb(40, 40, 40),
                 ForeColor = Color.FromArgb(220, 220, 220)
             };
-            var lblDepthUnit = MakeLbl("plies", new Point(96, 364));
+            var lblDepthUnit = MakeLbl("plies", new Point(96, 390));
 
             _numMovetime = new NumericUpDown
             {
-                Location = new Point(20, 360),
+                Location = new Point(20, 386),
                 Size     = new Size(70, 26),
                 Minimum  = 100, Maximum = 60000, Value = 1000, Increment = 100,
                 BackColor = Color.FromArgb(40, 40, 40),
                 ForeColor = Color.FromArgb(220, 220, 220),
                 Visible   = false
             };
-            var lblMtUnit = MakeLbl("ms", new Point(96, 364));
+            var lblMtUnit = MakeLbl("ms", new Point(96, 390));
 
             _numTotal = new NumericUpDown
             {
-                Location = new Point(20, 360),
+                Location = new Point(20, 386),
                 Size     = new Size(70, 26),
                 Minimum  = 10, Maximum = 3600, Value = 60,
                 BackColor = Color.FromArgb(40, 40, 40),
                 ForeColor = Color.FromArgb(220, 220, 220),
                 Visible   = false
             };
-            var lblTotalUnit = MakeLbl("s  +", new Point(96, 364));
+            var lblTotalUnit = MakeLbl("s  +", new Point(96, 390));
             _numInc = new NumericUpDown
             {
-                Location = new Point(130, 360),
+                Location = new Point(130, 386),
                 Size     = new Size(60, 26),
                 Minimum  = 0, Maximum = 300, Value = 0,
                 BackColor = Color.FromArgb(40, 40, 40),
                 ForeColor = Color.FromArgb(220, 220, 220),
                 Visible   = false
             };
-            var lblIncUnit = MakeLbl("s/move", new Point(196, 364));
+            var lblIncUnit = MakeLbl("s/move", new Point(196, 390));
 
             void UpdateTCControls()
             {
@@ -239,7 +249,7 @@ namespace ChessDroid
             _btnStart = new Button
             {
                 Text      = "▶  Start Tournament",
-                Location  = new Point(20, 425),
+                Location  = new Point(20, 451),
                 Size      = new Size(190, 34),
                 BackColor = Color.FromArgb(60, 120, 60),
                 ForeColor = Color.White,
@@ -253,7 +263,7 @@ namespace ChessDroid
             _chkUseOpeningBook = new CheckBox
             {
                 Text      = "Use opening book",
-                Location  = new Point(20, 392),
+                Location  = new Point(20, 418),
                 AutoSize  = true,
                 ForeColor = Color.FromArgb(200, 200, 200)
             };
@@ -278,7 +288,7 @@ namespace ChessDroid
             };
             _pnlBookMode = new Panel
             {
-                Location  = new Point(36, 414),
+                Location  = new Point(36, 440),
                 Size      = new Size(260, 24),
                 Visible   = false,
                 BackColor = Color.Transparent
@@ -289,7 +299,7 @@ namespace ChessDroid
             _lblChosenOpening = new Label
             {
                 Text      = "",
-                Location  = new Point(36, 440),
+                Location  = new Point(36, 466),
                 Size      = new Size(340, 18),
                 Visible   = false,
                 ForeColor = Color.FromArgb(140, 210, 140)
@@ -311,7 +321,7 @@ namespace ChessDroid
             {
                 title, _rbRoundRobin, _rbManual,
                 lblPool, _lstRREngines, _pnlManualPairs,
-                lblGames, _numGames, _chkAdjudicate,
+                lblGames, _numGames, _chkAdjudicate, _chkUpdateRatings,
                 lblTC, _rbDepth, _rbMovetime, _rbClock,
                 _numDepth, lblDepthUnit, _numMovetime, lblMtUnit,
                 _numTotal, lblTotalUnit, _numInc, lblIncUnit,
@@ -459,6 +469,7 @@ namespace ChessDroid
             var tc = BuildTimeControl();
             int games = (int)_numGames.Value;
             bool adj  = _chkAdjudicate.Checked;
+            bool updateRatings = _chkUpdateRatings.Checked;
 
             // Init export state
             _allPgnGames.Clear();
@@ -521,7 +532,7 @@ namespace ChessDroid
 
             // Start up to MaxConcurrent boards
             for (int i = 0; i < MaxConcurrent; i++)
-                AssignNextPairing(_panels[i], tc, games, adj);
+                AssignNextPairing(_panels[i], tc, games, adj, updateRatings);
         }
 
         // ── Stop ─────────────────────────────────────────────────────────────
@@ -540,7 +551,7 @@ namespace ChessDroid
         // ── Pairing assignment ────────────────────────────────────────────────
         private void AssignNextPairing(MatchBoardPanel panel,
                                        EngineMatchTimeControl tc,
-                                       int games, bool adj)
+                                       int games, bool adj, bool updateRatings)
         {
             if (!_running || _queue.Count == 0) return;
             var pairing = _queue.Dequeue();
@@ -551,7 +562,7 @@ namespace ChessDroid
             panel.StartSeries(
                 pairing.Engine1.FileName, pairing.Engine2.FileName,
                 pairing.Engine1.Label,   pairing.Engine2.Label,
-                tc, _engineBasePath, _config, games, adj, openingFen);
+                tc, _engineBasePath, _config, games, adj, updateRatings, openingFen);
         }
 
         private void SelectTournamentOpening()
@@ -660,7 +671,8 @@ namespace ChessDroid
                 var tc   = BuildTimeControl();
                 int gms  = (int)_numGames.Value;
                 bool adj = _chkAdjudicate.Checked;
-                AssignNextPairing(panel, tc, gms, adj);
+                bool updateRatings = _chkUpdateRatings.Checked;
+                AssignNextPairing(panel, tc, gms, adj, updateRatings);
             }
             else if (_queue.Count == 0 && _panels.All(p => !p.IsRunning))
             {
