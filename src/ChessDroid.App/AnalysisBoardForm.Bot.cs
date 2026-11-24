@@ -25,7 +25,9 @@ namespace ChessDroid
                 availableEngines, config?.EngineProfiles ?? new(), config?.SelectedEngine ?? "");
             if (dialog.ShowDialog() != DialogResult.OK) return;
 
-            await StartBotEngineAsync(dialog.Settings, resetBoard: true);
+            var controller = new BotModeController(this);
+            CurrentModeController = controller;
+            await controller.Enter(dialog.Settings, resetBoard: true);
         }
 
         // Called by BtnPlayBot_Click (resetBoard=true) and Chess960 browser (resetBoard=false).
@@ -36,7 +38,7 @@ namespace ChessDroid
             autoAnalysisCts?.Cancel();
 
             _botModeActive = true;
-            CurrentModeController = new BotModeController(this);
+            if (CurrentModeController is not BotModeController) CurrentModeController = new BotModeController(this);
             SetBotControlsEnabled(true);
             boardControl.ClearEngineArrows();
             boardControl.ClearBookArrows();
@@ -329,11 +331,18 @@ namespace ChessDroid
             return "full strength";
         }
 
-        /// <summary>Thin IModeController wrapper around StopBotMode — see Modes/IModeController.cs.</summary>
+        /// <summary>
+        /// IModeController wrapper for Bot mode — the one mode with an achievable clean
+        /// Enter/Exit pair (see Modes/IModeController.cs for why Match/Training don't get
+        /// one). Enter isn't on the shared interface since it needs the already-resolved
+        /// BotSettingsDialog result as a parameter, which Match/Training can't supply
+        /// uniformly; it lives here as a Bot-specific method instead.
+        /// </summary>
         private sealed class BotModeController : Modes.IModeController
         {
             private readonly AnalysisBoardForm _form;
             public BotModeController(AnalysisBoardForm form) => _form = form;
+            public Task Enter(BotSettings settings, bool resetBoard) => _form.StartBotEngineAsync(settings, resetBoard);
             public void ExitMode() => _form.StopBotMode();
         }
 

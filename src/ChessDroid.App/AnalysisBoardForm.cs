@@ -1205,7 +1205,9 @@ namespace ChessDroid
                 using var botDlg = new BotSettingsDialog(ThemeService.IsDarkTheme(config?.Theme),
                     engines, config?.EngineProfiles ?? new(), config?.SelectedEngine ?? "");
                 if (botDlg.ShowDialog(this) != DialogResult.OK) return;
-                await StartBotEngineAsync(botDlg.Settings, resetBoard: false);
+                var controller = new BotModeController(this);
+                CurrentModeController = controller;
+                await controller.Enter(botDlg.Settings, resetBoard: false);
             }
         }
 
