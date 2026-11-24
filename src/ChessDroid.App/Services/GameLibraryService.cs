@@ -25,10 +25,32 @@ namespace ChessDroid.Services
                     var game = JsonSerializer.Deserialize<SavedGame>(File.ReadAllText(file), _jsonOptions);
                     if (game != null) result.Add(game);
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    CrashLogger.LogException(ex, $"Error loading saved game '{file}'");
+                    QuarantineCorruptFile(file);
+                }
             }
             result.Sort((a, b) => b.SavedAt.CompareTo(a.SavedAt));
             return result;
+        }
+
+        // The file exists but failed to load — quarantine it instead of silently skipping it,
+        // so a corrupt save never just vanishes from the library with no trace (same reasoning
+        // as AppConfig.QuarantineCorruptConfig for config.json).
+        private static void QuarantineCorruptFile(string path)
+        {
+            try
+            {
+                string quarantinePath = Path.Combine(
+                    Path.GetDirectoryName(path) ?? ".",
+                    $"{Path.GetFileNameWithoutExtension(path)}.corrupt-{DateTime.Now:yyyyMMdd-HHmmss}.json");
+                File.Move(path, quarantinePath, overwrite: false);
+            }
+            catch (Exception ex)
+            {
+                CrashLogger.LogException(ex, $"Failed to quarantine corrupt saved game '{path}'");
+            }
         }
 
         public void Save(SavedGame game)
