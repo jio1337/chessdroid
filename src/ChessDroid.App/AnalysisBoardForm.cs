@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using ChessDroid.Controls;
 using ChessDroid.Models;
 using ChessDroid.Services;
+using ChessDroid.Views;
 
 namespace ChessDroid
 {
@@ -21,7 +22,7 @@ namespace ChessDroid
         /// <summary>
         // Analysis cache - keyed by FEN (position only, not full FEN with move counters)
         // Thread-safe for concurrent async access
-        private ConcurrentDictionary<string, CachedAnalysis> _analysisCache = new();
+        internal ConcurrentDictionary<string, CachedAnalysis> _analysisCache = new();
         private int _cachedDepth; // Track the depth used for cached analyses
 
         // Positions already proven to have no legal moves (checkmate/stalemate). A terminal
@@ -34,7 +35,7 @@ namespace ChessDroid
         private readonly ConcurrentDictionary<string, byte> _knownTerminalPositions = new();
 
         // Classification lookup for O(1) DrawItem color lookups
-        private Dictionary<MoveNode, MoveReviewResult>? _classificationLookup;
+        internal Dictionary<MoveNode, MoveReviewResult>? _classificationLookup;
 
         // Auto-analysis
         private CancellationTokenSource? autoAnalysisCts;
@@ -45,11 +46,11 @@ namespace ChessDroid
         private ChessEngineService? engineService;
         private ConsoleOutputFormatter? consoleFormatter;
         private PolyglotBookService? openingBookService;
-        private AppConfig config;
+        internal AppConfig config;
 
         // Game state - move tree for variations support
-        private MoveTree moveTree = null!;
-        private bool isNavigating;
+        internal MoveTree moveTree = null!;
+        internal bool isNavigating;
 
         // Move list grid — one MovePair per ListBox row
         private sealed class MovePair
@@ -66,7 +67,7 @@ namespace ChessDroid
         private MoveNode? _activeNode;  // which half is highlighted in the current row
 
         // Engine match
-        private EngineMatchService? matchService;
+        internal EngineMatchService? matchService;
         private System.Windows.Forms.Timer clockTimer = null!;
         private bool matchRunning;
         private double? _previousMatchEval; // Track previous eval for brilliant move detection
@@ -141,7 +142,7 @@ namespace ChessDroid
         private bool _botModeActive;
         private bool _chess960Active;
         private bool _drillBotActive; // true while a drill Practice vs Bot session is running
-        private bool _drillWatchActive; // true while a drill Watch Engines session is running
+        internal bool _drillWatchActive; // true while a drill Watch Engines session is running
         private Dictionary<string, int> _watchPositionCounts = new();
         private bool _matchPanelActive;
         private BotSettings? _botSettings;
@@ -180,8 +181,8 @@ namespace ChessDroid
         private bool _boardColorSavedMonochrome;
         private int  _boardColorSavedIndex = -1;
         private System.Windows.Forms.Timer? _boardColorHoverTimer;
-        private System.Windows.Forms.Timer? _drillHoverTimer;
-        private int _drillHoverLastIdx = -1;
+        internal System.Windows.Forms.Timer? _drillHoverTimer;
+        internal int _drillHoverLastIdx = -1;
 
         private readonly AudioService _audioService = new();
 
@@ -264,7 +265,8 @@ namespace ChessDroid
                 LeftPanel_Resize(leftPanel, EventArgs.Empty);
                 PnlBoardControls_Resize(pnlBoardControls, EventArgs.Empty);
                 this.MinimumSize = this.Size;
-                InitTrainingPanel();
+                _trainingPanel = new TrainingPanel(this);
+                rightPanel.Controls.Add(_trainingPanel);
 
                 toolTip.SetToolTip(btnNewGame, "New Game");
                 toolTip.SetToolTip(btnChess960, "Chess 960 — Position Browser");
@@ -746,15 +748,15 @@ namespace ChessDroid
             ApplyBoardColorPreview(idx);
         }
 
-        private void DrillHoverTimer_Tick(object? sender, EventArgs e)
+        internal void DrillHoverTimer_Tick(object? sender, EventArgs e)
         {
-            if (_cmbDrillChapter == null) return;
+            if (_trainingPanel._cmbDrillChapter == null) return;
             var info = new COMBOBOXINFO { cbSize = Marshal.SizeOf<COMBOBOXINFO>() };
-            if (!GetComboBoxInfo(_cmbDrillChapter.Handle, ref info) || info.hwndList == IntPtr.Zero) return;
+            if (!GetComboBoxInfo(_trainingPanel._cmbDrillChapter.Handle, ref info) || info.hwndList == IntPtr.Zero) return;
             int idx = SendMessage(info.hwndList, LB_GETCURSEL, 0, 0);
-            if (idx < 0 || idx >= _cmbDrillChapter.Items.Count || idx == _drillHoverLastIdx) return;
+            if (idx < 0 || idx >= _trainingPanel._cmbDrillChapter.Items.Count || idx == _drillHoverLastIdx) return;
             _drillHoverLastIdx = idx;
-            string study = _cmbDrillStudy?.SelectedItem?.ToString() ?? "";
+            string study = _trainingPanel._cmbDrillStudy?.SelectedItem?.ToString() ?? "";
             var chapters = GetChaptersForStudy(study);
             var ch = idx < chapters.Count ? chapters[idx] : null;
             if (ch == null) return;
@@ -1090,7 +1092,7 @@ namespace ChessDroid
             }
         }
 
-        private async Task TriggerAutoAnalysis(bool clearHash = false)
+        internal async Task TriggerAutoAnalysis(bool clearHash = false)
         {
             if (_autoPlaying) return;
             if (_trainingGameActive) return;
@@ -1895,7 +1897,7 @@ namespace ChessDroid
             UpdateMaterialStrips();
         }
 
-        private void UpdateMaterialStrips()
+        internal void UpdateMaterialStrips()
         {
             if (_materialTop == null || _materialBottom == null) return;
 

@@ -275,7 +275,7 @@ namespace ChessDroid
                 _drillBotActive = false;
                 RestoreChallengeSnapshot(triggerAnalysis: false);
                 SetDrillControlsEnabled(true);
-                if (_btnDrillVsBot != null) _btnDrillVsBot.Text = "⚔ Practice vs Bot";
+                if (_trainingPanel._btnDrillVsBot != null) _trainingPanel._btnDrillVsBot.Text = "⚔ Practice vs Bot";
             }
             else
             {
@@ -374,7 +374,7 @@ namespace ChessDroid
                 _drillBotActive = false;
                 RestoreChallengeSnapshot(triggerAnalysis: false);
                 SetDrillControlsEnabled(true);
-                if (_btnDrillVsBot != null) _btnDrillVsBot.Text = "⚔ Practice vs Bot";
+                if (_trainingPanel._btnDrillVsBot != null) _trainingPanel._btnDrillVsBot.Text = "⚔ Practice vs Bot";
                 lblStatus.Text = "Drill stopped";
             }
             else

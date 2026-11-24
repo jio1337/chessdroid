@@ -1039,13 +1039,13 @@ namespace ChessDroid
         private Panel leftPanel;
         private SplitContainer splitRightPanels;
         private Panel middlePanel;
-        private Panel rightPanel;
+        internal Panel rightPanel;
         private Panel pnlBoardControls;
         private System.Windows.Forms.ToolTip toolTip;
 
         // Left panel - Board and controls
         private EvalBarControl evalBar;
-        private ChessBoardControl boardControl;
+        internal ChessBoardControl boardControl;
         private MaterialStripControl _materialTop;
         private MaterialStripControl _materialBottom;
         private Label lblTurn;
