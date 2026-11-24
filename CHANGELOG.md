@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [3.22.0] - 2026-11-24
+
+### Added
+- **Tournament mode: Chessdroid rating updates** — New "Update Chessdroid ratings after finishing" checkbox on the Tournament setup panel (defaulted on). Each completed game in a tournament (not just each series) now optionally updates both engines' persistent Chessdroid rating via the same K=32 formula and CCRL-seed gating the 1v1 Engine Match feature already used — previously tournament results never fed the rating ladder at all.
+
+### Fixed
+- **Game Library: corrupt saved games silently vanished** — `GameLibraryService.LoadAll()` swallowed any file that failed to deserialize in a bare `catch {}`, so a corrupted saved game disappeared from the library with no log entry and no way to recover it. Now logs via `CrashLogger` and quarantines the bad file (`*.corrupt-*.json`) instead of discarding it, mirroring the existing `AppConfig` quarantine-on-corruption behavior.
+- **Multi-game PGN import: false split on move annotations** — `SplitPgnGames` (used by the Import PGN picker) decided a new game's headers were starting from a bare `StartsWith('[')`. Lichess/chess.com-style move annotations like `[%eval 0.31]` or `[%clk 0:05:00]` also start and end with brackets, so a long move-text line wrapping such that one landed alone at the start of a physical line could split one real game into two bogus fragments mid-game. Fixed by also requiring a quote — real PGN tags are always `[Name "value"]`, `%`-annotations never are.
+- **Drill vs Bot: Challenge Mode silently never actually turned on** — `BotSettingsDialog` hid the Friendly/Challenge radio group in drill mode, but hiding the group didn't change which radio was checked, so `Settings.ChallengeMode` read `false` for every drill game — silently defeating the "no takebacks in challenge mode" guard throughout every drill.
+- **Drill vs Bot: Engine Match / Training buttons could end an active drill** — `StopTraining()` only guarded against Drill Watch Engines being active, not Drill vs Bot. Opening the Engine Match panel, or the main Training toggle button, during an active bot drill silently hid the drill UI and re-enabled every locked button while the bot kept playing underneath, unseen.
+
+### Refactoring / Performance
+- **`GameSession` extracted from `ChessBoardControl`** (`ChessDroid.Core.Models.GameSession`) — board/game state (board, side to move, castling rights, en passant, move counters) now owned by one class; `ChessBoardControl` delegates to it with an identical external API, so no call site changed.
+- **`BotModeController` given a real `Enter`/`ExitMode` pair** — Match and Training mode controllers intentionally keep their narrower `ExitMode()`-only shape; see `ARCHITECTURE.md` for why a clean Enter/Exit isn't safely achievable for those two yet.
+- **`TrainingPanel` extracted into its own `UserControl`** (`src/ChessDroid.App/Views/TrainingPanel.cs`) — pulled the training sub-modes' UI construction (~1,000 lines, 102 control fields) out of the 3,264-line `AnalysisBoardForm.Training.cs`; mode logic (puzzle/vision/opening/drill scoring, timers) stayed in place.
+- **Analyzer settings persisted into `Directory.Build.props`** — `AnalysisLevel=latest-recommended`/`EnableNETAnalyzers=true` were previously only ever applied via a command-line override during the original 864-to-0 warning cleanup, so a plain `dotnet build` silently ran with analyzers off and nothing stopped new code from reintroducing the same warnings.
+- **`MatchBoardPanel.ComputeRatingUpdate` extracted as a pure static method** — isolates the Chessdroid rating math from WinForms/config I-O so it's directly testable.
+- Test suite grew from 175 to 273 tests this cycle, including new coverage for `PgnImportService`, `EloCalculator`, `GameLibraryService`, the Tournament rating math, and `PgnGamePickerDialog`'s multi-game splitting — all had little to no coverage before.
+
+---
+
 ## [3.21.1] - 2026-06-11
 
 ### Fixed

@@ -1,8 +1,10 @@
-## chessdroid v3.20.0 — User Guide
+## chessdroid — User Guide
 
 ### Welcome to chessdroid!
 
-chessdroid is an offline chess analysis application built for focused study. Analyze positions, explore ideas, and learn with your favorite UCI engines — with automatic analysis on every move, no buttons to press.
+chessdroid is an offline chess analysis application built for focused study. Analyze positions, explore ideas, run engine tournaments, and train with your favorite UCI engines — with automatic analysis on every move, no buttons to press.
+
+For the exact feature list of the version you're running, see [CHANGELOG.md](CHANGELOG.md).
 
 ---
 
@@ -10,7 +12,7 @@ chessdroid is an offline chess analysis application built for focused study. Ana
 
 1. **Launch chessdroid** — Run `chessdroid.exe`
 2. **Configure your engine** — Click ⚙ Settings, select your UCI engine from the Engines folder
-3. **Make moves on the board** — Click pieces to move them, analysis runs automatically
+3. **Make moves on the board** — Click or drag pieces to move them, analysis runs automatically
 4. **Read the analysis** — See move classifications, explanations, WDL, and opening names
 5. **Import a game** — Use Import PGN to analyze a complete game move by move
 
@@ -23,21 +25,26 @@ chessdroid is an offline chess analysis application built for focused study. Ana
 The Analysis Board is the heart of chessdroid — a complete interactive workspace for deep chess analysis.
 
 **Capabilities:**
-- **Interactive Board** — Click to make moves with legal move validation
+- **Interactive Board** — Click or drag to make moves with legal move validation
 - **Engine Arrows** — Colored arrows on the board showing engine recommended moves (green=best, yellow=2nd, red=3rd)
 - **[See line]** — Click to load any PV line into the move tree as a variation with animated playback
 - **Free-Draw Arrows** — Right-click and drag to draw arrows from any square to any square for your own analysis
 - **Move Tree** — All moves tracked in a navigable list with variation branching
 - **Auto-Analysis** — Engine analysis runs automatically on every move, new game, and form open, with caching for instant results
 - **FEN Support** — Load any position via FEN string or start from the standard position
+- **Position Editor** — Set up an arbitrary position piece by piece, including castling rights and side to move
 - **Flip Board** — View from White or Black's perspective
-- **PGN Import/Export** — Import games from any source, export your analysis to standard PGN format
-- **Move Classification** — Review games with colored quality symbols — Brilliant (!!), Blunder (??), Mistake (?), Inaccuracy (?!)
+- **PGN Import/Export** — Import games from any source, including multi-game PGN files (a picker lets you choose which game to load); export your analysis to standard PGN format with embedded move annotations
+- **Move Classification** — Review games with colored quality symbols — Brilliant (!!), Blunder (??), Mistake (?), Inaccuracy (?!), Precise (!)
 - **Move Quality Badge** — Colored badge overlaid on the destination square while navigating moves (teal=Brilliant !!, yellow=Inaccuracy ?!, orange=Mistake ?, red=Blunder ??)
 - **Evaluation Bar** — Visual position assessment with smooth transitions
+- **Eval Graph** — Score history chart in the right panel; click any point to jump to that move
+- **Game Library** — Save any analyzed game locally with player names, date, result, and accuracy scores; reload it later with the full move tree and classification restored
 
 **Navigation:**
 - Use arrow keys (← →) to step through moves
+- Use ↑ / ↓ to switch between variations at the current position
+- Press Home / End to jump to the start / end of the game
 - Click any move in the list to jump to that position
 - Press Backspace to take back the last move
 - Press Ctrl+N for a new game, Ctrl+F to flip the board
@@ -51,7 +58,7 @@ Challenge any UCI engine directly on the Analysis Board.
 **Starting a game:**
 1. Click the **♞ vs Bot** button on the Analysis Board
 2. Set your target Elo (1320–3190) or pick a preset: Beginner (1350) / Club (1700) / Advanced (2100) / Expert (2500)
-3. Choose **Friendly** or **Challenge** mode — Challenge hides engine arrows, eval bar, and analysis output
+3. Choose **Friendly** or **Challenge** mode — Challenge hides engine arrows, eval bar, and analysis output, and disables take-back
 4. Pick your engine, color (White or Black), then click Start — the board auto-flips if you play Black
 
 **During the game:**
@@ -61,7 +68,9 @@ Challenge any UCI engine directly on the Analysis Board.
 
 **Draw detection:** chessdroid automatically detects threefold repetition, insufficient material, and the 50-move rule.
 
-**Note:** Bot mode and engine match mode are mutually exclusive.
+**Note:** Bot mode, Engine Match mode, and Tournament mode are mutually exclusive — only one runs at a time.
+
+**Chess engines that don't support Elo limiting** (e.g. Ethereal, Berserk) always play at full strength regardless of the Elo slider — chessdroid detects this at startup and warns you, showing the engine's CCRL rating instead of a false Elo label.
 
 ---
 
@@ -83,33 +92,66 @@ Play chess with randomized starting positions for the back rank.
 
 ### **3. Engine vs Engine Matches**
 
-Watch chess engines battle head-to-head on the Analysis Board.
+Watch two chess engines battle head-to-head on the Analysis Board.
 
 **Setting up a match:**
 1. Look for the **Engine Match** panel on the Analysis Board
 2. Select engines for White and Black from your Engines folder
-3. Choose a time control: Fixed Depth, Time per Move, or Classical
+3. Choose a time control: Fixed Depth, Time per Move, or Total Time + Increment
 4. Optionally check "Start from current position" to begin from any board position
 5. Click Start to begin the match
 
-The match runs automatically until checkmate, stalemate, or you click Stop. All moves are recorded in the move list for post-game analysis. Brilliant moves (!!) are detected in real-time during matches.
+The match runs automatically until checkmate, stalemate, or you click Stop. All moves are recorded in the move list for post-game analysis, and the finished game is auto-saved to the Game Library. If both engines have a CCRL rating configured, the match also updates their Chessdroid rating (see below).
+
+---
+
+### **3b. Tournament Mode**
+
+Run multiple engine-vs-engine match series at once, in a 2×2 live board grid.
+
+**Setting up a tournament:**
+1. Open Tournament mode and choose a pairing mode:
+   - **Round-robin** — pick a pool of engines, every pair plays a series against each other
+   - **Manual** — set up to 4 specific pairings yourself
+2. Set games per match, time control, and whether to auto-adjudicate clearly decided/drawn positions
+3. Optionally enable an opening book so games don't all start from the standard position
+4. Leave **"Update Chessdroid ratings after finishing"** checked (default on) if you want these games to count toward the engines' Chessdroid ratings
+5. Click Start Tournament
+
+**During the tournament:**
+- Up to 4 pairings run concurrently; as a pairing finishes its series, the next queued pairing starts on that board
+- Click any board to expand it full-size and attach the live annotator engine; click again to return to the overview
+- Live standings (score, wins/draws/losses, games played) update after every series
+- Click **Stop** to end the tournament early — this stops every game, not just the focused one, and still saves whatever results were completed
+
+When the tournament finishes, results (standings + full PGN of every game played) are saved to a `tournament_<timestamp>.txt` file next to chessdroid.exe.
+
+---
+
+### **3c. Chessdroid Rating Ladder**
+
+CCRL ratings come from thousands of games under fixed conditions on dedicated hardware — not necessarily representative of how an engine performs under the settings and time controls you actually use. The **Chessdroid rating** is a separate, locally-calibrated rating: it seeds from an engine's CCRL rating the first time it plays a game inside chessdroid, then drifts based only on games it actually plays here (1v1 Engine Matches and, optionally, Tournament games).
+
+It uses a higher K-factor (32, vs. FIDE's 10) so it converges to a meaningful estimate after a few dozen games instead of needing thousands. Think of it as a rough pecking order among the engines you actually have installed, not a competitor to CCRL.
+
+View and compare engine ratings in the **Engine Profiles** dialog.
 
 ---
 
 ### **4. Move Classification**
 
-chessdroid uses Chess.com-inspired move classification based on win probability calculations:
+chessdroid uses Chess.com-inspired move classification based on centipawn loss (how much evaluation the actual move gave up compared to the engine's best move), with thresholds that adapt slightly to your Aggressiveness setting:
+
+- **Inaccuracy (?!)** — roughly 50+ centipawns lost
+- **Mistake (?)** — roughly 100+ centipawns lost
+- **Blunder (??)** — roughly 300+ centipawns lost, or missing/allowing forced checkmate
 
 **For the Best Move:**
 - **Brilliant (!!)** — Piece sacrifice that maintains good position
   - Must sacrifice a piece (not recapturable by pawn)
   - Position remains good after the sacrifice
   - Shows explanation like "sacrifices rook for decisive advantage"
-
-**For Alternative Moves (2nd/3rd best):**
-- **Blunder (??)** — Loses 20%+ win probability (Crimson)
-- **Mistake (?)** — Loses 10-20% win probability (Orange Red)
-- **Inaccuracy (?!)** — Loses 5-10% win probability (Orange)
+- **Precise (!)** — The only move that keeps a winning or saving advantage in a critical position
 
 **Blunder Explanations:**
 chessdroid explains WHY moves are bad — not just that they are blunders, but what tactical or positional consequences they create.
@@ -202,23 +244,32 @@ Threats show only what CHANGED — if your piece was already attacking something
 
 ---
 
-### **10. Complexity Levels**
+### **10. Training & Study**
 
-Choose your preferred explanation detail:
+chessdroid includes a full training suite, accessible from the Training panel:
 
-- **Beginner** — Simple, clear language (e.g., "knight in good position")
-- **Intermediate** — Moderate detail with chess terminology (default)
-- **Advanced** — Full technical details with chess terminology
-- **Master** — Maximum detail with annotations
+- **Puzzle Training** — 5.94M Lichess puzzles (CC0). Includes **Puzzle Rush** (as many as you can solve against the clock), **Puzzle Gauntlet** (survival streak — one wrong move ends the run), and a **Daily Puzzle**. Filter by opening or rating range.
+- **Opening Training** — Recreate an opening move by move from memory; lifetime stats are kept per opening (total runs, perfect runs, mistakes, best run)
+- **Vision Training** — Board coordinate recognition drills, with Timed and Survival modes and personal bests
+- **Square Training** — Easy and Challenge difficulty, with separate personal bests for White, Black, and Random square sets
+- **Training Stats** — Click the 📊 button for a unified view of personal bests across every training mode
 
 ---
 
-### **11. Feature Toggles**
+### **11. Endgame & Tactics Drills**
 
-Customize which analysis features you want to see:
+Ten curated drill sets covering common endgame and tactical motifs, loaded from PGN study files.
 
-- **Show Best/Second/Third Line** — Multi-PV control
-- **Show Engine Arrows** — Colored arrows on the board for engine recommendations
+- **Drill vs Bot** — Play out a drill position against the engine. The rest of the UI (mode switcher, New Game, etc.) locks while a drill is active, so you can't accidentally abandon it mid-game.
+- **Drill: Watch Engines** — Let two engines play the position out against each other while you observe
+
+---
+
+### **12. Feature Toggles**
+
+Customize which analysis features you want to see, in Settings:
+
+- **Show Best/Second/Third Line** and **Engine Arrow Count** — Multi-PV display control
 - **Tactical Analysis** — Pins, forks, skewers, discovered attacks
 - **Positional Analysis** — Pawn structure, outposts, mobility
 - **Endgame Analysis** — Zugzwang, patterns, endgame techniques
@@ -227,8 +278,8 @@ Customize which analysis features you want to see:
 - **Show WDL** — Win/Draw/Loss probabilities
 - **Show Opening Name** — Detected opening
 - **Show Book Moves** — Opening book suggestions
-- **Show Move Quality** — Brilliant/Blunder/Mistake/Inaccuracy labels
-- **Show Pins** — Pin detection display
+- **Show Move Quality** — Brilliant/Precise/Blunder/Mistake/Inaccuracy labels
+- **Show Explanations** — Toggle full explanations off for a bare depth header + clickable PVs only
 
 ---
 
@@ -237,6 +288,8 @@ Customize which analysis features you want to see:
 | Shortcut | Action |
 |----------|--------|
 | `←` / `→` | Navigate moves (previous / next) |
+| `↑` / `↓` | Switch between variations at the current position |
+| `Home` / `End` | Jump to the start / end of the game |
 | `Backspace` | Take back last move |
 | `Ctrl+N` | New game |
 | `Ctrl+F` | Flip board |
@@ -247,63 +300,54 @@ Customize which analysis features you want to see:
 
 ### **Accessing Settings**
 
-Click the **⚙** button on the Analysis Board to open Settings.
+Click the **⚙** button on the Analysis Board to open Settings, organized into General, Board, Engine, and Training tabs.
 
 ### **Board Colors**
 
 Under the **Board Colors** group in Settings, click the color buttons next to "Light Squares" and "Dark Squares" to open the full Windows RGB color picker. Your chosen colors are applied immediately when you click **Save** and persist across sessions.
 
-### **Recommended Settings by Skill Level**
+### **Panel Layout**
 
-**Beginner (< 1200 rating):**
-- Complexity: Beginner
-- Aggressiveness: 50 (Balanced)
-- Enable: Tactical Analysis, Opening Principles, Engine Arrows
+Choose how the Board, Moves, and Analysis panels are arranged from 6 presets — applied live, no restart needed.
 
-**Intermediate (1200-1800 rating):**
-- Complexity: Intermediate (Default)
-- Aggressiveness: 50 (Balanced)
-- Enable: All tactical and positional features
-- WDL Display: ON
+### **Getting Started**
 
-**Advanced (1800-2200 rating):**
-- Complexity: Advanced
-- Aggressiveness: Adjust to your style
-- Enable: All features
+If you're new to chessdroid, a reasonable starting point:
+- Enable Tactical Analysis, Opening Principles, and Engine Arrows so you can see what the engine is suggesting and why
+- Leave Aggressiveness at 50 (Balanced) until you have a feel for how the slider affects recommendations
+- Turn on WDL Display once you're comfortable reading evaluations, for a more intuitive sense of winning chances
 
-**Expert (2200+ rating):**
-- Complexity: Master
-- Enable: All features
-- Aggressiveness: Set to match your playing style
+As you get more comfortable, enable Show Threats and Positional/Endgame Analysis for deeper explanations.
 
 ---
 
 ## Tips & Tricks
 
-### **Tip 1: Start with Beginner Mode**
-Even strong players benefit from simple explanations. Start simple, increase complexity as needed.
-
-### **Tip 2: Use Move Classification for Quick Scanning**
+### **Tip 1: Use Move Classification for Quick Scanning**
 - **!!** (Brilliant) = exceptional sacrifice move
+- **!** (Precise) = the only move keeping the advantage
 - **No symbol** = best or good move
 - **?!** (Inaccuracy) = slightly suboptimal
 - **?** (Mistake) = loses advantage
 - **??** (Blunder) = major error
 
-### **Tip 3: Compare Multiple Lines**
+### **Tip 2: Compare Multiple Lines**
 Enable 2nd and 3rd best lines to understand why one move is better than another.
 
-### **Tip 4: Study Endgames with Specialized Analysis**
+### **Tip 3: Study Endgames with Specialized Analysis**
 In endgame positions, chessdroid provides insights on opposition, rule of the square, and king activity.
 
-### **Tip 5: Use Play Style to Match Your Games**
+### **Tip 4: Use Play Style to Match Your Games**
 Playing a must-win game? Set to 80-100. Need a safe draw? Set to 0-20.
 
-### **Tip 6: Import PGN to Review Your Games**
-Paste a game from Chess.com, Lichess, or any PGN source to analyze move by move with the Classify Moves button.
+### **Tip 5: Import PGN to Review Your Games**
+Paste a game from Chess.com, Lichess, or any PGN source to analyze move by move with the Classify Moves button. If you paste a multi-game PGN (e.g. a tournament export), chessdroid will ask which game to load.
 
-### **Tip 7: Check WDL for Close Decisions**
+### **Tip 6: Check WDL for Close Decisions**
 When evaluation is similar, WDL helps understand the true nature of the position.
+
+### **Tip 7: Use Tournament Mode to Compare Engines**
+Set up a round-robin between the engines you have installed and let the Chessdroid rating ladder tell you which actually performs best under your own settings and time control.
 
 ### **Tip 8: Add Custom Piece Sets**
 Create a folder in `Templates/` with 12 PNG files (wK, wQ, wR, wB, wN, wP, bK, bQ, bR, bB, bN, bP) for your own piece theme.
@@ -313,7 +357,7 @@ Create a folder in `Templates/` with 12 PNG files (wK, wQ, wR, wB, wN, wP, bK, b
 ## Learning with chessdroid
 
 ### **Tactical Training**
-1. Load a tactical puzzle position via FEN
+1. Load a tactical puzzle position via FEN, or start a Puzzle Training session
 2. Try to find the solution
 3. Check the analysis — did you spot the tactic?
 4. Read the explanation to learn the pattern
@@ -323,6 +367,7 @@ Create a folder in `Templates/` with 12 PNG files (wK, wQ, wR, wB, wN, wP, bK, b
 2. Click Classify Moves to review the entire game
 3. Step through each move to see classifications
 4. Focus on blunders and mistakes — read the explanations for why they're bad
+5. Save it to your Game Library if you want to come back to it later
 
 ### **Opening Preparation**
 1. Start from the standard position
@@ -330,6 +375,7 @@ Create a folder in `Templates/` with 12 PNG files (wK, wQ, wR, wB, wN, wP, bK, b
 3. Watch the ECO opening name update
 4. Check book moves to see what grandmasters play
 5. Compare with engine recommendations
+6. Use Opening Training to drill the line from memory
 
 ### **Style Training**
 1. Set your Aggressiveness slider to your preferred style
@@ -344,17 +390,17 @@ Create a folder in `Templates/` with 12 PNG files (wK, wQ, wR, wB, wN, wP, bK, b
 ### **Problem: No analysis appearing**
 **Solution:** Ensure a UCI engine is configured in Settings. Place engine executables in the `Engines` folder.
 
-### **Problem: Explanations are too technical**
-**Solution:** Change to Beginner or Intermediate complexity level in Settings.
-
 ### **Problem: Too much information displayed**
-**Solution:** Disable some feature toggles in Settings.
-
-### **Problem: Want more detail in explanations**
-**Solution:** Switch to Advanced or Master complexity level.
+**Solution:** Disable some feature toggles in Settings, or turn off Show Explanations for a compact depth-header-only view.
 
 ### **Problem: Play Style slider doesn't seem to work**
 **Solution:** Ensure Aggressiveness is NOT set to exactly 50 (balanced). The filtering only activates at 0-49 or 51-100.
+
+### **Problem: Bot plays at full strength regardless of the Elo slider**
+**Solution:** Some engines (e.g. Ethereal, Berserk) don't support UCI Elo limiting and always play at full strength. chessdroid detects and warns about this when the engine starts; the difficulty label switches to showing the engine's CCRL rating instead.
+
+### **Problem: Take Back is greyed out**
+**Solution:** Take-back is intentionally disabled in Challenge mode and during an active Endgame/Tactics Drill. Switch to Friendly mode, or finish/stop the drill first.
 
 ---
 
@@ -363,6 +409,8 @@ Create a folder in `Templates/` with 12 PNG files (wK, wQ, wR, wB, wN, wP, bK, b
 **SEE (Static Exchange Evaluation)** — Internal calculation for sacrifice and brilliant move detection (not shown in UI)
 
 **WDL (Win/Draw/Loss)** — Probabilities for each game outcome based on engine evaluation
+
+**Chessdroid Rating** — A locally-calibrated Elo-style rating, seeded from CCRL and updated from games actually played inside chessdroid (see section 3c above)
 
 **Zwischenzug** — An intermediate move inserted into a tactical sequence (German for "in-between move")
 
@@ -388,164 +436,7 @@ Create a folder in `Templates/` with 12 PNG files (wK, wQ, wR, wB, wN, wP, bK, b
 
 ## Version History
 
-**v3.17.0** — The Arena (Current)
-- Tournament Mode: simultaneous engine matches, 2×2 live board grid, round-robin/manual pairing, live standings, PGN auto-save
-- Engine Match series with adjudication, opening book (Random/Choose), PGN auto-save with eval annotations
-- Endgame & Tactics Drills: 10 PGN files, all chapters with researched descriptions, Practice vs Bot, Watch Engines
-- Bot Elo targeting (1320–3190 + presets), draw detection (threefold/insufficient material/50-move rule)
-- Analysis output overhaul: clickable eval, 10-ply truncation + expandable "...", no blank lines
-- Precise (!) move quality — the only winning/saving move
-- Daily Puzzle sub-mode, Puzzle by Opening filter, Rating range filter
-- Multi-game PGN picker, Drills folder expanded to 10 PGN files
-
-**v3.16.0** — Training Grounds
-- Puzzle Training (5.94M Lichess puzzles), Puzzle Rush, Puzzle Gauntlet, Board Vision (Timed + Survival)
-- Persistent streaks, accuracy %, personal bests shown before each run, per-section reset links
-- Monochromatic board theme, training mode icons, lowercase chessdroid branding
-
-**v3.15.0** — Miami Nightclub
-- Sound effects — move, capture, check, game-over, castle
-- Live hover preview for piece set and board color dropdowns
-- Checkmate detection fix, combo selection revert fix
-
-**v3.14.0** — Theme Suite & Engine Ladder
-- 6 UI themes: Dark, Light, Cyberpunk, Dracula, Nord, Sepia
-- chessdroid Rating — persistent K=32 engine ladder, seeds from CCRL
-- Resizable Board | Moves | Analysis panels with saved splitter positions
-- Bot engine picker, position editor piece images, engine info labels on strips
-
-**v3.13.0** — Engine Match & Analysis Polish
-- Neutral eval arbiter in engine matches (Stockfish 18 judges every position)
-- Smooth eval bar animation — lerps to new values, full fill on mate
-- Correct checkmate notation (`Qh4#`), game-over output, and threat labels
-
-**v3.12.0** — Custom Piece Sets
-- SVG piece set support: drop any SVG folder into Templates and chessdroid auto-discovers it
-- Analysis output color redesign and spacing improvements
-- Material strips are now theme-aware with proper light/dark pill backgrounds
-- Board column width driven by window height — no dead horizontal space on any monitor
-- SVG drag performance: pre-scaled bitmaps, as smooth as Chess.com PNG sets
-
-**v3.11.0** — Game Library
-- Save any game to a persistent local library with player names, date, result, PGN, and accuracy scores
-- Load saved games back onto the board with full move tree and accuracy data restored
-- Inline rename: double-click any game name in the library to rename it
-- Engine vs engine matches auto-saved to the library when they finish
-- Re-saving an existing game overwrites rather than duplicating
-
-**v3.10.0** — Game Review & Accuracy
-- Game accuracy score per side using the Lichess win-probability formula; shown after Classify Moves
-- Interactive game review: click any quality count in the summary to jump to the first move of that quality
-- [← Game Review] link in analysis output for instant return to the accuracy summary while navigating
-- Material difference strips above and below the board (toggle in Settings → Board Colors)
-- Reorganized board controls: icon buttons (↺⇅↩♞), board fills full left-panel height with centering
-- Last-move highlight during keyboard navigation (← →)
-- Eval graph populated immediately when importing an annotated PGN
-- Performance: GDI object caching in EvalBarControl and EvalGraphControl; ThreatDetection LINQ eliminated
-
-**v3.9.0** — Eval Graph, Animations & Bot Levels
-- Eval graph (score history chart) in right panel; click any point to navigate to that move
-- Smooth piece animations (150ms); castling animates the rook; configurable 50–500ms
-- Bot difficulty now a full 1–20 level slider instead of Easy/Medium/Hard tiers
-- Classification cancellation: clicking New Game or Load while classifying stops immediately
-- Engine depth range expanded to 1–40
-
-**v3.8.1** — Bug Fixes & Light Theme Polish
-- [See line] board corruption fixed: clicking any PV line on positions with non-standard FEN characters no longer causes pieces to disappear
-- Light theme readability improvements: position labels, continuous analysis separator, and Recommended move section are now clearly visible on white backgrounds
-
-**v3.8.0** — Threat Arrows
-- Threat arrows (red) on the board: opponent threats against your pieces shown as visual arrows after each analysis, always matching the "⚠ Opponent threats:" text; toggle in Settings → Board Colors
-- Book moves shown immediately: opening name and book moves appear in the console before the engine starts thinking
-- Color preset combobox pre-selects your current colors when you open Settings
-- Opponent threats now also visible during continuous analysis live updates
-- Desperado, overload, and pinned attacker detection accuracy improvements
-
-**v3.7.0** — Checkmate Detection & Auto-Play
-- Checkmate threat detection: mate-in-1 scan across all pieces; shows "threatens checkmate on g2" so you always know the exact square to protect
-- Opponent mate threats visible in analysis before you move
-- "Stops checkmate threat" defense label on blocking moves (e.g. Bf3 blocking Qxg2#)
-- Auto-play button (▶▶): steps through the move list automatically; pause/resume at any time
-- Auto-play speed configurable in Settings (200–2000ms)
-- Cleaner endgame analysis: removed obvious and redundant output
-
-**v3.6.0** — Explanation Accuracy
-- Opening book arrows: book moves displayed as arrows on the board during opening positions
-- 25+ move explanation false positive fixes across all pattern detectors
-- 13 new explanation patterns for richer, more specific move descriptions
-- "attacks pawn on X" label when a move newly attacks an undefended enemy pawn
-- Analysis now starts automatically after loading a FEN
-
-**v3.5.0** — Annotated PGN & Polish
-- Annotated PGN export/import: move symbols, eval comments, and engine cache embedded in PGN; importing a classified game restores all colors and analysis instantly
-- Right-click square highlighting: tap any square to toggle an orange highlight; right-click drag still draws arrows
-- WDL labels now reflect the side to move: "completely winning", "completely losing", "clear disadvantage" etc.
-- [See line] animation: first move now visible with highlight; engine analyzes the final position automatically
-- Bot mode Challenge/Friendly selector added
-
-**v3.4.0** — Analysis Performance
-- Significantly faster analysis: redundant board scans eliminated across the analysis pipeline
-- SEE (Static Exchange Evaluation) king lookup optimized: single combined scan per filter call
-- Engine line parsing: cached split separator removes allocations during continuous analysis
-
-**v3.3.0** — Continuous Analysis & Stability
-- Continuous analysis mode: live PV streaming with compact display; full annotated result at max depth
-- Configurable max depth for continuous analysis (default 50, range 10–100)
-- Custom position editor: set up arbitrary positions for analysis
-- Font settings: configure analysis panel and move list font family and size
-- Engine freeze after move 2 fixed
-- MoveListBox crash and empty move list fixed
-- Brilliant move detection: pinned attackers no longer cause false positives
-
-**v3.2.1** — Bug Fixes
-- Bot mode no longer shows engine arrows for the bot's position
-- Best move no longer misclassified as inaccuracy
-- Stale analysis discarded when navigating quickly
-- Spurious analysis from move list selection suppressed
-
-**v3.2.0** — Bot Mode & Board Customization
-- Play vs Bot with 5 difficulty levels (Easy → Master)
-- Move quality badge overlaid on board during game navigation
-- Custom board color picker (full RGB) for light and dark squares
-
-**v3.1.0** — Engine Arrows & Visual Analysis
-- Engine arrows on board (green/yellow/red per PV line)
-- [See line] — load PV into move tree with animated playback
-- Free-draw right-click arrows, auto-analysis on form open
-- Removed SEE display and Puzzle Mode
-
-**v3.0.0** — Pure Analysis Board
-- Complete pivot: removed all screen detection and computer vision
-- AnalysisBoardForm is now the main and only entry point
-- Auto-analysis on every move, no manual trigger needed
-- Zwischenzug detection, blunder explanations, improved brilliant detection
-- ~50MB smaller without OpenCV dependencies
-
-**v2.9.0** — Engine Match Enhancements
-- Start from current position in engine matches
-- Brilliant move detection during matches
-- Dynamic template selection (piece set switching)
-
-**v2.8.0** — Analysis Board & Move Classification
-- Full-featured Analysis Board with interactive chess board
-- Move tree with variations, PGN import/export
-- Move classification, evaluation bar, engine matches, analysis caching
-
-**v2.7.0** — Play Style Recommendations
-- Style-based move suggestions (Very Solid → Very Aggressive)
-
-**v2.6.0** — Opening Book & ECO Database
-- Polyglot opening book support with 1M+ positions
-- 12,379+ ECO opening positions
-
-**v2.5.0** — Chess.com-Style Classification
-- Brilliant move detection (!!) and move classification
-
-**v2.0.0** — Major UX Update
-- Dark mode, complexity levels, feature toggles
-- Architecture overhaul
-
-**v1.0.0** — Initial Release
+chessdroid is actively developed. For the full, up-to-date version history, see [CHANGELOG.md](CHANGELOG.md).
 
 ---
 
@@ -576,6 +467,3 @@ chessdroid is released under the MIT License. Free and open-source forever!
 ---
 
 **Enjoy analyzing with chessdroid!**
-
-*Last Updated: 2026-06-01*
-*Version: 3.17.0*

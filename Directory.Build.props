@@ -8,7 +8,7 @@
     instead of hardcoding its own copy.
   -->
   <PropertyGroup>
-    <Version>3.21.1</Version>
+    <Version>3.22.0</Version>
     <!--
       CHESSDROID_AUDIT.md: analyzer settings were only ever passed on the command line
       (-p:AnalysisLevel=latest-recommended -p:EnableNETAnalyzers=true) during the 864-to-0
