@@ -77,6 +77,20 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
+
+  <!--
+    Copy the Lichess puzzle CSV database to output, if present. Puzzles/ is .gitignore'd
+    (the files are tens of MB each, not committed): drop your own CSVs into
+    src/ChessDroid.App/Puzzles/ and they'll be picked up by every build from here on, same
+    as Books/Templates/Drills/Audio/Engines above. Unlike those, this one was never wired up,
+    so a fresh checkout + build previously had no Puzzle Training button at all even with the
+    files sitting in the right folder.
+  -->
+  <ItemGroup>
+    <None Include="Puzzles\**\*.*" Condition="Exists('Puzzles')">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\ChessDroid.Core\ChessDroid.Core.csproj" />
   </ItemGroup>

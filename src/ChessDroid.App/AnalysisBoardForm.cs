@@ -1092,6 +1092,36 @@ namespace ChessDroid
             }
         }
 
+        // Veto a legal-but-wrong puzzle/opening-training move before it commits to the board,
+        // instead of letting MoveMade fire and undoing it afterward by reloading the position
+        // (the old approach — see RejectPuzzleMove/RejectOpeningTrainingMove in Training.cs).
+        private void BoardControl_MoveAttempted(object? sender, MoveAttemptEventArgs e)
+        {
+            // isNavigating marks every programmatic boardControl.MakeMove call in this
+            // codebase (bot moves, live match moves, PGN import/replay, puzzle opponent
+            // response) — only a live user click/drag should ever be vetoed here.
+            if (isNavigating) return;
+
+            if (_openingRecreatePhase)
+            {
+                if (_openingRecreateIndex >= _openingUciMoves.Count || _openingRecreateLocked) return;
+                if (e.UciMove != _openingUciMoves[_openingRecreateIndex])
+                {
+                    e.Cancel = true;
+                    RejectOpeningTrainingMove(e.ToRow, e.ToCol);
+                }
+                return;
+            }
+
+            if (_puzzleActive && !_puzzleLocked && _currentPuzzle != null
+                && _puzzleMoveIndex < _currentPuzzle.Moves.Length
+                && e.UciMove != _currentPuzzle.Moves[_puzzleMoveIndex])
+            {
+                e.Cancel = true;
+                RejectPuzzleMove(e.ToRow, e.ToCol);
+            }
+        }
+
         internal async Task TriggerAutoAnalysis(bool clearHash = false)
         {
             if (_autoPlaying) return;

@@ -227,6 +227,15 @@ namespace ChessDroid.Controls
         public event EventHandler? AnimationCompleted;
         public event Action<int, int>? SquareClicked;
 
+        /// <summary>
+        /// Fired after a move is fully resolved (legality + promotion choice) but before it's
+        /// committed to the board. Listeners (puzzle/opening-training validation) can set
+        /// <see cref="MoveAttemptEventArgs.Cancel"/> to reject it outright — e.g. a legal-but-
+        /// wrong puzzle move — instead of letting it commit and undoing it afterward by
+        /// reloading the position.
+        /// </summary>
+        public event EventHandler<MoveAttemptEventArgs>? MoveAttempted;
+
         public bool ShowLastMoveHighlight { get; set; } = true;
 
         private const string STARTING_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
@@ -1768,6 +1777,17 @@ namespace ChessDroid.Controls
             // Build UCI move
             string uciMove = ToUciMove(fromRow, fromCol, toRow, toCol, promotion);
 
+            // Give listeners a chance to veto this move before it's committed — see
+            // MoveAttempted's doc comment.
+            var attempt = new MoveAttemptEventArgs(fromRow, fromCol, toRow, toCol, promotion, uciMove);
+            MoveAttempted?.Invoke(this, attempt);
+            if (attempt.Cancel)
+            {
+                ClearSelection();
+                Invalidate();
+                return false;
+            }
+
             // Apply the move (board mutation, standard + Chess960 castling rook move, en
             // passant capture, promotion, castling-rights revocation, en-passant-square
             // update, halfmove/fullmove counters, turn switch) via GameSession, which itself
@@ -1879,6 +1899,29 @@ namespace ChessDroid.Controls
             UciMove = uciMove;
             FEN = fen;
             IsCapture = isCapture;
+        }
+    }
+
+    public class MoveAttemptEventArgs : EventArgs
+    {
+        public int FromRow { get; }
+        public int FromCol { get; }
+        public int ToRow { get; }
+        public int ToCol { get; }
+        public char? Promotion { get; }
+        public string UciMove { get; }
+
+        /// <summary>Set to true to reject this move — it will not be applied to the board.</summary>
+        public bool Cancel { get; set; }
+
+        public MoveAttemptEventArgs(int fromRow, int fromCol, int toRow, int toCol, char? promotion, string uciMove)
+        {
+            FromRow = fromRow;
+            FromCol = fromCol;
+            ToRow = toRow;
+            ToCol = toCol;
+            Promotion = promotion;
+            UciMove = uciMove;
         }
     }
 }
