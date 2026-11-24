@@ -8,7 +8,7 @@ namespace ChessDroid
     {
         #region Helpers
 
-        private void UpdateMoveList()
+        internal void UpdateMoveList()
         {
             moveListBox.BeginUpdate();
             try
@@ -188,12 +188,12 @@ namespace ChessDroid
             }
         }
 
-        private void UpdateFenDisplay()
+        internal void UpdateFenDisplay()
         {
             txtFen.Text = boardControl.GetFEN();
         }
 
-        private void UpdateTurnLabel()
+        internal void UpdateTurnLabel()
         {
             lblTurn.Text = boardControl.WhiteToMove ? "White to move" : "Black to move";
             lblTurn.ForeColor = boardControl.WhiteToMove
@@ -201,7 +201,7 @@ namespace ChessDroid
                 : (ThemeService.IsDarkTheme(config?.Theme) ? Color.LightGray : Color.DimGray);
         }
 
-        private void UpdateMoveListSelection()
+        internal void UpdateMoveListSelection()
         {
             var current = moveTree.CurrentNode;
             if (current == moveTree.Root)
@@ -252,7 +252,7 @@ namespace ChessDroid
             }
         }
 
-        private static string ConvertUciToSan(string uciMove, string fen)
+        internal static string ConvertUciToSan(string uciMove, string fen)
         {
             try
             {

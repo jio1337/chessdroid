@@ -609,7 +609,7 @@ namespace ChessDroid
                 {
                     _drillWatchActive = false;
                     SetDrillControlsEnabled(true);
-                    if (_btnDrillWatchEngines != null) { _btnDrillWatchEngines.Text = "⚙ Watch engines"; _btnDrillWatchEngines.Enabled = true; }
+                    if (_trainingPanel._btnDrillWatchEngines != null) { _trainingPanel._btnDrillWatchEngines.Text = "⚙ Watch engines"; _trainingPanel._btnDrillWatchEngines.Enabled = true; }
                 }
             }
         }
@@ -931,5 +931,32 @@ namespace ChessDroid
         }
 
         #endregion
+
+        // Relocated from AnalysisBoardForm.Training.cs — not training-related, just
+        // misplaced there historically (see CHESSDROID_AUDIT.md §4.2).
+        private void BtnMatch_Click(object? sender, EventArgs e)
+        {
+            if (matchRunning) { lblStatus.Text = "Stop the match first"; return; }
+
+            _matchPanelActive = !_matchPanelActive;
+            grpEngineMatch.Visible = _matchPanelActive;
+            HighlightButton(btnMatch, _matchPanelActive);
+
+            if (_matchPanelActive && _trainingUiVisible)
+                StopTraining();
+        }
+
+        private void BtnTournament_Click(object? sender, EventArgs e)
+        {
+            if (matchRunning) { lblStatus.Text = "Stop the match first"; return; }
+            var form = new TournamentForm(config);
+            form.Show(this);
+        }
+
+        private void BtnStats_Click(object? sender, EventArgs e)
+        {
+            using var dlg = new StatsDialog(config, config.Theme);
+            dlg.ShowDialog(this);
+        }
     }
 }
