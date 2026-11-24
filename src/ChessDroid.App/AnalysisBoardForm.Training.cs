@@ -910,6 +910,29 @@ namespace ChessDroid
             }
         }
 
+        // Called from BoardControl_MoveAttempted when a recreate-phase move is vetoed before
+        // it ever reaches the board — so unlike the old post-commit "wrong" handling, there's
+        // nothing to revert here, only the mistake count/highlight/lock bookkeeping.
+        private void RejectOpeningTrainingMove(int toRow, int toCol)
+        {
+            _openingPosMistakes[_openingRecreateIndex] =
+                _openingPosMistakes.GetValueOrDefault(_openingRecreateIndex) + 1;
+            _openingRecreateLocked = true;
+            boardControl.SetTrainingHighlight(toRow, toCol, TrainingErrorColor);
+
+            Task.Delay(600).ContinueWith(_ =>
+            {
+                if (IsDisposed) return;
+                Invoke(() =>
+                {
+                    boardControl.ClearTrainingHighlight();
+                    _openingRecreateLocked = false;
+                    if (_trainingPanel._btnOpHint != null) _trainingPanel._btnOpHint.Enabled = true;
+                });
+            });
+            UpdateOpeningRecreateDisplay();
+        }
+
         private void UpdateOpeningRecreateDisplay()
         {
             int total = _openingUciMoves.Count;
@@ -1652,6 +1675,34 @@ namespace ChessDroid
                     });
                 });
             }
+        }
+
+        // Called from BoardControl_MoveAttempted when a puzzle move is vetoed before it ever
+        // reaches the board — nothing to revert, only the wrong-move bookkeeping/feedback.
+        private void RejectPuzzleMove(int toRow, int toCol)
+        {
+            _wrongThisPuzzle = true;
+            _puzzleLocked    = true;
+            boardControl.SetTrainingHighlight(toRow, toCol, TrainingErrorColor);
+            SetText(_trainingPanel._lblPuzzleFeedback, "✗ Wrong");
+
+            if (_puzzleSubMode == "gauntlet")
+            {
+                ScheduleInvoke(900, GauntletEnd);
+                return;
+            }
+
+            // Training / Rush: let the player retry after a brief flash.
+            Task.Delay(800).ContinueWith(_ =>
+            {
+                if (!IsDisposed) Invoke(() =>
+                {
+                    boardControl.ClearTrainingHighlight();
+                    SetText(_trainingPanel._lblPuzzleFeedback, "");
+                    _puzzleLocked = false;
+                    if (_trainingPanel._btnPuzzleHint != null) _trainingPanel._btnPuzzleHint.Enabled = true;
+                });
+            });
         }
 
         private void PuzzlePlayOpponentResponse()

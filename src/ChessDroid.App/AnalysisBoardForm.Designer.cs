@@ -166,6 +166,7 @@ namespace ChessDroid
             boardControl.Size = new Size(480, 480);
             boardControl.TabIndex = 0;
             boardControl.MoveMade += BoardControl_MoveMade;
+            boardControl.MoveAttempted += BoardControl_MoveAttempted;
             boardControl.BoardChanged += BoardControl_BoardChanged;
             //
             // _materialTop
