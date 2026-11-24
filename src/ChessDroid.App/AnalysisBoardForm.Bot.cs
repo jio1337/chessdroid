@@ -276,6 +276,7 @@ namespace ChessDroid
                 RestoreChallengeSnapshot(triggerAnalysis: false);
                 SetDrillControlsEnabled(true);
                 if (_trainingPanel._btnDrillVsBot != null) _trainingPanel._btnDrillVsBot.Text = "⚔ Practice vs Bot";
+                if (CurrentModeController is TrainingModeController) CurrentModeController = null;
             }
             else
             {
@@ -375,6 +376,7 @@ namespace ChessDroid
                 RestoreChallengeSnapshot(triggerAnalysis: false);
                 SetDrillControlsEnabled(true);
                 if (_trainingPanel._btnDrillVsBot != null) _trainingPanel._btnDrillVsBot.Text = "⚔ Practice vs Bot";
+                if (CurrentModeController is TrainingModeController) CurrentModeController = null;
                 lblStatus.Text = "Drill stopped";
             }
             else

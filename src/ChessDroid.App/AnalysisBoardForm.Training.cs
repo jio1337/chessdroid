@@ -283,11 +283,22 @@ namespace ChessDroid
             _ = TriggerAutoAnalysis();
         }
 
-        /// <summary>Thin IModeController wrapper around StopTraining — see Modes/IModeController.cs.</summary>
+        /// <summary>
+        /// Thin IModeController wrapper around StopTraining — see Modes/IModeController.cs.
+        /// <see cref="Enter"/> is purely additive bookkeeping, same spirit as BotModeController's
+        /// non-interface Enter: Training has 6 separate places that start "a game/drill is
+        /// active" (TrainingStartRound dispatches Square/Opening/Vision/Puzzle; Drill vs Bot and
+        /// Drill Watch Engines are started independently, bypassing TrainingStartRound
+        /// entirely). This records which one, so CurrentModeController's type now tells you
+        /// training is active at all 6 of those entry points, not just the first 4 — nothing
+        /// reads ActiveSubMode today, so this changes no existing control flow.
+        /// </summary>
         private sealed class TrainingModeController : Modes.IModeController
         {
             private readonly AnalysisBoardForm _form;
+            public TrainingSubMode? ActiveSubMode { get; private set; }
             public TrainingModeController(AnalysisBoardForm form) => _form = form;
+            public void Enter(TrainingSubMode subMode) => ActiveSubMode = subMode;
             public void ExitMode() => _form.StopTraining();
         }
 
@@ -363,7 +374,9 @@ namespace ChessDroid
         {
             boardControl.InteractionEnabled = true;
             if (_drillWatchActive) { matchService?.StopMatch(); return; }
-            CurrentModeController = new TrainingModeController(this);
+            var trainingController = new TrainingModeController(this);
+            trainingController.Enter(_trainingSubMode);
+            CurrentModeController = trainingController;
             if (_trainingSubMode == TrainingSubMode.Opening) { OpeningTrainingStart();  return; }
             if (_trainingSubMode == TrainingSubMode.Vision)  { VisionTrainingStart();   return; }
             if (_trainingSubMode == TrainingSubMode.Puzzle)
@@ -1218,6 +1231,9 @@ namespace ChessDroid
             _drillBotActive = true;
             _botModeActive  = true;
             _botMoveCts     = new CancellationTokenSource();
+            var drillBotController = new TrainingModeController(this);
+            drillBotController.Enter(TrainingSubMode.Drill);
+            CurrentModeController = drillBotController;
             btnPlayBot.Text = "⏹";
             toolTip.SetToolTip(btnPlayBot, "Stop Bot");
             boardControl.InteractionEnabled = true;
@@ -1264,6 +1280,9 @@ namespace ChessDroid
             // Lock drill controls
             SetDrillControlsEnabled(false);
             _drillWatchActive = true;
+            var drillWatchController = new TrainingModeController(this);
+            drillWatchController.Enter(TrainingSubMode.Drill);
+            CurrentModeController = drillWatchController;
             if (_trainingPanel._btnDrillWatchEngines != null) { _trainingPanel._btnDrillWatchEngines.Text = "⏹ Stop Watch"; _trainingPanel._btnDrillWatchEngines.Enabled = true; }
 
             // Board setup

@@ -610,6 +610,7 @@ namespace ChessDroid
                     _drillWatchActive = false;
                     SetDrillControlsEnabled(true);
                     if (_trainingPanel._btnDrillWatchEngines != null) { _trainingPanel._btnDrillWatchEngines.Text = "⚙ Watch engines"; _trainingPanel._btnDrillWatchEngines.Enabled = true; }
+                    if (CurrentModeController is TrainingModeController) CurrentModeController = null;
                 }
             }
         }
