@@ -155,6 +155,64 @@ public class EndgameDrillServiceTests : IDisposable
     }
 
     [Fact]
+    public void ParsePgn_ThankYouTrailerChapter_IsSkipped()
+    {
+        string path = WritePgn("trailer.pgn", """
+            [Event "Real Chapter"]
+            [FEN "8/8/8/4k3/4P3/4K3/8/8 w - - 0 1"]
+
+            1. Kd3 *
+
+            [Event "Credits"]
+            [ChapterName "Thanks for enjoying this study!"]
+            [FEN "8/8/8/4k3/4P3/4K3/8/8 w - - 0 1"]
+
+            { Thanks for following along! https://lichess.org/study/abc123 } *
+            """);
+
+        var chapters = EndgameDrillService.ParsePgn(path);
+
+        Assert.Single(chapters);
+        Assert.Equal("Real Chapter", chapters[0].ChapterName);
+    }
+
+    [Fact]
+    public void ParsePgn_ChapterWithNoBlackKing_IsSkipped()
+    {
+        string path = WritePgn("nokingblack.pgn", """
+            [Event "Real Chapter"]
+            [FEN "8/8/8/4k3/4P3/4K3/8/8 w - - 0 1"]
+
+            1. Kd3 *
+
+            [Event "Know what can mate!"]
+            [FEN "Q1R1B1B1/4B1N1/8/8/8/8/8/4K3 w - - 0 1"]
+
+            { Illustrative diagram only, not a real position. } *
+            """);
+
+        var chapters = EndgameDrillService.ParsePgn(path);
+
+        Assert.Single(chapters);
+        Assert.Equal("Real Chapter", chapters[0].ChapterName);
+    }
+
+    [Fact]
+    public void ParsePgn_ChapterWithNoWhiteKing_IsSkipped()
+    {
+        string path = WritePgn("nokingwhite.pgn", """
+            [Event "No White King"]
+            [FEN "4k3/8/8/8/8/8/8/8 w - - 0 1"]
+
+            *
+            """);
+
+        var chapters = EndgameDrillService.ParsePgn(path);
+
+        Assert.Empty(chapters);
+    }
+
+    [Fact]
     public void HasDrills_NoFolder_ReturnsFalse()
     {
         Assert.False(EndgameDrillService.HasDrills(Path.Combine(_tempDir, "does-not-exist")));
@@ -202,6 +260,17 @@ public class EndgameDrillServiceTests : IDisposable
         Assert.Equal(2, chapters.Count);
         Assert.Contains(chapters, c => c.ChapterName == "A1");
         Assert.Contains(chapters, c => c.ChapterName == "B1");
+    }
+
+    [Fact]
+    public void LoadFromFolder_RealShippedDrills_HasNoTrailerOrDegenerateChapters()
+    {
+        string drillsFolder = Path.Combine(AppContext.BaseDirectory, "Drills");
+        var chapters = EndgameDrillService.LoadFromFolder(drillsFolder);
+
+        Assert.NotEmpty(chapters);
+        Assert.DoesNotContain(chapters, c => c.ChapterName == "Thanks for enjoying this study!");
+        Assert.DoesNotContain(chapters, c => c.ChapterName == "Know what can mate!");
     }
 
     [Fact]

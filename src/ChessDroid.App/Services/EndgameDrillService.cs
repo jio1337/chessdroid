@@ -51,6 +51,17 @@ namespace ChessDroid.Services
                                   ?? "Position";
                 string studyName   = tags.GetValueOrDefault("StudyName") ?? "Drills";
 
+                // Some NoseKnowsAll studies end with an author-credit chapter reusing
+                // chapter 1's position and no real moves — not a drill, drop it.
+                if (chapterName.Equals("Thanks for enjoying this study!", StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                // A handful of diagram-only chapters (e.g. "Know what can mate!")
+                // illustrate material combinations with no black king at all — an
+                // illegal position the rules engine then misreads as stalemate.
+                if (!HasOneKingPerSide(fen))
+                    continue;
+
                 // First { comment } in the moves section = description; strip Lichess arrow/square annotations
                 string desc = "";
                 var cm = _commentRx.Match(part);
@@ -72,5 +83,11 @@ namespace ChessDroid.Services
         /// Returns all unique study names found across all loaded chapters.
         public static List<string> GetStudyNames(IEnumerable<EndgameChapter> chapters) =>
             chapters.Select(c => c.StudyName).Distinct().ToList();
+
+        private static bool HasOneKingPerSide(string fen)
+        {
+            string placement = fen.Split(' ')[0];
+            return placement.Count(c => c == 'K') == 1 && placement.Count(c => c == 'k') == 1;
+        }
     }
 }
