@@ -62,41 +62,32 @@ namespace ChessDroid.Services
         }
 
         /// <summary>
-        /// Get a human-readable description of position character.
-        /// Combines sharpness (draw probability) with advantage assessment (W/L imbalance).
+        /// Get a human-readable description of position character, from White's
+        /// perspective. Combines sharpness (draw probability) with advantage
+        /// assessment (W/L imbalance).
         /// </summary>
-        public string GetPositionCharacter()
+        public string GetPositionCharacter() => GetPositionCharacter(WinPercent, LossPercent, DrawPercent, Sharpness);
+
+        /// <summary>
+        /// Shared position-character labeling, parameterized so callers who need the
+        /// side-to-move's perspective (win/loss swapped for Black) can pass their own
+        /// win/loss percentages instead of always reading White's. This is the single
+        /// source of truth for the label shown in the "Position: W:x% D:y% L:z% (...)"
+        /// line — keep ConsoleOutputFormatter.DisplayWDLInfo calling this rather than
+        /// re-implementing the thresholds.
+        /// </summary>
+        public static string GetPositionCharacter(double winPercent, double lossPercent, double drawPercent, double sharpness)
         {
-            double drawPct = DrawPercent;
-            double winPct = WinPercent;
-            double lossPct = LossPercent;
-
-            // First check for drawish positions (high draw probability)
-            if (drawPct >= 70)
-                return "very drawish";
-            if (drawPct >= 50)
-                return "drawish";
-
-            // Then check for decisive/winning positions based on W/L advantage
-            // This is the key fix: 69% win is NOT balanced, it's clearly winning!
-            if (winPct >= 80 || lossPct >= 80)
-                return "decisive";
-            if (winPct >= 65 || lossPct >= 65)
-                return "clear advantage";
-            if (winPct >= 55 || lossPct >= 55)
-                return "slight edge";
-            if (winPct >= 45 && winPct > lossPct + 10)
-                return "slight edge";
-            if (lossPct >= 45 && lossPct > winPct + 10)
-                return "slight edge";
-
-            // Check sharpness for balanced positions
-            double sharpness = Sharpness;
-            if (sharpness >= 0.7)
-                return "very sharp";
-            if (sharpness >= 0.4)
-                return "sharp";
-
+            if (drawPercent >= 70) return "very drawish";
+            if (drawPercent >= 50) return "drawish";
+            if (winPercent >= 80) return "completely winning";
+            if (lossPercent >= 80) return "completely losing";
+            if (winPercent >= 65) return "clear advantage";
+            if (lossPercent >= 65) return "clear disadvantage";
+            if (winPercent >= 55) return "slight edge";
+            if (lossPercent >= 55) return "slight disadvantage";
+            if (sharpness >= 0.7) return "very sharp";
+            if (sharpness >= 0.4) return "sharp";
             return "balanced";
         }
 

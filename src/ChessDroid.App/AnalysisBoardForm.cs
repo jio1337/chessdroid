@@ -283,6 +283,21 @@ namespace ChessDroid
         // behind after the app exits.
         private void AnalysisBoardForm_FormClosing(object? sender, FormClosingEventArgs e)
         {
+            if (_classifyCts != null)
+            {
+                if (MessageBox.Show("Game review is still in progress. Exit anyway?",
+                        "Classifying Moves", MessageBoxButtons.YesNo, MessageBoxIcon.Warning,
+                        MessageBoxDefaultButton.Button2) != DialogResult.Yes)
+                {
+                    e.Cancel = true;
+                    return;
+                }
+            }
+
+            // A running Classify Moves review awaits engineService calls on this same
+            // process; cancel it first so it doesn't race the dispose calls below.
+            CancelClassification();
+
             consoleFormatter?.Dispose();
             openingBookService?.Dispose();
             engineService?.Dispose();
