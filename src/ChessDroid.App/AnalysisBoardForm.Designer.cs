@@ -416,10 +416,10 @@ namespace ChessDroid
             // 
             // lblStatus
             // 
-            lblStatus.Font = new Font("Courier New", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            lblStatus.Font = new Font("Courier New", 10F, FontStyle.Bold, GraphicsUnit.Point, 0);
             lblStatus.Location = new Point(10, 603);
             lblStatus.Name = "lblStatus";
-            lblStatus.Size = new Size(391, 20);
+            lblStatus.Size = new Size(391, 22);
             lblStatus.TabIndex = 11;
             lblStatus.Text = "Ready";
             //

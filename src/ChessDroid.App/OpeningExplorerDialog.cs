@@ -89,22 +89,53 @@ namespace ChessDroid
             PopulateGrid(filtered);
         }
 
-        private void Grid_ColumnHeaderMouseClick(object? sender, DataGridViewCellMouseEventArgs e)
+        private bool _sortingEval;
+
+        private async void Grid_ColumnHeaderMouseClick(object? sender, DataGridViewCellMouseEventArgs e)
         {
             if (e.ColumnIndex != colEval.Index) return;
+            // Over ~11,000 rows, sorting + rebuilding the grid takes long enough that an
+            // impatient second click would otherwise just queue up another full re-sort
+            // behind the first (WinForms is single-threaded, so nothing actually races —
+            // but each queued click still re-does the whole expensive pass back to back).
+            // Disabling the grid up front means a click arriving mid-sort is delivered to
+            // a disabled control and silently dropped, rather than queued.
+            if (_sortingEval) return;
 
-            _evalSortAscending = _evalSortAscending != true;
-            colEval.HeaderCell.SortGlyphDirection = _evalSortAscending == true ? SortOrder.Ascending : SortOrder.Descending;
+            _sortingEval = true;
+            grid.Enabled = false;
+            Cursor = Cursors.WaitCursor;
+            try
+            {
+                _evalSortAscending = _evalSortAscending != true;
+                colEval.HeaderCell.SortGlyphDirection = _evalSortAscending == true ? SortOrder.Ascending : SortOrder.Descending;
+                bool ascending = _evalSortAscending == true;
 
-            // Sort the currently-displayed (possibly search-filtered) set only — never
-            // _allEntries — so this never leaks into/persists across a later search.
-            var withValue = _filtered.Select(entry => (Entry: entry, Value: ParseEvalValue(entry.Eval)));
-            var sorted = (_evalSortAscending == true
-                ? withValue.OrderBy(x => x.Value ?? double.MaxValue)
-                : withValue.OrderByDescending(x => x.Value ?? double.MinValue))
-                .Select(x => x.Entry).ToList();
+                // Sort the currently-displayed (possibly search-filtered) set only — never
+                // _allEntries — so this never leaks into/persists across a later search.
+                var toSort = _filtered;
+                var sorted = await Task.Run(() =>
+                {
+                    var withValue = toSort.Select(entry => (Entry: entry, Value: ParseEvalValue(entry.Eval)));
+                    return (ascending
+                        ? withValue.OrderBy(x => x.Value ?? double.MaxValue)
+                        : withValue.OrderByDescending(x => x.Value ?? double.MinValue))
+                        .Select(x => x.Entry).ToList();
+                });
 
-            PopulateGrid(sorted);
+                // The search box stays enabled during a sort (only the grid is disabled),
+                // so a search typed mid-sort can change _filtered before this resumes. In
+                // that case the sort was computed from a now-stale list — drop it instead
+                // of clobbering the newer search result.
+                if (ReferenceEquals(toSort, _filtered))
+                    PopulateGrid(sorted);
+            }
+            finally
+            {
+                Cursor = Cursors.Default;
+                grid.Enabled = true;
+                _sortingEval = false;
+            }
         }
 
         // Ranks a mate score as more extreme than any realistic centipawn eval (same
