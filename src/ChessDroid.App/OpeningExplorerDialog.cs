@@ -9,6 +9,13 @@ namespace ChessDroid
         private readonly bool _isDark;
 
         private List<OpeningEntry> _filtered = new();
+        private readonly Random _rng = new();
+
+        // null = default (unsorted/name) order; true/false = ascending/descending by Eval.
+        // Deliberately not persisted anywhere (config, instance field surviving a reopen,
+        // etc.) — purely a transient view action for this dialog session, per the user's
+        // explicit request not to save this as opening-form state.
+        private bool? _evalSortAscending;
 
         // Parameterless constructor for VS Designer only
         public OpeningExplorerDialog() : this(new List<OpeningEntry>(), _ => { }, false) { }
@@ -26,7 +33,9 @@ namespace ChessDroid
             txtSearch.TextChanged     += TxtSearch_TextChanged;
             grid.SelectionChanged     += Grid_SelectionChanged;
             grid.CellDoubleClick      += Grid_CellDoubleClick;
+            grid.ColumnHeaderMouseClick += Grid_ColumnHeaderMouseClick;
             btnLoad.Click             += BtnLoad_Click;
+            btnLoadRandom.Click       += (_, __) => LoadRandom();
             btnClose.Click            += (_, __) => Close();
             grid.ClientSizeChanged    += (_, __) => AdjustNameColumn();
             this.Resize               += (_, __) => AdjustNameColumn();
@@ -59,12 +68,18 @@ namespace ChessDroid
                 }
             }
             grid.ResumeLayout();
-            lblMoves.Text    = "";
-            btnLoad.Enabled  = false;
+            lblMoves.Text       = "";
+            btnLoad.Enabled     = false;
+            btnLoadRandom.Enabled = entries.Count > 0;
         }
 
         private void TxtSearch_TextChanged(object? sender, EventArgs e)
         {
+            // A fresh search always goes back to default (ECO/name) order — the Eval
+            // sort from a header click is a one-off view action, not sticky state.
+            _evalSortAscending = null;
+            colEval.HeaderCell.SortGlyphDirection = SortOrder.None;
+
             string q = txtSearch.Text.Trim();
             var filtered = string.IsNullOrEmpty(q)
                 ? _allEntries
@@ -72,6 +87,43 @@ namespace ChessDroid
                     e.Name.Contains(q, StringComparison.OrdinalIgnoreCase) ||
                     e.Eco.Contains(q,  StringComparison.OrdinalIgnoreCase)).ToList();
             PopulateGrid(filtered);
+        }
+
+        private void Grid_ColumnHeaderMouseClick(object? sender, DataGridViewCellMouseEventArgs e)
+        {
+            if (e.ColumnIndex != colEval.Index) return;
+
+            _evalSortAscending = _evalSortAscending != true;
+            colEval.HeaderCell.SortGlyphDirection = _evalSortAscending == true ? SortOrder.Ascending : SortOrder.Descending;
+
+            // Sort the currently-displayed (possibly search-filtered) set only — never
+            // _allEntries — so this never leaks into/persists across a later search.
+            var withValue = _filtered.Select(entry => (Entry: entry, Value: ParseEvalValue(entry.Eval)));
+            var sorted = (_evalSortAscending == true
+                ? withValue.OrderBy(x => x.Value ?? double.MaxValue)
+                : withValue.OrderByDescending(x => x.Value ?? double.MinValue))
+                .Select(x => x.Entry).ToList();
+
+            PopulateGrid(sorted);
+        }
+
+        // Ranks a mate score as more extreme than any realistic centipawn eval (same
+        // "sort-dominant" spirit as ChessEngineService's own ±100000 scaling elsewhere),
+        // so e.g. "Mate in +2" sorts above "+9.00". Blank/unparseable evals return null,
+        // which both sort directions push to the end of the list.
+        internal static double? ParseEvalValue(string eval)
+        {
+            if (string.IsNullOrEmpty(eval)) return null;
+
+            if (eval.StartsWith("Mate in ", StringComparison.Ordinal))
+            {
+                return int.TryParse(eval.AsSpan(8).Trim(), out int mateIn)
+                    ? (mateIn > 0 ? 10000 - mateIn : mateIn < 0 ? -10000 - mateIn : 0)
+                    : null;
+            }
+
+            return double.TryParse(eval, System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture, out double v) ? v : null;
         }
 
         private void Grid_SelectionChanged(object? sender, EventArgs e)
@@ -95,7 +147,19 @@ namespace ChessDroid
             if (grid.SelectedRows.Count == 0) return;
             int idx = grid.SelectedRows[0].Index;
             if (idx < 0 || idx >= _filtered.Count) return;
-            var entry = _filtered[idx];
+            LoadEntry(_filtered[idx]);
+        }
+
+        // Picks from the currently-displayed set, so a search filter (e.g. "Sicilian")
+        // narrows what "random" can land on, same as it narrows what Load Opening can.
+        private void LoadRandom()
+        {
+            if (_filtered.Count == 0) return;
+            LoadEntry(_filtered[_rng.Next(_filtered.Count)]);
+        }
+
+        private void LoadEntry(OpeningEntry entry)
+        {
             string pgn = $"[Event \"Opening Explorer\"]\n[Opening \"{entry.Eco} — {entry.Name}\"]\n\n{entry.Moves}\n";
             _onLoad(pgn);
             Close();
@@ -131,7 +195,7 @@ namespace ChessDroid
             grid.ColumnHeadersDefaultCellStyle.ForeColor     = fg;
             grid.EnableHeadersVisualStyles                   = false;
 
-            foreach (Button btn in new[] { btnLoad, btnClose })
+            foreach (Button btn in new[] { btnLoadRandom, btnLoad, btnClose })
             {
                 btn.BackColor = btnBg;
                 btn.ForeColor = fg;

@@ -20,6 +20,7 @@ namespace ChessDroid
             colName = new DataGridViewTextBoxColumn();
             colEval = new DataGridViewTextBoxColumn();
             lblMoves = new Label();
+            btnLoadRandom = new Button();
             btnLoad = new Button();
             btnClose = new Button();
             ((System.ComponentModel.ISupportInitialize)grid).BeginInit();
@@ -87,7 +88,10 @@ namespace ChessDroid
             colEval.HeaderText = "Eval";
             colEval.Name = "colEval";
             colEval.ReadOnly = true;
-            colEval.SortMode = DataGridViewColumnSortMode.NotSortable;
+            // Programmatic (not Automatic): the grid's built-in sort would compare the
+            // "+0.74"/"-2.46" cell text as strings, not numeric value — Grid_ColumnHeaderMouseClick
+            // handles the actual (numeric) sort itself in response to the header click.
+            colEval.SortMode = DataGridViewColumnSortMode.Programmatic;
             colEval.Width = 68;
             // 
             // lblMoves
@@ -99,9 +103,20 @@ namespace ChessDroid
             lblMoves.Name = "lblMoves";
             lblMoves.Size = new Size(778, 20);
             lblMoves.TabIndex = 2;
-            // 
+            //
+            // btnLoadRandom
+            //
+            btnLoadRandom.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+            btnLoadRandom.FlatStyle = FlatStyle.Flat;
+            btnLoadRandom.Font = new Font("Courier New", 9F);
+            btnLoadRandom.Location = new Point(13, 492);
+            btnLoadRandom.Name = "btnLoadRandom";
+            btnLoadRandom.Size = new Size(130, 28);
+            btnLoadRandom.TabIndex = 4;
+            btnLoadRandom.Text = "Load Random";
+            //
             // btnLoad
-            // 
+            //
             btnLoad.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
             btnLoad.Enabled = false;
             btnLoad.FlatStyle = FlatStyle.Flat;
@@ -133,6 +148,7 @@ namespace ChessDroid
             Controls.Add(txtSearch);
             Controls.Add(grid);
             Controls.Add(lblMoves);
+            Controls.Add(btnLoadRandom);
             Controls.Add(btnLoad);
             Controls.Add(btnClose);
             Font = new Font("Courier New", 9F);
@@ -154,6 +170,7 @@ namespace ChessDroid
         private System.Windows.Forms.DataGridViewTextBoxColumn   colName;
         private System.Windows.Forms.DataGridViewTextBoxColumn   colEval;
         private System.Windows.Forms.Label                       lblMoves;
+        private System.Windows.Forms.Button                      btnLoadRandom;
         private System.Windows.Forms.Button                      btnLoad;
         private System.Windows.Forms.Button                      btnClose;
     }
