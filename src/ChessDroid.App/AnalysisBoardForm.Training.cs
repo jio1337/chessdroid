@@ -242,7 +242,8 @@ namespace ChessDroid
             _puzzleRushTimer?.Stop();
             _visionQuestionTimer?.Stop();
             _visionGlobalTimer?.Stop();
-            _openingRecreatePhase = false;
+            _openingRecreatePhase  = false;
+            _openingRecreateLocked = false;
             _puzzleActive = false;
             _puzzleLocked = false;
             if (_trainingPanel._btnOpHint     != null) _trainingPanel._btnOpHint.Enabled     = false;
@@ -333,7 +334,8 @@ namespace ChessDroid
             _trainingFlashTimer?.Stop();
             _openingAutoplayTimer?.Stop();
             _puzzleRushTimer?.Stop();
-            _openingRecreatePhase = false;
+            _openingRecreatePhase  = false;
+            _openingRecreateLocked = false;
             _puzzleActive = false;
             _puzzleLocked = false;
             if (_trainingPanel._btnOpHint     != null) _trainingPanel._btnOpHint.Enabled     = false;
@@ -697,6 +699,20 @@ namespace ChessDroid
             selDialog.ShowDialog(this);
         }
 
+        // Every delayed Opening Training callback (watch->recreate transition, wrong-move
+        // flash-restore, end-of-run) used to check only IsDisposed, not whether this
+        // opening round was still the active one. Interrupting mid-delay (e.g. clicking
+        // Engine Match, which calls StopTraining) let the stale callback still fire and
+        // stomp the board/stats of whatever came next. Every one of those callbacks now
+        // re-checks this before mutating anything.
+        private bool IsOpeningRoundActive() =>
+            _trainingUiVisible && _trainingSubMode == TrainingSubMode.Opening && _trainingGameActive;
+
+        // Same reasoning as IsOpeningRoundActive, for Puzzle Training's delayed callbacks
+        // (opponent-response move, wrong-move flash-restore).
+        private bool IsPuzzleRoundActive() =>
+            _trainingUiVisible && _trainingSubMode == TrainingSubMode.Puzzle && _puzzleActive;
+
         private void PrepareOpeningLine(string sanMoves)
         {
             _openingUciMoves.Clear();
@@ -749,6 +765,21 @@ namespace ChessDroid
                 entry = _selectedTrainingOpening;
             }
 
+            StartOpeningRun(entry);
+        }
+
+        // "Try Again" (btnTryAgain) calls this directly instead of TrainingShowStartPanel, so
+        // retrying actually replays the SAME opening just attempted — previously it just went
+        // back to the start panel, and with "Random" selected the next Start click picked a
+        // brand-new opening, silently discarding the one the user meant to retry.
+        internal void OpeningTrainingRetry()
+        {
+            if (_selectedTrainingOpening == null) { TrainingShowStartPanel(); return; }
+            StartOpeningRun(_selectedTrainingOpening);
+        }
+
+        private void StartOpeningRun(OpeningEntry entry)
+        {
             PrepareOpeningLine(entry.Moves);
             if (_openingUciMoves.Count == 0)
             {
@@ -780,6 +811,8 @@ namespace ChessDroid
 
         private void OpeningTrainingStartWatch()
         {
+            if (!IsOpeningRoundActive()) return;
+
             _openingPlayIndex = 0;
             _openingRecreatePhase = false;
             _openingAutoplayTimer?.Stop();
@@ -842,6 +875,8 @@ namespace ChessDroid
 
         private void OpeningTrainingStartRecreate()
         {
+            if (!IsOpeningRoundActive()) return;
+
             _openingRecreateIndex = 0;
             _openingHintsUsed     = 0;
             _openingPosMistakes.Clear();
@@ -878,8 +913,6 @@ namespace ChessDroid
             if (_openingRecreateIndex >= _openingUciMoves.Count || _openingRecreateLocked) return;
 
             string expected = _openingUciMoves[_openingRecreateIndex];
-            int toCol = uciMove[2] - 'a';
-            int toRow = 7 - (uciMove[3] - '1');
 
             if (uciMove == expected)
             {
@@ -900,26 +933,12 @@ namespace ChessDroid
             }
             else
             {
-                _openingPosMistakes[_openingRecreateIndex] =
-                    _openingPosMistakes.GetValueOrDefault(_openingRecreateIndex) + 1;
-                _openingRecreateLocked = true;
-                boardControl.SetTrainingHighlight(toRow, toCol, TrainingErrorColor);
-
-                string correctFen = _openingFens[_openingRecreateIndex];
-                Task.Delay(600).ContinueWith(_ =>
-                {
-                    if (IsDisposed) return;
-                    Invoke(() =>
-                    {
-                        boardControl.ClearTrainingHighlight();
-                        isNavigating = true;
-                        boardControl.LoadFEN(correctFen);
-                        isNavigating = false;
-                        _openingRecreateLocked = false;
-                        if (_trainingPanel._btnOpHint != null) _trainingPanel._btnOpHint.Enabled = true;
-                    });
-                });
-                UpdateOpeningRecreateDisplay();
+                // Unreachable in normal play: BoardControl_MoveAttempted now vetoes a wrong
+                // recreate-phase move before it ever commits (see RejectOpeningTrainingMove),
+                // so MoveMade/this method only ever sees the correct move during recreate
+                // phase. Kept as a defensive net rather than deleted outright — if this ever
+                // fires, the veto has a gap worth investigating, not something to crash on.
+                Debug.WriteLine($"OpeningTrainingValidateMove: unexpected wrong move '{uciMove}' reached post-commit handling (expected '{expected}') — MoveAttempted veto should have caught this.");
             }
         }
 
@@ -938,6 +957,7 @@ namespace ChessDroid
                 if (IsDisposed) return;
                 Invoke(() =>
                 {
+                    if (!IsOpeningRoundActive()) return;
                     boardControl.ClearTrainingHighlight();
                     _openingRecreateLocked = false;
                     if (_trainingPanel._btnOpHint != null) _trainingPanel._btnOpHint.Enabled = true;
@@ -956,6 +976,8 @@ namespace ChessDroid
 
         private void OpeningTrainingEnd()
         {
+            if (!IsOpeningRoundActive()) return;
+
             _openingAutoplayTimer?.Stop();
             _openingRecreatePhase = false;
             _openingRecreateLocked = false;
@@ -1687,6 +1709,7 @@ namespace ChessDroid
                 {
                     if (!IsDisposed) Invoke(() =>
                     {
+                        if (!IsPuzzleRoundActive()) return;
                         boardControl.ClearTrainingHighlight();
                         SetText(_trainingPanel._lblPuzzleFeedback, "");
                         _puzzleLocked = false;
@@ -1716,6 +1739,7 @@ namespace ChessDroid
             {
                 if (!IsDisposed) Invoke(() =>
                 {
+                    if (!IsPuzzleRoundActive()) return;
                     boardControl.ClearTrainingHighlight();
                     SetText(_trainingPanel._lblPuzzleFeedback, "");
                     _puzzleLocked = false;
@@ -1726,6 +1750,7 @@ namespace ChessDroid
 
         private void PuzzlePlayOpponentResponse()
         {
+            if (!IsPuzzleRoundActive()) return;
             if (_currentPuzzle == null || _puzzleMoveIndex >= _currentPuzzle.Moves.Length) return;
             string response = _currentPuzzle.Moves[_puzzleMoveIndex];
             string preFen   = boardControl.GetFEN();
@@ -1745,6 +1770,7 @@ namespace ChessDroid
             {
                 if (!IsDisposed) Invoke(() =>
                 {
+                    if (!IsPuzzleRoundActive()) return;
                     _puzzleLocked = false;
                     if (_trainingPanel._btnPuzzleHint != null) _trainingPanel._btnPuzzleHint.Enabled = true;
                 });

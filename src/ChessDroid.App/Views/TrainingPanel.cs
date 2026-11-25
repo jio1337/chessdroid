@@ -958,7 +958,16 @@ namespace ChessDroid.Views
                 Text = "Try Again", Font = F(11f, true),
                 Dock = DockStyle.Top, Height = 38, FlatStyle = FlatStyle.Flat, Margin = new Padding(0, 8, 0, 0)
             };
-            btnTryAgain.Click += (_, _) => _form.TrainingShowStartPanel();
+            // This result panel/button is shared across Square, Opening, and Vision
+            // training — only Opening replays the same run; the others just return to
+            // their settings panel, same as before.
+            btnTryAgain.Click += (_, _) =>
+            {
+                if (_form._trainingSubMode == TrainingSubMode.Opening)
+                    _form.OpeningTrainingRetry();
+                else
+                    _form.TrainingShowStartPanel();
+            };
             var btnDone = new Button
             {
                 Text = "Done", Font = F(10f),
