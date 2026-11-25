@@ -51,6 +51,14 @@
     </None>
   </ItemGroup>
 
+  <!-- Pre-baked engine evals for the Openings dialog's Eval column (cosmetic — EcoBookService
+       skips silently if this file is missing or fails to parse). -->
+  <ItemGroup>
+    <None Include="opening_evals.json" Condition="Exists('opening_evals.json')">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
   <!-- Copy piece set templates to output -->
   <ItemGroup>
     <None Include="Templates\**\*.*">
