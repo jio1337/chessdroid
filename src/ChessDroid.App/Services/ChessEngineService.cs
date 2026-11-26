@@ -1323,8 +1323,30 @@ namespace ChessDroid.Services
 
         public async Task SetChess960Async(bool enabled)
         {
-            if (!IsEngineAlive() || State != EngineState.Ready) return;
-            await SafeWriteLineAsync($"{UCI_CMD_SETOPTION} UCI_Chess960 value {(enabled ? "true" : "false")}").ConfigureAwait(false);
+            if (!IsEngineAlive()) return;
+
+            // Was: a bare `State != EngineState.Ready` check with no wait — if a search was
+            // still winding down (State == Analyzing) at the moment of the call, this silently
+            // no-oped and the setoption never reached the engine, leaving app and engine
+            // disagreeing about Chess960/Shredder-FEN notation with no error shown. Tell any
+            // in-flight search to stop, then take the same serialization semaphore
+            // GetBestMoveAsync holds while analyzing, so we can't race a concurrent analysis
+            // call either, and confirm the engine is actually idle (readyok) before sending.
+            if (State == EngineState.Analyzing)
+                await SafeWriteLineAsync("stop").ConfigureAwait(false);
+
+            try { await _analysisSemaphore.WaitAsync().ConfigureAwait(false); }
+            catch (ObjectDisposedException) { return; }
+
+            try
+            {
+                if (!await SyncWithEngineAsync().ConfigureAwait(false)) return;
+                await SafeWriteLineAsync($"{UCI_CMD_SETOPTION} UCI_Chess960 value {(enabled ? "true" : "false")}").ConfigureAwait(false);
+            }
+            finally
+            {
+                _analysisSemaphore.Release();
+            }
         }
 
         public async Task SetSkillLevelAsync(int level)

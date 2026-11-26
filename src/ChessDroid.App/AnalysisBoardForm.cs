@@ -1269,6 +1269,11 @@ namespace ChessDroid
             CancelClassification();
             StopAutoPlay();
             if (_botModeActive) StopBotMode();
+            // Was missing — Training has no equivalent toolbar-button block like Match's
+            // "Stop the match first", so without this a Chess960 position could be loaded
+            // out from under an active drill/puzzle/opening round, leaving _trainingGameActive
+            // and the training timer running against a board the panel no longer matches.
+            if (_trainingUiVisible) StopTraining();
 
             string fen = Chess960Service.GetStartFen(position);
 
