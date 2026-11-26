@@ -53,19 +53,42 @@ namespace ChessDroid.Services
             }
         }
 
+        // Write-then-replace instead of a direct WriteAllText, same reasoning as
+        // AppConfig.SaveInternal — a crash/power-loss mid-write must never leave a
+        // truncated .json in place of a previously-good saved game.
         public void Save(SavedGame game)
         {
-            File.WriteAllText(
-                Path.Combine(GamesFolder, $"{game.Id}.json"),
-                JsonSerializer.Serialize(game, _jsonOptions));
+            string path = Path.Combine(GamesFolder, $"{game.Id}.json");
+            string tempPath = path + ".tmp";
+            string json = JsonSerializer.Serialize(game, _jsonOptions);
+            try
+            {
+                File.WriteAllText(tempPath, json);
+                if (File.Exists(path))
+                    File.Replace(tempPath, path, null);
+                else
+                    File.Move(tempPath, path);
+            }
+            catch (Exception ex)
+            {
+                CrashLogger.LogException(ex, $"Error saving game '{path}'");
+            }
         }
 
         public SavedGame? Load(string id)
         {
             string path = Path.Combine(GamesFolder, $"{id}.json");
             if (!File.Exists(path)) return null;
-            try { return JsonSerializer.Deserialize<SavedGame>(File.ReadAllText(path), _jsonOptions); }
-            catch { return null; }
+            try
+            {
+                return JsonSerializer.Deserialize<SavedGame>(File.ReadAllText(path), _jsonOptions);
+            }
+            catch (Exception ex)
+            {
+                CrashLogger.LogException(ex, $"Error loading saved game '{path}'");
+                QuarantineCorruptFile(path);
+                return null;
+            }
         }
 
         public void Delete(string id)

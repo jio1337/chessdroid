@@ -126,18 +126,29 @@ namespace ChessDroid
 
         private void PopulateList()
         {
-            _listView.Items.Clear();
-            foreach (var game in _games)
+            // BeginUpdate/EndUpdate — without it, each Items.Add below triggers its own
+            // layout/paint, which is visibly slow with a large library (same class of
+            // issue as the Opening Explorer's ~11,000-row grid, fixed earlier).
+            _listView.BeginUpdate();
+            try
             {
-                var item = new ListViewItem(Truncate(game.White, 18));
-                item.SubItems.Add(Truncate(game.Black, 18));
-                item.SubItems.Add(game.SavedAt.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture));
-                item.SubItems.Add(game.WhiteAccuracy.HasValue ? $"{game.WhiteAccuracy:F0}" : "—");
-                item.SubItems.Add(game.BlackAccuracy.HasValue ? $"{game.BlackAccuracy:F0}" : "—");
-                item.SubItems.Add(string.IsNullOrEmpty(game.Opening) ? "—" : Truncate(game.Opening, 28));
-                item.SubItems.Add(Truncate(game.EngineName, 16));
-                item.Tag = game;
-                _listView.Items.Add(item);
+                _listView.Items.Clear();
+                foreach (var game in _games)
+                {
+                    var item = new ListViewItem(Truncate(game.White, 18));
+                    item.SubItems.Add(Truncate(game.Black, 18));
+                    item.SubItems.Add(game.SavedAt.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture));
+                    item.SubItems.Add(game.WhiteAccuracy.HasValue ? $"{game.WhiteAccuracy:F0}" : "—");
+                    item.SubItems.Add(game.BlackAccuracy.HasValue ? $"{game.BlackAccuracy:F0}" : "—");
+                    item.SubItems.Add(string.IsNullOrEmpty(game.Opening) ? "—" : Truncate(game.Opening, 28));
+                    item.SubItems.Add(Truncate(game.EngineName, 16));
+                    item.Tag = game;
+                    _listView.Items.Add(item);
+                }
+            }
+            finally
+            {
+                _listView.EndUpdate();
             }
 
             UpdateStatus();

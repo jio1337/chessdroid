@@ -1188,6 +1188,12 @@ namespace ChessDroid
             analysisOutput.Clear();
             evalBar?.Reset();
             _analysisCache.Clear();
+
+            // A full position reset severs any link to a previously-loaded library game —
+            // without this, editing the position after opening a saved game (Position Editor
+            // Apply, or loading a fresh FEN) then clicking "Save to Library" would reuse the
+            // old game's id and silently overwrite it with the unrelated new position.
+            _libraryGameId = "";
         }
 
         private void BtnNewGame_Click(object? sender, EventArgs e)

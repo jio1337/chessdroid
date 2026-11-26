@@ -125,4 +125,44 @@ public class GameLibraryServiceTests : IDisposable
 
         Assert.Empty(result);
     }
+
+    [Fact]
+    public void Load_CorruptFile_IsQuarantinedInsteadOfSilentlyReturningNull()
+    {
+        // Load(id) used to have its own separate bare catch-returns-null — same silent
+        // data-loss shape LoadAll() was already fixed away from, just not yet applied here.
+        string path = Path.Combine(_library.GamesFolder, "corrupt.json");
+        File.WriteAllText(path, "{ not valid json");
+
+        var result = _library.Load("corrupt");
+
+        Assert.Null(result);
+        Assert.False(File.Exists(path), "the corrupt file should be moved aside, not left in place");
+        Assert.Contains(
+            Directory.GetFiles(_library.GamesFolder, "corrupt.corrupt-*.json"),
+            _ => true);
+    }
+
+    [Fact]
+    public void Save_Twice_OverwritesRatherThanLeavingATempFileBehind()
+    {
+        var game = MakeGame("same-id", DateTime.Now);
+        _library.Save(game);
+        game.White = "Changed";
+        _library.Save(game);
+
+        var loaded = _library.Load("same-id");
+        Assert.NotNull(loaded);
+        Assert.Equal("Changed", loaded!.White);
+
+        // The write-then-replace pattern must never leave its .tmp scratch file behind.
+        Assert.Empty(Directory.GetFiles(_library.GamesFolder, "*.tmp"));
+    }
+
+    [Fact]
+    public void Save_NewGame_DoesNotLeaveATempFileBehind()
+    {
+        _library.Save(MakeGame("fresh", DateTime.Now));
+        Assert.Empty(Directory.GetFiles(_library.GamesFolder, "*.tmp"));
+    }
 }
