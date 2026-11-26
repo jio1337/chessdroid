@@ -247,7 +247,68 @@ namespace ChessDroid
 
             if (result == DialogResult.Yes)
             {
-                config = new AppConfig();
+                // Was `config = new AppConfig(); LoadSettings();` — replaced this dialog's
+                // local `config` reference instead of resetting the shared AppConfig instance
+                // in place. AnalysisBoardForm holds the same object by reference (no
+                // onConfigChanged re-wiring happens here), so a Save right after Reset wrote
+                // defaults into this new, orphaned object and persisted it to disk while the
+                // live app — still pointing at the original object — kept running unchanged
+                // until next restart. A full-object replace would also have wiped persistent
+                // fields this dialog has no UI for (Elo, puzzle/training personal bests,
+                // engine profiles) back to defaults, since Save only rewrites the settings
+                // fields listed below. Reset them in place, one field at a time, to exactly
+                // the surface BtnSave_Click writes — everything else is left untouched.
+                var defaults = new AppConfig();
+                config.EngineResponseTimeoutMs = defaults.EngineResponseTimeoutMs;
+                config.MaxEngineRetries = defaults.MaxEngineRetries;
+                config.MoveTimeoutMs = defaults.MoveTimeoutMs;
+                config.EngineDepth = defaults.EngineDepth;
+                config.Theme = defaults.Theme;
+                config.SelectedEngine = defaults.SelectedEngine;
+                config.ShowBestLine = defaults.ShowBestLine;
+                config.ShowSecondLine = defaults.ShowSecondLine;
+                config.ShowThirdLine = defaults.ShowThirdLine;
+                config.EngineArrowCount = defaults.EngineArrowCount;
+                config.ShowEvalBar = defaults.ShowEvalBar;
+                config.ConsoleFontFamily = defaults.ConsoleFontFamily;
+                config.ConsoleFontSize = defaults.ConsoleFontSize;
+                config.LightSquareColor = defaults.LightSquareColor;
+                config.DarkSquareColor = defaults.DarkSquareColor;
+                config.ShowSquareLabels = defaults.ShowSquareLabels;
+                config.ShowCoordinates = defaults.ShowCoordinates;
+                config.ShowThreatArrows = defaults.ShowThreatArrows;
+                config.ShowLastMoveHighlight = defaults.ShowLastMoveHighlight;
+                config.ShowBookArrows = defaults.ShowBookArrows;
+                config.ShowEvalGraph = defaults.ShowEvalGraph;
+                config.ShowAnimations = defaults.ShowAnimations;
+                config.AnimationDurationMs = defaults.AnimationDurationMs;
+                config.ShowMaterialStrips = defaults.ShowMaterialStrips;
+                config.ShowLegalMoves = defaults.ShowLegalMoves;
+                config.MovementMode = defaults.MovementMode;
+                config.PanelLayout = defaults.PanelLayout;
+                config.GradientBoard = defaults.GradientBoard;
+                config.BoardVignette = defaults.BoardVignette;
+                config.VignetteAlpha = defaults.VignetteAlpha;
+                config.PieceGlow = defaults.PieceGlow;
+                config.BoardFrame = defaults.BoardFrame;
+                config.BoardFrameColor = defaults.BoardFrameColor;
+                config.SoundEffectsEnabled = defaults.SoundEffectsEnabled;
+                config.ShowTacticalAnalysis = defaults.ShowTacticalAnalysis;
+                config.ShowPositionalAnalysis = defaults.ShowPositionalAnalysis;
+                config.ShowEndgameAnalysis = defaults.ShowEndgameAnalysis;
+                config.ShowOpeningPrinciples = defaults.ShowOpeningPrinciples;
+                config.ShowThreats = defaults.ShowThreats;
+                config.ShowWDL = defaults.ShowWDL;
+                config.PlayStyleEnabled = defaults.PlayStyleEnabled;
+                config.Aggressiveness = defaults.Aggressiveness;
+                config.ShowOpeningName = defaults.ShowOpeningName;
+                config.ShowMoveQuality = defaults.ShowMoveQuality;
+                config.ShowBookMoves = defaults.ShowBookMoves;
+                config.SyzygyPath = defaults.SyzygyPath;
+                config.ContinuousAnalysis = defaults.ContinuousAnalysis;
+                config.ShowExplanations = defaults.ShowExplanations;
+                config.AutoPlayInterval = defaults.AutoPlayInterval;
+
                 LoadSettings();
             }
         }

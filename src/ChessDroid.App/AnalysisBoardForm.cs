@@ -1314,8 +1314,6 @@ namespace ChessDroid
             int prevAggressiveness = config.Aggressiveness;
             bool prevShowExplanations = config.ShowExplanations;
             string prevTheme = config.Theme;
-            bool prevUseOpeningBook = config.UseOpeningBook;
-            string prevOpeningBooksFolder = config.OpeningBooksFolder;
 
             using var settingsForm = new SettingsForm(config);
             if (settingsForm.ShowDialog() == DialogResult.OK)
@@ -1326,8 +1324,6 @@ namespace ChessDroid
                     || config.PlayStyleEnabled != prevPlayStyle
                     || config.Aggressiveness != prevAggressiveness
                     || config.ShowExplanations != prevShowExplanations;
-                bool bookSettingsChanged = config.UseOpeningBook != prevUseOpeningBook
-                    || config.OpeningBooksFolder != prevOpeningBooksFolder;
 
                 if (engineChanged)
                 {
@@ -1339,8 +1335,6 @@ namespace ChessDroid
                 // rebuilding consoleFormatter here used to leak a RichTextBox event
                 // subscription every time Settings closed with OK.
                 ExplanationFormatter.LoadFromConfig(config);
-                if (bookSettingsChanged)
-                    _ = ReloadOpeningBookAsync();
                 ApplyTheme();
                 if (config.Theme != prevTheme)
                 {

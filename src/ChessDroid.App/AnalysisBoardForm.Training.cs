@@ -314,8 +314,14 @@ namespace ChessDroid
 
         private void SetTrainingButtonsEnabled(bool enabled)
         {
+            // btnSettings was missing here — changing the engine mid-training (e.g. during
+            // Drill Watch Engines) disposes the old ChessEngineService while other code still
+            // holds a stale reference to it (see Chess960 browser's engine-sync fix for the
+            // same class of bug), and TriggerAutoAnalysis isn't guarded against matchRunning
+            // (set directly by Watch Engines) so a Settings-triggered analysis could contend
+            // with the live drill match's own engine use.
             foreach (var btn in new[] { btnNewGame, btnFlipBoard, btnTakeBack, btnPrevMove,
-                                        btnNextMove, btnAutoPlay, btnPlayBot, btnEditPosition })
+                                        btnNextMove, btnAutoPlay, btnPlayBot, btnEditPosition, btnSettings })
                 btn.Enabled = enabled;
         }
 
