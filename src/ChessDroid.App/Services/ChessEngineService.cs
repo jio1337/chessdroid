@@ -556,53 +556,12 @@ namespace ChessDroid.Services
                             // Parse info lines containing PV
                             if (line.StartsWith(UCI_RESPONSE_INFO, StringComparison.Ordinal) && line.Contains(UCI_TOKEN_PV))
                             {
-                                var tokens = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-                                int mpvIndex = 1;
-                                string evalStr = "";
-                                var pvList = new List<string>();
+                                var parsed = UciInfoLineParser.ParsePvLine(line, whiteToMove);
+                                int mpvIndex = parsed.MultiPv;
+                                string evalStr = parsed.Eval;
+                                if (parsed.Wdl != null) wdlInfo = parsed.Wdl;
 
-                                for (int i = 0; i < tokens.Length; i++)
-                                {
-                                    if (tokens[i] == UCI_TOKEN_MULTIPV && i + 1 < tokens.Length && int.TryParse(tokens[i + 1], out int mpv))
-                                        mpvIndex = mpv;
-
-                                    if (tokens[i] == UCI_TOKEN_SCORE && i + 2 < tokens.Length)
-                                    {
-                                        if (tokens[i + 1] == UCI_TOKEN_CP && double.TryParse(tokens[i + 2], out double cp))
-                                        {
-                                            double displayCp = whiteToMove ? cp : -cp;
-                                            evalStr = Score.FromCentipawns(displayCp).ToString();
-                                        }
-                                        else if (tokens[i + 1] == UCI_TOKEN_MATE && int.TryParse(tokens[i + 2], out int mateIn))
-                                        {
-                                            int displayMate = whiteToMove ? mateIn : -mateIn;
-                                            evalStr = Score.FromMate(displayMate).ToString();
-                                        }
-                                    }
-
-                                    // Parse WDL (Win/Draw/Loss) data - format: "wdl W D L" (per mille values)
-                                    if (tokens[i] == UCI_TOKEN_WDL && i + 3 < tokens.Length)
-                                    {
-                                        if (int.TryParse(tokens[i + 1], out int w) &&
-                                            int.TryParse(tokens[i + 2], out int d) &&
-                                            int.TryParse(tokens[i + 3], out int l))
-                                        {
-                                            if (mpvIndex == 1)
-                                            {
-                                                wdlInfo = new WDLInfo(w, d, l);
-                                            }
-                                        }
-                                    }
-
-                                    if (tokens[i] == UCI_TOKEN_PV)
-                                    {
-                                        for (int j = i + 1; j < tokens.Length; j++)
-                                            pvList.Add(tokens[j]);
-                                        break;
-                                    }
-                                }
-
-                                string pvLine = string.Join(" ", pvList);
+                                string pvLine = string.Join(" ", parsed.PvMoves);
 
                                 // Ensure the lists have the correct index
                                 while (pvs.Count < mpvIndex)
@@ -933,44 +892,13 @@ namespace ChessDroid.Services
                         if (line.StartsWith(UCI_RESPONSE_BESTMOVE, StringComparison.Ordinal)) { completedNaturally = true; break; }
                         if (!line.StartsWith(UCI_RESPONSE_INFO, StringComparison.Ordinal) || !line.Contains(UCI_TOKEN_PV)) continue;
 
-                        var tokens = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-                        int    depth    = currentDepth;
-                        int    mpv      = 1;
-                        string lineEval = "";
+                        var parsed   = UciInfoLineParser.ParsePvLine(line, whiteToMove);
+                        int    depth    = parsed.Depth ?? currentDepth;
+                        int    mpv      = parsed.MultiPv;
+                        string lineEval = parsed.Eval;
                         pvMoves.Clear();
-                        WDLInfo? lineWdl = null;
-
-                        for (int i = 0; i < tokens.Length; i++)
-                        {
-                            if (tokens[i] == "depth"        && i + 1 < tokens.Length && int.TryParse(tokens[i + 1], out int d))  depth = d;
-                            if (tokens[i] == UCI_TOKEN_MULTIPV && i + 1 < tokens.Length && int.TryParse(tokens[i + 1], out int m)) mpv   = m;
-
-                            if (tokens[i] == UCI_TOKEN_SCORE && i + 2 < tokens.Length)
-                            {
-                                if (tokens[i + 1] == UCI_TOKEN_CP && double.TryParse(tokens[i + 2], out double cp))
-                                {
-                                    double dcp = whiteToMove ? cp : -cp;
-                                    lineEval = Score.FromCentipawns(dcp).ToString();
-                                }
-                                else if (tokens[i + 1] == UCI_TOKEN_MATE && i + 2 < tokens.Length && int.TryParse(tokens[i + 2], out int mate))
-                                {
-                                    int dm = whiteToMove ? mate : -mate;
-                                    lineEval = Score.FromMate(dm).ToString();
-                                }
-                            }
-
-                            if (tokens[i] == UCI_TOKEN_WDL && i + 3 < tokens.Length && mpv == 1 &&
-                                int.TryParse(tokens[i + 1], out int w) &&
-                                int.TryParse(tokens[i + 2], out int dr) &&
-                                int.TryParse(tokens[i + 3], out int l))
-                                lineWdl = new WDLInfo(w, dr, l);
-
-                            if (tokens[i] == UCI_TOKEN_PV)
-                            {
-                                for (int j = i + 1; j < tokens.Length; j++) pvMoves.Add(tokens[j]);
-                                break;
-                            }
-                        }
+                        pvMoves.AddRange(parsed.PvMoves);
+                        WDLInfo? lineWdl = parsed.Wdl;
 
                         // New depth: flush completed previous depth, reset buffers
                         if (depth > currentDepth)
@@ -1033,6 +961,12 @@ namespace ChessDroid.Services
                 LogM($"GetMoveForMatchAsync: early exit — alive={IsEngineAlive()} state={State}");
                 return (null, null);
             }
+
+            // Was a bare State-check with no serialization against GetBestMoveAsync/
+            // RunContinuousAnalysisAsync/StreamPositionEvalAsync, all of which DO take this
+            // semaphore — a concurrent call on the same engine instance was check-then-act.
+            try { await _analysisSemaphore.WaitAsync(ct).ConfigureAwait(false); }
+            catch (OperationCanceledException) { return (null, null); }
 
             bool whiteToMove = FenIsWhiteToMove(fen);
 
@@ -1124,6 +1058,7 @@ namespace ChessDroid.Services
                 State = EngineState.Error;
                 return (null, null);
             }
+            finally { _analysisSemaphore.Release(); }
         }
 
         /// <summary>
@@ -1134,6 +1069,11 @@ namespace ChessDroid.Services
         {
             if (!IsEngineAlive() || State != EngineState.Ready)
                 return null;
+
+            // See GetMoveForMatchAsync's comment — same check-then-act gap against the
+            // semaphore-protected analysis methods, closed the same way.
+            try { await _analysisSemaphore.WaitAsync(ct).ConfigureAwait(false); }
+            catch (OperationCanceledException) { return null; }
 
             bool whiteToMove = FenIsWhiteToMove(fen);
             string? lastEval = null;
@@ -1189,6 +1129,7 @@ namespace ChessDroid.Services
                 State = EngineState.Error;
                 return null;
             }
+            finally { _analysisSemaphore.Release(); }
         }
 
         /// <summary>
@@ -1200,6 +1141,10 @@ namespace ChessDroid.Services
         {
             if (!IsEngineAlive() || State != EngineState.Ready)
                 return null;
+
+            // See GetMoveForMatchAsync's comment — same check-then-act gap, closed the same way.
+            try { await _analysisSemaphore.WaitAsync(ct).ConfigureAwait(false); }
+            catch (OperationCanceledException) { return null; }
 
             bool whiteToMove = FenIsWhiteToMove(fen);
             string? lastEval = null;
@@ -1256,6 +1201,7 @@ namespace ChessDroid.Services
                 State = EngineState.Error;
                 return null;
             }
+            finally { _analysisSemaphore.Release(); }
         }
 
         /// <summary>
