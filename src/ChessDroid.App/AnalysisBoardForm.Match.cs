@@ -958,6 +958,9 @@ namespace ChessDroid
 
         private void BtnStats_Click(object? sender, EventArgs e)
         {
+            // Was missing — every sibling button here (Match, Tournament) guards on
+            // matchRunning; Stats didn't, so it could be opened mid-match.
+            if (matchRunning) { lblStatus.Text = "Stop the match first"; return; }
             using var dlg = new StatsDialog(config, config.Theme);
             dlg.ShowDialog(this);
         }

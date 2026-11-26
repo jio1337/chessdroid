@@ -224,9 +224,10 @@ namespace ChessDroid
             string best = _config.DailyPuzzleBestStreak > 0
                 ? _config.DailyPuzzleBestStreak.ToString(CultureInfo.InvariantCulture)
                 : "—";
-            string last = string.IsNullOrEmpty(_config.DailyPuzzleLastSolvedDate)
-                ? "never"
-                : DateTime.Parse(_config.DailyPuzzleLastSolvedDate, CultureInfo.InvariantCulture).ToString("MMM d, yyyy", CultureInfo.InvariantCulture);
+            string last = DateTime.TryParse(_config.DailyPuzzleLastSolvedDate, CultureInfo.InvariantCulture,
+                DateTimeStyles.None, out var lastSolved)
+                ? lastSolved.ToString("MMM d, yyyy", CultureInfo.InvariantCulture)
+                : "never";
             string clean = _config.DailyPuzzleCleanSolves > 0
                 ? $"{_config.DailyPuzzleCleanSolves} clean solve{(_config.DailyPuzzleCleanSolves == 1 ? "" : "s")} lifetime"
                 : "";
