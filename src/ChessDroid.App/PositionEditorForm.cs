@@ -10,6 +10,13 @@ namespace ChessDroid
         private bool _whiteToMove = true;
         private bool _castleWK = true, _castleWQ = true, _castleBK = true, _castleBQ = true;
 
+        // No UI for these — there's nothing sensible for the user to edit here, but a
+        // no-op Load-then-Apply round trip must not silently reset the 50-move-rule clock
+        // and move number to "0 1". Carried through from whatever FEN was loaded instead.
+        // (En passant is deliberately still dropped on Apply — out of scope for this pass.)
+        private int _halfmoveClock;
+        private int _fullmoveNumber = 1;
+
         private char _selectedPiece; // '\0' = nothing selected; '.' = erase
         private Panel? _highlightedCell;
         private Dictionary<char, Image?> _images = new();
@@ -166,6 +173,8 @@ namespace ChessDroid
                 _castleBK = castling.Contains('k');
                 _castleBQ = castling.Contains('q');
 
+                (_halfmoveClock, _fullmoveNumber) = ParseMoveCounters(parts);
+
                 rdoWhite.Checked = _whiteToMove;
                 rdoBlack.Checked = !_whiteToMove;
                 chkCastleWK.Checked = _castleWK;
@@ -178,6 +187,8 @@ namespace ChessDroid
             catch
             {
                 _board = new ChessBoard();
+                _halfmoveClock = 0;
+                _fullmoveNumber = 1;
                 pnlBoard.Invalidate();
             }
         }
@@ -336,6 +347,8 @@ namespace ChessDroid
         private void BtnClear_Click(object? sender, EventArgs e)
         {
             _board = new ChessBoard();
+            _halfmoveClock = 0;
+            _fullmoveNumber = 1;
             pnlBoard.Invalidate();
             lblStatus.Text = "Board cleared";
         }
@@ -350,33 +363,10 @@ namespace ChessDroid
 
         private void BtnApply_Click(object? sender, EventArgs e)
         {
-            bool hasWK = false, hasBK = false;
-            int wTotal = 0, bTotal = 0, wPawns = 0, bPawns = 0;
-            for (int r = 0; r < 8; r++)
-                for (int c = 0; c < 8; c++)
-                {
-                    char p = _board.GetPiece(r, c);
-                    if (p == '.') continue;
-                    if (p == 'K') hasWK = true;
-                    if (p == 'k') hasBK = true;
-                    if (char.IsUpper(p)) { wTotal++; if (p == 'P') wPawns++; }
-                    else                 { bTotal++; if (p == 'p') bPawns++; }
-                }
-
-            if (!hasWK || !hasBK)
+            string? error = ValidatePosition(_board);
+            if (error != null)
             {
-                MessageBox.Show("Both kings (K and k) must be on the board.",
-                    "Invalid Position", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
-            if (wTotal > 16 || bTotal > 16 || wPawns > 8 || bPawns > 8)
-            {
-                MessageBox.Show(
-                    $"Too many pieces — White: {wTotal}/16, Black: {bTotal}/16, " +
-                    $"White pawns: {wPawns}/8, Black pawns: {bPawns}/8.\n" +
-                    "The engine cannot analyze positions that exceed legal piece counts.",
-                    "Invalid Position", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show(error, "Invalid Position", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
@@ -388,7 +378,7 @@ namespace ChessDroid
             if (_castleBQ) sb.Append('q');
             string castling = sb.Length > 0 ? sb.ToString() : "-";
 
-            ResultFen = $"{_board.ToFEN()} {side} {castling} - 0 1";
+            ResultFen = $"{_board.ToFEN()} {side} {castling} - {_halfmoveClock} {_fullmoveNumber}";
             DialogResult = DialogResult.OK;
             Close();
         }
@@ -396,6 +386,51 @@ namespace ChessDroid
         private void BtnCancel_Click(object? sender, EventArgs e)
         {
             Close();
+        }
+
+        // Extracted so it's directly unit-testable without instantiating the Form (same
+        // reason MatchBoardPanel.ComputeRatingUpdate/PgnImportService's parsing methods
+        // were pulled out as pure static methods earlier this session). Returns null when
+        // the position is valid, otherwise the exact message to show the user.
+        // Parses the halfmove-clock/fullmove-number tail of a split FEN, defaulting to
+        // "0 1" (a fresh game) for anything missing or malformed — same fallback a FEN
+        // omitting them entirely implies.
+        internal static (int Halfmove, int Fullmove) ParseMoveCounters(string[] fenParts)
+        {
+            int halfmove = fenParts.Length >= 5 && int.TryParse(fenParts[4], out int hm) && hm >= 0 ? hm : 0;
+            int fullmove = fenParts.Length >= 6 && int.TryParse(fenParts[5], out int fm) && fm >= 1 ? fm : 1;
+            return (halfmove, fullmove);
+        }
+
+        internal static string? ValidatePosition(ChessBoard board)
+        {
+            int wKings = 0, bKings = 0;
+            int wTotal = 0, bTotal = 0, wPawns = 0, bPawns = 0;
+            bool pawnOnBackRank = false;
+            for (int r = 0; r < 8; r++)
+                for (int c = 0; c < 8; c++)
+                {
+                    char p = board.GetPiece(r, c);
+                    if (p == '.') continue;
+                    if (p == 'K') wKings++;
+                    if (p == 'k') bKings++;
+                    if ((p == 'P' || p == 'p') && (r == 0 || r == 7)) pawnOnBackRank = true;
+                    if (char.IsUpper(p)) { wTotal++; if (p == 'P') wPawns++; }
+                    else                 { bTotal++; if (p == 'p') bPawns++; }
+                }
+
+            if (wKings != 1 || bKings != 1)
+                return "Each side must have exactly one king.";
+
+            if (pawnOnBackRank)
+                return "A pawn cannot be placed on the 1st or 8th rank.";
+
+            if (wTotal > 16 || bTotal > 16 || wPawns > 8 || bPawns > 8)
+                return $"Too many pieces — White: {wTotal}/16, Black: {bTotal}/16, " +
+                       $"White pawns: {wPawns}/8, Black pawns: {bPawns}/8.\n" +
+                       "The engine cannot analyze positions that exceed legal piece counts.";
+
+            return null;
         }
 
         // ── Helpers ────────────────────────────────────────────────────

@@ -1569,6 +1569,18 @@ namespace ChessDroid
 
         private async void BtnEditPosition_Click(object? sender, EventArgs e)
         {
+            // The Position Editor has no Chess960 awareness at all (standard K/Q/k/q
+            // castling letters only, no rook-file tracking) — opening it on a Chess960
+            // position silently drops the real castling rights and, on Apply, hands back
+            // a FEN that corrupts them (GameSession assumes default a/h-file rooks once
+            // Chess960Mode + standard castling letters combine). Blocking entry here is
+            // cheaper and safer than teaching the editor Shredder-FEN for this pass.
+            if (_chess960Active)
+            {
+                lblStatus.Text = "Position Editor doesn't support Chess 960 positions yet";
+                return;
+            }
+
             // Was "matchRunning || _botModeActive" — silently missed Training despite the
             // message below implying any active mode should block this. Closed as part of
             // introducing AppMode (AppMode.cs), not a deliberate pre-existing restriction.
