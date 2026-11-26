@@ -79,9 +79,6 @@ namespace ChessDroid
 
         // ── Image loading ──────────────────────────────────────────────
 
-        private static readonly System.Text.RegularExpressions.Regex _svgFilterAttr =
-            new(@"\s+filter=""url\([^)]+\)""", System.Text.RegularExpressions.RegexOptions.Compiled);
-
         private void LoadImages(string templateSet, string templatesPath)
         {
             string[] stems = { "wK","wQ","wR","wB","wN","wP","bK","bQ","bR","bB","bN","bP" };
@@ -89,36 +86,7 @@ namespace ChessDroid
 
             string baseDir = Path.Combine(templatesPath, templateSet);
             for (int i = 0; i < stems.Length; i++)
-                _images[keys[i]] = LoadPieceImage(baseDir, stems[i]);
-        }
-
-        private static Image? LoadPieceImage(string baseDir, string stem)
-        {
-            // PNG first
-            string png = Path.Combine(baseDir, stem + ".png");
-            if (File.Exists(png))
-            {
-                try { return Image.FromFile(png); } catch { }
-            }
-            // SVG (Lichess naming: wK.svg)
-            string svg = Path.Combine(baseDir, stem + ".svg");
-            if (File.Exists(svg)) return RenderSvg(svg);
-            // SVG (PyChess naming: wk.svg)
-            string svgLow = Path.Combine(baseDir, stem.ToLowerInvariant() + ".svg");
-            if (File.Exists(svgLow)) return RenderSvg(svgLow);
-            return null;
-        }
-
-        private static Bitmap? RenderSvg(string path)
-        {
-            try
-            {
-                string xml = File.ReadAllText(path);
-                xml = _svgFilterAttr.Replace(xml, "");
-                var doc = Svg.SvgDocument.FromSvg<Svg.SvgDocument>(xml);
-                return doc.Draw(128, 128);
-            }
-            catch { return null; }
+                _images[keys[i]] = Services.PieceImageLoader.LoadPieceImage(baseDir, stems[i], renderSize: 128);
         }
 
         // ── Theme ──────────────────────────────────────────────────────

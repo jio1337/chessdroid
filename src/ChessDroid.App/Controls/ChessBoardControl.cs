@@ -297,53 +297,7 @@ namespace ChessDroid.Controls
             };
 
             foreach (var kvp in pieceStems)
-                pieceImages[kvp.Key] = TryLoadPiece(basePath, kvp.Value);
-        }
-
-        private static Image? TryLoadPiece(string basePath, string stem)
-        {
-            // 1. PNG — existing sets (wK.png)
-            string png = Path.Combine(basePath, stem + ".png");
-            if (File.Exists(png))
-            {
-                try { return Image.FromFile(png); }
-                catch (Exception ex) { Debug.WriteLine($"Failed to load {png}: {ex.Message}"); }
-            }
-
-            // 2. SVG — Lichess convention (wK.svg, uppercase piece)
-            string svg = Path.Combine(basePath, stem + ".svg");
-            if (File.Exists(svg))
-                return RenderSvg(svg);
-
-            // 3. SVG — PyChess convention (wk.svg, all lowercase)
-            string svgLower = Path.Combine(basePath, stem.ToLowerInvariant() + ".svg");
-            if (File.Exists(svgLower))
-                return RenderSvg(svgLower);
-
-            Debug.WriteLine($"Piece not found: {stem} in {basePath}");
-            return null;
-        }
-
-        private static readonly System.Text.RegularExpressions.Regex _svgFilterAttr =
-            new(@"\s+filter=""url\([^)]+\)""", System.Text.RegularExpressions.RegexOptions.Compiled);
-
-        private static Bitmap? RenderSvg(string path)
-        {
-            try
-            {
-                // Strip filter="url(#...)" attributes before rendering — the Svg library
-                // mishandles chained filter primitives (feComposite/feFlood/feOffset) and
-                // produces garbage output. Pieces render correctly without the drop-shadow filters.
-                string xml = File.ReadAllText(path);
-                xml = _svgFilterAttr.Replace(xml, "");
-                var doc = Svg.SvgDocument.FromSvg<Svg.SvgDocument>(xml);
-                return doc.Draw(256, 256);
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Failed to render SVG {path}: {ex.Message}");
-                return null;
-            }
+                pieceImages[kvp.Key] = Services.PieceImageLoader.LoadPieceImage(basePath, kvp.Value, renderSize: 256);
         }
 
         // Pre-scales all piece images to the actual draw size so DrawImage is a 1:1 copy every frame.
