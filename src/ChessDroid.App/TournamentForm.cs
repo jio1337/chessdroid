@@ -568,7 +568,7 @@ namespace ChessDroid
         private void SelectTournamentOpening()
         {
             string booksFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Books");
-            var entries = EcoBookService.LoadAll(booksFolder);
+            var entries = OpeningCatalog.Browse(booksFolder);
             if (entries.Count == 0)
             {
                 _rbBookRandom.Checked = true;

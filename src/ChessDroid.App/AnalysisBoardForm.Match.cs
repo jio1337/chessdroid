@@ -249,7 +249,7 @@ namespace ChessDroid
         private void SelectMatchOpening()
         {
             string booksFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Books");
-            var entries = ChessDroid.Services.EcoBookService.LoadAll(booksFolder);
+            var entries = ChessDroid.Services.OpeningCatalog.Browse(booksFolder);
             if (entries.Count == 0)
             {
                 lblStatus.Text = "No openings found in Books folder";
