@@ -681,7 +681,7 @@ namespace ChessDroid
         internal void SelectOpeningForTraining()
         {
             string booksFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Books");
-            var entries = ChessDroid.Services.EcoBookService.LoadAll(booksFolder);
+            var entries = ChessDroid.Services.OpeningCatalog.Browse(booksFolder);
             using var selDialog = new OpeningExplorerDialog(entries, pgn =>
             {
                 // Parse ECO+name from PGN [Opening] tag: "[Opening "ECO — Name"]"
@@ -761,7 +761,7 @@ namespace ChessDroid
             if (_trainingPanel._rbOpRandom?.Checked == true)
             {
                 string booksFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Books");
-                var all = ChessDroid.Services.EcoBookService.LoadAll(booksFolder);
+                var all = ChessDroid.Services.OpeningCatalog.Browse(booksFolder);
                 if (all.Count == 0) return;
                 entry = all[_trainingRng.Next(all.Count)];
             }

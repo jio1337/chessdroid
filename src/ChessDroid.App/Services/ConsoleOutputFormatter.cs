@@ -116,7 +116,7 @@ namespace ChessDroid.Services
                 }
                 else
                 {
-                    openingDisplay = OpeningBook.GetOpeningDisplay(fen);
+                    openingDisplay = OpeningCatalog.GetOpeningDisplay(fen);
                     _cachedOpeningLookup = (fen, openingDisplay);
                 }
                 if (!string.IsNullOrEmpty(openingDisplay) && openingDisplay != "Starting Position")

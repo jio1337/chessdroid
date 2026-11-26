@@ -305,36 +305,12 @@ namespace ChessDroid.Services
             return false;
         }
 
-        /// <summary>Checks if a piece can attack a square (geometry + path clear for sliding pieces).</summary>
+        // CHESSDROID_AUDIT.md §6.3: was its own independent geometry+path-clear implementation,
+        // duplicating ChessUtilities.CanAttackSquare (used by IsSquareAttackedBy/ThreatDetection
+        // elsewhere). Consolidated to one implementation; perft tests catch any behavioral
+        // difference immediately since this feeds IsKingInCheck directly.
         private static bool CanAttackSquare(ChessBoard testBoard, int fromRow, int fromCol, char piece, int toRow, int toCol)
-        {
-            if (!ChessRulesService.CanReachSquare(testBoard, fromRow, fromCol, piece, toRow, toCol))
-                return false;
-
-            char pieceLower = char.ToLowerInvariant(piece);
-
-            // Knights and kings don't need path checking (they jump or move 1 square)
-            if (pieceLower == 'n' || pieceLower == 'k') return true;
-
-            // Pawns attack diagonally, not forward — already validated by CanReachSquare
-            if (pieceLower == 'p') return fromCol != toCol;
-
-            // Sliding pieces (queen, rook, bishop): check the path is clear
-            int dr = Math.Sign(toRow - fromRow);
-            int dc = Math.Sign(toCol - fromCol);
-
-            int currentRow = fromRow + dr;
-            int currentCol = fromCol + dc;
-
-            while (currentRow != toRow || currentCol != toCol)
-            {
-                if (testBoard.GetPiece(currentRow, currentCol) != '.') return false; // Path is blocked
-                currentRow += dr;
-                currentCol += dc;
-            }
-
-            return true;
-        }
+            => ChessUtilities.CanAttackSquare(testBoard, fromRow, fromCol, piece, toRow, toCol);
 
         private static string ToUciMove(int fromRow, int fromCol, int toRow, int toCol, char? promotion = null)
         {

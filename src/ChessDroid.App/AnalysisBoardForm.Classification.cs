@@ -30,7 +30,20 @@ namespace ChessDroid
             int chosenDepth = ShowAnalyzeDepthDialog(mainLine.Count, config?.EngineDepth ?? 15);
             if (chosenDepth < 0) return;
 
-            await ClassifyMoves(mainLine, chosenDepth);
+            // CHESSDROID_AUDIT.md §4.2's own suggested migration order is Bot → Classification
+            // → Match → ... — this is the next slice after Bot's existing Enter/Exit pair.
+            var controller = new ClassificationModeController(this);
+            CurrentModeController = controller;
+            await controller.Enter(mainLine, chosenDepth);
+        }
+
+        /// <summary>Thin IModeController wrapper around ClassifyMoves/CancelClassification — see Modes/IModeController.cs.</summary>
+        private sealed class ClassificationModeController : Modes.IModeController
+        {
+            private readonly AnalysisBoardForm _form;
+            public ClassificationModeController(AnalysisBoardForm form) => _form = form;
+            public Task Enter(List<MoveNode> mainLine, int depth) => _form.ClassifyMoves(mainLine, depth);
+            public void ExitMode() => _form.CancelClassification();
         }
 
         private int ShowAnalyzeDepthDialog(int moveCount, int defaultDepth)
@@ -137,6 +150,7 @@ namespace ChessDroid
             SetClassifyControlsEnabled(false);
             _classifyCts?.Dispose();
             _classifyCts = null;
+            if (CurrentModeController is ClassificationModeController) CurrentModeController = null;
 
             if (classification == null)
             {

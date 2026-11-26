@@ -164,10 +164,10 @@ namespace ChessDroid
             }
 
             // Find the deepest position in the main line that has a known ECO opening
-            string opening = OpeningBook.GetOpeningDisplay(moveTree.Root.FEN);
+            string opening = OpeningCatalog.GetOpeningDisplay(moveTree.Root.FEN);
             foreach (var node in moveTree.GetMainLine())
             {
-                string o = OpeningBook.GetOpeningDisplay(node.FEN);
+                string o = OpeningCatalog.GetOpeningDisplay(node.FEN);
                 if (!string.IsNullOrEmpty(o)) opening = o;
             }
 
@@ -255,7 +255,7 @@ namespace ChessDroid
             }
 
             string booksFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Books");
-            var entries = ChessDroid.Services.EcoBookService.LoadAll(booksFolder);
+            var entries = ChessDroid.Services.OpeningCatalog.Browse(booksFolder);
             using var dialog = new OpeningExplorerDialog(entries, pgn =>
             {
                 ImportPgn(pgn);
