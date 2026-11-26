@@ -155,20 +155,7 @@ namespace ChessDroid
         private System.Windows.Forms.Timer _autoPlayTimer = null!;
         private bool _autoPlaying;
 
-        // Piece set hover preview — query the combobox's internal listbox for the hovered item
-        [StructLayout(LayoutKind.Sequential)]
-        private struct COMBOBOXINFO
-        {
-            public int cbSize;
-            public int rcItemLeft, rcItemTop, rcItemRight, rcItemBottom;
-            public int rcButtonLeft, rcButtonTop, rcButtonRight, rcButtonBottom;
-            public int stateButton;
-            public IntPtr hwndCombo, hwndItem, hwndList;
-        }
-        [DllImport("user32.dll")] private static extern bool GetComboBoxInfo(IntPtr hwnd, ref COMBOBOXINFO pcbi);
-        [DllImport("user32.dll")] private static extern int SendMessage(IntPtr hWnd, int msg, int wParam, int lParam);
         [DllImport("user32.dll")] private static extern IntPtr GetFocus();
-        private const int LB_GETCURSEL = 0x0188;
         private string _hoverPreviewSaved = "";
         private int    _pieceSavedIndex = -1;
         private System.Windows.Forms.Timer? _hoverPreviewTimer;
@@ -620,11 +607,9 @@ namespace ChessDroid
 
         private void HoverPreviewTimer_Tick(object? sender, EventArgs e)
         {
-            var info = new COMBOBOXINFO { cbSize = Marshal.SizeOf<COMBOBOXINFO>() };
-            if (!GetComboBoxInfo(cmbPieces.Handle, ref info) || info.hwndList == IntPtr.Zero) return;
-            int idx = SendMessage(info.hwndList, LB_GETCURSEL, 0, 0);
-            if (idx < 0 || idx >= cmbPieces.Items.Count) return;
-            string? hovered = cmbPieces.Items[idx]?.ToString();
+            int? idx = ChessDroid.Controls.ComboBoxHoverHelper.GetHoveredIndex(cmbPieces);
+            if (idx == null) return;
+            string? hovered = cmbPieces.Items[idx.Value]?.ToString();
             if (string.IsNullOrEmpty(hovered)) return;
             boardControl.SetTemplateSet(hovered);
             _materialTop?.SetTemplateSet(hovered);
@@ -756,24 +741,20 @@ namespace ChessDroid
 
         private void BoardColorHoverTimer_Tick(object? sender, EventArgs e)
         {
-            var info = new COMBOBOXINFO { cbSize = Marshal.SizeOf<COMBOBOXINFO>() };
-            if (!GetComboBoxInfo(cmbBoardColor.Handle, ref info) || info.hwndList == IntPtr.Zero) return;
-            int idx = SendMessage(info.hwndList, LB_GETCURSEL, 0, 0);
-            if (idx < 0 || idx >= cmbBoardColor.Items.Count) return;
-            ApplyBoardColorPreview(idx);
+            int? idx = ChessDroid.Controls.ComboBoxHoverHelper.GetHoveredIndex(cmbBoardColor);
+            if (idx == null) return;
+            ApplyBoardColorPreview(idx.Value);
         }
 
         internal void DrillHoverTimer_Tick(object? sender, EventArgs e)
         {
             if (_trainingPanel._cmbDrillChapter == null) return;
-            var info = new COMBOBOXINFO { cbSize = Marshal.SizeOf<COMBOBOXINFO>() };
-            if (!GetComboBoxInfo(_trainingPanel._cmbDrillChapter.Handle, ref info) || info.hwndList == IntPtr.Zero) return;
-            int idx = SendMessage(info.hwndList, LB_GETCURSEL, 0, 0);
-            if (idx < 0 || idx >= _trainingPanel._cmbDrillChapter.Items.Count || idx == _drillHoverLastIdx) return;
-            _drillHoverLastIdx = idx;
+            int? idx = ChessDroid.Controls.ComboBoxHoverHelper.GetHoveredIndex(_trainingPanel._cmbDrillChapter);
+            if (idx == null || idx == _drillHoverLastIdx) return;
+            _drillHoverLastIdx = idx.Value;
             string study = _trainingPanel._cmbDrillStudy?.SelectedItem?.ToString() ?? "";
             var chapters = GetChaptersForStudy(study);
-            var ch = idx < chapters.Count ? chapters[idx] : null;
+            var ch = idx.Value < chapters.Count ? chapters[idx.Value] : null;
             if (ch == null) return;
             SetDrillDescription(ch.Description);
             boardControl.LoadFEN(ch.Fen);
