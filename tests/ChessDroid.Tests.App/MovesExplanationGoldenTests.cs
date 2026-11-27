@@ -103,6 +103,13 @@ public class MovesExplanationGoldenTests
             "a5c4", new List<string> { "a5c4" }, "+2.00",
             "maximizes piece activity, attacks knight" };
 
+        // 18...Be8 unblocks the d-file, so Rd1xd8 wins the queen — must NOT be described as
+        // "clears d-file for queen".
+        yield return new object[] { "UnblockingOntoOwnQueenIsNotClearance",
+            "r2q1r1k/pp1bn1pB/1b2p2p/n1p1N3/8/B1N5/P1Q2PPP/3R1RK1 b - - 1 18",
+            "d7e8", new List<string> { "d7e8" }, "+3.64",
+            "fights back in difficult position" };
+
         // 21...Bxc2 / 21...Bxh7: the f5 bishop itself sat between Qc2 and Bh7, so neither
         // defended the other — no "removes defender".
         yield return new object[] { "CaptureThatUnblocksLineIsNotRemovalOfDefender",
@@ -165,5 +172,25 @@ public class MovesExplanationGoldenTests
     {
         string actual = MovesExplanation.GenerateMoveExplanation(bestMove, fen, pvs, evaluation);
         Assert.True(expected == actual, $"[{caseName}] expected \"{expected}\" but got \"{actual}\"");
+    }
+
+    // Mackenzie–Paulsen 18...Be8: the bishop does escape Rd1/Ne5, but the move opens the
+    // d-file onto the queen, so calling it "saves bishop" is wrong.
+    [Fact]
+    public void EscapeThatHangsQueenIsNotSaves()
+    {
+        var board = ChessDroid.Models.ChessBoard.FromFEN("r2q1r1k/pp1bn1pB/1b2p2p/n1p1N3/8/B1N5/P1Q2PPP/3R1RK1 b - - 1 18");
+        var defenses = DefenseDetection.AnalyzeDefensesAfterMove(board, "d7e8", movingPlayerIsWhite: false);
+        Assert.DoesNotContain(defenses, d => d.Description.StartsWith("saves"));
+    }
+
+    // Control: a plain escape with nothing uncovered is still reported. White's bishop on
+    // c4 is attacked by the d5 pawn and retreats to b3.
+    [Fact]
+    public void PlainEscapeIsStillSaves()
+    {
+        var board = ChessDroid.Models.ChessBoard.FromFEN("4k3/8/8/3p4/2B5/8/8/4K3 w - - 0 1");
+        var defenses = DefenseDetection.AnalyzeDefensesAfterMove(board, "c4b3", movingPlayerIsWhite: true);
+        Assert.Contains(defenses, d => d.Description == "saves bishop");
     }
 }

@@ -3332,6 +3332,11 @@ namespace ChessDroid.Services
                                 // Confirm our moved piece was the one blocking (srcRank/srcFile lies between slider and target)
                                 if (!IsSquareOnLineBetween(r, c, tr, tc, srcRank, srcFile)) continue;
 
+                                // Opening a line works both ways: if the opponent (to move) can now win
+                                // our slider — e.g. ...Be8 unblocking the d-file so Rd1xd8 takes the
+                                // queen — that's a blunder, not a clearance.
+                                if (ChessUtilities.IsPieceEnPrise(tempBoard, r, c, isWhite)) continue;
+
                                 bool isDiag = Math.Abs(tr - r) == Math.Abs(tc - c) && tr != r;
                                 string lineDesc = isDiag
                                     ? "diagonal"

@@ -193,6 +193,12 @@ namespace ChessDroid.Services
             if (pieceType == PieceType.King) return; // King escapes handled differently
 
             int pieceValue = ChessUtilities.GetPieceValue(pieceType);
+
+            // Moving a piece to safety isn't "saving" it if the move uncovers something worth
+            // more (e.g. ...Bd7-e8 escapes the bishop but opens the d-file so Rd1xd8 wins the queen).
+            if (ChessUtilities.GetNewlyHangingValue(before, after, destRow, destCol, weAreWhite) > pieceValue)
+                return;
+
             if (pieceValue < 3)
             {
                 // For pawns: only report if attacked for free by a higher-value piece

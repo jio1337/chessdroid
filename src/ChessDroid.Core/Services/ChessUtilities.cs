@@ -402,6 +402,48 @@ namespace ChessDroid.Services
         }
 
         /// <summary>
+        /// True when the piece on (row, col) can be captured at a material loss for its owner:
+        /// it is attacked and either undefended, or attacked by something worth strictly less.
+        /// Equal trades are not counted.
+        /// </summary>
+        public static bool IsPieceEnPrise(ChessBoard board, int row, int col, bool ownerIsWhite)
+        {
+            char piece = board.GetPiece(row, col);
+            if (piece == '.') return false;
+            if (!IsSquareAttackedBy(board, row, col, !ownerIsWhite)) return false;
+            if (!IsSquareAttackedBy(board, row, col, ownerIsWhite)) return true;
+            int value = GetPieceValue(PieceHelper.GetPieceType(piece));
+            return GetLowestAttackerValue(board, row, col, !ownerIsWhite) < value;
+        }
+
+        /// <summary>
+        /// Value of the most valuable piece of <paramref name="ownerIsWhite"/>'s side (excluding
+        /// the moved piece on its destination, and the king) that was safe before a move but is
+        /// en prise after it — i.e. what the move newly hangs, typically by uncovering a line
+        /// (e.g. ...Bd7-e8 opening the d-file onto the queen). Returns 0 if nothing new hangs.
+        /// </summary>
+        public static int GetNewlyHangingValue(ChessBoard before, ChessBoard after, int destRow, int destCol, bool ownerIsWhite)
+        {
+            int worst = 0;
+            for (int r = 0; r < 8; r++)
+            {
+                for (int c = 0; c < 8; c++)
+                {
+                    if (r == destRow && c == destCol) continue;
+                    char p = after.GetPiece(r, c);
+                    if (p == '.' || char.IsUpper(p) != ownerIsWhite) continue;
+                    PieceType t = PieceHelper.GetPieceType(p);
+                    if (t == PieceType.King) continue;
+                    if (before.GetPiece(r, c) != p) continue;
+                    if (!IsPieceEnPrise(after, r, c, ownerIsWhite)) continue;
+                    if (IsPieceEnPrise(before, r, c, ownerIsWhite)) continue;
+                    worst = Math.Max(worst, GetPieceValue(t));
+                }
+            }
+            return worst;
+        }
+
+        /// <summary>
         /// Get the value of the lowest-value attacker of a square
         /// Returns 0 if no attackers
         /// </summary>
