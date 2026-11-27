@@ -423,8 +423,14 @@ namespace ChessDroid.Services
         /// (e.g. ...Bd7-e8 opening the d-file onto the queen). Returns 0 if nothing new hangs.
         /// </summary>
         public static int GetNewlyHangingValue(ChessBoard before, ChessBoard after, int destRow, int destCol, bool ownerIsWhite)
+            => GetNewlyHangingValue(before, after, destRow, destCol, ownerIsWhite, out _);
+
+        /// <inheritdoc cref="GetNewlyHangingValue(ChessBoard, ChessBoard, int, int, bool)"/>
+        /// <param name="hungType">Type of that piece (meaningless when the result is 0).</param>
+        public static int GetNewlyHangingValue(ChessBoard before, ChessBoard after, int destRow, int destCol, bool ownerIsWhite, out PieceType hungType)
         {
             int worst = 0;
+            hungType = PieceType.Pawn;
             for (int r = 0; r < 8; r++)
             {
                 for (int c = 0; c < 8; c++)
@@ -437,7 +443,8 @@ namespace ChessDroid.Services
                     if (before.GetPiece(r, c) != p) continue;
                     if (!IsPieceEnPrise(after, r, c, ownerIsWhite)) continue;
                     if (IsPieceEnPrise(before, r, c, ownerIsWhite)) continue;
-                    worst = Math.Max(worst, GetPieceValue(t));
+                    int v = GetPieceValue(t);
+                    if (v > worst) { worst = v; hungType = t; }
                 }
             }
             return worst;

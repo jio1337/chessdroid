@@ -108,7 +108,7 @@ public class MovesExplanationGoldenTests
         yield return new object[] { "UnblockingOntoOwnQueenIsNotClearance",
             "r2q1r1k/pp1bn1pB/1b2p2p/n1p1N3/8/B1N5/P1Q2PPP/3R1RK1 b - - 1 18",
             "d7e8", new List<string> { "d7e8" }, "+3.64",
-            "fights back in difficult position" };
+            "hangs queen" };
 
         // 21...Bxc2 / 21...Bxh7: the f5 bishop itself sat between Qc2 and Bh7, so neither
         // defended the other — no "removes defender".
@@ -182,6 +182,18 @@ public class MovesExplanationGoldenTests
         var board = ChessDroid.Models.ChessBoard.FromFEN("r2q1r1k/pp1bn1pB/1b2p2p/n1p1N3/8/B1N5/P1Q2PPP/3R1RK1 b - - 1 18");
         var defenses = DefenseDetection.AnalyzeDefensesAfterMove(board, "d7e8", movingPlayerIsWhite: false);
         Assert.DoesNotContain(defenses, d => d.Description.StartsWith("saves"));
+    }
+
+    // Bd4 blocks Rd8's line to the undefended Qd1. A quiet bishop move uncovers the queen
+    // ("hangs queen"); Be5+ uncovers it too but with check, so Black never gets to take it.
+    [Theory]
+    [InlineData("d4c5", true)]
+    [InlineData("d4e5", false)]
+    public void UncoveredHangingQueenWarning(string move, bool expectWarning)
+    {
+        string actual = MovesExplanation.GenerateMoveExplanation(
+            move, "3r4/6k1/8/8/3B4/8/8/3Q3K w - - 0 1", new List<string> { move }, "-5.00");
+        Assert.True(actual.Contains("hangs queen") == expectWarning, $"[{move}] got \"{actual}\"");
     }
 
     // Control: a plain escape with nothing uncovered is still reported. White's bishop on

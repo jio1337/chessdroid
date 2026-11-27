@@ -104,6 +104,14 @@ namespace ChessDroid.Services
                 // If so, most threats are "phantom" - they won't materialize
                 bool pieceWillBeRecaptured = IsPieceImmediatelyRecapturable(tempBoard, destRank, destFile, piece, isWhite, board);
 
+                // Uncovered blunder: the move leaves a piece of ours (other than the mover) newly en
+                // prise, e.g. ...Bd7-e8 opening the d-file so Rd1xd8 wins the queen. Not reported when
+                // the move gives check (the opponent must answer it first) or captures at least as
+                // much as it leaves hanging (that's a trade, not a blunder).
+                string? hangsInfo = DetectUncoveredHangingPiece(board, tempBoard, destRank, destFile, targetPiece, isWhite);
+                if (hangsInfo != null)
+                    reasons.Add(hangsInfo);
+
                 // Singular move detection
                 bool isSingular = false;
                 if (pvs != null && pvs.Count >= 2 && !string.IsNullOrEmpty(evaluation))
@@ -3292,6 +3300,17 @@ namespace ChessDroid.Services
                 return null;
             }
             catch { return null; }
+        }
+
+        private static string? DetectUncoveredHangingPiece(ChessBoard board, ChessBoard tempBoard,
+            int destRank, int destFile, char targetPiece, bool isWhite)
+        {
+            int hungValue = ChessUtilities.GetNewlyHangingValue(board, tempBoard, destRank, destFile, isWhite, out PieceType hungType);
+            if (hungValue < 3) return null; // pieces only — pawn "hangs" are too often gambits
+            if (ChessUtilities.IsKingInCheck(tempBoard, !isWhite)) return null;
+            if (targetPiece != '.' &&
+                ChessUtilities.GetPieceValue(PieceHelper.GetPieceType(targetPiece)) >= hungValue) return null;
+            return $"hangs {ChessUtilities.GetPieceName(hungType)}";
         }
 
         private static string? DetectClearance(ChessBoard board, ChessBoard tempBoard, int srcRank, int srcFile, char piece, bool isWhite)
