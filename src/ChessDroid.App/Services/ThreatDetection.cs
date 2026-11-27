@@ -483,7 +483,8 @@ namespace ChessDroid.Services
                 if (p.value >= 3 || char.ToUpperInvariant(p.piece) == 'K')
                     valuableAttacked.Add(p);
 
-            if (valuableAttacked.Count >= 2)
+            if (valuableAttacked.Count >= 2 &&
+                !ChessUtilities.CanForkerBeSafelyCaptured(board, pieceRow, pieceCol, movingPlayerIsWhite))
             {
                 PieceType forkingType = PieceHelper.GetPieceType(piece);
                 int forkingValue = ChessUtilities.GetPieceValue(forkingType);

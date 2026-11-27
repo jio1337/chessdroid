@@ -73,6 +73,75 @@ public class MovesExplanationGoldenTests
             "d5a5", new List<string> { "d5a5" }, "+0.76",
             "controls center" };
 
+        // DetectRemovalOfDefender used to read the "captured piece" from the post-move board,
+        // where the destination already holds the mover's own piece, so it never fired at all.
+        // Nxc6 removes the knight guarding d8, and Rd1 then wins the rook.
+        yield return new object[] { "RemovalOfDefenderNowReachable",
+            "3r3k/1p6/2n5/N7/8/8/8/3RK3 w - - 0 1",
+            "a5c6", new List<string> { "a5c6" }, "+1.00",
+            "removes defender of rook, captures knight" };
+
+        // Same capture without Rd1: b7xc6 recaptures and nothing else attacks d8, so this is
+        // just a knight trade — must NOT be reported as removing a defender.
+        yield return new object[] { "TradeIsNotRemovalOfDefender",
+            "3r3k/1p6/2n5/N7/8/8/8/4K3 w - - 0 1",
+            "a5c6", new List<string> { "a5c6" }, "+0.00",
+            "captures knight, creates isolated b-pawn for opponent" };
+
+        // Positions from Mackenzie–Paulsen, London 1862 (Evans Gambit), each a false
+        // positive reported from live play.
+        // 4...Bxb4: bishop lines up with e1 through the d2 pawn — nothing else attacks d2, so
+        // it's not an x-ray on the king.
+        yield return new object[] { "EvansGambitBxb4NoXray",
+            "r1bqk1nr/pppp1ppp/2n5/2b1p3/1PB1P3/5N2/P1PP1PPP/RNBQK2R b KQkq b3 0 4",
+            "c5b4", new List<string> { "c5b4" }, "-0.17",
+            "wins pawn, creates isolated a-pawn for opponent" };
+
+        // 18...Nc4 "attacks" Ba3 and Ne5, but Ne5 just takes the knight — not a fork.
+        yield return new object[] { "KnightForkRefutedByKnightRecapture",
+            "r2q1r1k/pp1bn1pB/1b2p2p/n1p1N3/8/B1N5/P1Q2PPP/3R1RK1 b - - 1 18",
+            "a5c4", new List<string> { "a5c4" }, "+2.00",
+            "maximizes piece activity, attacks knight" };
+
+        // 21...Bxc2 / 21...Bxh7: the f5 bishop itself sat between Qc2 and Bh7, so neither
+        // defended the other — no "removes defender".
+        yield return new object[] { "CaptureThatUnblocksLineIsNotRemovalOfDefender",
+            "r2R1r1k/pp4pB/1b5p/n1p1Nb2/8/B7/P1Q2PPP/5RK1 b - - 0 21",
+            "f5c2", new List<string> { "f5c2" }, "+4.50",
+            "captures queen" };
+
+        yield return new object[] { "CaptureThatUnblocksLineIsNotRemovalOfDefender2",
+            "r2R1r1k/pp4pB/1b5p/n1p1Nb2/8/B7/P1Q2PPP/5RK1 b - - 0 21",
+            "f5h7", new List<string> { "f5h7" }, "+5.31",
+            "captures bishop" };
+
+        // 23.Bxc2: just winning a free bishop, not a "deflection".
+        yield return new object[] { "FreePieceCaptureIsNotDeflection",
+            "5r1k/pp4pB/1b5p/n1p1N3/8/B7/P1b2PPP/5RK1 w - - 0 23",
+            "h7c2", new List<string> { "h7c2" }, "+4.55",
+            "wins bishop" };
+
+        // Regression: DetectSmotheredMate required >= 6 own pieces surrounding the king, but
+        // a king on the back rank (where every real smothered mate happens) has at most 5
+        // valid on-board neighbor squares, so the label could never appear for the canonical
+        // pattern. Fixed to compare against the actual count of valid neighbor squares.
+        yield return new object[] { "SmotheredMateOnBackRankNowReachable",
+            "5rkb/5ppp/2N5/8/8/8/8/4K3 w - - 0 1",
+            "c6e7", new List<string> { "c6e7" }, "+5.00",
+            "smothered mate, maximizes piece activity" };
+
+        // Regression: CountPawnShield's "rank in front of the king" formula was inverted
+        // (kingRow + 1 for White instead of - 1, confirmed wrong by contrast with DetectLuft's
+        // correct formula for the same concept elsewhere in this file), so for a king still on
+        // its own back rank — the normal case — the shelter count always computed an
+        // out-of-bounds row and returned 0, making "improves king safety" unreachable. No
+        // castling rights here so the king is forced to walk rather than castle, which has its
+        // own dedicated message and would otherwise mask this specific comparison.
+        yield return new object[] { "PawnShieldDirectionFixed",
+            "4k3/8/8/8/8/8/5PPP/4K3 w - - 0 1",
+            "e1f1", new List<string> { "e1f1" }, "+0.10",
+            "improves king safety" };
+
         // Move 3 of the Scholar's Mate sequence verified in PgnRoundTripTests — Qh5 developing
         // the queen with tempo-ish pressure toward the kingside.
         yield return new object[] { "EarlyQueenDevelopment",

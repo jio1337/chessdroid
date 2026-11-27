@@ -917,7 +917,8 @@ namespace ChessDroid.Services
                 }
 
                 // Fork detection
-                if (attackedPieces.Count >= 2 && !pieceWillBeRecaptured)
+                if (attackedPieces.Count >= 2 && !pieceWillBeRecaptured &&
+                    !ChessUtilities.CanForkerBeSafelyCaptured(board, pieceRow, pieceCol, isWhite))
                 {
                     bool hasKing = attackedPieces.Any(p => p.type == PieceType.King);
 
@@ -992,7 +993,7 @@ namespace ChessDroid.Services
                     }
                 }
 
-                var removalInfo = DetectRemovalOfDefender(board, pieceRow, pieceCol, isWhite);
+                var removalInfo = DetectRemovalOfDefender(originalBoard, board, pieceRow, pieceCol, isWhite);
                 if (!string.IsNullOrEmpty(removalInfo))
                     return removalInfo;
 
@@ -1007,18 +1008,10 @@ namespace ChessDroid.Services
                     if (!string.IsNullOrEmpty(hangingInfo))
                         return hangingInfo;
 
-                    var overloadInfo = DetectOverloading(board, pieceRow, pieceCol, isWhite);
-                    if (!string.IsNullOrEmpty(overloadInfo))
-                        return overloadInfo;
-
                     var backRankInfo = DetectBackRankThreat(board, pieceRow, pieceCol, piece, isWhite);
                     if (!string.IsNullOrEmpty(backRankInfo))
                         return backRankInfo;
                 }
-
-                var deflectionInfo = DetectDeflection(board, pieceRow, pieceCol, isWhite);
-                if (!string.IsNullOrEmpty(deflectionInfo))
-                    return deflectionInfo;
 
                 var promotionInfo = DetectPromotionThreat(board, pieceRow, pieceCol, piece, isWhite);
                 if (!string.IsNullOrEmpty(promotionInfo))
@@ -1620,13 +1613,20 @@ namespace ChessDroid.Services
         }
 
         // Detect removal of defender: capturing a piece that was defending something important
-        private static string? DetectRemovalOfDefender(ChessBoard board, int pieceRow, int pieceCol, bool isWhite)
+        private static string? DetectRemovalOfDefender(ChessBoard originalBoard, ChessBoard board, int pieceRow, int pieceCol, bool isWhite)
         {
             try
             {
-                char targetPiece = board.GetPiece(pieceRow, pieceCol);
+                // The captured piece and its defensive duties must be read from the PRE-move
+                // board. On the post-move board the destination holds our own piece, and the
+                // capturer's origin square is empty — which opens lines the capturer itself was
+                // blocking (e.g. Bf5xc2 "revealing" that the queen on c2 defended h7, when the
+                // f5 bishop sat between them the whole time).
+                char targetPiece = originalBoard.GetPiece(pieceRow, pieceCol);
                 if (targetPiece == '.') return null;
                 if (char.IsUpper(targetPiece) == isWhite) return null; // Can't capture own piece
+
+                bool capturerSafe = !ChessUtilities.IsSquareAttackedBy(board, pieceRow, pieceCol, !isWhite);
 
                 // Check what this enemy piece is defending
                 for (int r = 0; r < 8; r++)
@@ -1637,9 +1637,23 @@ namespace ChessDroid.Services
                         if (defendedPiece == '.') continue;
                         if (char.IsUpper(defendedPiece) == isWhite) continue; // Must be enemy piece
 
-                        // Check if target piece defends this square
-                        if (ChessUtilities.CanAttackSquare(board, pieceRow, pieceCol, targetPiece, r, c))
+                        // Check if target piece defended this square before it was captured
+                        if (ChessUtilities.CanAttackSquare(originalBoard, pieceRow, pieceCol, targetPiece, r, c))
                         {
+                            // Only a tactic if we can actually go on to win the piece: something
+                            // other than the capturer attacks it, or the capturer does and can't
+                            // be recaptured. Otherwise it's just a trade.
+                            bool canWinIt = false;
+                            foreach (var attacker in ChessUtilities.FindAttackers(board, r, c, isWhite))
+                            {
+                                if (attacker.row != pieceRow || attacker.col != pieceCol || capturerSafe)
+                                {
+                                    canWinIt = true;
+                                    break;
+                                }
+                            }
+                            if (!canWinIt) continue;
+
                             // Check if the defended piece would be hanging after removal
                             // Count defenders after removing this piece
                             int defenderCount = 0;
@@ -1865,58 +1879,6 @@ namespace ChessDroid.Services
             }
         }
 
-        // Detect overloading: a piece defending multiple critical pieces/squares
-        private static string? DetectOverloading(ChessBoard board, int pieceRow, int pieceCol, bool isWhite)
-        {
-            try
-            {
-                char targetPiece = board.GetPiece(pieceRow, pieceCol);
-                if (targetPiece == '.') return null;
-                if (char.IsUpper(targetPiece) == isWhite) return null; // Can't capture own piece
-
-                // Find what this enemy piece is defending
-                List<(int row, int col, PieceType type)> defendedPieces = new List<(int, int, PieceType)>();
-
-                for (int r = 0; r < 8; r++)
-                {
-                    for (int c = 0; c < 8; c++)
-                    {
-                        char defendedPiece = board.GetPiece(r, c);
-                        if (defendedPiece == '.') continue;
-                        if (char.IsUpper(defendedPiece) == isWhite) continue; // Must be enemy piece
-
-                        // Check if target piece defends this square AND the piece is under attack
-                        if (ChessUtilities.CanAttackSquare(board, pieceRow, pieceCol, targetPiece, r, c))
-                        {
-                            // Check if this defended piece is also under attack by us
-                            bool isUnderAttack = ChessUtilities.IsSquareDefended(board, r, c, isWhite);
-                            if (isUnderAttack)
-                            {
-                                PieceType defendedType = PieceHelper.GetPieceType(defendedPiece);
-                                if (ChessUtilities.GetPieceValue(defendedType) >= 3) // Valuable piece
-                                {
-                                    defendedPieces.Add((r, c, defendedType));
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // If defending 2+ valuable pieces under attack, it's overloaded
-                if (defendedPieces.Count >= 2)
-                {
-                    var pieces = string.Join(" and ", defendedPieces.Take(2).Select(p => ChessUtilities.GetPieceName(p.type)));
-                    return $"overloads defender of {pieces}";
-                }
-
-                return null;
-            }
-            catch
-            {
-                return null;
-            }
-        }
-
         // Detect back rank threat: rook/queen on back rank with trapped king
         private static string? DetectBackRankThreat(ChessBoard board, int pieceRow, int pieceCol, char piece, bool isWhite)
         {
@@ -1963,52 +1925,6 @@ namespace ChessDroid.Services
                         return "back rank mate threat";
                     else
                         return "threatens back rank";
-                }
-
-                return null;
-            }
-            catch
-            {
-                return null;
-            }
-        }
-
-        // Detect deflection: forcing a key defender away
-        private static string? DetectDeflection(ChessBoard board, int pieceRow, int pieceCol, bool isWhite)
-        {
-            try
-            {
-                char targetPiece = board.GetPiece(pieceRow, pieceCol);
-                if (targetPiece == '.') return null;
-                if (char.IsUpper(targetPiece) == isWhite) return null; // Can't capture own piece
-
-                // Very similar to removal of defender, but specifically when capturing forces the piece away
-                // Check if this piece is defending the king or a critical square
-                // Find enemy king - O(1) using cached position
-                var (kingR, kingC) = board.GetKingPosition(!isWhite);
-                if (kingR < 0) return null;
-
-                // Check if target piece defends a square around the king
-                for (int dr = -1; dr <= 1; dr++)
-                {
-                    for (int dc = -1; dc <= 1; dc++)
-                    {
-                        if (dr == 0 && dc == 0) continue;
-                        int defRow = kingR + dr;
-                        int defCol = kingC + dc;
-
-                        if (defRow < 0 || defRow >= 8 || defCol < 0 || defCol >= 8) continue;
-
-                        // Check if target defends this square near the king
-                        if (ChessUtilities.CanAttackSquare(board, pieceRow, pieceCol, targetPiece, defRow, defCol))
-                        {
-                            // Check if we're attacking that same square
-                            if (ChessUtilities.IsSquareDefended(board, defRow, defCol, isWhite))
-                            {
-                                return "deflects key defender";
-                            }
-                        }
-                    }
                 }
 
                 return null;
@@ -2216,8 +2132,10 @@ namespace ChessDroid.Services
                     }
                 }
 
-                // Check for double attack (2+ pieces attacked) with different threats
-                if (attackedPieces.Count >= 2)
+                // Check for double attack (2+ pieces attacked) with different threats.
+                // Not a double attack if the opponent can just take the attacking piece.
+                if (attackedPieces.Count >= 2 &&
+                    !ChessUtilities.CanForkerBeSafelyCaptured(board, pieceRow, pieceCol, isWhite))
                 {
                     // Check if one threat is checkmate and another is material
                     bool hasCheckThreat = attackedPieces.Any(p => p.type == PieceType.King);
@@ -2474,43 +2392,32 @@ namespace ChessDroid.Services
                             // X-ray attack only meaningful if:
                             // 1. Second piece is the KING (absolute - illegal to leave in check)
                             // 2. OR we would WIN the second piece if first piece moved
+                            // The blocking piece must be attacked by something OTHER than the
+                            // x-raying piece. Checking "attacked by my color" is circular: the
+                            // piece that just moved always attacks the first piece on its own line
+                            // of sight. Without another attacker the blocker can sit there forever
+                            // and the x-ray never materializes — e.g. 3...Qa5 in the Scandinavian
+                            // (a2 pawn shielding a1), or 4...Bxb4 in the Evans Gambit (d2 pawn
+                            // shielding e1), both of which used to be reported as x-rays.
+                            bool firstPieceAttacked = false;
+                            foreach (var attacker in ChessUtilities.FindAttackers(board, firstPieceRow, firstPieceCol, isWhite))
+                            {
+                                if (attacker.row != pieceRow || attacker.col != pieceCol)
+                                {
+                                    firstPieceAttacked = true;
+                                    break;
+                                }
+                            }
+
                             if (secondType == PieceType.King)
                             {
-                                // Check if first piece is actually attacked (has reason to move)
-                                bool firstPieceAttacked = ChessUtilities.IsSquareDefended(board, firstPieceRow, firstPieceCol, isWhite);
-
-                                if (firstPieceAttacked && firstValue <= 100) // Always true for king behind
+                                if (firstPieceAttacked)
                                 {
                                     return "x-ray attack on king";
                                 }
                             }
                             else if (secondValue >= 5)
                             {
-                                // Check if first piece is attacked by something OTHER than the
-                                // x-raying piece itself (the king-pin branch above doesn't need
-                                // this — an absolute pin is real regardless of outside pressure,
-                                // but a non-king "x-ray" is only a real threat if the first piece
-                                // has an independent reason to move away; otherwise it can just
-                                // sit there forever and the "attack" never materializes). Was
-                                // IsSquareDefended(board, firstPieceRow, firstPieceCol, isWhite)
-                                // — always true by construction, since the piece that just moved
-                                // is itself one of "my color"'s attackers on the very square the
-                                // scan found by following its own line of sight. That made this
-                                // fire on e.g. 3...Qa5 in the Scandinavian (1.e4 d5 2.exd5 Qxd5
-                                // 3.Nc3 Qa5): the queen directly attacks the a2 pawn, which blocks
-                                // the a1 rook — reported as "x-ray attack on rook" despite nothing
-                                // ever threatening to move that pawn off the file (its only
-                                // non-capturing moves stay on the same file regardless).
-                                bool firstPieceAttacked = false;
-                                foreach (var attacker in ChessUtilities.FindAttackers(board, firstPieceRow, firstPieceCol, isWhite))
-                                {
-                                    if (attacker.row != pieceRow || attacker.col != pieceCol)
-                                    {
-                                        firstPieceAttacked = true;
-                                        break;
-                                    }
-                                }
-
                                 if (firstPieceAttacked && firstValue <= secondValue)
                                 {
                                     // Create a temp board to see if we'd win the second piece (using pooling)
@@ -2572,8 +2479,16 @@ namespace ChessDroid.Services
 
                         if (safeSquares.Count == 0)
                         {
-                            // Check if all surrounding squares occupied by own pieces
+                            // Check if every valid (on-board) neighbor square is occupied by
+                            // the king's own pieces — the literal definition of "smothered".
+                            // Was a flat ">= 6" threshold: a king on the back rank (where
+                            // every real smothered mate happens — that's the whole point of
+                            // the pattern) has at most 5 valid on-board neighbor squares, so
+                            // that threshold could never be met there and the label never
+                            // appeared for the canonical case. Compare against the actual
+                            // number of valid neighbor squares instead of a fixed constant.
                             int ownPiecesSurrounding = 0;
+                            int validNeighbors = 0;
                             for (int dr = -1; dr <= 1; dr++)
                             {
                                 for (int dc = -1; dc <= 1; dc++)
@@ -2581,6 +2496,7 @@ namespace ChessDroid.Services
                                     if (dr == 0 && dc == 0) continue;
                                     int nr = kingR + dr, nc = kingC + dc;
                                     if (nr < 0 || nr >= 8 || nc < 0 || nc >= 8) continue;
+                                    validNeighbors++;
 
                                     char p = board.GetPiece(nr, nc);
                                     if (p != '.' && !char.IsWhiteSpace(p))
@@ -2592,7 +2508,7 @@ namespace ChessDroid.Services
                                 }
                             }
 
-                            if (ownPiecesSurrounding >= 6) // Heavily smothered
+                            if (ownPiecesSurrounding == validNeighbors) // Every escape square blocked by own material
                             {
                                 return "smothered mate";
                             }
@@ -2946,7 +2862,15 @@ namespace ChessDroid.Services
             try
             {
                 char friendlyPawn = isWhite ? 'P' : 'p';
-                int pawnShieldRow = isWhite ? kingRow + 1 : kingRow - 1;
+                // Was inverted (kingRow + 1 for White) — row 0 is rank 8 in this board's
+                // indexing (confirmed by this file's own promotionRank/pawn-direction
+                // conventions, and by DetectLuft's correct kingFrontRank formula for the
+                // same "rank in front of the king" concept just below in this file), so the
+                // rank in front of a White king is kingRow - 1, not + 1. For a king still on
+                // its home back rank (row 7) — the normal case right after castling, exactly
+                // when "improves king safety" should be reportable — the old formula computed
+                // row 8 (out of bounds) and this always returned 0.
+                int pawnShieldRow = isWhite ? kingRow - 1 : kingRow + 1;
 
                 if (pawnShieldRow < 0 || pawnShieldRow >= 8) return 0;
 

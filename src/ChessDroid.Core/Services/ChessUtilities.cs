@@ -388,6 +388,20 @@ namespace ChessDroid.Services
         }
 
         /// <summary>
+        /// True when the opponent can take the forking piece on (row, col) without losing
+        /// material: it is attacked and either undefended, or attacked by something worth no
+        /// more than it. A fork refuted this way is not a fork (e.g. a knight "forking" a knight
+        /// that simply captures it back).
+        /// </summary>
+        public static bool CanForkerBeSafelyCaptured(ChessBoard board, int row, int col, bool forkerIsWhite)
+        {
+            if (!IsSquareAttackedBy(board, row, col, !forkerIsWhite)) return false;
+            if (!IsSquareAttackedBy(board, row, col, forkerIsWhite)) return true;
+            int forkerValue = GetPieceValue(PieceHelper.GetPieceType(board.GetPiece(row, col)));
+            return GetLowestAttackerValue(board, row, col, !forkerIsWhite) <= forkerValue;
+        }
+
+        /// <summary>
         /// Get the value of the lowest-value attacker of a square
         /// Returns 0 if no attackers
         /// </summary>
