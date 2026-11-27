@@ -167,6 +167,21 @@ namespace ChessDroid
             return false;
         }
 
+        /// <summary>
+        /// CHESSDROID_AUDIT.md §4, third slice: BtnStartMatch_Click and
+        /// DrillWatchEnginesAsync each had their own copy of "if (_botModeActive) {
+        /// lblStatus.Text = "Stop bot mode first"; return; }" — a smaller duplicated family
+        /// than RequireAnalysisMode/RequireMatchNotRunning (2 sites, not 4 or 7), same shape
+        /// and same zero-behavior-change consolidation. Not merged into either of those: this
+        /// one blocks only on Bot mode specifically, not Match or the full CurrentAppMode.
+        /// </summary>
+        private bool RequireBotModeNotActive(string blockedMessage)
+        {
+            if (!_botModeActive) return true;
+            lblStatus.Text = blockedMessage;
+            return false;
+        }
+
         /// <summary>See Modes/IModeController.cs for scope and why this is Exit-only.</summary>
         private Modes.IModeController? CurrentModeController;
 

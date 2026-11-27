@@ -52,11 +52,7 @@ namespace ChessDroid
 
         private async void BtnStartMatch_Click(object? sender, EventArgs e)
         {
-            if (_botModeActive)
-            {
-                lblStatus.Text = "Stop bot mode first";
-                return;
-            }
+            if (!RequireBotModeNotActive("Stop bot mode first")) return;
 
             if (cmbWhiteEngine.SelectedIndex < 0 || cmbBlackEngine.SelectedIndex < 0 ||
                 cmbWhiteEngine.SelectedIndex >= _matchEngineFiles.Length ||
