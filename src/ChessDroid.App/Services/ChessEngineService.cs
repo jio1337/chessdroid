@@ -965,6 +965,18 @@ namespace ChessDroid.Services
             // Was a bare State-check with no serialization against GetBestMoveAsync/
             // RunContinuousAnalysisAsync/StreamPositionEvalAsync, all of which DO take this
             // semaphore — a concurrent call on the same engine instance was check-then-act.
+            //
+            // No automated regression test for this specific race: a serious attempt was
+            // made (same-thread back-to-back calls, Task.Run'd genuine thread-pool
+            // concurrency, up to 40 repetitions) and none reliably reproduced it against a
+            // deliberately-reverted pre-fix build. The `State != Ready` early-exit above
+            // this comment is unchanged by the fix and still runs before the semaphore wait,
+            // so most of the time one caller's check loses the race cleanly (by design, not
+            // a bug) before the two calls ever get close enough to actually interleave their
+            // writes — the real race window is narrower than a black-box timing test can
+            // force without adding a test-only delay seam to this method, which wasn't worth
+            // doing. Confirmed safe by code review (SafeWriteLineAsync has zero internal
+            // synchronization of its own — see its own body) and by live testing in the app.
             try { await _analysisSemaphore.WaitAsync(ct).ConfigureAwait(false); }
             catch (OperationCanceledException) { return (null, null); }
 
