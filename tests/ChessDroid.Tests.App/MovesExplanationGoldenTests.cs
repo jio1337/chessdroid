@@ -59,6 +59,20 @@ public class MovesExplanationGoldenTests
             "e3f4", new List<string> { "e3f4" }, "+2.00",
             "slight edge (technical endgame)" };
 
+        // Regression for a real false positive the user found live (Scandinavian: 1.e4 d5
+        // 2.exd5 Qxd5 3.Nc3 Qa5): DetectXRayAttack used to report "x-ray attack on rook" here
+        // because its "does the first piece have a reason to move" check was circular — it
+        // just re-confirmed that the piece which moved (here, the queen onto a5) attacks the
+        // a2 pawn directly in its own line of sight, which is true by construction for ANY
+        // such line and proves nothing about whether the pawn will ever actually move. A pawn
+        // blocking a straight file/rank can't clear it via a non-capturing move anyway (it
+        // stays on the same file), so the rook was never actually under any real threat. Fixed
+        // to require a genuinely independent attacker on the blocking piece.
+        yield return new object[] { "NoFalseXrayThroughUnthreatenedPawn",
+            "rnb1kbnr/ppp1pppp/8/3q4/8/2N5/PPPP1PPP/R1BQKBNR b KQkq - 1 3",
+            "d5a5", new List<string> { "d5a5" }, "+0.76",
+            "controls center" };
+
         // Move 3 of the Scholar's Mate sequence verified in PgnRoundTripTests — Qh5 developing
         // the queen with tempo-ish pressure toward the kingside.
         yield return new object[] { "EarlyQueenDevelopment",

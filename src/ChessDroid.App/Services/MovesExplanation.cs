@@ -2486,8 +2486,30 @@ namespace ChessDroid.Services
                             }
                             else if (secondValue >= 5)
                             {
-                                // Check if first piece is actually attacked (has reason to move)
-                                bool firstPieceAttacked = ChessUtilities.IsSquareDefended(board, firstPieceRow, firstPieceCol, isWhite);
+                                // Check if first piece is attacked by something OTHER than the
+                                // x-raying piece itself (the king-pin branch above doesn't need
+                                // this — an absolute pin is real regardless of outside pressure,
+                                // but a non-king "x-ray" is only a real threat if the first piece
+                                // has an independent reason to move away; otherwise it can just
+                                // sit there forever and the "attack" never materializes). Was
+                                // IsSquareDefended(board, firstPieceRow, firstPieceCol, isWhite)
+                                // — always true by construction, since the piece that just moved
+                                // is itself one of "my color"'s attackers on the very square the
+                                // scan found by following its own line of sight. That made this
+                                // fire on e.g. 3...Qa5 in the Scandinavian (1.e4 d5 2.exd5 Qxd5
+                                // 3.Nc3 Qa5): the queen directly attacks the a2 pawn, which blocks
+                                // the a1 rook — reported as "x-ray attack on rook" despite nothing
+                                // ever threatening to move that pawn off the file (its only
+                                // non-capturing moves stay on the same file regardless).
+                                bool firstPieceAttacked = false;
+                                foreach (var attacker in ChessUtilities.FindAttackers(board, firstPieceRow, firstPieceCol, isWhite))
+                                {
+                                    if (attacker.row != pieceRow || attacker.col != pieceCol)
+                                    {
+                                        firstPieceAttacked = true;
+                                        break;
+                                    }
+                                }
 
                                 if (firstPieceAttacked && firstValue <= secondValue)
                                 {
