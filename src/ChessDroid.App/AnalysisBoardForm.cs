@@ -151,6 +151,22 @@ namespace ChessDroid
             return false;
         }
 
+        /// <summary>
+        /// CHESSDROID_AUDIT.md §4, second slice: 7 entry points (Chess960, Bot, Match,
+        /// Tournament, Stats, and 2 Drill start points) each had their own copy of
+        /// "if (matchRunning) { lblStatus.Text = ...; return; }" — not folded into
+        /// RequireAnalysisMode above, because these deliberately allow entry while Bot or
+        /// Training is active (self-heal/separate guards handle those) and only block
+        /// specifically on a running engine Match, unlike RequireAnalysisMode's 4 sites
+        /// which block on any active mode.
+        /// </summary>
+        private bool RequireMatchNotRunning(string blockedMessage)
+        {
+            if (!matchRunning) return true;
+            lblStatus.Text = blockedMessage;
+            return false;
+        }
+
         /// <summary>See Modes/IModeController.cs for scope and why this is Exit-only.</summary>
         private Modes.IModeController? CurrentModeController;
 
@@ -1230,7 +1246,7 @@ namespace ChessDroid
 
         private void BtnChess960_Click(object? sender, EventArgs e)
         {
-            if (matchRunning) { lblStatus.Text = "Stop the match first"; return; }
+            if (!RequireMatchNotRunning("Stop the match first")) return;
             ShowChess960Dialog();
         }
 
@@ -1492,7 +1508,14 @@ namespace ChessDroid
 
         private void BtnAutoPlay_Click(object? sender, EventArgs e)
         {
-            if (matchService?.IsRunning == true) return;
+            // Was a silent no-op — clicking Auto-Play while an engine match is live did
+            // nothing with zero status feedback ("phantom clicks"), whether the match was
+            // currently at the live position or the user had navigated back in history.
+            if (matchService?.IsRunning == true)
+            {
+                lblStatus.Text = "Stop the match first";
+                return;
+            }
             if (_autoPlaying)
                 StopAutoPlay();
             else

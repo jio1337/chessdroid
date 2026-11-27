@@ -939,7 +939,7 @@ namespace ChessDroid
         // misplaced there historically (see CHESSDROID_AUDIT.md §4.2).
         private void BtnMatch_Click(object? sender, EventArgs e)
         {
-            if (matchRunning) { lblStatus.Text = "Stop the match first"; return; }
+            if (!RequireMatchNotRunning("Stop the match first")) return;
 
             _matchPanelActive = !_matchPanelActive;
             grpEngineMatch.Visible = _matchPanelActive;
@@ -962,7 +962,7 @@ namespace ChessDroid
 
         private void BtnTournament_Click(object? sender, EventArgs e)
         {
-            if (matchRunning) { lblStatus.Text = "Stop the match first"; return; }
+            if (!RequireMatchNotRunning("Stop the match first")) return;
             var form = new TournamentForm(config);
             form.Show(this);
         }
@@ -971,7 +971,7 @@ namespace ChessDroid
         {
             // Was missing — every sibling button here (Match, Tournament) guards on
             // matchRunning; Stats didn't, so it could be opened mid-match.
-            if (matchRunning) { lblStatus.Text = "Stop the match first"; return; }
+            if (!RequireMatchNotRunning("Stop the match first")) return;
             using var dlg = new StatsDialog(config, config.Theme);
             dlg.ShowDialog(this);
         }
