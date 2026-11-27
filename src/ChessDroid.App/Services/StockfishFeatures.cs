@@ -266,33 +266,16 @@ namespace ChessDroid.Services
                 // Check if king is under attack
                 bool inCheck = ChessUtilities.IsSquareDefended(board, kingRow, kingCol, !isWhite);
 
-                // If in check, count legal moves (simplified - just count king moves)
+                // In check: forced only if there is exactly one legal reply. This used to count
+                // only king moves, so blocks and captures of the checker were invisible and e.g.
+                // three different replies to the same check were each labelled "forced move".
+                // Castling is never legal in check; en passant out of check is ignored (the FEN's
+                // ep square isn't available here), which can only under-count, i.e. say "forced"
+                // when an ep capture was the one extra option — vanishingly rare.
                 if (inCheck)
                 {
-                    int legalMoves = 0;
-
-                    // Check king moves
-                    for (int dr = -1; dr <= 1; dr++)
-                    {
-                        for (int dc = -1; dc <= 1; dc++)
-                        {
-                            if (dr == 0 && dc == 0) continue;
-
-                            int newR = kingRow + dr;
-                            int newC = kingCol + dc;
-
-                            if (newR < 0 || newR >= 8 || newC < 0 || newC >= 8) continue;
-
-                            char destPiece = board.GetPiece(newR, newC);
-                            if (destPiece != '.' && char.IsUpper(destPiece) == isWhite) continue;
-
-                            // Check if this square is safe
-                            if (!ChessUtilities.IsSquareDefended(board, newR, newC, !isWhite))
-                                legalMoves++;
-                        }
-                    }
-
-                    return legalMoves == 1;
+                    var noCastling = new CastlingState(false, false, false, false);
+                    return MoveGenerator.GetAllLegalMovesUci(board, isWhite, noCastling, null).Count == 1;
                 }
 
                 return false;

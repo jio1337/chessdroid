@@ -196,12 +196,35 @@ namespace ChessDroid.Services
         /// </summary>
         private (string explanation, string threatsText, string defensesText) ComputeMoveLineContent(
             string firstMove, string completeFen, List<string> pvs, string evaluation,
-            bool showThreats, bool showExplanation, string? overrideExplanation)
+            bool showThreats, bool showExplanation, string? overrideExplanation, string? bestEvaluation = null)
+            => ComposeMoveLine(firstMove, completeFen, pvs, evaluation, bestEvaluation,
+                showThreats && config?.ShowThreats == true, showExplanation, overrideExplanation, generateExplanation);
+
+        /// <summary>
+        /// Pure composition of one analysis line's explanation / ⚔ threats / 🛡 defenses. Public
+        /// and static so the explanation audit harness runs exactly what the app shows.
+        /// <paramref name="bestEvaluation"/> (the top line's eval) lets a line whose own PV just
+        /// loses material be called that, instead of listing tactical claims the engine's
+        /// continuation refutes — see <see cref="LineMaterialOutcome"/>.
+        /// </summary>
+        public static (string explanation, string threatsText, string defensesText) ComposeMoveLine(
+            string firstMove, string completeFen, List<string> pvs, string evaluation, string? bestEvaluation,
+            bool includeThreats, bool showExplanation = true, string? overrideExplanation = null,
+            Func<string, string, List<string>, string, string>? explain = null)
         {
+            explain ??= MovesExplanation.GenerateMoveExplanation;
+
+            if (showExplanation && string.IsNullOrEmpty(overrideExplanation))
+            {
+                string? loss = LineMaterialOutcome.Describe(firstMove, completeFen, pvs, evaluation, bestEvaluation);
+                if (loss != null)
+                    return (loss, "", ""); // the PV refutes any "saves"/"attacks"/"wins" claim
+            }
+
             string explanation = showExplanation
                 ? (!string.IsNullOrEmpty(overrideExplanation)
                     ? overrideExplanation
-                    : generateExplanation(firstMove, completeFen, pvs, evaluation))
+                    : explain(firstMove, completeFen, pvs, evaluation))
                 : "";
 
             string threatsText = "";
@@ -210,7 +233,7 @@ namespace ChessDroid.Services
                                      evaluation.StartsWith("Mate in ", StringComparison.Ordinal) &&
                                      !evaluation.Contains('-');
 
-            if (showThreats && config?.ShowThreats == true && !weHaveForcedMate)
+            if (includeThreats && !weHaveForcedMate)
             {
                 threatsText = GetThreatsForMove(completeFen, firstMove);
                 defensesText = GetDefensesForMove(completeFen, firstMove);
@@ -2229,11 +2252,12 @@ namespace ChessDroid.Services
                 }
             }
 
+            string bestLineEval = evaluations.Count > 0 ? evaluations[0] : evaluation;
             MoveLineReportData? best = null;
             if (showBestLine)
             {
                 var (exp, threats, defenses) = ComputeMoveLineContent(firstMove, fen, pvs, formattedEval,
-                    showThreats: true, showExplanation: true, brilliantExplanation);
+                    showThreats: true, showExplanation: true, brilliantExplanation, bestLineEval);
                 best = new MoveLineReportData(bestSanFull, formattedEval, exp, threats, defenses,
                     bestMoveClassification, pvs.Count > 0 ? pvs[0] : null);
             }
@@ -2261,7 +2285,7 @@ namespace ChessDroid.Services
                 }
 
                 var (exp, threats, defenses) = ComputeMoveLineContent(secondMove, fen, pvs, formattedSecondEval,
-                    showThreats: true, showExplanation: true, null);
+                    showThreats: true, showExplanation: true, null, bestLineEval);
                 second = new MoveLineReportData(secondSan, formattedSecondEval, exp, threats, defenses,
                     secondClassification, pvs[1]);
             }
@@ -2289,7 +2313,7 @@ namespace ChessDroid.Services
                 }
 
                 var (exp, threats, defenses) = ComputeMoveLineContent(thirdMove, fen, pvs, formattedThirdEval,
-                    showThreats: true, showExplanation: true, null);
+                    showThreats: true, showExplanation: true, null, bestLineEval);
                 third = new MoveLineReportData(thirdSan, formattedThirdEval, exp, threats, defenses,
                     thirdClassification, pvs[2]);
             }
@@ -2340,7 +2364,7 @@ namespace ChessDroid.Services
                         // No lines shown above — full DisplayMoveLine content, so compute
                         // explanation/threats/defenses the same way the other lines do.
                         var (exp, threats, defenses) = ComputeMoveLineContent(bestMove, fen, pvs, formattedRecommendedEval,
-                            showThreats: true, showExplanation: true, null);
+                            showThreats: true, showExplanation: true, null, bestLineEval);
                         recommended = new RecommendedSectionData(true, playStyle, config.Aggressiveness,
                             recommendedSan, formattedRecommendedEval, exp, threats, defenses);
                     }

@@ -196,6 +196,21 @@ public class MovesExplanationGoldenTests
         Assert.True(actual.Contains("hangs queen") == expectWarning, $"[{move}] got \"{actual}\"");
     }
 
+    // IsForcedMove used to count only king moves when in check. Chigorin–Mackenzie, Vienna
+    // 1882, after 24.Qe3+: Ka8, d4 and b6 are all legal, yet each was called "forced move".
+    // Mackenzie–Paulsen 22...: Rxf8 and Kxh7 both legal. Control: a genuine single-reply check.
+    [Theory]
+    [InlineData("1n1r3r/kp5p/3pp1p1/1B1p4/5P2/4Q1P1/PPP4P/2K5 b - - 0 24", false)]
+    [InlineData("r4R1k/pp4pB/1b5p/n1p1N3/8/B7/P1b2PPP/5RK1 b - - 0 22", false)]
+    [InlineData("k7/8/1Q6/8/8/8/8/6K1 b - - 0 1", false)] // not in check
+    [InlineData("R6k/7p/8/8/8/8/8/K7 b - - 0 1", true)] // Ra8+: only Kg7
+    public void IsForcedMoveCountsAllLegalReplies(string fen, bool expected)
+    {
+        var board = ChessDroid.Models.ChessBoard.FromFEN(fen);
+        bool black = fen.Split(' ')[1] == "b";
+        Assert.Equal(expected, StockfishFeatures.IsForcedMove(board, !black));
+    }
+
     // Control: a plain escape with nothing uncovered is still reported. White's bishop on
     // c4 is attacked by the d5 pawn and retreats to b3.
     [Fact]
