@@ -946,7 +946,18 @@ namespace ChessDroid
             HighlightButton(btnMatch, _matchPanelActive);
 
             if (_matchPanelActive && _trainingUiVisible)
+            {
+                // Was silent — StopTraining() resets the board with zero status feedback,
+                // so a user mid-training round would see the board reset with no indication
+                // of what just happened or why. StopTraining() has two early-return paths
+                // (drill-vs-bot blocks entirely and sets its own "Stop the drill first"
+                // message; drill-watch defers to an async match-stop) where _trainingUiVisible
+                // is still true afterward — only show this message when training actually
+                // finished stopping, so neither of those is clobbered.
                 StopTraining();
+                if (!_trainingUiVisible)
+                    lblStatus.Text = "Training stopped — opening Engine Match";
+            }
         }
 
         private void BtnTournament_Click(object? sender, EventArgs e)
