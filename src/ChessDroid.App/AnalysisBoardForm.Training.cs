@@ -1286,7 +1286,7 @@ namespace ChessDroid
             if (chapter == null) { lblStatus.Text = "Select a position first."; return; }
 
             if (!RequireMatchNotRunning("Stop the engine match first")) return;
-            if (_botModeActive) { lblStatus.Text = "Stop bot mode first"; return; }
+            if (!RequireBotModeNotActive("Stop bot mode first")) return;
 
             string[] availableEngines = Directory.Exists(config?.GetEnginesPath())
                 ? Directory.GetFiles(config!.GetEnginesPath(), "*.exe")
