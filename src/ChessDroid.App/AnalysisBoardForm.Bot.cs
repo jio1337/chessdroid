@@ -11,7 +11,7 @@ namespace ChessDroid
         private async void BtnPlayBot_Click(object? sender, EventArgs e)
         {
             if (_botModeActive) { StopBotMode(); return; }
-            if (matchRunning) { lblStatus.Text = "Stop the engine match first"; return; }
+            if (!RequireMatchNotRunning("Stop the engine match first")) return;
             if (string.IsNullOrEmpty(config?.SelectedEngine))
             {
                 lblStatus.Text = "No engine configured — click ⚙ to set up";

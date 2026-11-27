@@ -1170,7 +1170,7 @@ namespace ChessDroid
             // Button acts as toggle — stop if already running
             if (_botModeActive) { StopBotMode(); return; }
 
-            if (matchRunning) { lblStatus.Text = "Stop the engine match first"; return; }
+            if (!RequireMatchNotRunning("Stop the engine match first")) return;
             if (string.IsNullOrEmpty(config?.SelectedEngine)) { lblStatus.Text = "No engine configured — click ⚙ to set up"; return; }
 
             string[] availableEngines = Directory.Exists(config.GetEnginesPath())
@@ -1285,7 +1285,7 @@ namespace ChessDroid
             var chapter = SelectedDrillChapter();
             if (chapter == null) { lblStatus.Text = "Select a position first."; return; }
 
-            if (matchRunning) { lblStatus.Text = "Stop the engine match first"; return; }
+            if (!RequireMatchNotRunning("Stop the engine match first")) return;
             if (_botModeActive) { lblStatus.Text = "Stop bot mode first"; return; }
 
             string[] availableEngines = Directory.Exists(config?.GetEnginesPath())
