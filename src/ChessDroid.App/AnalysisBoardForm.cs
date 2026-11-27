@@ -1508,7 +1508,14 @@ namespace ChessDroid
 
         private void BtnAutoPlay_Click(object? sender, EventArgs e)
         {
-            if (matchService?.IsRunning == true) return;
+            // Was a silent no-op — clicking Auto-Play while an engine match is live did
+            // nothing with zero status feedback ("phantom clicks"), whether the match was
+            // currently at the live position or the user had navigated back in history.
+            if (matchService?.IsRunning == true)
+            {
+                lblStatus.Text = "Stop the match first";
+                return;
+            }
             if (_autoPlaying)
                 StopAutoPlay();
             else
