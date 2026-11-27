@@ -39,11 +39,7 @@ namespace ChessDroid
             // ImportPgn hard-resets moveTree/boardControl/_analysisCache — same class of
             // "stale async task mutates state after it was reset out from under it" bug as
             // BtnEditPosition_Click's guard exists to prevent (see its comment).
-            if (CurrentAppMode != AppMode.Analysis)
-            {
-                lblStatus.Text = "Stop current mode before importing a PGN";
-                return;
-            }
+            if (!RequireAnalysisMode("Stop current mode before importing a PGN")) return;
 
             // Show a dialog to paste PGN or open from file
             using var inputForm = new Form
@@ -218,11 +214,7 @@ namespace ChessDroid
             if (_libraryService == null) return;
             // Same reasoning as BtnImportPgn_Click/BtnEditPosition_Click — ImportPgn below
             // hard-resets the board/tree, which must not race a Bot/Match/Training task.
-            if (CurrentAppMode != AppMode.Analysis)
-            {
-                lblStatus.Text = "Stop current mode before opening a saved game";
-                return;
-            }
+            if (!RequireAnalysisMode("Stop current mode before opening a saved game")) return;
 
             using var dialog = new GameLibraryDialog(_libraryService, ThemeService.IsDarkTheme(config?.Theme));
             if (dialog.ShowDialog(this) == DialogResult.OK && dialog.SelectedGame != null)
@@ -248,11 +240,7 @@ namespace ChessDroid
         {
             // Same reasoning as BtnImportPgn_Click/BtnOpenLibrary_Click — the dialog's
             // "load this line" callback below calls ImportPgn, which hard-resets the board.
-            if (CurrentAppMode != AppMode.Analysis)
-            {
-                lblStatus.Text = "Stop current mode before opening the Opening Explorer";
-                return;
-            }
+            if (!RequireAnalysisMode("Stop current mode before opening the Opening Explorer")) return;
 
             string booksFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Books");
             var entries = ChessDroid.Services.OpeningCatalog.Browse(booksFolder);

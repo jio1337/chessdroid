@@ -135,6 +135,22 @@ namespace ChessDroid
             _trainingGameActive ? AppMode.Training :
             AppMode.Analysis;
 
+        /// <summary>
+        /// CHESSDROID_AUDIT.md §4: the 4 entry points that gate on CurrentAppMode (Edit
+        /// Position, Import PGN, Open Library, Open Opening Explorer) were each their own
+        /// copy of "if (CurrentAppMode != AppMode.Analysis) { lblStatus.Text = ...; return; }"
+        /// — textually identical except the message, with no self-heal-vs-hard-block
+        /// distinction to preserve (all 4 are hard-block). This is the one shared gate they
+        /// all go through now; a caller still writes `if (!RequireAnalysisMode("...")) return;`
+        /// so the early-return shape at each call site is unchanged.
+        /// </summary>
+        private bool RequireAnalysisMode(string blockedMessage)
+        {
+            if (CurrentAppMode == AppMode.Analysis) return true;
+            lblStatus.Text = blockedMessage;
+            return false;
+        }
+
         /// <summary>See Modes/IModeController.cs for scope and why this is Exit-only.</summary>
         private Modes.IModeController? CurrentModeController;
 
@@ -1570,11 +1586,7 @@ namespace ChessDroid
             // Was "matchRunning || _botModeActive" — silently missed Training despite the
             // message below implying any active mode should block this. Closed as part of
             // introducing AppMode (AppMode.cs), not a deliberate pre-existing restriction.
-            if (CurrentAppMode != AppMode.Analysis)
-            {
-                lblStatus.Text = "Stop current mode before editing position";
-                return;
-            }
+            if (!RequireAnalysisMode("Stop current mode before editing position")) return;
 
             string currentFen = boardControl.GetFEN();
             bool isDark = ThemeService.IsDarkTheme(config?.Theme);
