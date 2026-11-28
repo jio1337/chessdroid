@@ -13,6 +13,30 @@ namespace ChessDroid.Tests.App;
 /// </summary>
 public class PgnImportServiceTests
 {
+    // ---- SAN → UCI picks only a LEGAL move. "Can reach the square" alone took the back pawn of a
+    // doubled pair or a pinned piece, and the game went wrong from there (found recording games3.pgn).
+
+    [Theory]
+    // Djurhuus–Carlsen, ch-NOR 2006, 4...f5 with pawns on f7 and f6: the front pawn moves.
+    [InlineData("rnbqkb1r/ppp2ppp/5p2/3p4/3P4/4P3/PPP2PPP/RN1QKBNR b KQkq - 0 4", "f5", "f6f5")]
+    // Janowsky–Capablanca, New York 1916, 17...b5 with pawns on b7 and b6.
+    [InlineData("r1r5/1p1bk1pp/1p1bp3/n2p1p2/3P4/P1B1P1P1/1P1NBP1P/R1R3K1 b - - 0 17", "b5", "b6b5")]
+    // Knights on f3 and b1 both reach d2, but f3 is pinned to the king by the d5 bishop: the PGN
+    // rightly writes plain "Nd2", meaning the b1 knight.
+    [InlineData("4k3/8/8/3b4/8/5N2/8/1N5K w - - 0 1", "Nd2", "b1d2")]
+    // A two-square push still works when the path is clear.
+    [InlineData("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", "e4", "e2e4")]
+    public void ConvertSanToUci_PicksTheLegalMove(string fen, string san, string expected)
+    {
+        Assert.Equal(expected, PgnImportService.ConvertSanToUci(san, fen));
+        Assert.Equal(expected, ChessNotationService.ConvertSanToUci(san, fen));
+    }
+
+    [Fact]
+    public void ConvertSanToUci_NoLegalMatch_ReturnsNull()
+        // Only the pinned f3 knight could reach e5, so "Ne5" is illegal: skip it rather than play it.
+        => Assert.Null(ChessNotationService.ConvertSanToUci("Ne5", "4k3/8/8/3b4/8/5N2/8/7K w - - 0 1"));
+
     // ---- check marks come from the position, not the PGN's text
 
     // Bock–Mackenzie, USA-03.Congress 1874: the record ends "13.Nxh4 Rxd4+", but it's mate.

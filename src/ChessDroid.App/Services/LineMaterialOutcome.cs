@@ -37,7 +37,7 @@ namespace ChessDroid.Services
                 double? line = MovesExplanation.ParseEvaluation(lineEval ?? "");
                 if (!line.HasValue) return null;
                 double lineForMover = moverWhite ? line.Value : -line.Value;
-                if (lineForMover >= CompensatedAbove) return null;
+                if (lineForMover >= CompensatedAbove && !FarBelowBest(lineForMover, bestEval, moverWhite)) return null;
 
                 var outcome = Simulate(pv, fen, moverWhite);
                 if (outcome == null || outcome.Value.net > -MinLoss) return null;
@@ -50,6 +50,11 @@ namespace ChessDroid.Services
                     string promo = SanAt(pv, fen, promoPly);
                     return promo != "" ? $"allows promotion ({promo})" : "allows promotion";
                 }
+
+                // Material given for a forced draw: 36.Qg5 Rxd3 Qd8+ Kf7 Qc7+ Kf8 Qd8+ (0.00,
+                // MacDonnell–Mackenzie 1862) gives up the rook to check forever — say that.
+                if (Math.Abs(lineForMover) <= 0.10 && ChecksToTheEnd(pv, fen, moverWhite))
+                    return $"gives up {Name(worst.piece)} for perpetual check";
 
                 int sameKind = lost.Count(l => SameKind(l.piece, worst.piece));
                 string desc = sameKind >= 2 ? $"loses two {Name(worst.piece)}s" : $"loses {Name(worst.piece)}";
@@ -74,6 +79,70 @@ namespace ChessDroid.Services
         }
 
         /// <summary>
+        /// The engine's reply to <paramref name="move"/> when it's a capture: the capturing piece's
+        /// name, the captured piece's name and the square the capturer came from ("rook", "rook",
+        /// "c8" for …Rxc1 taking a rook); null when the reply captures nothing or there's no PV.
+        /// </summary>
+        public static (string capturer, string captured, string from)? ReplyCapture(string move, string fen, List<string>? pvs)
+        {
+            try
+            {
+                string? pv = pvs?.FirstOrDefault(p => p.Split(' ')[0] == move);
+                var plies = pv?.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                if (plies == null || plies.Length < 2 || plies[1].Length < 4) return null;
+                string[] parts = fen.Split(' ');
+                var board = ChessBoard.FromFEN(fen);
+                string castling = parts.Length > 2 ? parts[2] : "-";
+                string ep = parts.Length > 3 ? parts[3] : "-";
+                ChessRulesService.ApplyUciMove(board, move, ref castling, ref ep);
+                string reply = plies[1];
+                char capturer = board.GetPiece('8' - reply[1], reply[0] - 'a');
+                char captured = board.GetPiece('8' - reply[3], reply[2] - 'a');
+                if (capturer == '.' || captured == '.') return null;
+                return (Name(capturer), Name(captured), reply[..2]);
+            }
+            catch { return null; }
+        }
+
+        /// <summary>
+        /// Every move the mover makes after the first gives check, at least two of them, to the
+        /// end of the line — with a 0.00 eval, a perpetual. (Engine PVs carry no "+", so the
+        /// checks are read off the board.)
+        /// </summary>
+        private static bool ChecksToTheEnd(string pv, string fen, bool moverWhite)
+        {
+            var plies = pv.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            string[] parts = fen.Split(' ');
+            var board = ChessBoard.FromFEN(fen);
+            string castling = parts.Length > 2 ? parts[2] : "-";
+            string ep = parts.Length > 3 ? parts[3] : "-";
+            int checks = 0;
+            for (int i = 0; i < plies.Length; i++)
+            {
+                ChessRulesService.ApplyUciMove(board, plies[i], ref castling, ref ep);
+                if (i == 0 || i % 2 == 1) continue; // the mover's later moves only
+                if (!ChessUtilities.IsKingInCheck(board, !moverWhite)) return false;
+                checks++;
+            }
+            return checks >= 2; // the engine cuts a repeating line short: Nf6+ Kf8 Nh7+ is enough
+        }
+
+        /// <summary>
+        /// A line still "equal or better" can throw a lot away: 51.Ra7?? hangs the c6 bishop and
+        /// goes from +5.41 to 0.00 (Carlsen–Vachier-Lagrave, Shamkir 2015), yet read "saves rook".
+        /// Material it loses isn't compensated when the line is a Game Review "mistake" next to
+        /// the best line — a win-probability drop of at least <see cref="MoveQualityAnalyzer.MistakeDrop"/>.
+        /// </summary>
+        private static bool FarBelowBest(double lineForMover, string? bestEval, bool moverWhite)
+        {
+            double? best = MovesExplanation.ParseEvaluation(bestEval ?? "");
+            if (!best.HasValue) return false;
+            double bestForMover = moverWhite ? best.Value : -best.Value;
+            return MoveQualityAnalyzer.WinProbability(bestForMover) - MoveQualityAnalyzer.WinProbability(lineForMover)
+                   >= MoveQualityAnalyzer.MistakeDrop;
+        }
+
+        /// <summary>
         /// True/false when <paramref name="move"/>'s PV is available: does it net at least
         /// <see cref="MinLoss"/> of material down within the window? Null without a usable PV.
         /// </summary>
@@ -86,6 +155,22 @@ namespace ChessDroid.Services
                 string[] parts = fen.Split(' ');
                 var outcome = Simulate(pv, fen, parts.Length > 1 && parts[1] == "w");
                 return outcome == null ? null : outcome.Value.net <= -MinLoss;
+            }
+            catch { return null; }
+        }
+
+        /// <summary>
+        /// The material <paramref name="move"/>'s line nets for the mover over the window (pawns;
+        /// a capture the line gives back nets 0). Null without a usable PV.
+        /// </summary>
+        public static int? LineNet(string move, string fen, List<string>? pvs)
+        {
+            try
+            {
+                string? pv = pvs?.FirstOrDefault(p => p.Split(' ')[0] == move);
+                if (pv == null) return null;
+                string[] parts = fen.Split(' ');
+                return Simulate(pv, fen, parts.Length > 1 && parts[1] == "w")?.net;
             }
             catch { return null; }
         }

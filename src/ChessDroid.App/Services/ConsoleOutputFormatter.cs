@@ -279,6 +279,43 @@ namespace ChessDroid.Services
                         cleanedExplanation = sac ?? LineMaterialOutcome.DescribeGivenUp(firstMove, completeFen, pvs) ?? "";
                 }
 
+                // A discovered attack whose target just takes the uncovered piece, or a file cleared
+                // for a piece that's then captured, is no tactic: 30.Qf3 "discovered attack on rook,
+                // clears c-file for rook" — …Rxc1 (Petrosian–Smejkal 1973). Likewise a piece said to
+                // be won, trapped or attacked that escapes by capturing: 23.Qb4 "wins undefended
+                // knight … knight on c4 is trapped" — …Nxb6 (Karpov–Kamsky 1996).
+                if (LineMaterialOutcome.ReplyCapture(firstMove, completeFen, pvs) is { } reply)
+                {
+                    bool Refuted(string part)
+                    {
+                        var d = System.Text.RegularExpressions.Regex.Match(part, @"^discovered attack on (\w+)");
+                        if (d.Success) return d.Groups[1].Value == reply.capturer;
+                        var c = System.Text.RegularExpressions.Regex.Match(part, @"^clears .+ for (\w+)$");
+                        if (c.Success) return c.Groups[1].Value == reply.captured;
+                        // Claims that the piece is won or trapped — "wins knight on c4", "knight on c4 is
+                        // trapped", "wins undefended knight". Not plain "attacks X" (still true when the
+                        // piece trades itself off), nor the move's own capture ("wins pawn").
+                        var t = System.Text.RegularExpressions.Regex.Match(part,
+                            @"^(?:wins undefended |traps )(?<p>\w+)(?: on (?<s>[a-h][1-8]))?" +
+                            @"|^wins (?<p>\w+) on (?<s>[a-h][1-8])|^(?<p>\w+) on (?<s>[a-h][1-8]) is trapped");
+                        if (!t.Success) return false;
+                        string square = t.Groups["s"].Success ? t.Groups["s"].Value : "";
+                        return t.Groups["p"].Value == reply.capturer && (square == "" || square == reply.from);
+                    }
+                    cleanedExplanation = DropParts(cleanedExplanation, Refuted);
+                    threatsText = DropParts(threatsText, Refuted);
+                }
+
+                // "wins pawn" for a capture the line gives straight back is just a capture:
+                // 4...dxc4 in the Queen's Gambit (Bxc4), 34...Rxh4 Rxg6+ (Rubinstein–Réti 1928).
+                if (System.Text.RegularExpressions.Regex.IsMatch(cleanedExplanation, @"(^|, )wins (pawn|knight|bishop|rook|queen)(, |$)") &&
+                    LineMaterialOutcome.LineNet(firstMove, completeFen, pvs) is <= 0)
+                {
+                    string captured = CapturedPieceName(firstMove, completeFen);
+                    cleanedExplanation = string.Join(", ", cleanedExplanation.Split(ThreatListSeparator, StringSplitOptions.None)
+                        .Select(p => p.Trim() == $"wins {captured}" ? $"captures {captured}" : p));
+                }
+
                 // "hangs X" is a static guess; if the line's own continuation loses nothing, the
                 // engine has refuted it (23.c5! opens a diagonal onto the queen but wins).
                 if (cleanedExplanation.Contains("hangs ", StringComparison.Ordinal) &&
@@ -299,6 +336,25 @@ namespace ChessDroid.Services
             System.Text.RegularExpressions.RegexOptions.Compiled);
 
         private static bool IsAttackClaim(string part) => AttackClaim.IsMatch(part);
+
+        /// <summary>Name of the piece <paramref name="uciMove"/> captures ("pawn"…), or "" for a quiet move.</summary>
+        private static string CapturedPieceName(string uciMove, string fen)
+        {
+            try
+            {
+                if (uciMove.Length < 4) return "";
+                char victim = ChessBoard.FromFEN(fen).GetPiece('8' - uciMove[3], uciMove[2] - 'a');
+                if (victim == '.')
+                {
+                    // en passant: a pawn moving diagonally to the empty e.p. square
+                    string[] p = fen.Split(' ');
+                    bool pawn = char.ToLowerInvariant(ChessBoard.FromFEN(fen).GetPiece('8' - uciMove[1], uciMove[0] - 'a')) == 'p';
+                    return pawn && p.Length > 3 && p[3] == uciMove.Substring(2, 2) ? "pawn" : "";
+                }
+                return ChessUtilities.GetPieceName(PieceHelper.GetPieceType(victim));
+            }
+            catch { return ""; }
+        }
 
         /// <summary>"Mate in N" in the side to move's favour (the eval string is White's view).</summary>
         private static bool MoverMates(string evaluation, string fen)

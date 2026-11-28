@@ -196,9 +196,57 @@ public class ExplanationAuditRegressionTests
     public void NoDecoyWithoutTheBaitBeingTakenAndPunished(string game, string label, string move)
         => Assert.DoesNotContain("decoy", Explain(game, label, move));
 
+    // ---- third corpus (games3.pgn): positional/endgame games — Rubinstein, Capablanca,
+    // Petrosian, Karpov, Carlsen.
+
+    // A line that throws away a big edge is not "compensated" just because it's still ≈0:
+    // 51.Ra7?? / 51.Rb7?? hang the c6 bishop, +5.41 → 0.00 (Carlsen–Vachier-Lagrave, Shamkir 2015).
     [Theory]
-    // 36.Qg5 gives up a rook but forces perpetual check (0.00): compensated, not "loses".
-    [InlineData("MacDonnell-Mackenzie", "36.Qh3", "g3g5")]
+    [InlineData("Carlsen-Vachier Lagrave (Vugar Gashimov Mem 2015 2015)", "51.Rc7", "h7a7")]
+    [InlineData("Carlsen-Vachier Lagrave (Vugar Gashimov Mem 2015 2015)", "51.Rc7", "h7b7")]
+    public void LineFarBelowBestThatDropsMaterialSaysSo(string game, string label, string move)
+        => Assert.Equal("loses bishop (Rxc6)", Explain(game, label, move));
+
+    // A discovered attack whose target just takes the uncovered rook, and a file "cleared" for that
+    // rook: 30.Qg2/Qf3/Qb7 …Rxc1 (Petrosian–Smejkal, IBM 1973).
+    [Theory]
+    [InlineData("c6g2")]
+    [InlineData("c6f3")]
+    [InlineData("c6b7")]
+    public void NoDiscoveredAttackWhenTheTargetTakesTheAttacker(string move)
+    {
+        string exp = Explain("Petrosian-Smejkal (IBM 1973)", "30.Qg2", move);
+        Assert.DoesNotContain("discovered attack", exp);
+        Assert.DoesNotContain("clears c-file", exp);
+    }
+
+    // 23.Qb4 "wins undefended knight … knight on c4 is trapped": the knight takes the b6 rook and
+    // the queen recaptures — rook for knight, not a won knight (Karpov–Kamsky, FIDE-Wch 1996).
+    [Fact]
+    public void PieceThatEscapesByCapturingIsNotWonOrTrapped()
+    {
+        string exp = Explain("Karpov-Kamsky (FIDE-Wch 1996)", "23.Qb4", "d2b4");
+        Assert.DoesNotContain("wins undefended knight", exp);
+        Assert.DoesNotContain("trapped", exp);
+        Assert.Equal("attacks pawn on e7", exp); // the true part stays
+    }
+
+    [Theory]
+    // A capture the line gives back is "captures", not "wins": 4...dxc4 (Bxc4) in the QGD,
+    // 13...Kxg7 recapturing in a trade (Rubinstein–Réti 1928, Petrosian–Smejkal 1973).
+    [InlineData("Rubinstein-Reti (Berlin Tageblatt 1928)", "4...Nbd7", "d5c4", "captures pawn")]
+    [InlineData("Petrosian-Smejkal (IBM 1973)", "13...Kxg7", "g8g7", "captures bishop")]
+    // …while a pawn the line keeps is still won.
+    [InlineData("Rubinstein-Reti (Berlin Tageblatt 1928)", "8...fxe6", "f7e6", "wins pawn")]
+    public void WinsOnlyWhatTheLineKeeps(string game, string label, string move, string expected)
+        => Assert.Equal(expected, Explain(game, label, move));
+
+    // 36.Qg5 gives up a rook to force perpetual check (0.00, best line +1.27): say that, not "loses rook".
+    [Fact]
+    public void RookGivenForPerpetualCheck()
+        => Assert.Equal("gives up rook for perpetual check", Explain("MacDonnell-Mackenzie", "36.Qh3", "g3g5"));
+
+    [Theory]
     // 22.Rxg7+ drops a knight for a pawn but White is still +7.59: not worth calling a loss.
     [InlineData("Paulsen-Mackenzie", "22.Qh6", "g1g7")]
     // Mackenzie's 14.Nxf7 piece sacrifice, the engine's top choice.

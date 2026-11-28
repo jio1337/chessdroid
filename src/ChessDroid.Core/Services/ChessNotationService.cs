@@ -368,6 +368,13 @@ namespace ChessDroid.Services
                 var candidates = ChessRulesService.FindAllPiecesOfSameTypeWithEnPassant(
                     board, char.ToLowerInvariant(pieceChar), isWhiteToMove, destRow, destCol, enPassantSquare);
 
+                // Only a LEGAL move matches the SAN. "Can reach the square" alone picked the back
+                // pawn of a doubled pair (…f5 with pawns on f7 and f6 → f7f5, jumping its own
+                // pawn) and would pick a pinned piece where the PGN, rightly, didn't disambiguate.
+                // Either way the game went wrong from that move on (Djurhuus–Carlsen 2006,
+                // Janowsky–Capablanca 1916, Marin–Karpov 2003).
+                HashSet<string>? legal = LegalMoves(board, isWhiteToMove, fenParts);
+
                 foreach (var (row, col) in candidates)
                 {
                     char fileChar = (char)('a' + col);
@@ -380,12 +387,29 @@ namespace ChessDroid.Services
                     {
                         string uci = $"{fileChar}{rankChar}{destSquare}";
                         if (promotion.HasValue) uci += promotion.Value;
-                        return uci;
+                        if (legal == null || legal.Contains(uci)) return uci;
                     }
                 }
                 return null;
             }
             catch { return null; }
+        }
+
+        /// <summary>The legal moves (UCI) in the position, or null if they can't be generated.</summary>
+        private static HashSet<string>? LegalMoves(ChessBoard board, bool whiteToMove, string[] fenParts)
+        {
+            try
+            {
+                string c = fenParts.Length > 2 ? fenParts[2] : "-";
+                var castling = new CastlingState(c.Contains('K'), c.Contains('Q'), c.Contains('k'), c.Contains('q'));
+                string ep = fenParts.Length > 3 ? fenParts[3] : "-";
+                (int Row, int Col)? enPassant = ep.Length == 2 && ep != "-" ? ('8' - ep[1], ep[0] - 'a') : null;
+                return new HashSet<string>(MoveGenerator.GetAllLegalMovesUci(board, whiteToMove, castling, enPassant));
+            }
+            catch
+            {
+                return null; // fall back to the reachability check alone
+            }
         }
 
         /// <summary>
