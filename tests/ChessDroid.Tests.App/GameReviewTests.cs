@@ -101,6 +101,70 @@ public class GameReviewTests
         Assert.Equal(Q.Blunder, q);
     }
 
+    // ---- key moments: the review summary's list of brilliant moves, mistakes and blunders
+
+    private const string StartFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+    private const string AfterG4 = "rnbqkbnr/pppppppp/8/8/6P1/8/PPPPPP1P/RNBQKBNR b KQkq g3 0 1";
+
+    [Fact]
+    public async Task KeyMoment_ShowsTheMoveTheSwingAndTheBetterMove()
+    {
+        var cache = new Dictionary<string, CachedAnalysis>
+        {
+            [Key(StartFen)] = new() { BestMove = "e2e4", Evaluation = "+0.30", Evaluations = new() { "+0.30", "+0.25" }, Depth = 99 },
+            [Key(AfterG4)] = new() { BestMove = "d7d5", Evaluation = "-1.50", Depth = 99 },
+        };
+        var node = new MoveNode { ParentFEN = StartFen, FEN = AfterG4, UciMove = "g2g4", SanMove = "g4", HalfMove = 0 };
+        using var engine = new ChessEngineService(new AppConfig());
+        var result = await new MoveClassificationService(engine).ClassifyAsync(
+            new List<MoveNode> { node }, engineDepth: 5, cache, null, null, default);
+
+        var moment = Assert.Single(ConsoleOutputFormatter.KeyMoments(result!.MoveResults));
+        Assert.Equal(("1. g4?", "+0.30 → -1.50", "e4"), ConsoleOutputFormatter.KeyMomentParts(moment));
+    }
+
+    [Fact]
+    public void KeyMoments_AreTheTurningPointsInGameOrder()
+    {
+        MoveReviewResult R(int ply, Q q) => new() { Node = new MoveNode { HalfMove = ply, SanMove = "x" }, Quality = q, IsWhiteMove = ply % 2 == 0 };
+        var results = new[] { R(9, Q.Blunder), R(2, Q.Best), R(4, Q.Inaccuracy), R(1, Q.Brilliant), R(6, Q.Mistake), R(7, Q.Precise) };
+
+        Assert.Equal(new[] { 1, 6, 9 }, ConsoleOutputFormatter.KeyMoments(results).Select(r => r.Node.HalfMove));
+    }
+
+    [Fact]
+    public void KeyMoment_BlackMoveWithMates_AndNoBetterMoveForABrilliancy()
+    {
+        var blunder = new MoveReviewResult
+        {
+            Node = new MoveNode { HalfMove = 24, SanMove = "Nxh4" }, IsWhiteMove = true, Quality = Q.Blunder, Symbol = "??",
+            EvalBeforeText = "+1.13", EvalAfterText = "Mate in -1", BestMove = "Qa6+",
+        };
+        Assert.Equal(("13. Nxh4??", "+1.13 → #-1", "Qa6+"), ConsoleOutputFormatter.KeyMomentParts(blunder));
+
+        var brilliant = new MoveReviewResult
+        {
+            Node = new MoveNode { HalfMove = 21, SanMove = "Qxd4+" }, IsWhiteMove = false, Quality = Q.Brilliant, Symbol = "!!",
+            EvalBeforeText = "Mate in -5", EvalAfterText = "Mate in -4", BestMove = "Qxd4+",
+        };
+        Assert.Equal(("11... Qxd4+!!", "#-5 → #-4", ""), ConsoleOutputFormatter.KeyMomentParts(brilliant));
+    }
+
+    [Fact]
+    public void KeyMoment_FromPgnAnnotations_ShowsJustTheMove()
+    {
+        // A review rebuilt from an annotated PGN has no evals or better move; the SAN may carry the symbol.
+        var r = new MoveReviewResult { Node = new MoveNode { HalfMove = 5, SanMove = "Bc5?" }, IsWhiteMove = false, Quality = Q.Mistake, Symbol = "?" };
+        Assert.Equal(("3... Bc5?", "", ""), ConsoleOutputFormatter.KeyMomentParts(r));
+    }
+
+    [Theory]
+    [InlineData("Mate in -1", "#-1")]
+    [InlineData("Mate in +6", "#6")]
+    [InlineData("Mate in 0", "#")]
+    [InlineData("+1.13", "+1.13")]
+    public void ShortEval(string eval, string expected) => Assert.Equal(expected, ConsoleOutputFormatter.ShortEval(eval));
+
     // ---- move list: symbols come from the review at draw time, not from rows built once
 
     [Fact]

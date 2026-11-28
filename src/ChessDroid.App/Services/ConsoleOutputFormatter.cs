@@ -2068,12 +2068,68 @@ namespace ChessDroid.Services
                 richTextBox.AppendText("\n");
             }
 
+            // Key moments — every brilliant move, mistake and blunder in game order, with the
+            // eval swing and the engine's better move; click a line to go to that move.
+            var moments = KeyMoments(classification.MoveResults);
+            AppendTextWithFormat("\n  Key moments\n", back, text, FontStyle.Bold);
+            if (moments.Count == 0)
+                AppendTextWithFormat("  No mistakes or blunders\n", back, subtext, FontStyle.Italic);
+            foreach (var m in moments)
+            {
+                var (move, swing, best) = KeyMomentParts(m);
+                Color qColor = QualityColor(m.Quality, isDark);
+                int start = richTextBox.TextLength;
+                int len = AppendTextWithFormat($"  {move,-14}", back, qColor, FontStyle.Bold);
+                if (swing.Length > 0) len += AppendTextWithFormat($"{swing,-16}", back, subtext, FontStyle.Regular);
+                if (best.Length > 0) len += AppendTextWithFormat($"best {best}", back, text, FontStyle.Regular);
+                if (m.Node != null)
+                    _markers.Add(new ClickMarker { Start = start, Length = len, Action = ClickAction.NavigateToNode, Node = m.Node });
+                richTextBox.AppendText("\n");
+            }
+
             AppendTextWithFormat("\n" + sep + "\n", back, sepClr, FontStyle.Regular);
 
             richTextBox.SelectionStart = richTextBox.TextLength;
             richTextBox.ScrollToCaret();
             }
             finally { ResumeDrawing(); }
+        }
+
+        /// <summary>The review's turning points: brilliant moves, mistakes and blunders, in game order.</summary>
+        internal static List<MoveReviewResult> KeyMoments(IEnumerable<MoveReviewResult> results)
+            => results.Where(r => r.Quality is MoveQualityAnalyzer.MoveQuality.Brilliant
+                    or MoveQualityAnalyzer.MoveQuality.Mistake or MoveQualityAnalyzer.MoveQuality.Blunder)
+                .OrderBy(r => r.Node?.HalfMove ?? 0)
+                .ToList();
+
+        /// <summary>
+        /// One key-moment line's parts: "13. Nxh4??", "+1.13 → #-1", "Qa6+". The swing and the
+        /// better move are empty when unknown (a review rebuilt from PGN annotations), and the
+        /// better move is left out when it's the move played.
+        /// </summary>
+        internal static (string move, string swing, string best) KeyMomentParts(MoveReviewResult r)
+        {
+            string san = PgnImportService.StripAnnotationSymbols(r.Node?.SanMove is { Length: > 0 } s ? s : r.PlayedMove);
+            int number = r.Node?.MoveNumber ?? 0;
+            string prefix = number > 0 ? (r.IsWhiteMove ? $"{number}. " : $"{number}... ") : "";
+            string move = $"{prefix}{san}{r.Symbol}";
+
+            string swing = r.EvalBeforeText.Length > 0 && r.EvalAfterText.Length > 0
+                ? $"{ShortEval(r.EvalBeforeText)} → {ShortEval(r.EvalAfterText)}"
+                : "";
+
+            string best = PgnImportService.StripAnnotationSymbols(r.BestMove ?? "");
+            if (best == san || r.Quality == MoveQualityAnalyzer.MoveQuality.Brilliant) best = "";
+            return (move, swing, best);
+        }
+
+        /// <summary>"Mate in -1" → "#-1", "Mate in +6" → "#6", "Mate in 0" → "#"; other evals unchanged.</summary>
+        internal static string ShortEval(string eval)
+        {
+            var m = System.Text.RegularExpressions.Regex.Match(eval, @"^Mate in ([+-]?)(\d+)$");
+            if (!m.Success) return eval;
+            if (m.Groups[2].Value == "0") return "#";
+            return m.Groups[1].Value == "-" ? $"#-{m.Groups[2].Value}" : $"#{m.Groups[2].Value}";
         }
 
         /// <summary>

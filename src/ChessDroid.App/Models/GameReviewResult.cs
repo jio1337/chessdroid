@@ -12,6 +12,11 @@ namespace ChessDroid.Models
         public string BestMove { get; set; } = "";
         public double EvalBefore { get; set; }
         public double EvalAfter { get; set; }
+        /// <summary>The engine's eval strings ("+1.13", "Mate in -1"), White's view — for display,
+        /// since EvalBefore/EvalAfter hold mates as plain 10–15 pawn numbers. Empty when the review
+        /// was rebuilt from a PGN's annotations.</summary>
+        public string EvalBeforeText { get; set; } = "";
+        public string EvalAfterText { get; set; } = "";
         public double EvalBestMove { get; set; }
         public double CentipawnLoss { get; set; }
         public MoveQualityAnalyzer.MoveQuality Quality { get; set; }

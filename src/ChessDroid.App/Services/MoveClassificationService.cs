@@ -145,6 +145,8 @@ namespace ChessDroid.Services
                         BestMove = bestMoveSan,
                         EvalBefore = evalBefore,
                         EvalAfter = evalAfter,
+                        EvalBeforeText = rawBeforeEval,
+                        EvalAfterText = rawAfterEval,
                         EvalBestMove = evalBestMove,
                         CentipawnLoss = cpLoss * 100,
                         Quality = finalQuality,
