@@ -450,89 +450,8 @@ namespace ChessDroid.Services
 
                 // Evaluation context fallback
                 int materialCount = EndgameAnalysis.CountTotalPieces(tempBoard);
-                if (reasons.Count == 0)
-                {
-                    double? eval = ParseEvaluation(evaluation);
-                    if (eval.HasValue)
-                    {
-                        bool isEndgame = EndgameAnalysis.IsEndgame(materialCount);
-                        string gamePhase = EndgameAnalysis.GetGamePhase(materialCount);
-
-                        // WIN RATE MODEL INTEGRATION (Stockfish-style)
-                        // Convert eval to winning percentage for user-friendly explanations
-                        string winningChanceDesc = AdvancedAnalysis.GetWinningChanceDescription(
-                            Math.Abs(eval.Value), materialCount);
-
-                        // Position complexity
-                        string? complexityDesc = AdvancedAnalysis.GetComplexityDescription(tempBoard, eval.Value);
-
-                        // Determine if this move is good for the side to move
-                        // eval.Value is from White's perspective: positive = good for White, negative = good for Black
-                        bool moveIsGood = (isWhite && eval.Value > 0) || (!isWhite && eval.Value < 0);
-
-                        // Standard chess evaluation ranges (based on chessify.me/Stockfish conventions):
-                        // |eval| > 1.50: Decisive advantage (+- or -+)
-                        // |eval| 0.70-1.50: Clear advantage (+/- or -/+)
-                        // |eval| 0.27-0.70: Slight advantage (+/= or =/+)
-                        // |eval| < 0.27: Equal (=)
-                        // With sub-ranges for more precise descriptions
-
-                        double absEval = Math.Abs(eval.Value);
-
-                        // Decisive advantage (> 1.50 pawns)
-                        if (absEval > 1.50)
-                        {
-                            if (moveIsGood)
-                            {
-                                if (absEval > 3.0)
-                                    reasons.Add(isEndgame ? "winning endgame" : "winning position");
-                                else if (complexityDesc != null)
-                                    reasons.Add($"{winningChanceDesc} ({complexityDesc})");
-                                else
-                                    reasons.Add(isEndgame ? "winning endgame" : "decisive advantage");
-                            }
-                            else
-                            {
-                                reasons.Add(isEndgame ? "defensive endgame play" : "fights back in difficult position");
-                            }
-                        }
-                        // Clear advantage (0.70-1.50 pawns) - split into upper/lower
-                        else if (absEval >= 0.70)
-                        {
-                            if (moveIsGood)
-                            {
-                                if (absEval >= 1.10)
-                                    reasons.Add(isEndgame ? "much better endgame" : "strong advantage");
-                                else
-                                    reasons.Add(isEndgame ? "better endgame" : "clear advantage");
-                            }
-                            else
-                            {
-                                reasons.Add(isEndgame ? "holds endgame" : "reduces disadvantage");
-                            }
-                        }
-                        // Slight advantage (0.27-0.70 pawns) - split into upper/lower
-                        else if (absEval >= 0.27)
-                        {
-                            if (moveIsGood)
-                            {
-                                if (absEval >= 0.50)
-                                    reasons.Add(isEndgame ? "slightly better endgame" : "comfortable edge");
-                                else
-                                    reasons.Add(isEndgame ? "small edge in endgame" : "slight edge");
-                            }
-                            else
-                            {
-                                reasons.Add(isEndgame ? "slight disadvantage" : "under slight pressure");
-                            }
-                        }
-                        // Equal position (< 0.27 pawns)
-                        else
-                        {
-                            reasons.Add(isEndgame ? "equal endgame" : "equal position");
-                        }
-                    }
-                }
+                if (reasons.Count == 0 && DescribeEvaluation(tempBoard, evaluation, isWhite) is string evalDesc)
+                    reasons.Add(evalDesc);
 
                 // Ultimate fallback
                 if (reasons.Count == 0)
@@ -575,6 +494,97 @@ namespace ChessDroid.Services
         }
 
         // Extract evaluation from PV line (format: "e4 e5 Nf3 (+0.5)")
+        /// <summary>
+        /// Evaluation-based wording ("winning position", "fights back in difficult position", ...) used
+        /// when no concrete reason applies. Public so the line composer can fall back to it after
+        /// dropping refuted claims. <paramref name="afterMove"/> is the board after the move.
+        /// </summary>
+        public static string? DescribeEvaluation(ChessBoard afterMove, string evaluation, bool isWhite)
+        {
+                    int materialCount = EndgameAnalysis.CountTotalPieces(afterMove);
+                    double? eval = ParseEvaluation(evaluation);
+                    if (eval.HasValue)
+                    {
+                        bool isEndgame = EndgameAnalysis.IsEndgame(materialCount);
+                        string gamePhase = EndgameAnalysis.GetGamePhase(materialCount);
+
+                        // WIN RATE MODEL INTEGRATION (Stockfish-style)
+                        // Convert eval to winning percentage for user-friendly explanations
+                        string winningChanceDesc = AdvancedAnalysis.GetWinningChanceDescription(
+                            Math.Abs(eval.Value), materialCount);
+
+                        // Position complexity
+                        string? complexityDesc = AdvancedAnalysis.GetComplexityDescription(afterMove, eval.Value);
+
+                        // Determine if this move is good for the side to move
+                        // eval.Value is from White's perspective: positive = good for White, negative = good for Black
+                        bool moveIsGood = (isWhite && eval.Value > 0) || (!isWhite && eval.Value < 0);
+
+                        // Standard chess evaluation ranges (based on chessify.me/Stockfish conventions):
+                        // |eval| > 1.50: Decisive advantage (+- or -+)
+                        // |eval| 0.70-1.50: Clear advantage (+/- or -/+)
+                        // |eval| 0.27-0.70: Slight advantage (+/= or =/+)
+                        // |eval| < 0.27: Equal (=)
+                        // With sub-ranges for more precise descriptions
+
+                        double absEval = Math.Abs(eval.Value);
+
+                        // Decisive advantage (> 1.50 pawns)
+                        if (absEval > 1.50)
+                        {
+                            if (moveIsGood)
+                            {
+                                if (absEval > 3.0)
+                                    return (isEndgame ? "winning endgame" : "winning position");
+                                else if (complexityDesc != null)
+                                    return ($"{winningChanceDesc} ({complexityDesc})");
+                                else
+                                    return (isEndgame ? "winning endgame" : "decisive advantage");
+                            }
+                            else
+                            {
+                                return (isEndgame ? "defensive endgame play" : "fights back in difficult position");
+                            }
+                        }
+                        // Clear advantage (0.70-1.50 pawns) - split into upper/lower
+                        else if (absEval >= 0.70)
+                        {
+                            if (moveIsGood)
+                            {
+                                if (absEval >= 1.10)
+                                    return (isEndgame ? "much better endgame" : "strong advantage");
+                                else
+                                    return (isEndgame ? "better endgame" : "clear advantage");
+                            }
+                            else
+                            {
+                                return (isEndgame ? "holds endgame" : "reduces disadvantage");
+                            }
+                        }
+                        // Slight advantage (0.27-0.70 pawns) - split into upper/lower
+                        else if (absEval >= 0.27)
+                        {
+                            if (moveIsGood)
+                            {
+                                if (absEval >= 0.50)
+                                    return (isEndgame ? "slightly better endgame" : "comfortable edge");
+                                else
+                                    return (isEndgame ? "small edge in endgame" : "slight edge");
+                            }
+                            else
+                            {
+                                return (isEndgame ? "slight disadvantage" : "under slight pressure");
+                            }
+                        }
+                        // Equal position (< 0.27 pawns)
+                        else
+                        {
+                            return (isEndgame ? "equal endgame" : "equal position");
+                        }
+                    }
+                    return null;
+        }
+
         private static string ExtractEvalFromPV(string pvLine)
         {
             try
@@ -1313,6 +1323,12 @@ namespace ChessDroid.Services
 
                 // Only sliding pieces (Queen, Rook, Bishop) can skewer
                 if (pieceType != PieceType.Bishop && pieceType != PieceType.Rook && pieceType != PieceType.Queen)
+                    return null;
+
+                // A skewer the opponent answers by simply taking the skewering piece (at no loss)
+                // isn't one — e.g. …Bxe3+ "skewering" Kf2 to Rg1 when the king just plays Kxe3.
+                // Same gate as forks (CanForkerBeSafelyCaptured).
+                if (ChessUtilities.CanForkerBeSafelyCaptured(board, pieceRow, pieceCol, isWhite))
                     return null;
 
                 // Check all directions for this piece type
@@ -2391,6 +2407,14 @@ namespace ChessDroid.Services
 
                             int firstValue = ChessUtilities.GetPieceValue(firstType);
                             int secondValue = ChessUtilities.GetPieceValue(secondType);
+
+                            // A pawn blocking a FILE can never clear it: its pushes stay on the file,
+                            // and if another of our pieces captures it, that piece just takes over the
+                            // block. 22...Qc5 (Mackenzie–Bird) "x-rayed" Rc1 through Pc4 because Na5
+                            // attacks c4 — but Nxc4 leaves the knight on c4, still in the way. On a
+                            // diagonal or rank the pawn's push does leave the line (…Ba6 vs Pc4/Qe2).
+                            if (firstType == PieceType.Pawn && dF == 0)
+                                continue;
 
                             // Skip if this x-ray already existed before the move
                             if (originalBoard != null && srcRow >= 0 &&

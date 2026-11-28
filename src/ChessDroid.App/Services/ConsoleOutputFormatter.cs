@@ -246,7 +246,50 @@ namespace ChessDroid.Services
             if (!string.IsNullOrEmpty(threatsText))
                 threatsText = FilterRedundantThreats(threatsText, explanation);
 
+            if (string.IsNullOrEmpty(overrideExplanation))
+            {
+                // A piece that is simply taken threatens nothing: …b5 "creates threat on bishop"
+                // (Bxb5), Nc7+ "traps rook" (Qxc7). Drop its attack/threat claims.
+                if (LineMaterialOutcome.MovedPieceIsTaken(firstMove, completeFen, pvs))
+                {
+                    cleanedExplanation = DropParts(cleanedExplanation, IsAttackClaim);
+                    threatsText = DropParts(threatsText, IsAttackClaim);
+                    // A sound sacrifice of a piece leads the line; otherwise, if nothing is left,
+                    // say what's given up (pawn pushes keep their "e-pawn break" etc.).
+                    string? sac = LineMaterialOutcome.DescribeSacrifice(firstMove, completeFen, evaluation);
+                    bool pieceNotPawn = sac != null && !sac.EndsWith(" pawn", StringComparison.Ordinal);
+                    if (pieceNotPawn && !cleanedExplanation.Contains("sacrific", StringComparison.Ordinal))
+                        cleanedExplanation = string.IsNullOrWhiteSpace(cleanedExplanation) ? sac! : $"{sac}, {cleanedExplanation}";
+                    else if (string.IsNullOrWhiteSpace(cleanedExplanation))
+                        cleanedExplanation = sac ?? LineMaterialOutcome.DescribeGivenUp(firstMove, completeFen, pvs) ?? "";
+                }
+
+                // "hangs X" is a static guess; if the line's own continuation loses nothing, the
+                // engine has refuted it (23.c5! opens a diagonal onto the queen but wins).
+                if (cleanedExplanation.Contains("hangs ", StringComparison.Ordinal) &&
+                    LineMaterialOutcome.PvLosesMaterial(firstMove, completeFen, pvs) == false)
+                    cleanedExplanation = DropParts(cleanedExplanation, p => p.StartsWith("hangs ", StringComparison.Ordinal));
+
+                // Every claim refuted: fall back to the usual evaluation wording rather than nothing.
+                if (string.IsNullOrWhiteSpace(cleanedExplanation) && !string.IsNullOrWhiteSpace(explanation))
+                    cleanedExplanation = LineMaterialOutcome.DescribeEvaluationAfter(firstMove, completeFen, evaluation) ?? "";
+            }
+
             return (cleanedExplanation, threatsText, defensesText);
+        }
+
+        private static readonly System.Text.RegularExpressions.Regex AttackClaim = new(
+            // Not "decoy sacrifice": a decoy is meant to be taken.
+            @"^(attacks |creates threat on |threatens |traps |forks |forking |skewers |pins |double attack|x-ray|overloads |wins \w+ on |\w+ on [a-h][1-8] is trapped)",
+            System.Text.RegularExpressions.RegexOptions.Compiled);
+
+        private static bool IsAttackClaim(string part) => AttackClaim.IsMatch(part);
+
+        /// <summary>Removes ", "-separated parts matching <paramref name="drop"/>.</summary>
+        private static string DropParts(string text, Func<string, bool> drop)
+        {
+            if (string.IsNullOrEmpty(text)) return text;
+            return string.Join(", ", text.Split(ThreatListSeparator, StringSplitOptions.None).Where(p => !drop(p.Trim())));
         }
 
         public void DisplayMoveLine(

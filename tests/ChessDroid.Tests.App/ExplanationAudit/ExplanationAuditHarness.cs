@@ -28,7 +28,6 @@ public class ExplanationAuditHarness
     private const int MultiPv = 3;
 
     private static string Dir => Path.Combine(RepoRoot(), "tests", "ChessDroid.Tests.App", "ExplanationAudit");
-    private static string CorpusPath => Path.Combine(Dir, "corpus.json");
 
     public record Line(string Pv, string Eval);
     public record Position(string Game, string Label, string Fen, string Played, List<Line> Lines);
@@ -38,13 +37,21 @@ public class ExplanationAuditHarness
     [Fact]
     public void RecordCorpus()
     {
-        if (Environment.GetEnvironmentVariable("CHESSDROID_AUDIT_RECORD") != "1") return;
+        // "1" = games.pgn -> corpus.json; "gamesN.pgn" -> corpusN.json (one corpus per PGN file,
+        // so adding games never re-records — or perturbs — the existing ones).
+        string? which = Environment.GetEnvironmentVariable("CHESSDROID_AUDIT_RECORD");
+        if (string.IsNullOrEmpty(which)) return;
+        string pgnFile = which == "1" ? "games.pgn" : which;
+        string corpusFile = Path.Combine(Dir, pgnFile.Replace("games", "corpus").Replace(".pgn", ".json"));
+
+        // CHESSDROID_AUDIT_DEPTH lets a quick low-depth dry run validate a new PGN's moves first.
+        int depth = int.TryParse(Environment.GetEnvironmentVariable("CHESSDROID_AUDIT_DEPTH"), out var d) ? d : Depth;
 
         string engine = Path.Combine(RepoRoot(), "src", "ChessDroid.App", "Engines", "stockfish18.exe");
         using var sf = new Uci(engine);
         var corpus = new List<Position>();
 
-        foreach (var (name, sans) in ParsePgn(File.ReadAllText(Path.Combine(Dir, "games.pgn"))))
+        foreach (var (name, sans) in ParsePgn(File.ReadAllText(Path.Combine(Dir, pgnFile))))
         {
             string fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
             for (int i = 0; i < sans.Count; i++)
@@ -52,12 +59,12 @@ public class ExplanationAuditHarness
                 string? uci = ChessNotationService.ConvertSanToUci(sans[i], fen);
                 Assert.True(uci != null, $"{name}: cannot convert {sans[i]} at ply {i + 1} ({fen})");
                 string label = $"{i / 2 + 1}{(i % 2 == 0 ? "." : "...")}{sans[i]}";
-                corpus.Add(new Position(name, label, fen, uci!, sf.Analyse(fen, Depth, MultiPv)));
+                corpus.Add(new Position(name, label, fen, uci!, sf.Analyse(fen, depth, MultiPv)));
                 fen = ApplyUci(fen, uci!);
             }
         }
 
-        File.WriteAllText(CorpusPath, JsonSerializer.Serialize(corpus, new JsonSerializerOptions { WriteIndented = true }));
+        File.WriteAllText(corpusFile, JsonSerializer.Serialize(corpus, new JsonSerializerOptions { WriteIndented = true }));
     }
 
     // ---------------------------------------------------------------- audit
@@ -67,7 +74,9 @@ public class ExplanationAuditHarness
     {
         if (Environment.GetEnvironmentVariable("CHESSDROID_AUDIT") != "1") return;
 
-        var corpus = JsonSerializer.Deserialize<List<Position>>(File.ReadAllText(CorpusPath))!;
+        var corpus = Directory.GetFiles(Dir, "corpus*.json").OrderBy(f => f)
+            .SelectMany(f => JsonSerializer.Deserialize<List<Position>>(File.ReadAllText(f))!)
+            .ToList();
         var report = new StringBuilder();
         var flagged = new StringBuilder();
         int lines = 0, flags = 0;
@@ -204,12 +213,14 @@ public class ExplanationAuditHarness
             if (string.IsNullOrWhiteSpace(chunk)) continue;
             string white = Regex.Match(chunk, @"\[White ""([^""]*)""\]").Groups[1].Value;
             string black = Regex.Match(chunk, @"\[Black ""([^""]*)""\]").Groups[1].Value;
+            string name = Regex.Match(chunk, @"\[Name ""([^""]*)""\]").Groups[1].Value;
+            if (name == "") name = $"{white.Split(',')[0]}-{black.Split(',')[0]}";
             string body = Regex.Replace(chunk, @"\[[^\]]*\]", " ");
             var sans = Regex.Split(body, @"\s+")
                 .Select(t => Regex.Replace(t, @"^\d+\.+", ""))
                 .Where(t => t != "" && !Regex.IsMatch(t, @"^(1-0|0-1|1/2-1/2|\*)$"))
                 .ToList();
-            games.Add(($"{white.Split(',')[0]}-{black.Split(',')[0]}", sans));
+            games.Add((name, sans));
         }
         return games;
     }
