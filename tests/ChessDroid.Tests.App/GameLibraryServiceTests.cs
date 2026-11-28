@@ -220,6 +220,16 @@ public class GameLibraryServiceTests : IDisposable
     }
 
     [Fact]
+    public void ImportPgns_CheckMarksAndAnnotations_DoNotMakeADifferentGame()
+    {
+        // The board writes mate as "#"; the 1874 record wrote "+". Same game either way.
+        string record = Ruy.Replace("4.Ba4 Nf6", "4.Ba4+ Nf6!");
+        var (saved, skipped) = _library.ImportPgns(new[] { Ruy, record });
+
+        Assert.Equal((1, 1), (saved, skipped));
+    }
+
+    [Fact]
     public void Save_NewGame_DoesNotLeaveATempFileBehind()
     {
         _library.Save(MakeGame("fresh", DateTime.Now));

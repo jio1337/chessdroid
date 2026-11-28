@@ -13,6 +13,35 @@ namespace ChessDroid.Tests.App;
 /// </summary>
 public class PgnImportServiceTests
 {
+    // ---- check marks come from the position, not the PGN's text
+
+    // Bock–Mackenzie, USA-03.Congress 1874: the record ends "13.Nxh4 Rxd4+", but it's mate.
+    private const string BockMackenzie =
+        "e4 e5 Nc3 Nc6 f4 exf4 d4 Qh4+ Ke2 d5 exd5 Bg4+ Nf3 O-O-O dxc6 Bc5 Qd3 Nh6 Qb5 Rhe8+ Kd3 bxc6 Qa6+ Kb8 Nxh4";
+
+    [Theory]
+    [InlineData("Rxd4+", "Rxd4#")]   // the old record's "+" for mate
+    [InlineData("Rxd4", "Rxd4#")]    // mark missing altogether
+    [InlineData("Rxd4+!!", "Rxd4#!!")] // annotation kept after the mark
+    public void NormalizeCheckSuffix_MateFromAnOldRecord(string written, string expected)
+    {
+        string before = ChessNotationService.GetFenAfterSanMoves(BockMackenzie);
+        string after = ChessNotationService.GetFenAfterSanMoves(BockMackenzie + " Rxd4");
+        Assert.NotEqual(before, after);
+        Assert.Equal(expected, PgnImportService.NormalizeCheckSuffix(written, after));
+    }
+
+    [Theory]
+    [InlineData("e4 e5 Nf3 d6 Bc4 Nc6", "Bxf7+", "Bxf7+")]   // a check stays "+"
+    [InlineData("e4 e5 Nf3 d6 Bc4 Nc6", "Bxf7", "Bxf7+")]    // missing "+" added
+    [InlineData("e4 e5", "Nf3#", "Nf3")]                     // a wrong mark is removed
+    [InlineData("e4 e5", "Nf3?!", "Nf3?!")]
+    public void NormalizeCheckSuffix_ChecksAndQuietMoves(string moves, string written, string expected)
+    {
+        string after = ChessNotationService.GetFenAfterSanMoves(moves + " " + written.TrimEnd('+', '#', '!', '?'));
+        Assert.Equal(expected, PgnImportService.NormalizeCheckSuffix(written, after));
+    }
+
     private static readonly char[] FourMoveTokenTypes = { 'M', 'M', 'M', 'M' };
     private static readonly string[] FourPlainMoves = { "e4", "e5", "Nf3", "Nc6" };
     private static readonly char[] VariationTokenTypes = { 'M', '(', 'M', 'M', ')', 'M' };

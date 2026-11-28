@@ -150,6 +150,10 @@ namespace ChessDroid.Services
                 .Select(t => System.Text.RegularExpressions.Regex.Replace(t, @"^\d+\.+", ""))
                 .Where(t => t != "" && !t.StartsWith('$') && !t.StartsWith('[')
                             && t is not ("1-0" or "0-1" or "1/2-1/2" or "*"))
+                // Check marks and annotations don't make a different game: an old record's
+                // "Rxd4+" is the board's "Rxd4#", "Qh6+!!" is "Qh6+".
+                .Select(t => t.TrimEnd('+', '#', '!', '?'))
+                .Where(t => t != "")
                 .ToList();
         }
 

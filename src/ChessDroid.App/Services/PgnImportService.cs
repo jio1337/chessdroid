@@ -200,6 +200,37 @@ namespace ChessDroid.Services
             return san;
         }
 
+        /// <summary>
+        /// The SAN as written, with its check mark set from the position it leads to:
+        /// "#" for mate, "+" for check, none otherwise; annotation symbols ("!", "?!"…) are kept.
+        /// Old game records often mark mate with a plain "+" (Bock–Mackenzie 1874, 13...Rxd4+),
+        /// and some PGNs leave checks unmarked.
+        /// </summary>
+        public static string NormalizeCheckSuffix(string san, string fenAfter)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(san)) return san;
+                string symbol = GetInlineSymbol(san);
+                string core = StripAnnotationSymbols(san).TrimEnd('+', '#');
+
+                string[] parts = fenAfter.Split(' ');
+                var board = ChessBoard.FromFEN(fenAfter);
+                bool sideToMoveWhite = parts.Length > 1 && parts[1] == "w";
+                if (!Services.MoveGenerator.IsKingInCheck(board, sideToMoveWhite)) return core + symbol;
+
+                (int Row, int Col)? ep = parts.Length > 3 && parts[3].Length == 2 && parts[3] != "-"
+                    ? ('8' - parts[3][1], parts[3][0] - 'a') : null;
+                bool hasMove = Services.MoveGenerator.GetAllLegalMovesUci(board, sideToMoveWhite,
+                    new CastlingState(false, false, false, false), ep).Count > 0;
+                return core + (hasMove ? "+" : "#") + symbol;
+            }
+            catch
+            {
+                return san; // keep the PGN's own text if the position can't be read
+            }
+        }
+
         public static string GetNagForSymbol(string symbol) => symbol switch
         {
             "!!" => "$3", "!" => "$1", "!?" => "$5",

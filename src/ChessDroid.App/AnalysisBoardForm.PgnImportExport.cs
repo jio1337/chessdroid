@@ -447,7 +447,8 @@ namespace ChessDroid
                             continue;
                         }
                         string newFen = boardControl.GetFEN();
-                        moveTree.AddMove(uciMove, value, newFen);
+                        // Check mark from the position, not the PGN's text (old records write mate as "+").
+                        moveTree.AddMove(uciMove, PgnImportService.NormalizeCheckSuffix(value, newFen), newFen);
                         currentFen = newFen;
                         lastAppliedNode = moveTree.CurrentNode;
                         annotationList.Add((lastAppliedNode, "", ""));
