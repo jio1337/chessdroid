@@ -1315,6 +1315,29 @@ namespace ChessDroid.Services
         // Detect if this piece is skewering enemy pieces
         // SKEWER: A long-range piece attacking TWO pieces in a line, where the MORE VALUABLE piece
         // is in FRONT and forced to move, exposing a LESS VALUABLE piece behind it to capture
+        /// <summary>
+        /// True if <paramref name="sideIsWhite"/> has a legal move landing strictly between
+        /// (fromRow, fromCol) and (toRow, toCol) on their straight line, made by a piece other than
+        /// the one on (toRow, toCol) — i.e. it can block the line instead of moving the front piece.
+        /// </summary>
+        private static bool CanInterpose(ChessBoard board, int fromRow, int fromCol, int toRow, int toCol, bool sideIsWhite)
+        {
+            int dR = Math.Sign(toRow - fromRow), dC = Math.Sign(toCol - fromCol);
+            var between = new HashSet<(int, int)>();
+            for (int r = fromRow + dR, c = fromCol + dC; (r, c) != (toRow, toCol); r += dR, c += dC)
+                between.Add((r, c));
+            if (between.Count == 0) return false;
+
+            var noCastling = new CastlingState(false, false, false, false);
+            foreach (string uci in MoveGenerator.GetAllLegalMovesUci(board, sideIsWhite, noCastling, null))
+            {
+                int fr = '8' - uci[1], fc = uci[0] - 'a', tr = '8' - uci[3], tc = uci[2] - 'a';
+                if ((fr, fc) == (toRow, toCol)) continue; // the front piece itself moving
+                if (between.Contains((tr, tc))) return true;
+            }
+            return false;
+        }
+
         private static string? DetectSkewer(ChessBoard board, int pieceRow, int pieceCol, char piece, bool isWhite)
         {
             try
@@ -1428,6 +1451,12 @@ namespace ChessDroid.Services
                                             // Front piece is not forced to move - not a real skewer
                                             break;
                                         }
+
+                                        // …unless the opponent can simply block the line: 6...Bg4+ in
+                                        // Bock–Mackenzie "skewered" Ke2 to Qd1, but Nf3 (or f3)
+                                        // interposes and the queen is never exposed.
+                                        if (CanInterpose(board, pieceRow, pieceCol, frontRow, frontCol, !isWhite))
+                                            break;
 
                                         // Front piece IS forced to move - check if we can win the piece behind
                                         bool behindDefended = ChessUtilities.IsSquareDefended(board, r, c, !isWhite);

@@ -159,6 +159,66 @@ public class GameLibraryServiceTests : IDisposable
         Assert.Empty(Directory.GetFiles(_library.GamesFolder, "*.tmp"));
     }
 
+    // ---- ImportPgns: "Save to Library" from the multi-game PGN picker ----
+
+    private const string Ruy =
+        "[Event \"London\"]\n[White \"Mackenzie, George Henry\"]\n[Black \"Steinitz, William\"]\n[Result \"0-1\"]\n\n" +
+        "1.e4 e5 2.Nf3 Nc6 3.Bb5 a6 4.Ba4 Nf6 0-1";
+    private const string Evans =
+        "[Event \"London m5\"]\n[White \"Mackenzie, George Henry\"]\n[Black \"Paulsen, Louis\"]\n[Result \"1-0\"]\n\n" +
+        "1.e4 e5 2.Nf3 Nc6 3.Bc4 Bc5 4.b4 Bxb4 1-0";
+
+    [Fact]
+    public void ImportPgns_SavesEachGameWithHeaders()
+    {
+        var (saved, skipped) = _library.ImportPgns(new[] { Ruy, Evans });
+
+        Assert.Equal((2, 0), (saved, skipped));
+        var all = _library.LoadAll();
+        Assert.Equal(new[] { "Steinitz, William", "Paulsen, Louis" }, all.Select(g => g.Black)); // input order kept
+        var ruy = all[0];
+        Assert.Equal("Mackenzie, George Henry", ruy.White);
+        Assert.Equal("London", ruy.Event);
+        Assert.Equal("0-1", ruy.Result);
+        Assert.Contains("4.Ba4 Nf6", ruy.Pgn);
+        Assert.False(string.IsNullOrEmpty(ruy.Opening), "the opening should be detected from the moves");
+    }
+
+    [Fact]
+    public void ImportPgns_SkipsGamesAlreadyInLibrary()
+    {
+        _library.ImportPgns(new[] { Ruy });
+        var (saved, skipped) = _library.ImportPgns(new[] { Ruy, Evans });
+
+        Assert.Equal((1, 1), (saved, skipped));
+        Assert.Equal(2, _library.LoadAll().Count);
+    }
+
+    [Fact]
+    public void ImportPgns_SkipsDuplicatesWithinTheBatch_IgnoringFormattingAndComments()
+    {
+        string reformatted = Ruy.Replace("1.e4 e5", "1. e4 {King's pawn} e5");
+        var (saved, skipped) = _library.ImportPgns(new[] { Ruy, reformatted });
+
+        Assert.Equal((1, 1), (saved, skipped));
+    }
+
+    [Fact]
+    public void ImportPgns_SameMovesDifferentPlayers_AreDifferentGames()
+    {
+        string otherPlayers = Ruy.Replace("Steinitz, William", "Zukertort, Johannes Hermann");
+        var (saved, _) = _library.ImportPgns(new[] { Ruy, otherPlayers });
+
+        Assert.Equal(2, saved);
+    }
+
+    [Fact]
+    public void SanMoves_StripsHeadersCommentsVariationsNagsAndResult()
+    {
+        string pgn = "[White \"A\"]\n\n1. e4 $1 {best} e5 (1... c5 2. Nf3 (2. c3)) 2. Nf3 ; note\nNc6 1-0";
+        Assert.Equal(new[] { "e4", "e5", "Nf3", "Nc6" }, GameLibraryService.SanMoves(pgn));
+    }
+
     [Fact]
     public void Save_NewGame_DoesNotLeaveATempFileBehind()
     {

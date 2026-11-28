@@ -139,7 +139,8 @@ namespace ChessDroid
                 var games = PgnGamePickerDialog.SplitPgnGames(pgnText);
                 if (games.Count > 1)
                 {
-                    using var picker = new PgnGamePickerDialog(games, isDark);
+                    using var picker = new PgnGamePickerDialog(games, isDark,
+                        _libraryService == null ? null : picked => _libraryService.ImportPgns(picked));
                     if (picker.ShowDialog(this) == DialogResult.OK && picker.SelectedPgn != null)
                         ImportPgn(picker.SelectedPgn);
                 }

@@ -11,6 +11,7 @@ namespace ChessDroid
         private readonly Button _btnDelete;
         private readonly Button _btnClose;
         private readonly Label _lblStatus;
+        private readonly TextBox _txtSearch;
         private readonly GameLibraryService _library;
         private readonly bool _isDark;
         private List<SavedGame> _games;
@@ -114,9 +115,33 @@ namespace ChessDroid
             pnlButtons.Controls.Add(_btnDelete);
             pnlButtons.Controls.Add(_btnOpen);
 
+            // ─── Search bar ───
+            _txtSearch = new TextBox
+            {
+                Dock = DockStyle.Fill,
+                PlaceholderText = "Search players, event or opening…",
+                BorderStyle = BorderStyle.FixedSingle,
+                Font = new Font("Segoe UI", 9F)
+            };
+            _txtSearch.TextChanged += (s, e) => { CommitEdit(); PopulateList(); };
+            _txtSearch.KeyDown += (s, e) =>
+            {
+                if (e.KeyCode == Keys.Down && _listView.Items.Count > 0) { _listView.Focus(); e.Handled = true; }
+                else if (e.KeyCode == Keys.Return && _listView.Items.Count > 0)
+                {
+                    if (_listView.SelectedItems.Count == 0) _listView.Items[0].Selected = true;
+                    OpenSelected();
+                    e.SuppressKeyPress = true;
+                }
+            };
+            var pnlSearch = new Panel { Dock = DockStyle.Top, Height = 34, Padding = new Padding(8, 6, 8, 4) };
+            pnlSearch.Controls.Add(_txtSearch);
+
             Controls.Add(_listView);
+            Controls.Add(pnlSearch);
             Controls.Add(pnlButtons);
             CancelButton = _btnClose;
+            ActiveControl = _txtSearch;
 
             ApplyTheme();
             PopulateList();
@@ -133,8 +158,11 @@ namespace ChessDroid
             try
             {
                 _listView.Items.Clear();
+                string query = _txtSearch.Text;
                 foreach (var game in _games)
                 {
+                    if (!PgnGamePickerDialog.MatchesSearch(query, game.White, game.Black, game.Event, game.Opening))
+                        continue;
                     var item = new ListViewItem(Truncate(game.White, 18));
                     item.SubItems.Add(Truncate(game.Black, 18));
                     item.SubItems.Add(game.SavedAt.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture));
@@ -159,6 +187,8 @@ namespace ChessDroid
         {
             if (_games.Count == 0)
                 _lblStatus.Text = "No saved games yet.";
+            else if (!string.IsNullOrWhiteSpace(_txtSearch.Text))
+                _lblStatus.Text = $"{_listView.Items.Count} of {_games.Count} games match";
             else
                 _lblStatus.Text = $"{_games.Count} game{(_games.Count == 1 ? "" : "s")} · double-click White/Black to rename";
         }

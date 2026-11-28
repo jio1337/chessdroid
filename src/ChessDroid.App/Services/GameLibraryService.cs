@@ -96,5 +96,78 @@ namespace ChessDroid.Services
             string path = Path.Combine(GamesFolder, $"{id}.json");
             if (File.Exists(path)) File.Delete(path);
         }
+
+        /// <summary>
+        /// Saves raw PGN games (e.g. picked from a multi-game PGN file) as library entries,
+        /// skipping any whose players and moves already match a library game, including
+        /// duplicates within <paramref name="pgns"/> itself. Games keep their input order in the
+        /// newest-first library list.
+        /// </summary>
+        public (int saved, int skipped) ImportPgns(IReadOnlyList<string> pgns)
+        {
+            var known = new HashSet<string>(LoadAll().Select(g => DuplicateKey(g.White, g.Black, g.Pgn)));
+            DateTime baseTime = DateTime.Now;
+            int saved = 0, skipped = 0;
+
+            for (int i = 0; i < pgns.Count; i++)
+            {
+                string pgn = pgns[i].Trim();
+                var headers = PgnGamePickerDialog.ParsePgnHeaders(pgn);
+                string white = headers.GetValueOrDefault("White", "?");
+                string black = headers.GetValueOrDefault("Black", "?");
+                if (!known.Add(DuplicateKey(white, black, pgn))) { skipped++; continue; }
+
+                Save(new SavedGame
+                {
+                    White = white,
+                    Black = black,
+                    Event = headers.GetValueOrDefault("Event", "Chess Analysis"),
+                    Result = headers.GetValueOrDefault("Result", "*"),
+                    Opening = DetectOpening(pgn),
+                    Pgn = pgn,
+                    // Newest-first list: step back a millisecond per game to keep file order.
+                    SavedAt = baseTime.AddMilliseconds(-i),
+                });
+                saved++;
+            }
+            return (saved, skipped);
+        }
+
+        /// <summary>Players + bare SAN moves: formatting, comments and annotations don't make a game new.</summary>
+        internal static string DuplicateKey(string white, string black, string pgn)
+            => $"{white}\n{black}\n{string.Join(' ', SanMoves(pgn))}";
+
+        /// <summary>Main-line SAN tokens of a PGN: no headers, comments, variations, NAGs, numbers or result.</summary>
+        internal static List<string> SanMoves(string pgn)
+        {
+            string body = string.Join('\n', pgn.Split('\n').Where(l => !l.TrimStart().StartsWith("[", StringComparison.Ordinal)
+                                                                    || !l.Contains('"')));
+            body = System.Text.RegularExpressions.Regex.Replace(body, @"\{[^}]*\}|;[^\n]*", " ");
+            // Strip variations, innermost first.
+            string prev;
+            do { prev = body; body = System.Text.RegularExpressions.Regex.Replace(body, @"\([^()]*\)", " "); } while (body != prev);
+            return body.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)
+                .Select(t => System.Text.RegularExpressions.Regex.Replace(t, @"^\d+\.+", ""))
+                .Where(t => t != "" && !t.StartsWith('$') && !t.StartsWith('[')
+                            && t is not ("1-0" or "0-1" or "1/2-1/2" or "*"))
+                .ToList();
+        }
+
+        /// <summary>Deepest named opening reached in the first 30 plies, or "".</summary>
+        private static string DetectOpening(string pgn)
+        {
+            try
+            {
+                var sans = SanMoves(pgn);
+                string opening = "";
+                for (int k = 1; k <= Math.Min(30, sans.Count); k++)
+                {
+                    string o = OpeningCatalog.GetOpeningDisplay(ChessNotationService.GetFenAfterSanMoves(string.Join(' ', sans.Take(k))));
+                    if (!string.IsNullOrEmpty(o)) opening = o;
+                }
+                return opening;
+            }
+            catch { return ""; }
+        }
     }
 }

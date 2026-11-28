@@ -109,6 +109,23 @@ public class PgnGamePickerDialogTests
         Assert.Equal(4, headers.Count);
     }
 
+    // Search box (picker + Game Library): every word must appear in some field, any case.
+    [Theory]
+    [InlineData("", true)]
+    [InlineData("   ", true)]
+    [InlineData("bock", true)]                       // part of a name, lower case
+    [InlineData("mackenzie bock", true)]             // words may come from different fields
+    [InlineData("bock 1874", true)]                  // date/event fields count too
+    [InlineData("bock paulsen", false)]              // every word must match
+    [InlineData("steinitz", false)]
+    public void MatchesSearch_AllWordsMustMatchSomeField(string query, bool expected)
+        => Assert.Equal(expected, PgnGamePickerDialog.MatchesSearch(query,
+            "Bock, Frederic", "Mackenzie, George Henry", "1874", "USA-03.Congress"));
+
+    [Fact]
+    public void MatchesSearch_IgnoresNullFields()
+        => Assert.True(PgnGamePickerDialog.MatchesSearch("bock", null, "Bock, Frederic"));
+
     [Theory]
     [InlineData("1. e4 e5 2. Nf3 Nc6", 2)]
     [InlineData("1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 1-0", 3)]

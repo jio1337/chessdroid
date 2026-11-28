@@ -67,6 +67,8 @@ public class ExplanationAuditRegressionTests
     [InlineData("Mackenzie-Bird (Paris playoff-4pl 1878 r2)", "23.c5", "c4c5", "hangs")]
     // D: 20...Bxe3+ "skewers king (to the g1 rook)" — the king just takes it.
     [InlineData("Kennicott-Mackenzie (USA-03.Congress+ 1874 r1)", "20...Qe7", "b6e3", "skewer")]
+    // 6...Bg4+ "skewers king, wins material" (Ke2 to Qd1) — Nf3 just blocks.
+    [InlineData("Bock-Mackenzie (USA-03.Congress 1874 r1)", "6...Bg4+", "c8g4", "skewer")]
     // A trade (Bxc6 dxc6) is not a sacrifice.
     [InlineData("Mackenzie-Smith (USA-02.Congress 1871 r1)", "15.Bxc6", "a8c6", "sacrific")]
     public void SecondCorpusRefutedClaimIsGone(string game, string label, string move, string absent)
