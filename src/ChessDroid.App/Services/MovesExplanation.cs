@@ -1,4 +1,4 @@
-using ChessDroid.Models;
+﻿using ChessDroid.Models;
 using System.Diagnostics;
 
 namespace ChessDroid.Services
@@ -27,7 +27,27 @@ namespace ChessDroid.Services
                 // Forced mate detection (only for "Mate in X", not "Mated in X")
                 if (!string.IsNullOrEmpty(evaluation) && evaluation.StartsWith("Mate in ", StringComparison.Ordinal))
                 {
-                    return $"forced checkmate ({evaluation.ToLowerInvariant()})";
+                    string mate = $"forced checkmate ({evaluation.ToLowerInvariant()})";
+                    bool moverWhite = fen.Split(' ') is { Length: > 1 } f && f[1] == "w";
+                    bool moverMates = moverWhite != evaluation.Contains('-'); // eval is White's view
+                    // The side to move is the one getting mated (17...Kxh6 against Mason read
+                    // "forced checkmate (mate in +5)").
+                    if (!moverMates)
+                        return $"can't avoid checkmate ({evaluation.ToLowerInvariant()})";
+                    if (bestMove != null && bestMove.Length >= 4 && bestMove[2] is >= 'a' and <= 'h' && bestMove[3] is >= '1' and <= '8')
+                    {
+                        string[]? plies = pvs?.FirstOrDefault(p => p.Split(' ')[0] == bestMove)?.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                        if (DetectDecoy(fen, plies, '8' - bestMove[3], bestMove[2] - 'a', moverWhite, forcedMate: true) != null)
+                        {
+                            string name = PieceHelper.GetPieceType(ChessBoard.FromFEN(fen).GetPiece('8' - bestMove[1], bestMove[0] - 'a')) switch
+                            {
+                                PieceType.Queen => "queen", PieceType.Rook => "rook", PieceType.Bishop => "bishop",
+                                PieceType.Knight => "knight", _ => "pawn"
+                            };
+                            return $"decoy sacrifice ({name}), {mate}";
+                        }
+                    }
+                    return mate;
                 }
 
                 ChessBoard board = ChessBoard.FromFEN(fen);
@@ -184,7 +204,8 @@ namespace ChessDroid.Services
 
                     // Check for tactical patterns SECOND (after singular/threat detection)
                     // Pass both original board and temp board for discovered attack detection
-                    string? tacticalPattern = DetectTacticalPattern(board, tempBoard, srcRank, srcFile, destRank, destFile, piece, pieceType, isWhite);
+                    string[]? movePlies = pvs?.FirstOrDefault(p => p.Split(' ')[0] == bestMove)?.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                    string? tacticalPattern = DetectTacticalPattern(board, tempBoard, srcRank, srcFile, destRank, destFile, piece, pieceType, isWhite, fen, movePlies);
                     if (!string.IsNullOrEmpty(tacticalPattern))
                     {
                         reasons.Add(tacticalPattern);
@@ -867,7 +888,7 @@ namespace ChessDroid.Services
         }
 
         // Detect tactical patterns like forks, pins, skewers, discovered attacks
-        private static string? DetectTacticalPattern(ChessBoard originalBoard, ChessBoard board, int srcRow, int srcCol, int pieceRow, int pieceCol, char piece, PieceType pieceType, bool isWhite)
+        private static string? DetectTacticalPattern(ChessBoard originalBoard, ChessBoard board, int srcRow, int srcCol, int pieceRow, int pieceCol, char piece, PieceType pieceType, bool isWhite, string fen, string[]? movePlies)
         {
             try
             {
@@ -1049,7 +1070,7 @@ namespace ChessDroid.Services
                     if (!string.IsNullOrEmpty(xrayInfo))
                         return xrayInfo;
 
-                    var decoyInfo = DetectDecoy(board, pieceRow, pieceCol, isWhite);
+                    var decoyInfo = DetectDecoy(fen, movePlies, pieceRow, pieceCol, isWhite);
                     if (!string.IsNullOrEmpty(decoyInfo))
                         return decoyInfo;
                 }
@@ -2239,103 +2260,71 @@ namespace ChessDroid.Services
         // a target for greater material gain or a winning attack"
         // NOTE: This is a complex tactic that requires looking ahead in the PV line.
         // Current implementation is conservative to avoid false positives.
-        private static string? DetectDecoy(ChessBoard board, int pieceRow, int pieceCol, bool isWhite)
+        //
+        // Judged from the engine line, not a static guess: the old version imagined an enemy
+        // piece capturing ours and called it "traps piece" whenever the capturer then had no
+        // safe squares and our square was defended — but that is just a recapture. A queen
+        // offering a queen trade (Qe1 against Qh4, Bock–Mackenzie 1874) read as a decoy.
+        // Now: the bait must be taken in the line (reply captures on its square), and the next
+        // move must punish the piece that took it — check the king that took it (…Qxd4+ Kxd4
+        // Bg7+).
+        //
+        // In a forced mate the engine's line often shows the bait declined (11...Qxd4+ 12.Kd2,
+        // Thompson–Mackenzie 1868) because taking it only mates sooner. There the offer itself
+        // counts: <paramref name="forcedMate"/> lets a piece the king can legally take, where
+        // taking it walks into a check (12.Kxd4 Bg7+, as played), be called a decoy.
+        internal static string? DetectDecoy(string fen, string[]? plies, int pieceRow, int pieceCol, bool isWhite,
+            bool forcedMate = false)
         {
             try
             {
-                char piece = board.GetPiece(pieceRow, pieceCol);
-                PieceType pieceType = PieceHelper.GetPieceType(piece);
-                int pieceValue = ChessUtilities.GetPieceValue(pieceType);
+                if (plies == null || plies.Length < 2 || plies[0].Length < 4) return null;
+                string baitSquare = $"{(char)('a' + pieceCol)}{8 - pieceRow}";
 
-                // CRITICAL: For it to be a decoy sacrifice, our piece must be:
-                // 1. Under attack or can be captured (it's a sacrifice)
-                // 2. We're offering it to lure a piece to a bad square
+                string[] parts = fen.Split(' ');
+                var board = ChessBoard.FromFEN(fen);
+                string castling = parts.Length > 2 ? parts[2] : "-";
+                string ep = parts.Length > 3 ? parts[3] : "-";
 
-                // First check: Is this piece actually attacked? (prerequisite for sacrifice)
-                int theirAttackers = CountDefenders(board, pieceRow, pieceCol, !isWhite);
-                int ourDefenders = CountDefenders(board, pieceRow, pieceCol, isWhite);
+                // It must give something away: a trade (Rxf8+ Kxf8, Qxd7+ Kxd7) is not a decoy.
+                int taken = ChessUtilities.GetPieceValue(PieceHelper.GetPieceType(board.GetPiece(pieceRow, pieceCol)));
+                ChessRulesService.ApplyUciMove(board, plies[0], ref castling, ref ep);
+                int bait = ChessUtilities.GetPieceValue(PieceHelper.GetPieceType(board.GetPiece(pieceRow, pieceCol)));
+                if (bait <= taken) return null;
 
-                // If we're not under attack and not offering a free piece, it's not a decoy sacrifice
-                if (theirAttackers == 0)
-                    return null;
-
-                // If we have equal or more defenders, capturing would be an even trade, not a sacrifice
-                if (ourDefenders >= theirAttackers && pieceValue <= 3)
-                    return null;
-
-                // Check what pieces are attacking us - those are the pieces we might be "luring"
-                // For a true decoy, if the attacker captures our piece:
-                // 1. They move to our square
-                // 2. That square becomes vulnerable to a follow-up tactic
-
-                // Create a hypothetical board where enemy captured our piece (using pooling)
-                using var pooledDecoy = BoardPool.Rent(board);
-                ChessBoard tempBoard = pooledDecoy.Board;
-                char capturer = '.';
-                int capturerRow = -1, capturerCol = -1;
-
-                // Find an attacker that could capture
-                for (int r = 0; r < 8; r++)
+                bool baitTaken = plies[1].Length >= 4 && plies[1].Substring(2, 2) == baitSquare;
+                if (baitTaken)
                 {
-                    for (int c = 0; c < 8; c++)
-                    {
-                        char enemyPiece = board.GetPiece(r, c);
-                        if (enemyPiece == '.') continue;
-                        bool enemyIsWhite = char.IsUpper(enemyPiece);
-                        if (enemyIsWhite == isWhite) continue;
+                    if (plies.Length < 3 || plies[2].Length < 4) return null;
+                    ChessRulesService.ApplyUciMove(board, plies[1], ref castling, ref ep);
+                    char capturer = board.GetPiece(pieceRow, pieceCol);
+                    if (capturer == '.' || char.IsUpper(capturer) == isWhite) return null;
 
-                        if (ChessUtilities.CanAttackSquare(board, r, c, enemyPiece, pieceRow, pieceCol))
-                        {
-                            capturer = enemyPiece;
-                            capturerRow = r;
-                            capturerCol = c;
-                            break;
-                        }
-                    }
-                    if (capturer != '.') break;
+                    // The king was drawn onto the bait square and is checked straight away.
+                    // (Other decoys — a piece lured onto a fork or pin square — aren't recognised;
+                    // better silent than the old trade-as-trap claims.)
+                    if (PieceHelper.GetPieceType(capturer) != PieceType.King) return null;
+                    ChessRulesService.ApplyUciMove(board, plies[2], ref castling, ref ep);
+                    return ChessUtilities.IsKingInCheck(board, !isWhite) ? "decoy sacrifice" : null;
                 }
 
-                if (capturer == '.')
-                    return null;
+                if (!forcedMate) return null;
 
-                // Simulate the capture
-                tempBoard.SetPiece(pieceRow, pieceCol, capturer);
-                tempBoard.SetPiece(capturerRow, capturerCol, '.');
+                // Declined in the line: could the king take it, and would that walk into check?
+                var noCastling = new CastlingState(false, false, false, false);
+                string? kingTakes = MoveGenerator.GetAllLegalMovesUci(board, !isWhite, noCastling, null)
+                    .FirstOrDefault(m => m.Substring(2, 2) == baitSquare &&
+                        PieceHelper.GetPieceType(board.GetPiece('8' - m[1], m[0] - 'a')) == PieceType.King);
+                if (kingTakes == null) return null;
+                ChessRulesService.ApplyUciMove(board, kingTakes, ref castling, ref ep);
 
-                // Check if the capturer on its new square is now vulnerable to a winning tactic
-                // 1. Is it now forkable?
-                // 2. Is it now pinnable?
-                // 3. Is it trapped (very few safe squares)?
-
-                int capturerSafeSquares = CountSafeSquaresForPiece(tempBoard, pieceRow, pieceCol, capturer, !isWhite);
-                PieceType capturerType = PieceHelper.GetPieceType(capturer);
-                int capturerValue = ChessUtilities.GetPieceValue(capturerType);
-
-                // If after capturing, the piece has very few safe squares, it might be trapped
-                if (capturerSafeSquares <= 1 && capturerValue >= 3)
+                foreach (string reply in MoveGenerator.GetAllLegalMovesUci(board, isWhite, noCastling, null))
                 {
-                    // Check if we can attack this trapped piece
-                    if (ChessUtilities.IsSquareDefended(tempBoard, pieceRow, pieceCol, isWhite))
-                    {
-                        return "decoy sacrifice (traps piece)";
-                    }
+                    using var pooled = BoardPool.Rent(board);
+                    string c2 = "-", ep2 = "-";
+                    ChessRulesService.ApplyUciMove(pooled.Board, reply, ref c2, ref ep2);
+                    if (ChessUtilities.IsKingInCheck(pooled.Board, !isWhite)) return "decoy sacrifice";
                 }
-
-                // For king attacks specifically: check if king is lured to a worse square
-                if (capturerType == PieceType.King)
-                {
-                    var safeBefore = GetKingSafeSquares(board, capturerRow, capturerCol, !isWhite);
-                    var safeAfter = GetKingSafeSquares(tempBoard, pieceRow, pieceCol, !isWhite);
-
-                    // If king has significantly fewer escape squares after capture
-                    if (safeAfter.Count <= 2 && safeAfter.Count < safeBefore.Count)
-                    {
-                        return "decoy sacrifice";
-                    }
-                }
-
-                // NOTE: Without access to the PV line, we can't fully validate decoy sacrifices
-                // that set up complex follow-up tactics. Conservative approach to avoid false positives.
                 return null;
             }
             catch

@@ -57,8 +57,8 @@ public class ExplanationAuditRegressionTests
     [InlineData("Mackenzie-Haughton (USA-02.Congress 1871 r1)", "19.Nc3", "d5c7", "sacrifices knight")]
     // C: 28.Rxc1? bxc1=Q — the rook swaps cancel out; the promotion is the loss.
     [InlineData("Mackenzie-Zukertort (London 1883)", "28.Qxd1", "b1c1", "allows promotion (bxc1=Q)")]
-    // Mackenzie's 17.Qh6+!! against Mason (Paris 1878): a queen sacrifice that mates.
-    [InlineData("Mackenzie-Mason", "17.Qh6+", "h5h6", "sacrifices queen, forced checkmate (mate in +6)")]
+    // Mackenzie's 17.Qh6+!! against Mason (Paris 1878): the queen draws the king to h6 (Kxh6 Nf5+).
+    [InlineData("Mackenzie-Mason", "17.Qh6+", "h5h6", "decoy sacrifice (queen), forced checkmate (mate in +6)")]
     public void SecondCorpusExplanation(string game, string label, string move, string expected)
         => Assert.Equal(expected, Explain(game, label, move));
 
@@ -112,6 +112,89 @@ public class ExplanationAuditRegressionTests
         Assert.DoesNotContain("x-ray", MovesExplanation.GenerateMoveExplanation("d6c5", fen, pvs, "+4.41"));
         Assert.Contains("x-ray attack on queen", MovesExplanation.GenerateMoveExplanation("b7a6", fen, pvs, "+4.28"));
     }
+
+    // Reported live (Bock–Mackenzie, USA-03.Congress 1874, after 8...Bc5), with the app's own
+    // engine lines: 9.Qe1 read "decoy sacrifice (traps piece)". It only offers a queen trade —
+    // …Qxe1 Kxe1 — and the "trapped" queen on e1 is just recaptured.
+    [Fact]
+    public void QueenTradeOfferIsNotADecoy()
+    {
+        string fen = ChessNotationService.GetFenAfterSanMoves(
+            "e4 e5 Nc3 Nc6 f4 exf4 d4 Qh4+ Ke2 d5 exd5 Bg4+ Nf3 O-O-O dxc6 Bc5");
+        var pvs = new List<string>
+        {
+            "d1e1 h4h5 e2d1 g4f3 g2f3 h5f3 f1e2 d8d4 c1d2 d4d2",
+            "c3b5 g4f3 g2f3 b7c6 c2c3 c6b5 d1d3 g8f6 e2d1 h4f2",
+            "c6b7 c8b8 c3b5 g4f3 g2f3 a7a6 c2c3 a6b5 a2a4 b5b4",
+        };
+        string exp = ConsoleOutputFormatter.ComposeMoveLine("d1e1", fen, pvs, "+0.12", "+0.12", includeThreats: true).explanation;
+        Assert.DoesNotContain("decoy", exp);
+    }
+
+    [Theory]
+    // A piece given up to draw the king in, which is checked at once.
+    [InlineData("Thompson-Mackenzie (GBR-ch 1868)", "10...Rb8", "f2d4")]               // …Qxd4+ Kxd4 Bg7+
+    [InlineData("Metger-Mackenzie (DSB-05.Kongress 1887 r15)", "19...Qh4", "g3h2")]   // …Bh2+ Kxh2 Qh4+
+    [InlineData("Mackenzie-Judd (Toledo m 1887)", "25.f4+", "h2h4")]                  // h4+ Kxh4 Nf5+
+    public void KingDrawnInAndCheckedIsADecoy(string game, string label, string move)
+        => Assert.Contains("decoy sacrifice", Explain(game, label, move));
+
+    // Reported live (Thompson–Mackenzie, GBR-ch 1868, after 11.Rf1), with the app's own line:
+    // 11...Qxd4+!! read "sacrifices queen for decisive advantage" — the Brilliant wording replaced
+    // the mate, and the decoy went unmentioned because the engine's defence declines it (Kd2).
+    // Taking (12.Kxd4, as played) walks into Bg7+.
+    private const string ThompsonAfterRf1 =
+        "e4 e5 f4 exf4 Nf3 g5 d4 g4 Ne5 Qh4+ Kd2 Qf2+ Kc3 Nc6 a3 d6 Nxc6 bxc6 Bd3 Rb8 Rf1";
+    private static readonly List<string> ThompsonPvs = new() { "f2d4 c3d2 d4e3 d2c3 f8g7 e4e5 g7e5 c3c4 e3d4" };
+
+    [Fact]
+    public void ForcedMateDecoyIsNamed_EvenWhenTheLineDeclinesIt()
+    {
+        string fen = ChessNotationService.GetFenAfterSanMoves(ThompsonAfterRf1);
+        Assert.Equal("decoy sacrifice (queen), forced checkmate (mate in -5)",
+            MovesExplanation.GenerateMoveExplanation("f2d4", fen, ThompsonPvs, "Mate in -5"));
+    }
+
+    [Fact]
+    public void BrilliantMateSacrificeKeepsTheMateAndTheDecoy()
+    {
+        string fen = ChessNotationService.GetFenAfterSanMoves(ThompsonAfterRf1);
+        var (exp, threats, _) = ConsoleOutputFormatter.ComposeMoveLine("f2d4", fen, ThompsonPvs, "Mate in -5", "Mate in -5",
+            includeThreats: true, overrideExplanation: "sacrifices queen for decisive advantage");
+        Assert.Equal("decoy sacrifice (queen), forced checkmate (mate in -5)", exp);
+        Assert.Equal("", threats); // a forced mate needs no "⚔ gives check" — for Black too
+    }
+
+    // A forced mate where the king can't take the piece is not a decoy (18.Nhf5+ Bxf5).
+    [Fact]
+    public void ForcedMateWithoutAKingCaptureIsNotADecoy()
+        => Assert.Equal("forced checkmate (mate in +5)", Explain("Mackenzie-Mason", "18.Nhf5+", "h4f5"));
+
+    // The side to move is getting mated: not "forced checkmate", and no "🛡 stops checkmate threat".
+    [Fact]
+    public void SideBeingMatedIsNotSaidToMate()
+    {
+        var pos = Corpus.Value.Single(p => p.Game == "Mackenzie-Mason" && p.Label == "17...Kxh6");
+        var line = pos.Lines.Single(l => l.Pv.Split(' ')[0] == "g7h6");
+        var (exp, threats, defenses) = ConsoleOutputFormatter.ComposeMoveLine(
+            "g7h6", pos.Fen, pos.Lines.Select(l => l.Pv).ToList(), line.Eval, pos.Lines[0].Eval, includeThreats: true);
+        Assert.Equal("can't avoid checkmate (mate in +5)", exp);
+        Assert.Equal(("", ""), (threats, defenses));
+    }
+
+    [Theory]
+    // Queen trade offers / recaptures the old static check called "traps piece".
+    [InlineData("Bock-Mackenzie (USA-03.Congress 1874 r1)", "9.Qd3", "d1e1")]
+    [InlineData("Smith-Mackenzie (USA-02.Congress 1871 r2)", "17...Qxg6+", "e8g6")]
+    [InlineData("Mackenzie-Judd (Toledo m 1887) #2", "5.Nd5", "d1e1")]
+    // A check the king answers by stepping away, not by taking the bait.
+    [InlineData("Mackenzie-Judd (Toledo m 1887)", "25.f4+", "f2f4")]
+    // Trades the king recaptures, then a check: nothing was given away.
+    [InlineData("Mackenzie-Smith (USA-02.Congress 1871 r1)", "20.Rxf8+", "f1f8")]     // Rxf8+ Kxf8 Rf1+
+    [InlineData("Englisch-Mackenzie (Vienna 1882 r9)", "19.Rfd1", "d5d7")]           // Qxd7+ Kxd7 Rfd1+
+    [InlineData("Kennicott-Mackenzie (USA-03.Congress+ 1874 r1)", "20...Qe7", "b6e3")] // …Bxe3+ Kxe3
+    public void NoDecoyWithoutTheBaitBeingTakenAndPunished(string game, string label, string move)
+        => Assert.DoesNotContain("decoy", Explain(game, label, move));
 
     [Theory]
     // 36.Qg5 gives up a rook but forces perpetual check (0.00): compensated, not "loses".

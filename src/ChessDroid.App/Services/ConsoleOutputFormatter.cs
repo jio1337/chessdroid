@@ -227,13 +227,28 @@ namespace ChessDroid.Services
                     : explain(firstMove, completeFen, pvs, evaluation))
                 : "";
 
+            // A brilliant sacrifice that forces mate: "sacrifices queen for decisive advantage"
+            // undersells it and hides what the move does. Keep the piece, but say what it leads
+            // to — "decoy sacrifice (queen), forced checkmate (mate in -5)" for 11...Qxd4+!!
+            // (Thompson–Mackenzie 1868), "sacrifices queen, forced checkmate (…)" otherwise.
+            if (showExplanation && !string.IsNullOrEmpty(overrideExplanation) && MoverMates(evaluation, completeFen))
+            {
+                var m = System.Text.RegularExpressions.Regex.Match(overrideExplanation, @"^(?:sacrifices|leaves) (\w+)");
+                string normal = explain(firstMove, completeFen, pvs, evaluation);
+                if (normal.StartsWith("decoy sacrifice (", StringComparison.Ordinal))
+                    explanation = normal;
+                else if (m.Success && normal.StartsWith("forced checkmate", StringComparison.Ordinal))
+                    explanation = $"sacrifices {m.Groups[1].Value}, {normal}";
+            }
+
             string threatsText = "";
             string defensesText = "";
-            bool weHaveForcedMate = !string.IsNullOrEmpty(evaluation) &&
-                                     evaluation.StartsWith("Mate in ", StringComparison.Ordinal) &&
-                                     !evaluation.Contains('-');
+            // A forced mate either way: threats/defenses are noise next to it ("stops checkmate
+            // threat" on a move that gets mated anyway).
+            bool forcedMateLine = !string.IsNullOrEmpty(evaluation) &&
+                                  evaluation.StartsWith("Mate in ", StringComparison.Ordinal);
 
-            if (includeThreats && !weHaveForcedMate)
+            if (includeThreats && !forcedMateLine)
             {
                 threatsText = GetThreatsForMove(completeFen, firstMove);
                 defensesText = GetDefensesForMove(completeFen, firstMove);
@@ -284,6 +299,14 @@ namespace ChessDroid.Services
             System.Text.RegularExpressions.RegexOptions.Compiled);
 
         private static bool IsAttackClaim(string part) => AttackClaim.IsMatch(part);
+
+        /// <summary>"Mate in N" in the side to move's favour (the eval string is White's view).</summary>
+        private static bool MoverMates(string evaluation, string fen)
+        {
+            if (string.IsNullOrEmpty(evaluation) || !evaluation.StartsWith("Mate in ", StringComparison.Ordinal)) return false;
+            bool moverWhite = fen.Split(' ') is { Length: > 1 } f && f[1] == "w";
+            return moverWhite != evaluation.Contains('-');
+        }
 
         /// <summary>Removes ", "-separated parts matching <paramref name="drop"/>.</summary>
         private static string DropParts(string text, Func<string, bool> drop)
