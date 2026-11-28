@@ -52,7 +52,7 @@ public class GameReviewTests
     [Fact]
     public void KeepingAForcedMateIsNeverAnError()
         => Assert.DoesNotContain(Corpus.Value, m =>
-            m.Before.StartsWith("Mate in ") && m.After.StartsWith("Mate in ") &&
+            m.Before.StartsWith("Mate in ", StringComparison.Ordinal) && m.After.StartsWith("Mate in ", StringComparison.Ordinal) &&
             (m.Before.Contains('-') == m.After.Contains('-')) &&
             m.Quality is Q.Inaccuracy or Q.Mistake or Q.Blunder);
 

@@ -248,15 +248,17 @@ namespace ChessDroid
 
             // Engine info labels — overlay right side of material strips during engine matches
             var infoLabelFont = new Font("Consolas", 8F);
+            // Player labels — overlay the right side of the material strips: engine name + Elo in
+            // engine matches, the PGN's White/Black (+ Elo) for a loaded game.
             _lblBlackEngineInfo = new Label
             {
-                Visible = false, AutoSize = false,
+                Visible = false, AutoSize = false, AutoEllipsis = true,
                 TextAlign = ContentAlignment.MiddleRight,
                 Font = infoLabelFont, BackColor = Color.Transparent
             };
             _lblWhiteEngineInfo = new Label
             {
-                Visible = false, AutoSize = false,
+                Visible = false, AutoSize = false, AutoEllipsis = true,
                 TextAlign = ContentAlignment.MiddleRight,
                 Font = infoLabelFont, BackColor = Color.Transparent
             };
@@ -982,8 +984,10 @@ namespace ChessDroid
                 _materialBottom.Location = new Point(boardX, boardControl.Bottom + STRIP_GAP);
                 _materialBottom.Size     = new Size(boardSize, STRIP_H);
 
-                // Engine info labels — swap positions when board is flipped
-                const int infoW = 170;
+                // Player labels — swap positions when board is flipped. Up to half the strip:
+                // captured pieces fill from the left, and "Mackenzie, George Henry [2400]" needs
+                // more than the 170px engine names did (longer still is ellipsised + tooltip).
+                int infoW = Math.Min(260, boardSize / 2);
                 int infoH = Math.Max(STRIP_H, 14);
                 bool flipped = boardControl.IsFlipped;
                 var topInfoLabel    = flipped ? _lblWhiteEngineInfo : _lblBlackEngineInfo;

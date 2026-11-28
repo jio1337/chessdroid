@@ -226,6 +226,7 @@ namespace ChessDroid
                 _libraryGameId = saved.Id;
                 if (saved.White != "?") _pgnHeaders["White"] = saved.White;
                 if (saved.Black != "?") _pgnHeaders["Black"] = saved.Black;
+                ShowPgnPlayerLabels();
                 // Restore accuracy scores and activate the review link
                 if (_currentClassification != null && saved.HasClassification)
                 {
@@ -253,6 +254,34 @@ namespace ChessDroid
             dialog.ShowDialog(this);
         }
 
+        /// <summary>
+        /// The Seven Tag Roster plus WhiteElo/BlackElo for an exported game. Event/Site/Date/Round
+        /// and the Elos come from <paramref name="imported"/> (the loaded PGN's headers) when
+        /// present, else chessdroid's defaults; <paramref name="whiteElo"/>/<paramref name="blackElo"/>
+        /// (an engine match's profiles) win when set. Result stays "*": the move text may have
+        /// been changed since the game was loaded.
+        /// </summary>
+        internal static IEnumerable<string> PgnHeaderLines(IReadOnlyDictionary<string, string> imported,
+            string white, string black, int whiteElo, int blackElo, DateTime now)
+        {
+            string Get(string key, string fallback)
+                => imported.TryGetValue(key, out var v) && !string.IsNullOrWhiteSpace(v) ? v : fallback;
+            static string? Elo(int fromMatch, string? fromPgn)
+                => fromMatch > 0 ? fromMatch.ToString(CultureInfo.InvariantCulture)
+                 : int.TryParse(fromPgn, NumberStyles.Integer, CultureInfo.InvariantCulture, out int e) && e > 0
+                    ? e.ToString(CultureInfo.InvariantCulture) : null;
+
+            yield return $"[Event \"{Get("Event", "Chess Analysis")}\"]";
+            yield return $"[Site \"{Get("Site", "chessdroid")}\"]";
+            yield return $"[Date \"{Get("Date", now.ToString("yyyy.MM.dd", CultureInfo.InvariantCulture))}\"]";
+            yield return $"[Round \"{Get("Round", "?")}\"]";
+            yield return $"[White \"{white}\"]";
+            yield return $"[Black \"{black}\"]";
+            yield return "[Result \"*\"]";
+            if (Elo(whiteElo, imported.GetValueOrDefault("WhiteElo")) is { } we) yield return $"[WhiteElo \"{we}\"]";
+            if (Elo(blackElo, imported.GetValueOrDefault("BlackElo")) is { } be) yield return $"[BlackElo \"{be}\"]";
+        }
+
         private string GeneratePgn(string? white = null, string? black = null)
         {
             white ??= !string.IsNullOrEmpty(_matchWhiteName) ? _matchWhiteName : _pgnHeaders.GetValueOrDefault("White", "?");
@@ -260,14 +289,14 @@ namespace ChessDroid
 
             var sb = new System.Text.StringBuilder();
 
-            // Standard PGN headers
-            sb.AppendLine("[Event \"Chess Analysis\"]");
-            sb.AppendLine("[Site \"chessdroid\"]");
-            sb.AppendLine(CultureInfo.InvariantCulture, $"[Date \"{DateTime.Now:yyyy.MM.dd}\"]");
-            sb.AppendLine("[Round \"?\"]");
-            sb.AppendLine(CultureInfo.InvariantCulture, $"[White \"{white}\"]");
-            sb.AppendLine(CultureInfo.InvariantCulture, $"[Black \"{black}\"]");
-            sb.AppendLine("[Result \"*\"]");
+            // Standard PGN headers. A game from an engine match uses its own names and Elo;
+            // otherwise the loaded PGN's headers are kept (they used to be replaced by "Chess
+            // Analysis" and today's date, so an 1874 game saved from the board lost its event,
+            // date and ratings).
+            bool fromMatch = !string.IsNullOrEmpty(_matchWhiteName) || !string.IsNullOrEmpty(_matchBlackName);
+            foreach (string header in PgnHeaderLines(fromMatch ? new Dictionary<string, string>() : _pgnHeaders,
+                         white, black, fromMatch ? _matchWhiteElo : 0, fromMatch ? _matchBlackElo : 0, DateTime.Now))
+                sb.AppendLine(header);
             if (_classificationLookup != null)
             {
                 string annotator = _currentClassification?.EngineName is { Length: > 0 } n ? n : "chessdroid";
@@ -339,8 +368,7 @@ namespace ChessDroid
                 _matchBlackName = "";
                 _matchWhiteFileName = "";
                 _matchBlackFileName = "";
-                _lblBlackEngineInfo.Visible = false;
-                _lblWhiteEngineInfo.Visible = false;
+                ShowPgnPlayerLabels();
                 _libraryGameId = "";
 
                 string startFen = headers.TryGetValue("FEN", out var fenValue)

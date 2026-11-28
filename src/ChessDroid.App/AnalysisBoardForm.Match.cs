@@ -294,11 +294,39 @@ namespace ChessDroid
                 return profile?.Elo > 0 ? $"{name} [{profile.Elo}]" : name;
             }
 
-            bool showStrips = config?.ShowMaterialStrips != false;
-            _lblBlackEngineInfo.Text = BuildLabel(blackProfile, blackFileName);
-            _lblWhiteEngineInfo.Text = BuildLabel(whiteProfile, whiteFileName);
-            _lblBlackEngineInfo.Visible = showStrips;
-            _lblWhiteEngineInfo.Visible = showStrips;
+            SetPlayerLabels(BuildLabel(whiteProfile, whiteFileName), BuildLabel(blackProfile, blackFileName));
+        }
+
+        /// <summary>
+        /// Shows the players from the loaded PGN's headers (White/Black, WhiteElo/BlackElo) on
+        /// the board, the way engine matches show their engines. Hidden when neither is known.
+        /// </summary>
+        private void ShowPgnPlayerLabels()
+            => SetPlayerLabels(
+                PlayerLabel(_pgnHeaders.GetValueOrDefault("White"), _pgnHeaders.GetValueOrDefault("WhiteElo")),
+                PlayerLabel(_pgnHeaders.GetValueOrDefault("Black"), _pgnHeaders.GetValueOrDefault("BlackElo")));
+
+        private void SetPlayerLabels(string? white, string? black)
+        {
+            bool show = config?.ShowMaterialStrips != false && (white != null || black != null);
+            _lblWhiteEngineInfo.Text = white ?? "";
+            _lblBlackEngineInfo.Text = black ?? "";
+            toolTip.SetToolTip(_lblWhiteEngineInfo, white); // full name when ellipsised
+            toolTip.SetToolTip(_lblBlackEngineInfo, black);
+            _lblWhiteEngineInfo.Visible = show;
+            _lblBlackEngineInfo.Visible = show;
+        }
+
+        /// <summary>
+        /// "Mackenzie, George Henry [2400]" from PGN header values; null for an unknown player
+        /// (missing, empty or the PGN placeholder "?"). The Elo is added only when it's a number.
+        /// </summary>
+        internal static string? PlayerLabel(string? name, string? elo)
+        {
+            name = name?.Trim();
+            if (string.IsNullOrEmpty(name) || name == "?") return null;
+            return int.TryParse(elo, NumberStyles.Integer, CultureInfo.InvariantCulture, out int e) && e > 0
+                ? $"{name} [{e}]" : name;
         }
 
         private string GetEngineLabel(string fileName, bool includeElo)
