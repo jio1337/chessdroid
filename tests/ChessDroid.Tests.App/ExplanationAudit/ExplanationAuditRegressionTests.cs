@@ -207,6 +207,12 @@ public class ExplanationAuditRegressionTests
     public void LineFarBelowBestThatDropsMaterialSaysSo(string game, string label, string move)
         => Assert.Equal("loses bishop (Rxc6)", Explain(game, label, move));
 
+    // 51.Rc7 slides along the 7th rank from h7: the rook was already there, nothing "penetrates".
+    [Fact]
+    public void RookAlreadyOnSeventhDoesNotPenetrate()
+        => Assert.DoesNotContain("7th rank",
+            Explain("Carlsen-Vachier Lagrave (Vugar Gashimov Mem 2015 2015)", "51.Rc7", "h7c7"));
+
     // A discovered attack whose target just takes the uncovered rook, and a file "cleared" for that
     // rook: 30.Qg2/Qf3/Qb7 …Rxc1 (Petrosian–Smejkal, IBM 1973).
     [Theory]

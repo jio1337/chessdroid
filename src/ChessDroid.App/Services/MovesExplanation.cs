@@ -377,7 +377,8 @@ namespace ChessDroid.Services
                             if (!string.IsNullOrEmpty(openFileInfo))
                                 reasons.Add(openFileInfo);
 
-                            if (reasons.Count < 2 && destRank == (isWhite ? 1 : 6))
+                            // Same for the 7th rank: a rook sliding along it was already there.
+                            if (reasons.Count < 2 && destRank == (isWhite ? 1 : 6) && srcRank != destRank)
                                 reasons.Add("rook penetrates to 7th rank");
                         }
 
