@@ -216,21 +216,9 @@ namespace ChessDroid
         {
             if (_currentClassification == null) return;
 
-            // Build dictionary for O(1) lookup instead of O(n) FirstOrDefault per item
-            var resultLookup = _currentClassification.MoveResults.ToDictionary(r => r.Node, r => r);
-
-            // Cache for DrawItem color lookups
-            _classificationLookup = resultLookup;
-
-            // Store classification symbols on the pairs so DrawItem can render them with colour.
-            for (int i = 0; i < _movePairs.Count; i++)
-            {
-                var pair = _movePairs[i];
-                if (pair.White != null && resultLookup.TryGetValue(pair.White, out var wRes) && !string.IsNullOrEmpty(wRes.Symbol))
-                    pair.WhiteSymbol = wRes.Symbol;
-                if (pair.Black != null && resultLookup.TryGetValue(pair.Black, out var bRes) && !string.IsNullOrEmpty(bRes.Symbol))
-                    pair.BlackSymbol = bRes.Symbol;
-            }
+            // O(1) lookup for DrawItem: symbols and colours are read from here on every draw,
+            // so they survive the list being rebuilt (variations, navigation).
+            _classificationLookup = _currentClassification.MoveResults.ToDictionary(r => r.Node, r => r);
             moveListBox.Invalidate();
         }
 

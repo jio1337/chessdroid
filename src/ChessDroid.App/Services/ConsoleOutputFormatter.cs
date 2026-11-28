@@ -727,11 +727,7 @@ namespace ChessDroid.Services
         /// <param name="evalInPawns">Evaluation in pawns (e.g., +0.50 for half pawn advantage)</param>
         /// <returns>Win probability from 0.0 to 1.0</returns>
         private static double CalculateWinProbability(double evalInPawns)
-        {
-            // Logistic function: Win% = 1 / (1 + 10^(-eval/4))
-            // This maps eval to a 0-1 probability scale
-            return 1.0 / (1.0 + Math.Pow(10, -evalInPawns / 4.0));
-        }
+            => MoveQualityAnalyzer.WinProbability(evalInPawns); // one curve for panel labels and Game Review
 
         /// <summary>
         /// Check if an enemy pawn can capture on the given square
@@ -1981,11 +1977,11 @@ namespace ChessDroid.Services
             // display NEGATIVE classifications (Blunder, Mistake, Inaccuracy).
             // If the drop is small, we return null to show no classification.
             bool isDark = ThemeService.IsDarkTheme(config?.Theme);
-            if (winProbDrop >= 0.20)
+            if (winProbDrop >= MoveQualityAnalyzer.BlunderDrop)
                 return ("Blunder", "??", isDark ? Color.FromArgb(196, 90, 90) : Color.FromArgb(160, 30, 30));
-            else if (winProbDrop >= 0.10)
+            else if (winProbDrop >= MoveQualityAnalyzer.MistakeDrop)
                 return ("Mistake", "?", isDark ? Color.FromArgb(200, 130, 80) : Color.FromArgb(160, 80, 20));
-            else if (winProbDrop >= 0.05)
+            else if (winProbDrop >= MoveQualityAnalyzer.InaccuracyDrop)
                 return ("Inaccuracy", "?!", isDark ? Color.FromArgb(196, 170, 80) : Color.FromArgb(150, 112, 16));
             else
                 return ("", "", Color.Transparent); // No label for small drops

@@ -140,7 +140,7 @@ namespace ChessDroid.Services
         /// <summary>Main-line SAN tokens of a PGN: no headers, comments, variations, NAGs, numbers or result.</summary>
         internal static List<string> SanMoves(string pgn)
         {
-            string body = string.Join('\n', pgn.Split('\n').Where(l => !l.TrimStart().StartsWith("[", StringComparison.Ordinal)
+            string body = string.Join('\n', pgn.Split('\n').Where(l => !l.TrimStart().StartsWith('[')
                                                                     || !l.Contains('"')));
             body = System.Text.RegularExpressions.Regex.Replace(body, @"\{[^}]*\}|;[^\n]*", " ");
             // Strip variations, innermost first.

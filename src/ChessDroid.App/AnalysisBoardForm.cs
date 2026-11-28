@@ -60,9 +60,16 @@ namespace ChessDroid
             public bool IsVariation;
             public int  IndentLevel;       // pixels = IndentLevel * 14
             public bool IsVariationStart;  // show "(" prefix on first row of a variation
-            public string? WhiteSymbol;
-            public string? BlackSymbol;
         }
+
+        // Review symbols ("!!", "?!", "??"…) are read from the review at draw time. They used to be
+        // copied onto the rows once, so any rebuild of the list (e.g. starting a variation) dropped
+        // them — "Kc3?!" turned plain white.
+        private string? SymbolFor(MoveNode? node) => ReviewSymbolFor(_classificationLookup, node);
+
+        internal static string? ReviewSymbolFor(IReadOnlyDictionary<MoveNode, MoveReviewResult>? lookup, MoveNode? node)
+            => node != null && lookup != null && lookup.TryGetValue(node, out var r) && !string.IsNullOrEmpty(r.Symbol)
+                ? r.Symbol : null;
         private List<MovePair> _movePairs = new();
         private MoveNode? _activeNode;  // which half is highlighted in the current row
 
@@ -1673,7 +1680,7 @@ namespace ChessDroid
             if (pair.Black == null)
             {
                 // Full-width row (unpaired or variation starting with a black move).
-                DrawMoveCell(e.Graphics, e.Bounds, pair.White!, pair.WhiteSymbol, rowSelected, drawFont, isDark,
+                DrawMoveCell(e.Graphics, e.Bounds, pair.White!, SymbolFor(pair.White), rowSelected, drawFont, isDark,
                              isFullWidth: true, pair.IsVariation, indentPx, pair.IsVariationStart);
                 e.DrawFocusRectangle();
                 return;
@@ -1721,12 +1728,12 @@ namespace ChessDroid
 
             // White/left half.
             bool leftSel = (rowSelected && leftActive) || (rowSelected && !rightActive);
-            DrawMoveCell(e.Graphics, leftBounds, pair.White!, pair.WhiteSymbol, leftSel, drawFont, isDark,
+            DrawMoveCell(e.Graphics, leftBounds, pair.White!, SymbolFor(pair.White), leftSel, drawFont, isDark,
                          isFullWidth: false, pair.IsVariation, 0, pair.IsVariationStart);
 
             // Black/right half.
             bool rightSel = rowSelected && rightActive;
-            DrawMoveCellBlack(e.Graphics, rightBounds, pair.Black, pair.BlackSymbol, rightSel, drawFont, isDark, pair.IsVariation);
+            DrawMoveCellBlack(e.Graphics, rightBounds, pair.Black, SymbolFor(pair.Black), rightSel, drawFont, isDark, pair.IsVariation);
 
             // Subtle column divider.
             using var sepPen = new Pen(isDark ? Color.FromArgb(50, 255, 255, 255) : Color.FromArgb(50, 0, 0, 0));

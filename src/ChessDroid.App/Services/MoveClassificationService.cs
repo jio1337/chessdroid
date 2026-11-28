@@ -123,96 +123,17 @@ namespace ChessDroid.Services
                         continue;
                     }
 
-                    double evalAfter = evalAfterNullable.Value;
+                    string rawAfterEval = afterCached != null && afterCached.Depth >= engineDepth
+                        ? afterCached.Evaluation : analysisCache[afterCacheKey].Evaluation;
+                    double evalAfter = ParseAfterEval(rawAfterEval, node.IsWhiteMove) ?? evalAfterNullable.Value;
+                    var beforeEvaluations = analysisCache.TryGetValue(cacheKey, out var beforeCached)
+                        ? beforeCached.Evaluations : new List<string>();
+                    double? prevEval = i > 0 ? classification.MoveResults.LastOrDefault()?.EvalAfter : null;
 
-                    double cpLoss = node.IsWhiteMove
-                        ? (evalBefore - evalAfter)
-                        : (evalAfter - evalBefore);
+                    var (finalQuality, finalSymbol, cpLoss) = ClassifyMove(beforeFen, node.UciMove, node.SanMove,
+                        node.IsWhiteMove, bestMove, rawBeforeEval, beforeEvaluations, rawAfterEval, prevEval);
 
-                    if (IsDraw(evalAfter) && cpLoss > 1.5)
-                    {
-                        Debug.WriteLine($"  Draw position detected - capping cpLoss from {cpLoss:F2} to 1.50");
-                        cpLoss = 1.5;
-                    }
-
-                    Debug.WriteLine($"Move {i + 1}: {node.SanMove} | evalBefore={evalBefore:F2} evalAfter={evalAfter:F2} cpLoss={cpLoss:F2} (raw) | White={node.IsWhiteMove}");
-
-                    if (cpLoss < 0) cpLoss = 0;
-                    if (cpLoss > 6) cpLoss = 6;
-
-                    bool isBestMove = node.UciMove == bestMove;
-                    bool isBrilliant = false;
-
-                    if (node.SanMove.EndsWith("!!", StringComparison.Ordinal))
-                    {
-                        isBrilliant = true;
-                    }
-                    else if (isBestMove || cpLoss <= 0.10)
-                    {
-                        double? prevEval = i > 0 ? classification.MoveResults.LastOrDefault()?.EvalAfter : null;
-                        var (brilliant, _) = ConsoleOutputFormatter.IsBrilliantMove(
-                            beforeFen, node.UciMove, evalAfter, prevEval);
-                        isBrilliant = brilliant;
-                    }
-
-                    double qualityEvalBefore = node.IsWhiteMove ? evalBefore * 100 : -evalBefore * 100;
-                    double qualityEvalAfter  = node.IsWhiteMove ? evalAfter  * 100 : -evalAfter  * 100;
-
-                    var quality = MoveQualityAnalyzer.AnalyzeMoveQuality(
-                        evalBefore: qualityEvalBefore,
-                        evalAfter: qualityEvalAfter,
-                        isBestMove: isBestMove,
-                        isSacrifice: isBrilliant
-                    );
-
-                    string finalSymbol = quality.Symbol;
-                    var finalQuality = quality.Quality;
-                    if (isBrilliant && quality.Symbol != "!!")
-                    {
-                        finalSymbol = "!!";
-                        finalQuality = MoveQualityAnalyzer.MoveQuality.Brilliant;
-                    }
-
-                    if (isBestMove && finalSymbol == "" && finalQuality == MoveQualityAnalyzer.MoveQuality.Best)
-                    {
-                        if (analysisCache.TryGetValue(cacheKey, out var beforeCached) &&
-                            beforeCached.Evaluations.Count >= 2)
-                        {
-                            double? bestPvEval   = EvaluationParser.ParseNullable(beforeCached.Evaluations[0]);
-                            double? secondPvEval = EvaluationParser.ParseNullable(beforeCached.Evaluations[1]);
-
-                            if (bestPvEval.HasValue && secondPvEval.HasValue)
-                            {
-                                double evalSwing = Math.Abs(bestPvEval.Value - secondPvEval.Value);
-                                int sp = beforeFen.IndexOf(' ');
-                                bool whiteToMove = sp >= 0 && sp + 1 < beforeFen.Length && beforeFen[sp + 1] == 'w';
-
-                                bool isOnlyWinningMove;
-                                if (whiteToMove)
-                                {
-                                    bool basicTrigger    = evalSwing >= 0.50 && bestPvEval.Value >= 0.40 && secondPvEval.Value <= 0.20;
-                                    bool swingTrigger    = evalSwing >= 2.0 && bestPvEval.Value >= 0.27 && secondPvEval.Value <= 0.70;
-                                    bool disasterTrigger = bestPvEval.Value >= 0.0 && secondPvEval.Value <= -1.50;
-                                    bool nearDrawTrigger = Math.Abs(bestPvEval.Value) <= 0.50 && secondPvEval.Value <= -2.0;
-                                    isOnlyWinningMove = basicTrigger || swingTrigger || disasterTrigger || nearDrawTrigger;
-                                }
-                                else
-                                {
-                                    bool basicTrigger    = evalSwing >= 0.50 && bestPvEval.Value <= -0.40 && secondPvEval.Value >= -0.20;
-                                    bool swingTrigger    = evalSwing >= 2.0 && bestPvEval.Value <= -0.27 && secondPvEval.Value >= -0.70;
-                                    bool disasterTrigger = bestPvEval.Value <= 0.0 && secondPvEval.Value >= 1.50;
-                                    bool nearDrawTrigger = Math.Abs(bestPvEval.Value) <= 0.50 && secondPvEval.Value >= 2.0;
-                                    isOnlyWinningMove = basicTrigger || swingTrigger || disasterTrigger || nearDrawTrigger;
-                                }
-
-                                if (isOnlyWinningMove)
-                                {
-                                    finalSymbol = "!";
-                                    finalQuality = MoveQualityAnalyzer.MoveQuality.Precise;
-                                }
-                            }
-                        }
-                    }
+                    Debug.WriteLine($"Move {i + 1}: {node.SanMove} | evalBefore={evalBefore:F2} evalAfter={evalAfter:F2} cpLoss={cpLoss:F2} | {finalQuality}");
 
                     node.Evaluation = evalAfter;
 
@@ -267,6 +188,182 @@ namespace ChessDroid.Services
             return classification;
         }
 
+        /// <summary>
+        /// The per-move verdict, pure (no engine): everything ClassifyAsync decides once it has
+        /// the engine's evals. Evals are the engine's strings, White's point of view ("+0.31",
+        /// "Mate in -5"). <paramref name="beforeEvaluations"/> are the MultiPV evals of the
+        /// position before the move (best first). Returns cpLoss in pawns, clamped to 0..6.
+        /// Public so the review audit harness replays exactly what the app decides.
+        /// </summary>
+        public static (MoveQualityAnalyzer.MoveQuality quality, string symbol, double cpLoss) ClassifyMove(
+            string beforeFen, string uciMove, string san, bool isWhiteMove, string bestMove,
+            string beforeEval, IReadOnlyList<string> beforeEvaluations, string afterEval, double? prevEvalAfter)
+        {
+            // The move delivered checkmate: the engine reports the mated position as an unsigned
+            // "Mate in 0", which parses as a White mate — a Black mating move would read as a blunder.
+            if (System.Text.RegularExpressions.Regex.IsMatch(afterEval, @"^Mate in [+-]?0$"))
+                return (MoveQualityAnalyzer.MoveQuality.Best, "", 0);
+
+            double evalBefore = EvaluationParser.ParseNullable(beforeEval) ?? 0;
+            double evalAfter = EvaluationParser.ParseNullable(afterEval) ?? 0;
+
+            double cpLoss = isWhiteMove
+                ? (evalBefore - evalAfter)
+                : (evalAfter - evalBefore);
+
+            if (IsDraw(evalAfter) && cpLoss > 1.5)
+                cpLoss = 1.5;
+
+            if (cpLoss < 0) cpLoss = 0;
+            if (cpLoss > 6) cpLoss = 6;
+
+            bool isBestMove = uciMove == bestMove;
+            bool isBrilliant = false;
+
+            if (san.EndsWith("!!", StringComparison.Ordinal))
+            {
+                isBrilliant = true;
+            }
+            else if (isBestMove || cpLoss <= 0.10)
+            {
+                var (brilliant, _) = ConsoleOutputFormatter.IsBrilliantMove(
+                    beforeFen, uciMove, evalAfter, prevEvalAfter);
+                isBrilliant = brilliant;
+            }
+
+            double qualityEvalBefore = isWhiteMove ? evalBefore * 100 : -evalBefore * 100;
+            double qualityEvalAfter  = isWhiteMove ? evalAfter  * 100 : -evalAfter  * 100;
+
+            var quality = MoveQualityAnalyzer.AnalyzeMoveQuality(
+                evalBefore: qualityEvalBefore,
+                evalAfter: qualityEvalAfter,
+                isBestMove: isBestMove,
+                isSacrifice: isBrilliant
+            );
+
+            string finalSymbol = quality.Symbol;
+            var finalQuality = quality.Quality;
+
+            // Forced mates appearing or vanishing: the win-probability curve flattens out near
+            // ±10 pawns, so judge these the way Lichess does instead. Losing a mate is an
+            // inaccuracy if still above +10, a mistake above +7, otherwise a blunder; allowing
+            // one is the mirror image. (35.Qxd8+ mate-in-9 → +6.67 was an "Inaccuracy";
+            // 27.Kf2 -7.91 → mated in 3 was "Good".)
+            if (!isBestMove && MateSwing(beforeEval, afterEval, isWhiteMove) is { } swing)
+            {
+                finalQuality = swing;
+                finalSymbol = swing switch
+                {
+                    MoveQualityAnalyzer.MoveQuality.Blunder => "??",
+                    MoveQualityAnalyzer.MoveQuality.Mistake => "?",
+                    _ => "?!",
+                };
+            }
+
+            // An annotator's "!!" from an imported PGN is kept only when the engine doesn't call
+            // the move an error — the review states the engine's verdict, not the annotation's.
+            if (isBrilliant && san.EndsWith("!!", StringComparison.Ordinal) &&
+                finalQuality is MoveQualityAnalyzer.MoveQuality.Inaccuracy or MoveQualityAnalyzer.MoveQuality.Mistake or MoveQualityAnalyzer.MoveQuality.Blunder)
+                isBrilliant = false;
+
+            if (isBrilliant && quality.Symbol != "!!")
+            {
+                finalSymbol = "!!";
+                finalQuality = MoveQualityAnalyzer.MoveQuality.Brilliant;
+            }
+
+            if (isBestMove && finalSymbol == "" && finalQuality == MoveQualityAnalyzer.MoveQuality.Best &&
+                beforeEvaluations.Count >= 2)
+            {
+                double? bestPvEval   = EvaluationParser.ParseNullable(beforeEvaluations[0]);
+                double? secondPvEval = EvaluationParser.ParseNullable(beforeEvaluations[1]);
+
+                if (bestPvEval.HasValue && secondPvEval.HasValue)
+                {
+                    double evalSwing = Math.Abs(bestPvEval.Value - secondPvEval.Value);
+                    int sp = beforeFen.IndexOf(' ');
+                    bool whiteToMove = sp >= 0 && sp + 1 < beforeFen.Length && beforeFen[sp + 1] == 'w';
+
+                    bool isOnlyWinningMove;
+                    if (whiteToMove)
+                    {
+                        bool basicTrigger    = evalSwing >= 0.50 && bestPvEval.Value >= 0.40 && secondPvEval.Value <= 0.20;
+                        bool swingTrigger    = evalSwing >= 2.0 && bestPvEval.Value >= 0.27 && secondPvEval.Value <= 0.70;
+                        bool disasterTrigger = bestPvEval.Value >= 0.0 && secondPvEval.Value <= -1.50;
+                        bool nearDrawTrigger = Math.Abs(bestPvEval.Value) <= 0.50 && secondPvEval.Value <= -2.0;
+                        isOnlyWinningMove = basicTrigger || swingTrigger || disasterTrigger || nearDrawTrigger;
+                    }
+                    else
+                    {
+                        bool basicTrigger    = evalSwing >= 0.50 && bestPvEval.Value <= -0.40 && secondPvEval.Value >= -0.20;
+                        bool swingTrigger    = evalSwing >= 2.0 && bestPvEval.Value <= -0.27 && secondPvEval.Value >= -0.70;
+                        bool disasterTrigger = bestPvEval.Value <= 0.0 && secondPvEval.Value >= 1.50;
+                        bool nearDrawTrigger = Math.Abs(bestPvEval.Value) <= 0.50 && secondPvEval.Value >= 2.0;
+                        isOnlyWinningMove = basicTrigger || swingTrigger || disasterTrigger || nearDrawTrigger;
+                    }
+
+                    if (isOnlyWinningMove)
+                    {
+                        finalSymbol = "!";
+                        finalQuality = MoveQualityAnalyzer.MoveQuality.Precise;
+                    }
+                }
+            }
+
+            return (finalQuality, finalSymbol, cpLoss);
+        }
+
+        /// <summary>
+        /// Lichess's verdict when a forced mate appears or disappears for the mover, or null when
+        /// neither happened (mate kept, still being mated, or no mate either side). Evals are
+        /// the engine strings, White's view.
+        /// </summary>
+        internal static MoveQualityAnalyzer.MoveQuality? MateSwing(string beforeEval, string afterEval, bool moverWhite)
+        {
+            int? mateBefore = MateForMover(beforeEval, moverWhite);
+            int? mateAfter = MateForMover(afterEval, moverWhite);
+            if (mateBefore == null && mateAfter == null) return null;
+
+            static MoveQualityAnalyzer.MoveQuality BySeverity(double pawns) =>
+                pawns > 9.99 ? MoveQualityAnalyzer.MoveQuality.Inaccuracy
+                : pawns > 7.0 ? MoveQualityAnalyzer.MoveQuality.Mistake
+                : MoveQualityAnalyzer.MoveQuality.Blunder;
+
+            double Pawns(string e) => (EvaluationParser.ParseNullable(e) ?? 0) * (moverWhite ? 1 : -1);
+
+            // Had a forced mate, now doesn't: by how much is the mover still winning?
+            if (mateBefore > 0 && mateAfter == null) return BySeverity(Pawns(afterEval));
+            // Had a forced mate, now gets mated.
+            if (mateBefore > 0 && mateAfter < 0) return MoveQualityAnalyzer.MoveQuality.Blunder;
+            // Wasn't being mated, now is: how lost was the mover already?
+            if (mateBefore == null && mateAfter < 0) return BySeverity(-Pawns(beforeEval));
+            return null;
+        }
+
+        /// <summary>
+        /// The eval after a move, White's view. A position that is already checkmate comes back as
+        /// an unsigned "Mate in 0", which EvaluationParser reads as a White win; here it counts
+        /// for the side that just moved (it delivered the mate), so a Black mating move doesn't
+        /// drag Black's accuracy down or flip the eval graph at the end of the game.
+        /// </summary>
+        public static double? ParseAfterEval(string afterEval, bool moverWhite)
+        {
+            if (System.Text.RegularExpressions.Regex.IsMatch(afterEval ?? "", @"^Mate in [+-]?0$"))
+                return moverWhite ? 15 : -15;
+            return EvaluationParser.ParseNullable(afterEval ?? "");
+        }
+
+        /// <summary>+n: the mover mates in n; -n: the mover gets mated in n; null: no mate.</summary>
+        private static int? MateForMover(string eval, bool moverWhite)
+        {
+            var m = System.Text.RegularExpressions.Regex.Match(eval ?? "", @"^Mate in ([+-]?)(\d+)");
+            if (!m.Success) return null;
+            int n = int.Parse(m.Groups[2].Value, CultureInfo.InvariantCulture);
+            if (n == 0) return null; // already mated, no sign to go by
+            bool whiteMates = m.Groups[1].Value != "-";
+            return whiteMates == moverWhite ? n : -n;
+        }
+
         private static string GetPositionKey(string fen)
         {
             var parts = fen.Split(' ');
@@ -285,8 +382,8 @@ namespace ChessDroid.Services
             {
                 double evalBefore = forWhite ? m.EvalBefore : -m.EvalBefore;
                 double evalAfter  = forWhite ? m.EvalAfter  : -m.EvalAfter;
-                double wpBefore = 1.0 / (1.0 + Math.Pow(10, -evalBefore / 4.0));
-                double wpAfter  = 1.0 / (1.0 + Math.Pow(10, -evalAfter  / 4.0));
+                double wpBefore = MoveQualityAnalyzer.WinProbability(evalBefore);
+                double wpAfter  = MoveQualityAnalyzer.WinProbability(evalAfter);
                 totalWinLoss += Math.Max(0, wpBefore - wpAfter);
             }
 

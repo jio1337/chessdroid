@@ -62,12 +62,6 @@ namespace ChessDroid.Services
             // Calculate centipawn loss (negative means improvement, but shouldn't happen normally)
             double cpLoss = evalBefore - evalAfter;
 
-            // Handle mate scores specially
-            bool wasMateForUs = evalBefore > 9000;
-            bool wasMateAgainstUs = evalBefore < -9000;
-            bool isMateForUs = evalAfter > 9000;
-            bool isMateAgainstUs = evalAfter < -9000;
-
             // Adjust thresholds based on aggressiveness
             // More aggressive = more lenient on sharp play, harsher on passive play
             double aggressivenessMultiplier = 1.0 + (aggressiveness - 50) / 200.0; // 0.75 to 1.25
@@ -97,30 +91,10 @@ namespace ChessDroid.Services
                 };
             }
 
-            // Blunder detection - missing mate or huge material loss
-            if (wasMateForUs && !isMateForUs)
-            {
-                return new MoveQualityResult
-                {
-                    Quality = MoveQuality.Blunder,
-                    Symbol = "??",
-                    Description = "Blunder - missed checkmate",
-                    Color = Color.FromArgb(202, 52, 49), // Red
-                    CentipawnLoss = 9999
-                };
-            }
-
-            if (!wasMateAgainstUs && isMateAgainstUs)
-            {
-                return new MoveQualityResult
-                {
-                    Quality = MoveQuality.Blunder,
-                    Symbol = "??",
-                    Description = "Blunder - allows checkmate",
-                    Color = Color.FromArgb(202, 52, 49),
-                    CentipawnLoss = 9999
-                };
-            }
+            // (Mate scores need no special case: EvaluationParser maps a mate to ±10..15 pawns,
+            // i.e. a win probability of ~0 or ~1, so missing or allowing a mate is judged by the
+            // win-probability drop below like everything else. The old "> 9000" mate branches
+            // here could never fire for that reason.)
 
             // Brilliant move detection
             // A move is brilliant if:
@@ -155,13 +129,17 @@ namespace ChessDroid.Services
                 };
             }
 
-            // Standard quality classification based on centipawn loss (non-best moves only)
-            double blunderThreshold    = 300 * aggressivenessMultiplier;
-            double mistakeThreshold    = 100 * aggressivenessMultiplier;
-            double inaccuracyThreshold =  50 * aggressivenessMultiplier;
+            // Errors are judged by the drop in win probability, not raw centipawns — the same rule
+            // the analysis panel uses for its alternative-move labels and the accuracy score uses.
+            // Raw centipawns called +10.12 → +6.23 (still completely winning) a "Blunder" and
+            // -3.5 → -4.6 (already lost) a "Mistake"; 4 pawns matter far more at +1 than at +10.
+            double winDrop = WinProbability(evalBefore / 100.0) - WinProbability(evalAfter / 100.0);
+            double blunderThreshold    = BlunderDrop    * aggressivenessMultiplier;
+            double mistakeThreshold    = MistakeDrop    * aggressivenessMultiplier;
+            double inaccuracyThreshold = InaccuracyDrop * aggressivenessMultiplier;
             double excellentThreshold  =  10;
 
-            if (cpLoss >= blunderThreshold)
+            if (winDrop >= blunderThreshold)
             {
                 return new MoveQualityResult
                 {
@@ -173,7 +151,7 @@ namespace ChessDroid.Services
                 };
             }
 
-            if (cpLoss >= mistakeThreshold)
+            if (winDrop >= mistakeThreshold)
             {
                 return new MoveQualityResult
                 {
@@ -185,7 +163,7 @@ namespace ChessDroid.Services
                 };
             }
 
-            if (cpLoss >= inaccuracyThreshold)
+            if (winDrop >= inaccuracyThreshold)
             {
                 return new MoveQualityResult
                 {
@@ -219,41 +197,23 @@ namespace ChessDroid.Services
             };
         }
 
-        /// <summary>
-        /// Quick analysis based just on centipawn loss (for display purposes)
-        /// </summary>
-        public static MoveQualityResult QuickAnalyze(double cpLoss, int aggressiveness = 50)
-        {
-            return AnalyzeMoveQuality(
-                evalBefore: cpLoss,
-                evalAfter: 0,
-                isBestMove: cpLoss <= 0,
-                aggressiveness: aggressiveness
-            );
-        }
+        // Win-probability drops (expected points lost) that make a move an error. Shared with
+        // the analysis panel's labels on alternative moves (ConsoleOutputFormatter), so a move
+        // gets the same "?!/?/??" there as in Game Review.
+        public const double InaccuracyDrop = 0.05;
+        public const double MistakeDrop = 0.10;
+        public const double BlunderDrop = 0.20;
 
         /// <summary>
-        /// Get a color for a given centipawn loss value
+        /// Win probability (0..1) for the side an eval (in pawns) favours — Lichess's curve,
+        /// 1 / (1 + e^(-0.00368208·cp)). Game Review's accuracy score (Lichess's per-move formula,
+        /// 103.1668·e^(-0.04354·loss) − 3.1669) was fitted to this curve, and with the 5/10/20%
+        /// thresholds it puts inaccuracy/mistake/blunder at ≈0.5/1.1/2.3 pawns near equality
+        /// while shrinking them once one side is winning big. The steeper 1/(1+10^(-eval/4)) used
+        /// before made a 0.35-pawn slip (about the noise between two depth-15 searches) an
+        /// inaccuracy and 1.5 pawns a blunder.
         /// </summary>
-        public static Color GetColorForCpLoss(double cpLoss)
-        {
-            if (cpLoss <= 0) return Color.FromArgb(150, 194, 90);    // Green - best/improvement
-            if (cpLoss < 30) return Color.FromArgb(119, 171, 89);    // Dark green - good
-            if (cpLoss < 100) return Color.FromArgb(247, 199, 72);   // Yellow - inaccuracy
-            if (cpLoss < 300) return Color.FromArgb(232, 106, 51);   // Orange - mistake
-            return Color.FromArgb(202, 52, 49);                       // Red - blunder
-        }
-
-        /// <summary>
-        /// Get a description based on evaluation difference from best move
-        /// </summary>
-        public static string GetMoveQualitySymbol(double cpLoss)
-        {
-            if (cpLoss <= 0) return "";      // Best move
-            if (cpLoss < 30) return "";      // Good
-            if (cpLoss < 100) return "?!";   // Inaccuracy
-            if (cpLoss < 300) return "?";    // Mistake
-            return "??";                      // Blunder
-        }
+        public static double WinProbability(double evalInPawns)
+            => 1.0 / (1.0 + Math.Exp(-0.368208 * evalInPawns));
     }
 }
