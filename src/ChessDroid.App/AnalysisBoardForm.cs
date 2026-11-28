@@ -524,6 +524,7 @@ namespace ChessDroid
                 config,
                 MovesExplanation.GenerateMoveExplanation);
             consoleFormatter.OnSeeLineClicked  += InsertPvIntoMoveTree;
+            consoleFormatter.CurrentNodeProvider = () => moveTree.CurrentNode; // review step links
             consoleFormatter.OnNavigateToNode  += node =>
             {
                 int idx = _movePairs.FindIndex(p => p.White == node || p.Black == node);

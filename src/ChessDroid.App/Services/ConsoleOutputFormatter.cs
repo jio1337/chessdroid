@@ -2095,6 +2095,67 @@ namespace ChessDroid.Services
             finally { ResumeDrawing(); }
         }
 
+        /// <summary>The move on the board, so the review header can offer step links for it.</summary>
+        public Func<MoveNode?>? CurrentNodeProvider { get; set; }
+
+        /// <summary>
+        /// "[← Game Review]" while a review is active, plus — when the move on the board was
+        /// reviewed — step links through the other moves of the same kind by the same side:
+        /// "[◀ prev]  White blunder 2 of 3  [next ▶]". The ends show the link text dimmed.
+        /// </summary>
+        private void AppendGameReviewHeader()
+        {
+            if (_activeClassification == null) return;
+            Color back = richTextBox.BackColor;
+            Color linkClr = GetThemeColor(Color.Cyan, Color.Blue);
+            Color dim = GetThemeColor(Color.FromArgb(90, 90, 90), Color.Silver);
+
+            int rStart = richTextBox.TextLength;
+            int rLen = AppendTextWithFormat("[← Game Review]", back, linkClr, FontStyle.Underline);
+            _markers.Add(new ClickMarker { Start = rStart, Length = rLen, Action = ClickAction.ShowGameReview });
+
+            var steps = ReviewSteps(_activeClassification.MoveResults, CurrentNodeProvider?.Invoke());
+            if (steps.count > 0)
+            {
+                void Step(string text, MoveReviewResult? target)
+                {
+                    int start = richTextBox.TextLength;
+                    if (target?.Node == null) { AppendTextWithFormat(text, back, dim, FontStyle.Regular); return; }
+                    int len = AppendTextWithFormat(text, back, linkClr, FontStyle.Underline);
+                    _markers.Add(new ClickMarker { Start = start, Length = len, Action = ClickAction.NavigateToNode, Node = target.Node });
+                }
+
+                bool isDark = ThemeService.IsDarkTheme(config?.Theme);
+                AppendTextWithFormat("   ", back, back, FontStyle.Regular);
+                Step("[◀ prev]", steps.prev);
+                AppendTextWithFormat($"  {steps.label} {steps.index} of {steps.count}  ", back, QualityColor(steps.quality, isDark), FontStyle.Bold);
+                Step("[next ▶]", steps.next);
+            }
+            richTextBox.AppendText("\n");
+        }
+
+        /// <summary>
+        /// Where <paramref name="current"/> sits among the reviewed moves of its own kind by the
+        /// same side, in game order: the moves before and after it (null at the ends), its
+        /// 1-based position and the total, and a label like "White blunder". count is 0 when the
+        /// move wasn't reviewed (the start, a variation, no review).
+        /// </summary>
+        internal static (MoveReviewResult? prev, MoveReviewResult? next, int index, int count,
+            MoveQualityAnalyzer.MoveQuality quality, string label)
+            ReviewSteps(IEnumerable<MoveReviewResult> results, MoveNode? current)
+        {
+            var all = results.ToList();
+            var here = current == null ? null : all.FirstOrDefault(r => r.Node == current);
+            if (here == null) return (null, null, 0, 0, default, "");
+
+            var same = all.Where(r => r.Node != null && r.Quality == here.Quality && r.IsWhiteMove == here.IsWhiteMove)
+                .OrderBy(r => r.Node.HalfMove).ToList();
+            int i = same.IndexOf(here);
+            string kind = here.Quality.ToString().ToLowerInvariant(); // the summary's own names
+            return (i > 0 ? same[i - 1] : null, i < same.Count - 1 ? same[i + 1] : null, i + 1, same.Count,
+                here.Quality, $"{(here.IsWhiteMove ? "White" : "Black")} {kind}");
+        }
+
         /// <summary>The review's turning points: brilliant moves, mistakes and blunders, in game order.</summary>
         internal static List<MoveReviewResult> KeyMoments(IEnumerable<MoveReviewResult> results)
             => results.Where(r => r.Quality is MoveQualityAnalyzer.MoveQuality.Brilliant
@@ -2514,15 +2575,7 @@ namespace ChessDroid.Services
                 Clear();
                 _markers.Clear();
 
-                // [← Game Review] link — shown when a game review is active
-                if (_activeClassification != null)
-                {
-                    Color linkClr = GetThemeColor(Color.Cyan, Color.Blue);
-                    int rStart = richTextBox.TextLength;
-                    int rLen = AppendTextWithFormat("[← Game Review]", richTextBox.BackColor, linkClr, FontStyle.Underline);
-                    _markers.Add(new ClickMarker { Start = rStart, Length = rLen, Action = ClickAction.ShowGameReview });
-                    richTextBox.AppendText("\n");
-                }
+                AppendGameReviewHeader();
 
                 string[] fenPartsForWdl = fen.Split(' ');
                 bool whiteToMoveForWdl = fenPartsForWdl.Length > 1 && fenPartsForWdl[1] == "w";
@@ -2693,15 +2746,7 @@ namespace ChessDroid.Services
                 Clear();
                 _markers.Clear();
 
-                // [← Game Review] link
-                if (_activeClassification != null)
-                {
-                    Color linkClr = GetThemeColor(Color.Cyan, Color.Blue);
-                    int rStart = richTextBox.TextLength;
-                    int rLen = AppendTextWithFormat("[← Game Review]", richTextBox.BackColor, linkClr, FontStyle.Underline);
-                    _markers.Add(new ClickMarker { Start = rStart, Length = rLen, Action = ClickAction.ShowGameReview });
-                    richTextBox.AppendText("\n");
-                }
+                AppendGameReviewHeader();
 
                 string[] fenParts = fen.Split(' ');
                 bool whiteToMove = fenParts.Length > 1 && fenParts[1] == "w";
@@ -2773,15 +2818,7 @@ namespace ChessDroid.Services
             bool whiteToMove = _si >= 0 && _si + 1 < fen.Length && fen[_si + 1] == 'w';
             string side = whiteToMove ? "White" : "Black";
 
-            // [← Game Review] link if a review is active
-            if (_activeClassification != null)
-            {
-                Color linkClr = GetThemeColor(Color.Cyan, Color.Blue);
-                int rStart = richTextBox.TextLength;
-                int rLen = AppendTextWithFormat("[← Game Review]", richTextBox.BackColor, linkClr, FontStyle.Underline);
-                _markers.Add(new ClickMarker { Start = rStart, Length = rLen, Action = ClickAction.ShowGameReview });
-                richTextBox.AppendText("\n");
-            }
+            AppendGameReviewHeader();
 
             // Header
             richTextBox.SelectionColor = GetThemeColor(Color.Silver, Color.DimGray);

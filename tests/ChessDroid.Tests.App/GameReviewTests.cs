@@ -165,6 +165,42 @@ public class GameReviewTests
     [InlineData("+1.13", "+1.13")]
     public void ShortEval(string eval, string expected) => Assert.Equal(expected, ConsoleOutputFormatter.ShortEval(eval));
 
+    // ---- step links: prev/next through the reviewed moves of the same kind by the same side
+
+    private static MoveReviewResult Rev(int ply, Q q) => new()
+    {
+        Node = new MoveNode { HalfMove = ply, SanMove = $"m{ply}" }, Quality = q, IsWhiteMove = ply % 2 == 0,
+    };
+
+    [Fact]
+    public void ReviewSteps_WalkTheSameKindBySameSide_InGameOrder()
+    {
+        // White blunders on plies 4, 10, 16; a Black blunder (7) and a White mistake (12) in between.
+        var w4 = Rev(4, Q.Blunder); var b7 = Rev(7, Q.Blunder); var w10 = Rev(10, Q.Blunder);
+        var w12 = Rev(12, Q.Mistake); var w16 = Rev(16, Q.Blunder);
+        var results = new[] { w16, b7, w4, w12, w10 }; // any order in the review
+
+        var first = ConsoleOutputFormatter.ReviewSteps(results, w4.Node);
+        Assert.Equal((null, w10, 1, 3, "White blunder"), (first.prev, first.next, first.index, first.count, first.label));
+
+        var middle = ConsoleOutputFormatter.ReviewSteps(results, w10.Node);
+        Assert.Equal((w4, w16, 2, 3), (middle.prev, middle.next, middle.index, middle.count));
+
+        var last = ConsoleOutputFormatter.ReviewSteps(results, w16.Node);
+        Assert.Equal((w10, null, 3, 3), (last.prev, last.next, last.index, last.count));
+
+        var only = ConsoleOutputFormatter.ReviewSteps(results, b7.Node);
+        Assert.Equal((null, null, 1, 1, "Black blunder"), (only.prev, only.next, only.index, only.count, only.label));
+    }
+
+    [Fact]
+    public void ReviewSteps_NoneForAMoveOutsideTheReview()
+    {
+        var results = new[] { Rev(4, Q.Blunder) };
+        Assert.Equal(0, ConsoleOutputFormatter.ReviewSteps(results, new MoveNode { HalfMove = 4 }).count); // e.g. a variation move
+        Assert.Equal(0, ConsoleOutputFormatter.ReviewSteps(results, null).count);                         // the start position
+    }
+
     // ---- move list: symbols come from the review at draw time, not from rows built once
 
     [Fact]
